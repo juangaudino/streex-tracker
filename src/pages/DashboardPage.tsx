@@ -1,6 +1,7 @@
 import { useOutletContext } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import StatCard from "@/components/StatCard";
+import Milestones from "@/components/Milestones";
 import { Button } from "@/components/ui/button";
 import {
   weekTotal,
@@ -13,7 +14,9 @@ import {
   samePointTotal,
 } from "@/lib/store";
 import type { StoreContext } from "./types";
-import { CalendarPlus } from "lucide-react";
+import { CalendarPlus, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 function progressLabel(pct: number) {
   if (pct >= 120) return { text: "Beast Mode 🔥", variant: "purple" as const };
@@ -24,13 +27,34 @@ function progressLabel(pct: number) {
 }
 
 export default function DashboardPage() {
-  const { openWeek, weeks, settings } = useOutletContext<StoreContext>();
+  const { openWeek, weeks, settings, hasLocalData, importLocalData } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [importing, setImporting] = useState(false);
   const sym = settings.currencySymbol;
+
+  async function handleImport() {
+    setImporting(true);
+    const count = await importLocalData();
+    setImporting(false);
+    toast({
+      title: count ? `Imported ${count} week${count > 1 ? "s" : ""}!` : "No new weeks to import.",
+    });
+  }
 
   if (!openWeek) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
+        {hasLocalData && (
+          <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 max-w-md w-full space-y-2">
+            <p className="text-sm font-medium">Local data found from V1</p>
+            <p className="text-xs text-muted-foreground">Import your previously saved weeks into your cloud account.</p>
+            <Button size="sm" onClick={handleImport} disabled={importing}>
+              <Download className="h-4 w-4 mr-1" />
+              {importing ? "Importing..." : "Import Local Data"}
+            </Button>
+          </div>
+        )}
         <h2 className="text-2xl font-bold">Start your first week</h2>
         <p className="text-muted-foreground max-w-md">
           Begin tracking your gig earnings. Create a new week to get started.
@@ -39,6 +63,9 @@ export default function DashboardPage() {
           <CalendarPlus className="h-5 w-5 mr-2" />
           Start New Week
         </Button>
+        {weeks.length > 0 && (
+          <Milestones weeks={weeks} openWeek={null} currencySymbol={sym} />
+        )}
       </div>
     );
   }
@@ -127,6 +154,21 @@ export default function DashboardPage() {
         <StatCard label="Best App" value={ba.total > 0 ? formatCurrency(ba.total, sym) : "—"} sub={ba.app} />
         <StatCard label="Days Entered" value={`${activeDays.length}/7`} />
       </div>
+
+      {hasLocalData && (
+        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 flex items-center gap-3 flex-wrap">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">Import local data</p>
+            <p className="text-xs text-muted-foreground">Weeks from V1 are still in your browser.</p>
+          </div>
+          <Button size="sm" onClick={handleImport} disabled={importing}>
+            <Download className="h-4 w-4 mr-1" />
+            {importing ? "Importing..." : "Import"}
+          </Button>
+        </div>
+      )}
+
+      <Milestones weeks={weeks} openWeek={openWeek} currencySymbol={sym} />
     </div>
   );
 }

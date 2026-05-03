@@ -1,39 +1,105 @@
 import { useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   createWeek,
   getMondayOfWeek,
   formatCurrency,
+  formatDate,
   dayTotal,
   weekTotal,
   appTotal,
 } from "@/lib/store";
+import { DAY_NAMES } from "@/lib/types";
 import type { StoreContext } from "./types";
-import { CalendarPlus, Save, Lock, Trash2 } from "lucide-react";
+import { CalendarPlus, Save, Lock, Trash2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 
 export default function WeeklyEntryPage() {
-  const { openWeek, settings, addWeek, updateWeek } =
+  const { openWeek, weeks, settings, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [editWeek, setEditWeek] = useState(openWeek);
   const [goalInput, setGoalInput] = useState(
     openWeek?.weeklyGoal?.toString() || settings.defaultWeeklyGoal.toString()
   );
+  const [startDate, setStartDate] = useState<Date>(
+    openWeek ? new Date(openWeek.startDate + "T00:00:00") : getMondayOfWeek()
+  );
+  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
   // Sync when openWeek changes externally
   if (openWeek && (!editWeek || editWeek.id !== openWeek.id)) {
     setEditWeek(openWeek);
     setGoalInput(openWeek.weeklyGoal.toString());
+    setStartDate(new Date(openWeek.startDate + "T00:00:00"));
   }
 
   const sym = settings.currencySymbol;
   const apps = settings.activeApps;
 
+  // Check for duplicate week
+  const selectedMonday = getMondayOfWeek(startDate);
+  const selectedMondayStr = formatDate(selectedMonday);
+  const duplicateWeek = weeks.find(
+    (w) => w.startDate === selectedMondayStr && w.id !== editWeek?.id
+  );
+
+  function handleDateSelect(date: Date | undefined) {
+    if (!date) return;
+    const monday = getMondayOfWeek(date);
+    setStartDate(monday);
+    setDatePopoverOpen(false);
+
+    // If we have an open week being edited, update its dates
+    if (editWeek) {
+      const mondayStr = formatDate(monday);
+      const end = new Date(monday);
+      end.setDate(end.getDate() + 6);
+      const updatedEntries = editWeek.entries.map((d, i) => {
+        const dayDate = new Date(monday);
+        dayDate.setDate(dayDate.getDate() + i);
+        return { ...d, dayName: DAY_NAMES[i], date: formatDate(dayDate) };
+      });
+      setEditWeek({
+        ...editWeek,
+        startDate: mondayStr,
+        endDate: formatDate(end),
+        entries: updatedEntries,
+      });
+    }
+  }
+
   function handleStartNew() {
-    if (openWeek) {
+    // Check for duplicate
+    const mondayStr = formatDate(getMondayOfWeek(startDate));
+    const existing = weeks.find((w) => w.startDate === mondayStr);
+    if (existing) {
+      toast({
+        title: "Week already exists",
+        description: "Opening the existing week instead.",
+        variant: "destructive",
+      });
+      if (existing.status === "closed") {
+        updateWeek({ ...existing, status: "open" });
+      }
+      setEditWeek(existing.status === "closed" ? { ...existing, status: "open" } : existing);
+      setGoalInput(existing.weeklyGoal.toString());
+      return;
+    }
+
+    if (openWeek && openWeek.id !== editWeek?.id) {
       if (
         !confirm(
           "You have an open week. Save and close it before starting a new one?"
@@ -42,8 +108,13 @@ export default function WeeklyEntryPage() {
         return;
       updateWeek({ ...openWeek, status: "closed" });
     }
+    // Close current editWeek if it's open and different
+    if (editWeek && openWeek && editWeek.id === openWeek.id) {
+      updateWeek({ ...editWeek, status: "closed" });
+    }
+
     const w = createWeek(
-      getMondayOfWeek(),
+      getMondayOfWeek(startDate),
       Number(goalInput) || settings.defaultWeeklyGoal,
       apps
     );
@@ -52,8 +123,51 @@ export default function WeeklyEntryPage() {
     toast({ title: "New week started!" });
   }
 
+  function handleStartHistorical() {
+    const mondayStr = formatDate(getMondayOfWeek(startDate));
+    const existing = weeks.find((w) => w.startDate === mondayStr);
+    if (existing) {
+      toast({
+        title: "Week already exists",
+        description: "Opening the existing week instead.",
+        variant: "destructive",
+      });
+      if (existing.status === "closed") {
+        updateWeek({ ...existing, status: "open" });
+      }
+      setEditWeek(existing.status === "closed" ? { ...existing, status: "open" } : existing);
+      setGoalInput(existing.weeklyGoal.toString());
+      return;
+    }
+
+    if (openWeek) {
+      updateWeek({ ...openWeek, status: "closed" });
+    }
+
+    const w = createWeek(
+      getMondayOfWeek(startDate),
+      Number(goalInput) || settings.defaultWeeklyGoal,
+      apps
+    );
+    addWeek(w);
+    setEditWeek(w);
+    toast({ title: "Historical week created!" });
+  }
+
   function handleSave() {
     if (!editWeek) return;
+    // Check duplicate on save if dates changed
+    const dup = weeks.find(
+      (w) => w.startDate === editWeek.startDate && w.id !== editWeek.id
+    );
+    if (dup) {
+      toast({
+        title: "Duplicate week",
+        description: "A week with this start date already exists.",
+        variant: "destructive",
+      });
+      return;
+    }
     updateWeek({ ...editWeek, weeklyGoal: Number(goalInput) || 0 });
     toast({ title: "Week saved." });
   }
@@ -100,19 +214,62 @@ export default function WeeklyEntryPage() {
         <p className="text-muted-foreground max-w-md">
           Start your first week and begin tracking your gig earnings.
         </p>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Goal:</span>
-          <Input
-            type="number"
-            className="w-28 font-mono"
-            value={goalInput}
-            onChange={(e) => setGoalInput(e.target.value)}
-          />
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Start Date:</span>
+            <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-44 justify-start text-left font-mono text-sm">
+                  <CalendarIcon className="h-4 w-4 mr-2 opacity-50" />
+                  {format(startDate, "yyyy-MM-dd")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="center">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={handleDateSelect}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Goal:</span>
+            <Input
+              type="number"
+              className="w-28 font-mono"
+              value={goalInput}
+              onChange={(e) => setGoalInput(e.target.value)}
+            />
+          </div>
+          {duplicateWeek && (
+            <div className="flex items-center gap-2 text-warning text-sm">
+              <AlertTriangle className="h-4 w-4" />
+              <span>Week {selectedMondayStr} already exists.</span>
+              <Button
+                size="sm"
+                variant="link"
+                className="text-primary p-0 h-auto"
+                onClick={() => {
+                  if (duplicateWeek.status === "closed") {
+                    updateWeek({ ...duplicateWeek, status: "open" });
+                  }
+                  setEditWeek(duplicateWeek.status === "closed" ? { ...duplicateWeek, status: "open" } : duplicateWeek);
+                  setGoalInput(duplicateWeek.weeklyGoal.toString());
+                }}
+              >
+                Open it
+              </Button>
+            </div>
+          )}
         </div>
-        <Button size="lg" onClick={handleStartNew}>
-          <CalendarPlus className="h-5 w-5 mr-2" />
-          Start New Week
-        </Button>
+        <div className="flex gap-2 flex-wrap justify-center">
+          <Button size="lg" onClick={handleStartNew} disabled={!!duplicateWeek}>
+            <CalendarPlus className="h-5 w-5 mr-2" />
+            Start New Week
+          </Button>
+        </div>
       </div>
     );
   }
@@ -124,9 +281,41 @@ export default function WeeklyEntryPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">Weekly Entry</h1>
-          <p className="text-sm text-muted-foreground">
-            {editWeek.startDate} → {editWeek.endDate}
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="font-mono text-sm text-muted-foreground hover:text-foreground h-auto py-1 px-2">
+                  <CalendarIcon className="h-3.5 w-3.5 mr-1.5 opacity-50" />
+                  {editWeek.startDate} → {editWeek.endDate}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={new Date(editWeek.startDate + "T00:00:00")}
+                  onSelect={handleDateSelect}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          {duplicateWeek && (
+            <div className="flex items-center gap-2 text-warning text-xs mt-1">
+              <AlertTriangle className="h-3 w-3" />
+              <span>Conflicts with existing week.</span>
+              <Button
+                size="sm"
+                variant="link"
+                className="text-primary p-0 h-auto text-xs"
+                onClick={() => {
+                  setEditWeek(duplicateWeek);
+                  setGoalInput(duplicateWeek.weeklyGoal.toString());
+                }}
+              >
+                Switch to it
+              </Button>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Goal:</span>

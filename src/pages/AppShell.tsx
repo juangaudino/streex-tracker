@@ -22,7 +22,7 @@ interface AppShellProps {
   onSignOut: () => void;
 }
 
-export default function AppShell({ store, onSignOut }: AppShellProps) {
+export default function AppShell({ store, onSignOut }: AppShellProps) {  
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border px-4 py-3 flex items-center gap-3">
@@ -56,7 +56,7 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
         </nav>
       </header>
       <main className="flex-1 overflow-y-auto pb-20 md:pb-6">
-        <Outlet context={store} />
+        <Outlet context={store as any} />
       </main>
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border flex z-50">
         {navItems.map((item) => (

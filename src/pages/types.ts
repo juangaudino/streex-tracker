@@ -4,9 +4,12 @@ export interface StoreContext {
   weeks: WeekRecord[];
   openWeek: WeekRecord | null;
   settings: AppSettings;
+  loading: boolean;
+  hasLocalData: boolean;
   addWeek: (w: WeekRecord) => void;
   updateWeek: (w: WeekRecord) => void;
   deleteWeek: (id: string) => void;
   updateSettings: (s: AppSettings) => void;
+  importLocalData: () => Promise<number | undefined>;
   reload: () => void;
 }

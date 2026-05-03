@@ -1,12 +1,13 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { useWeekStore } from "@/hooks/useWeekStore";
 import {
   LayoutDashboard,
   CalendarDays,
   BarChart3,
   History,
   Settings,
+  LogOut,
 } from "lucide-react";
+import type { StoreContext } from "./types";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -16,15 +17,18 @@ const navItems = [
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
-export default function AppShell() {
-  const store = useWeekStore();
+interface AppShellProps {
+  store: StoreContext;
+  onSignOut: () => void;
+}
 
+export default function AppShell({ store, onSignOut }: AppShellProps) {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border px-4 py-3 flex items-center gap-3">
         <span className="text-xl font-bold tracking-tight text-primary">Streex</span>
         <span className="text-sm text-muted-foreground hidden sm:inline">Earnings Tracker</span>
-        <nav className="hidden md:flex ml-auto gap-1">
+        <nav className="hidden md:flex ml-auto gap-1 items-center">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -42,6 +46,13 @@ export default function AppShell() {
               {item.label}
             </NavLink>
           ))}
+          <button
+            onClick={onSignOut}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors ml-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </button>
         </nav>
       </header>
       <main className="flex-1 overflow-y-auto pb-20 md:pb-6">

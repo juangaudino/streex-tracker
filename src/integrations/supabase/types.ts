@@ -14,7 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      user_settings: {
+        Row: {
+          active_apps: Json
+          created_at: string
+          currency_symbol: string
+          default_weekly_goal: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_apps?: Json
+          created_at?: string
+          currency_symbol?: string
+          default_weekly_goal?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_apps?: Json
+          created_at?: string
+          currency_symbol?: string
+          default_weekly_goal?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      weeks: {
+        Row: {
+          created_at: string
+          end_date: string
+          entries: Json
+          id: string
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+          weekly_goal: number
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          entries?: Json
+          id?: string
+          start_date: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          weekly_goal?: number
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          entries?: Json
+          id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          weekly_goal?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -9,6 +9,7 @@ import WeeklyEntryPage from "./pages/WeeklyEntryPage";
 import ComparisonsPage from "./pages/ComparisonsPage";
 import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
+import AchievementsPage from "./pages/AchievementsPage";
 import AuthPage from "./pages/AuthPage";
 import { useAuth } from "./hooks/useAuth";
 import { useWeekStore } from "./hooks/useWeekStore";
@@ -46,6 +47,7 @@ const App = () => {
             <Route path="/entry" element={<WeeklyEntryPage />} />
             <Route path="/compare" element={<ComparisonsPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/achievements" element={<AchievementsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />

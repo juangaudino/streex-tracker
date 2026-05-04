@@ -2,6 +2,9 @@ import { useOutletContext } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import StatCard from "@/components/StatCard";
 import Milestones from "@/components/Milestones";
+import AchievementsPreview from "@/components/AchievementsPreview";
+import { useAchievements } from "@/hooks/useAchievements";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
   weekTotal,
@@ -31,6 +34,8 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [importing, setImporting] = useState(false);
+  const { user } = useAuth();
+  const { achievements } = useAchievements(user, weeks);
   const sym = settings.currencySymbol;
 
   async function handleImport() {
@@ -169,6 +174,8 @@ export default function DashboardPage() {
       )}
 
       <Milestones weeks={weeks} openWeek={openWeek} currencySymbol={sym} />
+
+      <AchievementsPreview achievements={achievements} />
     </div>
   );
 }

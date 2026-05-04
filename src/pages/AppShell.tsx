@@ -6,6 +6,7 @@ import {
   History,
   Settings,
   LogOut,
+  Trophy,
 } from "lucide-react";
 import type { StoreContext } from "./types";
 
@@ -14,6 +15,7 @@ const navItems = [
   { to: "/entry", icon: CalendarDays, label: "Entry" },
   { to: "/compare", icon: BarChart3, label: "Compare" },
   { to: "/history", icon: History, label: "History" },
+  { to: "/achievements", icon: Trophy, label: "Achieve" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 

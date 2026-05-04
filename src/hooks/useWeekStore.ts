@@ -62,48 +62,67 @@ export function useWeekStore(user: User | null) {
 
   const addWeek = useCallback(async (w: WeekRecord) => {
     if (!user) return;
-    await supabase.from("weeks").insert({
-      id: w.id,
+    const { data, error } = await supabase.from("weeks").insert({
       user_id: user.id,
       start_date: w.startDate,
       end_date: w.endDate,
       weekly_goal: w.weeklyGoal,
       status: w.status,
       entries: w.entries as any,
-    });
-    setWeeks((prev) => [...prev, w]);
-  }, [user]);
+    }).select().single();
+    if (error) {
+      console.error("Save failed:", error);
+      alert("Error saving week: " + error.message);
+      return;
+    }
+    await reload();
+  }, [user, reload]);
 
   const updateWeek = useCallback(async (w: WeekRecord) => {
     if (!user) return;
     const now = new Date().toISOString();
-    await supabase.from("weeks").update({
+    const { error } = await supabase.from("weeks").update({
       start_date: w.startDate,
       end_date: w.endDate,
       weekly_goal: w.weeklyGoal,
       status: w.status,
       entries: w.entries as any,
       updated_at: now,
-    }).eq("id", w.id);
+    }).eq("id", w.id).eq("user_id", user.id);
+    if (error) {
+      console.error("Update failed:", error);
+      alert("Error updating week: " + error.message);
+      return;
+    }
     setWeeks((prev) => prev.map((x) => (x.id === w.id ? { ...w, updatedAt: now } : x)));
   }, [user]);
 
   const deleteWeek = useCallback(async (id: string) => {
     if (!user) return;
-    await supabase.from("weeks").delete().eq("id", id);
+    const { error } = await supabase.from("weeks").delete().eq("id", id).eq("user_id", user.id);
+    if (error) {
+      console.error("Delete failed:", error);
+      alert("Error deleting week: " + error.message);
+      return;
+    }
     setWeeks((prev) => prev.filter((w) => w.id !== id));
   }, [user]);
 
   const updateSettings = useCallback(async (s: AppSettings) => {
     if (!user) return;
-    setSettingsState(s);
-    await supabase.from("user_settings").upsert({
+    const { error } = await supabase.from("user_settings").upsert({
       user_id: user.id,
       default_weekly_goal: s.defaultWeeklyGoal,
       currency_symbol: s.currencySymbol,
       active_apps: s.activeApps as any,
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" });
+    if (error) {
+      console.error("Settings save failed:", error);
+      alert("Error saving settings: " + error.message);
+      return;
+    }
+    setSettingsState(s);
   }, [user]);
 
   const importLocalData = useCallback(async () => {
@@ -118,7 +137,6 @@ export function useWeekStore(user: User | null) {
       return 0;
     }
     const rows = toImport.map((w) => ({
-      id: w.id,
       user_id: user.id,
       start_date: w.startDate,
       end_date: w.endDate,
@@ -126,7 +144,12 @@ export function useWeekStore(user: User | null) {
       status: w.status,
       entries: w.entries as any,
     }));
-    await supabase.from("weeks").insert(rows);
+    const { error } = await supabase.from("weeks").insert(rows);
+    if (error) {
+      console.error("Import failed:", error);
+      alert("Error importing data: " + error.message);
+      return 0;
+    }
     localStorage.removeItem("streex_weeks");
     setHasLocalData(false);
     await reload();

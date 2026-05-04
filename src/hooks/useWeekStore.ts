@@ -76,7 +76,7 @@ export function useWeekStore(user: User | null) {
       return;
     }
     await reload();
-  }, [user]);
+  }, [user, reload]);
 
   const updateWeek = useCallback(async (w: WeekRecord) => {
     if (!user) return;

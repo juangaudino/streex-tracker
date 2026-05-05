@@ -47,6 +47,7 @@ export function useAchievements(user: User | null, weeks: WeekRecord[]) {
       unlockedAt: unlockedIds.get(def.id) || null,
       progress: result.progress,
       max: result.max,
+      count: result.count,
     };
   });
 

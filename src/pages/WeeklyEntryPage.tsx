@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   createWeek,
   getMondayOfWeek,
@@ -13,7 +14,7 @@ import {
 } from "@/lib/store";
 import { DAY_NAMES } from "@/lib/types";
 import type { StoreContext } from "./types";
-import { CalendarPlus, Save, Lock, Trash2, AlertTriangle } from "lucide-react";
+import { CalendarPlus, Save, Lock, Trash2, AlertTriangle, CheckCircle2, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -30,6 +31,7 @@ export default function WeeklyEntryPage() {
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [justClosed, setJustClosed] = useState(false);
   const [editWeek, setEditWeek] = useState(openWeek);
   const [goalInput, setGoalInput] = useState(
     openWeek?.weeklyGoal?.toString() || settings.defaultWeeklyGoal.toString()
@@ -178,7 +180,8 @@ export default function WeeklyEntryPage() {
       return;
     const closed = { ...editWeek, status: "closed" as const, weeklyGoal: Number(goalInput) || 0 };
     updateWeek(closed);
-    setEditWeek(null);
+    setEditWeek(closed);
+    setJustClosed(true);
     toast({ title: "Week closed." });
   }
 
@@ -200,9 +203,24 @@ export default function WeeklyEntryPage() {
 
   function handleCellChange(dayIdx: number, app: string, val: string) {
     if (!editWeek) return;
+    const numVal = parseFloat(val) || 0;
     const entries = editWeek.entries.map((d, i) => {
       if (i !== dayIdx) return d;
-      return { ...d, apps: { ...d.apps, [app]: parseFloat(val) || 0 } };
+      const newApps = { ...d.apps, [app]: numVal };
+      const newDayTotal = Object.values(newApps).reduce((s, v) => s + (v || 0), 0);
+      // Auto-set logged if any earnings > 0
+      return { ...d, apps: newApps, logged: newDayTotal > 0 ? true : d.logged };
+    });
+    setEditWeek({ ...editWeek, entries });
+  }
+
+  function handleLoggedToggle(dayIdx: number, checked: boolean) {
+    if (!editWeek) return;
+    const entries = editWeek.entries.map((d, i) => {
+      if (i !== dayIdx) return d;
+      // Can't unlog a day with earnings
+      if (!checked && dayTotal(d) > 0) return d;
+      return { ...d, logged: checked };
     });
     setEditWeek({ ...editWeek, entries });
   }
@@ -275,6 +293,29 @@ export default function WeeklyEntryPage() {
   }
 
   const wt = weekTotal(editWeek);
+  const isClosedView = editWeek.status === "closed" && justClosed;
+
+  if (isClosedView) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
+        <CheckCircle2 className="h-12 w-12 text-success" />
+        <h2 className="text-2xl font-bold">Week closed successfully</h2>
+        <p className="text-muted-foreground">
+          {editWeek.startDate} → {editWeek.endDate} • {formatCurrency(wt, sym)}
+        </p>
+        <div className="flex gap-3 flex-wrap justify-center">
+          <Button size="lg" onClick={() => { setEditWeek(null); setJustClosed(false); }}>
+            <CalendarPlus className="h-5 w-5 mr-2" />
+            Start New Week
+          </Button>
+          <Button size="lg" variant="outline" onClick={() => navigate("/history")}>
+            <History className="h-5 w-5 mr-2" />
+            View History
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4">
@@ -336,6 +377,9 @@ export default function WeeklyEntryPage() {
               <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground sticky left-0 bg-secondary/50 z-10 min-w-[90px]">
                 Day
               </th>
+              <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center min-w-[50px]">
+                Log
+              </th>
               {apps.map((app) => (
                 <th
                   key={app}
@@ -352,11 +396,20 @@ export default function WeeklyEntryPage() {
           <tbody>
             {editWeek.entries.map((day, dayIdx) => {
               const dt = dayTotal(day);
+              const isLogged = day.logged !== undefined ? day.logged : dt > 0;
               return (
                 <tr key={day.dayName} className="border-t border-border hover:bg-accent/30">
                   <td className="px-3 py-2 font-medium sticky left-0 bg-card z-10">
                     <div>{day.dayName.slice(0, 3)}</div>
                     <div className="text-[10px] text-muted-foreground">{day.date}</div>
+                  </td>
+                  <td className="px-2 py-2 text-center">
+                    <Checkbox
+                      checked={isLogged}
+                      onCheckedChange={(checked) => handleLoggedToggle(dayIdx, !!checked)}
+                      disabled={dt > 0}
+                      className="mx-auto"
+                    />
                   </td>
                   {apps.map((app) => (
                     <td key={app} className="px-1 py-1">
@@ -385,6 +438,7 @@ export default function WeeklyEntryPage() {
               <td className="px-3 py-2.5 font-bold sticky left-0 bg-secondary/30 z-10">
                 Total
               </td>
+              <td></td>
               {apps.map((app) => (
                 <td key={app} className="px-2 py-2.5 text-right font-mono font-semibold">
                   {formatCurrency(appTotal(editWeek, app), sym)}
@@ -403,9 +457,11 @@ export default function WeeklyEntryPage() {
         <Button onClick={handleSave}>
           <Save className="h-4 w-4 mr-1" /> Save
         </Button>
-        <Button variant="secondary" onClick={handleClose}>
-          <Lock className="h-4 w-4 mr-1" /> Close Week
-        </Button>
+        {editWeek.status === "open" && (
+          <Button variant="secondary" onClick={handleClose}>
+            <Lock className="h-4 w-4 mr-1" /> Close Week
+          </Button>
+        )}
         <Button variant="outline" onClick={handleStartNew}>
           <CalendarPlus className="h-4 w-4 mr-1" /> New Week
         </Button>

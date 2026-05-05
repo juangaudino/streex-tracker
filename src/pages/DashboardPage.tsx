@@ -14,6 +14,7 @@ import {
   getPreviousWeek,
   getRecordWeek,
   getActiveEnteredDays,
+  getLoggedDays,
   samePointTotal,
 } from "@/lib/store";
 import type { StoreContext } from "./types";
@@ -84,8 +85,9 @@ export default function DashboardPage() {
   const prev = getPreviousWeek(weeks, openWeek);
   const record = getRecordWeek(weeks, openWeek);
   const activeDays = getActiveEnteredDays(openWeek);
-  const prevSP = prev ? samePointTotal(prev, activeDays) : 0;
-  const recSP = record ? samePointTotal(record, activeDays) : 0;
+  const loggedDays = getLoggedDays(openWeek);
+  const prevSP = prev ? samePointTotal(prev, loggedDays) : 0;
+  const recSP = record ? samePointTotal(record, loggedDays) : 0;
   const { text: statusText, variant: statusVariant } = progressLabel(pct);
 
   const barColor =
@@ -147,17 +149,18 @@ export default function DashboardPage() {
           label="vs Previous"
           value={prev ? formatCurrency(total - prevSP, sym) : "—"}
           variant={total - prevSP > 0 ? "success" : total - prevSP < 0 ? "warning" : "default"}
-          sub={prev ? `Same-point (${activeDays.length} days)` : "No previous week"}
+          sub={prev ? `Same-point (${loggedDays.length} logged days)` : "No previous week"}
         />
         <StatCard
           label="vs Record"
           value={record ? formatCurrency(total - recSP, sym) : "—"}
           variant={total - recSP > 0 ? "gold" : total - recSP < 0 ? "warning" : "default"}
-          sub={record ? `Same-point (${activeDays.length} days)` : "No record yet"}
+          sub={record ? `Same-point (${loggedDays.length} logged days)` : "No record yet"}
         />
         <StatCard label="Best Day" value={bd.total > 0 ? formatCurrency(bd.total, sym) : "—"} sub={bd.dayName} />
         <StatCard label="Best App" value={ba.total > 0 ? formatCurrency(ba.total, sym) : "—"} sub={ba.app} />
-        <StatCard label="Days Entered" value={`${activeDays.length}/7`} />
+        <StatCard label="Days Logged" value={`${loggedDays.length}/7`} />
+        <StatCard label="Active Days" value={`${activeDays.length}/7`} sub="Earnings > $0" />
       </div>
 
       {hasLocalData && (

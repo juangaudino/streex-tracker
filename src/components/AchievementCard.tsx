@@ -27,8 +27,9 @@ export default function AchievementCard({ achievement: a, compact }: Props) {
             </span>
             {a.unlocked && <span className="text-[10px] font-bold text-gold bg-gold/10 px-1.5 py-0.5 rounded-full">UNLOCKED</span>}
           </div>
-          {!compact && (
-            <p className="text-xs text-muted-foreground mt-0.5">{a.description}</p>
+          {!compact && <p className="text-xs text-muted-foreground mt-0.5">{a.description}</p>}
+          {a.unlocked && a.count > 0 && (
+            <p className="text-[10px] text-muted-foreground mt-0.5">Achieved {a.count} time{a.count !== 1 ? "s" : ""}</p>
           )}
           {!a.unlocked && (
             <div className="mt-2 space-y-1">

@@ -7,6 +7,7 @@ import {
   getPreviousWeek,
   getRecordWeek,
   getActiveEnteredDays,
+  getLoggedDays,
   samePointTotal,
   samePointAppTotal,
   dayTotal,
@@ -28,9 +29,9 @@ export default function ComparisonsPage() {
   const total = weekTotal(openWeek);
   const prev = getPreviousWeek(weeks, openWeek);
   const record = getRecordWeek(weeks, openWeek);
-  const activeDays = getActiveEnteredDays(openWeek);
-  const prevSP = prev ? samePointTotal(prev, activeDays) : 0;
-  const recSP = record ? samePointTotal(record, activeDays) : 0;
+  const loggedDays = getLoggedDays(openWeek);
+  const prevSP = prev ? samePointTotal(prev, loggedDays) : 0;
+  const recSP = record ? samePointTotal(record, loggedDays) : 0;
   const recFull = record ? weekTotal(record) : 0;
   const diffPrev = prev ? total - prevSP : 0;
   const diffRec = record ? total - recSP : 0;
@@ -43,7 +44,7 @@ export default function ComparisonsPage() {
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold">Comparisons</h1>
       <p className="text-sm text-muted-foreground">
-        Same-point comparison ({activeDays.length} day{activeDays.length !== 1 ? "s" : ""} entered)
+        Same-point comparison ({loggedDays.length} logged day{loggedDays.length !== 1 ? "s" : ""})
       </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -123,9 +124,9 @@ export default function ComparisonsPage() {
           </thead>
           <tbody>
             {apps.map((app) => {
-              const cur = samePointAppTotal(openWeek, app, activeDays);
-              const pv = prev ? samePointAppTotal(prev, app, activeDays) : 0;
-              const rc = record ? samePointAppTotal(record, app, activeDays) : 0;
+              const cur = samePointAppTotal(openWeek, app, loggedDays);
+              const pv = prev ? samePointAppTotal(prev, app, loggedDays) : 0;
+              const rc = record ? samePointAppTotal(record, app, loggedDays) : 0;
               return (
                 <tr key={app} className="border-t border-border">
                   <td className="px-3 py-2 font-medium">{app}</td>

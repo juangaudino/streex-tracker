@@ -110,6 +110,16 @@ export function getActiveEnteredDays(w: WeekRecord): number[] {
   return indices;
 }
 
+export function getLoggedDays(w: WeekRecord): number[] {
+  const indices: number[] = [];
+  w.entries.forEach((d, i) => {
+    // Backward compat: if logged is undefined, infer from dayTotal > 0
+    const isLogged = d.logged !== undefined ? d.logged : dayTotal(d) > 0;
+    if (isLogged) indices.push(i);
+  });
+  return indices;
+}
+
 export function samePointTotal(w: WeekRecord, dayIndices: number[]): number {
   return dayIndices.reduce((s, i) => {
     if (w.entries[i]) return s + dayTotal(w.entries[i]);

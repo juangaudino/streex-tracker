@@ -13,6 +13,7 @@ import AchievementsPage from "./pages/AchievementsPage";
 import AuthPage from "./pages/AuthPage";
 import { useAuth } from "./hooks/useAuth";
 import { useWeekStore } from "./hooks/useWeekStore";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 const App = () => {
   const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
@@ -37,23 +38,25 @@ const App = () => {
   }
 
   return (
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route element={<AppShell store={store} onSignOut={signOut} />}>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/entry" element={<WeeklyEntryPage />} />
-            <Route path="/compare" element={<ComparisonsPage />} />
-            <Route path="/history" element={<HistoryPage />} />
-            <Route path="/achievements" element={<AchievementsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route element={<AppShell store={store} onSignOut={signOut} />}>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/entry" element={<WeeklyEntryPage />} />
+              <Route path="/compare" element={<ComparisonsPage />} />
+              <Route path="/history" element={<HistoryPage />} />
+              <Route path="/achievements" element={<AchievementsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   );
 };
 

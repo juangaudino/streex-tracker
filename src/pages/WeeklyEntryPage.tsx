@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,12 +26,16 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
+import MobileWeekOverview from "@/components/MobileWeekOverview";
+import MobileDayDetail from "@/components/MobileDayDetail";
 
 export default function WeeklyEntryPage() {
   const { openWeek, weeks, settings, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [selectedDayIdx, setSelectedDayIdx] = useState<number | null>(null);
   const [justClosed, setJustClosed] = useState(false);
   const [editWeek, setEditWeek] = useState(openWeek);
   const [goalInput, setGoalInput] = useState(
@@ -295,6 +300,25 @@ export default function WeeklyEntryPage() {
   const wt = weekTotal(editWeek);
   const isClosedView = editWeek.status === "closed" && justClosed;
 
+  // Mobile day detail view
+  if (isMobile && selectedDayIdx !== null && editWeek) {
+    return (
+      <MobileDayDetail
+        day={editWeek.entries[selectedDayIdx]}
+        dayIdx={selectedDayIdx}
+        apps={apps}
+        currencySymbol={sym}
+        onBack={() => setSelectedDayIdx(null)}
+        onUpdate={handleCellChange}
+        onLoggedToggle={handleLoggedToggle}
+        onSave={() => {
+          handleSave();
+          setSelectedDayIdx(null);
+        }}
+      />
+    );
+  }
+
   if (isClosedView) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
@@ -321,7 +345,7 @@ export default function WeeklyEntryPage() {
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold">Weekly Entry</h1>
+          <h1 className="text-xl md:text-2xl font-bold">Weekly Entry</h1>
           <div className="flex items-center gap-2 mt-1">
             <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
               <PopoverTrigger asChild>
@@ -369,88 +393,116 @@ export default function WeeklyEntryPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-secondary/50">
-              <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground sticky left-0 bg-secondary/50 z-10 min-w-[90px]">
-                Day
-              </th>
-              <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center min-w-[50px]">
-                Log
-              </th>
-              {apps.map((app) => (
-                <th
-                  key={app}
-                  className="text-right px-2 py-2.5 font-semibold text-muted-foreground whitespace-nowrap min-w-[80px]"
-                >
-                  {app}
+      {/* Mobile: Week Overview with tappable days */}
+      {isMobile ? (
+        <MobileWeekOverview
+          week={editWeek}
+          currencySymbol={sym}
+          onDayTap={setSelectedDayIdx}
+        />
+      ) : (
+        /* Desktop Table */
+        <div className="overflow-x-auto rounded-xl border border-border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-secondary/50">
+                <th className="text-left px-4 py-3 font-semibold text-muted-foreground sticky left-0 bg-secondary/50 z-10 min-w-[100px]">
+                  Day
                 </th>
-              ))}
-              <th className="text-right px-3 py-2.5 font-bold text-foreground min-w-[90px]">
-                Total
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {editWeek.entries.map((day, dayIdx) => {
-              const dt = dayTotal(day);
-              const isLogged = day.logged !== undefined ? day.logged : dt > 0;
-              return (
-                <tr key={day.dayName} className="border-t border-border hover:bg-accent/30">
-                  <td className="px-3 py-2 font-medium sticky left-0 bg-card z-10">
-                    <div>{day.dayName.slice(0, 3)}</div>
-                    <div className="text-[10px] text-muted-foreground">{day.date}</div>
-                  </td>
-                  <td className="px-2 py-2 text-center">
-                    <Checkbox
-                      checked={isLogged}
-                      onCheckedChange={(checked) => handleLoggedToggle(dayIdx, !!checked)}
-                      disabled={dt > 0}
-                      className="mx-auto"
-                    />
-                  </td>
-                  {apps.map((app) => (
-                    <td key={app} className="px-1 py-1">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className="w-full text-right font-mono text-sm h-8 bg-transparent border-border/50"
-                        value={day.apps[app] || ""}
-                        placeholder="0"
-                        onChange={(e) =>
-                          handleCellChange(dayIdx, app, e.target.value)
-                        }
+                <th className="px-3 py-3 font-semibold text-muted-foreground text-center min-w-[50px]">
+                  Log
+                </th>
+                {apps.map((app) => (
+                  <th
+                    key={app}
+                    className="text-right px-3 py-3 font-semibold text-muted-foreground whitespace-nowrap min-w-[90px]"
+                  >
+                    {app}
+                  </th>
+                ))}
+                <th className="text-right px-4 py-3 font-bold text-foreground min-w-[100px]">
+                  Total
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {editWeek.entries.map((day, dayIdx) => {
+                const dt = dayTotal(day);
+                const isLogged = day.logged !== undefined ? day.logged : dt > 0;
+                const isActive = dt > 0;
+                return (
+                  <tr
+                    key={day.dayName}
+                    className={cn(
+                      "border-t border-border transition-colors",
+                      isLogged ? "bg-card" : "bg-card/50",
+                      "hover:bg-accent/30"
+                    )}
+                  >
+                    <td className={cn(
+                      "px-4 py-3 font-medium sticky left-0 z-10",
+                      isLogged ? "bg-card" : "bg-card/50"
+                    )}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{day.dayName.slice(0, 3)}</span>
+                        {isActive && (
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-success" />
+                        )}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-mono">{day.date}</div>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <Checkbox
+                        checked={isLogged}
+                        onCheckedChange={(checked) => handleLoggedToggle(dayIdx, !!checked)}
+                        disabled={dt > 0}
+                        className="mx-auto"
                       />
                     </td>
-                  ))}
-                  <td className="px-3 py-2 text-right font-mono font-bold">
-                    {formatCurrency(dt, sym)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr className="border-t-2 border-border bg-secondary/30">
-              <td className="px-3 py-2.5 font-bold sticky left-0 bg-secondary/30 z-10">
-                Total
-              </td>
-              <td></td>
-              {apps.map((app) => (
-                <td key={app} className="px-2 py-2.5 text-right font-mono font-semibold">
-                  {formatCurrency(appTotal(editWeek, app), sym)}
+                    {apps.map((app) => (
+                      <td key={app} className="px-2 py-2">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          className="w-full text-right font-mono text-sm h-9 bg-transparent border-border/50 focus:border-primary"
+                          value={day.apps[app] || ""}
+                          placeholder="0.00"
+                          onChange={(e) =>
+                            handleCellChange(dayIdx, app, e.target.value)
+                          }
+                        />
+                      </td>
+                    ))}
+                    <td className={cn(
+                      "px-4 py-3 text-right font-mono font-bold",
+                      isActive ? "text-foreground" : "text-muted-foreground"
+                    )}>
+                      {formatCurrency(dt, sym)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-border bg-secondary/30">
+                <td className="px-4 py-3 font-bold sticky left-0 bg-secondary/30 z-10">
+                  Total
                 </td>
-              ))}
-              <td className="px-3 py-2.5 text-right font-mono font-bold text-primary text-base">
-                {formatCurrency(wt, sym)}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+                <td></td>
+                {apps.map((app) => (
+                  <td key={app} className="px-3 py-3 text-right font-mono font-semibold">
+                    {formatCurrency(appTotal(editWeek, app), sym)}
+                  </td>
+                ))}
+                <td className="px-4 py-3 text-right font-mono font-bold text-primary text-lg">
+                  {formatCurrency(wt, sym)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2">

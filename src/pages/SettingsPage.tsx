@@ -6,10 +6,13 @@ import { DEFAULT_APPS } from "@/lib/types";
 import type { StoreContext } from "./types";
 import { useToast } from "@/hooks/use-toast";
 import { Save, Plus, X } from "lucide-react";
+import { useTheme, ThemeMode, ClassicVariant } from "@/contexts/ThemeContext";
+import { Palette, Sun, Moon, Monitor, Gamepad2 } from "lucide-react";
 
 export default function SettingsPage() {
   const { settings, updateSettings } = useOutletContext<StoreContext>();
   const { toast } = useToast();
+  const { mode, classicVariant, setMode, setClassicVariant } = useTheme();
   const [goal, setGoal] = useState(settings.defaultWeeklyGoal.toString());
   const [symbol, setSymbol] = useState(settings.currencySymbol);
   const [apps, setApps] = useState([...settings.activeApps]);
@@ -36,6 +39,53 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-bold">Settings</h1>
 
       <div className="space-y-4">
+        {/* Theme */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Theme
+          </label>
+          <div className="flex gap-2">
+            <Button
+              variant={mode === "classic" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMode("classic")}
+              className="flex-1"
+            >
+              Classic
+            </Button>
+            <Button
+              variant={mode === "rpg" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMode("rpg")}
+              className="flex-1"
+            >
+              <Gamepad2 className="h-4 w-4 mr-1" />
+              RPG
+            </Button>
+          </div>
+          {mode === "classic" && (
+            <div className="flex gap-2">
+              {([
+                { v: "system" as ClassicVariant, icon: Monitor, label: "System" },
+                { v: "light" as ClassicVariant, icon: Sun, label: "Light" },
+                { v: "dark" as ClassicVariant, icon: Moon, label: "Dark" },
+              ] as const).map(({ v, icon: Icon, label }) => (
+                <Button
+                  key={v}
+                  variant={classicVariant === v ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setClassicVariant(v)}
+                  className="flex-1"
+                >
+                  <Icon className="h-3.5 w-3.5 mr-1" />
+                  {label}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-muted-foreground">
             Default Weekly Goal

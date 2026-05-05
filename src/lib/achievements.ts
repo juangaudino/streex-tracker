@@ -157,7 +157,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     check: (ws) => {
       let count = 0;
       for (const w of ws) {
-        if (w.weeklyGoal <= 0) return false;
+        if (w.weeklyGoal <= 0) continue;
         const totalBefore = w.entries.slice(0, 6).reduce((s, e) => s + dayTotal(e), 0);
         const totalAll = totalBefore + dayTotal(w.entries[6]);
         if (totalBefore < w.weeklyGoal && totalAll >= w.weeklyGoal) count++;

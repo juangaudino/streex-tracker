@@ -24,6 +24,7 @@ export interface DayEntry {
   dayName: DayName;
   date: string;
   apps: Record<string, number>;
+  logged?: boolean;
 }
 
 export interface WeekRecord {

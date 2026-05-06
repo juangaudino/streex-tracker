@@ -1,5 +1,20 @@
 import { AchievementState } from "@/lib/achievements";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/contexts/ThemeContext";
+
+const RARITY_LABELS: Record<string, string> = {
+  common: "Common",
+  rare: "Rare",
+  epic: "Epic",
+  legendary: "Legendary",
+};
+
+const RARITY_COLORS: Record<string, string> = {
+  common: "text-blue-400",
+  rare: "text-cyan-400",
+  epic: "text-beast-purple",
+  legendary: "text-gold",
+};
 
 interface Props {
   achievement: AchievementState;
@@ -8,11 +23,16 @@ interface Props {
 
 export default function AchievementCard({ achievement: a, compact }: Props) {
   const pct = a.max > 0 ? (a.progress / a.max) * 100 : 0;
+  const { mode } = useTheme();
+  const isRpg = mode === "rpg";
+  const rarity = a.rarity || "common";
+  const rarityClass = isRpg ? `achievement-${rarity}` : "";
 
   return (
     <div
       className={cn(
         "rounded-xl border p-4 transition-all",
+        rarityClass,
         a.unlocked
           ? "bg-card border-gold/30 shadow-[0_0_12px_-4px_hsl(var(--gold)/0.2)]"
           : "bg-card border-border opacity-70"
@@ -26,6 +46,11 @@ export default function AchievementCard({ achievement: a, compact }: Props) {
               {a.title}
             </span>
             {a.unlocked && <span className="text-[10px] font-bold text-gold bg-gold/10 px-1.5 py-0.5 rounded-full">UNLOCKED</span>}
+            {isRpg && (
+              <span className={cn("text-[9px] font-bold uppercase tracking-wider", RARITY_COLORS[rarity])}>
+                {RARITY_LABELS[rarity]}
+              </span>
+            )}
           </div>
           {!compact && <p className="text-xs text-muted-foreground mt-0.5">{a.description}</p>}
           {a.unlocked && a.count > 0 && (

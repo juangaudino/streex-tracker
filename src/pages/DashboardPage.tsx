@@ -3,6 +3,15 @@ import { useNavigate } from "react-router-dom";
 import StatCard from "@/components/StatCard";
 import Milestones from "@/components/Milestones";
 import AchievementsPreview from "@/components/AchievementsPreview";
+import QuickEntryWidget from "@/components/QuickEntryWidget";
+import ActiveMomentum from "@/components/ActiveMomentum";
+import {
+  getDayOfWeekRecord,
+  getSmartHeader,
+  getWeeklyRecordChase,
+  getDailyRecordChase,
+  getPaceLabel,
+} from "@/components/ActiveMomentum";
 import { useAchievements } from "@/hooks/useAchievements";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -16,22 +25,15 @@ import {
   getActiveEnteredDays,
   getLoggedDays,
   samePointTotal,
+  dayTotal,
 } from "@/lib/store";
 import type { StoreContext } from "./types";
 import { CalendarPlus, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
-function progressLabel(pct: number) {
-  if (pct >= 120) return { text: "Beast Mode 🔥", variant: "purple" as const };
-  if (pct >= 100) return { text: "Goal Reached ✅", variant: "success" as const };
-  if (pct >= 75) return { text: "On Track 💪", variant: "primary" as const };
-  if (pct >= 40) return { text: "Building Momentum ⚡", variant: "warning" as const };
-  return { text: "Behind Pace — Keep Pushing", variant: "default" as const };
-}
-
 export default function DashboardPage() {
-  const { openWeek, weeks, settings, hasLocalData, importLocalData } = useOutletContext<StoreContext>();
+  const { openWeek, weeks, settings, hasLocalData, importLocalData, updateWeek } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [importing, setImporting] = useState(false);
@@ -88,7 +90,22 @@ export default function DashboardPage() {
   const loggedDays = getLoggedDays(openWeek);
   const prevSP = prev ? samePointTotal(prev, loggedDays) : 0;
   const recSP = record ? samePointTotal(record, loggedDays) : 0;
-  const { text: statusText, variant: statusVariant } = progressLabel(pct);
+
+  // Smart systems
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const todayName = dayNames[now.getDay()];
+  const todayEntry = openWeek.entries.find((d) => d.date === todayStr) ||
+    openWeek.entries.find((d) => d.dayName === todayName) || null;
+  const todayTotal = todayEntry ? dayTotal(todayEntry) : 0;
+  const dayRec = getDayOfWeekRecord(weeks, todayName);
+  const smartHeader = getSmartHeader(weeks, openWeek, todayEntry, dayRec);
+  const weeklyChase = getWeeklyRecordChase(weeks, openWeek, sym);
+  const dailyChase = getDailyRecordChase(todayTotal, dayRec.record, todayName, sym);
+  const pace = getPaceLabel(todayTotal, dayRec.avg, pct);
+
+  const statusVariant = pct >= 120 ? "purple" as const : pct >= 100 ? "success" as const : pct >= 75 ? "primary" as const : pct >= 40 ? "warning" as const : "default" as const;
 
   const barColor =
     pct >= 120
@@ -103,28 +120,80 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+      {/* Smart Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-2xl font-bold">{smartHeader}</h1>
           <p className="text-sm text-muted-foreground">
             {openWeek.startDate} → {openWeek.endDate}
           </p>
         </div>
-        <span
-          className={`text-xs font-bold px-3 py-1.5 rounded-full ${
-            statusVariant === "purple"
-              ? "bg-beast-purple/15 text-beast-purple"
-              : statusVariant === "success"
-              ? "bg-success/15 text-success"
-              : statusVariant === "primary"
-              ? "bg-primary/15 text-primary"
-              : statusVariant === "warning"
-              ? "bg-warning/15 text-warning"
-              : "bg-muted text-muted-foreground"
-          }`}
-        >
-          {statusText}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          {pace && (
+            <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+              pace.variant === "fire" ? "bg-warning/15 text-warning"
+              : pace.variant === "goal" ? "bg-success/15 text-success"
+              : pace.variant === "streak" ? "bg-beast-purple/15 text-beast-purple"
+              : "bg-primary/15 text-primary"
+            }`}>
+              {pace.text}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Record Chase Alerts */}
+      {(dailyChase || weeklyChase) && (
+        <div className="space-y-2">
+          {dailyChase && (
+            <div className="bg-gold/10 border border-gold/30 rounded-xl px-4 py-2.5 text-sm font-medium text-gold">
+              🏆 {dailyChase}
+            </div>
+          )}
+          {weeklyChase && (
+            <div className="bg-primary/10 border border-primary/30 rounded-xl px-4 py-2.5 text-sm font-medium text-primary">
+              🎯 {weeklyChase}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Active Momentum */}
+      <ActiveMomentum weeks={weeks} openWeek={openWeek} currencySymbol={sym} />
+
+      {/* Daily Record & Quick Entry */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <QuickEntryWidget
+          openWeek={openWeek}
+          apps={settings.activeApps}
+          currencySymbol={sym}
+          onSave={(updated) => updateWeek(updated)}
+        />
+        {todayEntry && dayRec.count > 1 && (
+          <div className="bg-card rounded-xl border border-border p-4 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Best {todayName} Ever
+            </p>
+            <p className="text-xl font-bold font-mono text-gold">
+              {formatCurrency(dayRec.record, sym)}
+            </p>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Today</span>
+              <span className="font-mono font-bold">{formatCurrency(todayTotal, sym)}</span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gold transition-all duration-500"
+                style={{ width: `${Math.min(dayRec.record > 0 ? (todayTotal / dayRec.record) * 100 : 0, 100)}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {dayRec.record > 0
+                ? `${((todayTotal / dayRec.record) * 100).toFixed(0)}% reached${todayTotal < dayRec.record ? ` · ${formatCurrency(dayRec.record - todayTotal, sym)} away` : ""}`
+                : ""}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Progress bar */}

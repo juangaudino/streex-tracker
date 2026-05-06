@@ -12,7 +12,7 @@ export default function AchievementsPage() {
   const { achievements, loading } = useAchievements(user, weeks);
 
   const unlocked = achievements.filter(a => a.unlocked).length;
-  const categories = ["earnings", "consistency", "highday", "goals", "special"] as const;
+  const categories = ["earnings", "consistency", "highday", "goals", "special", "growth"] as const;
 
   if (loading) {
     return (

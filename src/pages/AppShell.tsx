@@ -7,7 +7,10 @@ import {
   Settings,
   LogOut,
   Trophy,
+  User,
 } from "lucide-react";
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import type { StoreContext } from "./types";
 
 const navItems = [
@@ -25,11 +28,41 @@ interface AppShellProps {
 }
 
 export default function AppShell({ store, onSignOut }: AppShellProps) {  
+  const { user } = useAuth();
+  const [mobileMenu, setMobileMenu] = useState(false);
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border px-4 py-3 flex items-center gap-3">
         <span className="text-xl font-bold tracking-tight text-primary">Streex</span>
         <span className="text-sm text-muted-foreground hidden sm:inline">Earnings Tracker</span>
+        {/* Mobile user menu button */}
+        <div className="md:hidden ml-auto relative">
+          <button
+            onClick={() => setMobileMenu((v) => !v)}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            aria-label="User menu"
+          >
+            <User className="h-5 w-5" />
+          </button>
+          {mobileMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setMobileMenu(false)} />
+              <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-xl shadow-lg p-3 min-w-[200px] space-y-2">
+                {user?.email && (
+                  <p className="text-xs text-muted-foreground truncate px-1">{user.email}</p>
+                )}
+                <button
+                  onClick={() => { setMobileMenu(false); onSignOut(); }}
+                  className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </button>
+              </div>
+            </>
+          )}
+        </div>
         <nav className="hidden md:flex ml-auto gap-1 items-center">
           {navItems.map((item) => (
             <NavLink

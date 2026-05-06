@@ -152,30 +152,47 @@
   }
 }
 
-/* ─── RPG Mode Visual Layer ─── */
+/* ══════════════════════════════════════════════════════════════
+   RPG MODE — Futuristic Tactical HUD
+   ══════════════════════════════════════════════════════════════ */
 
-/* Background: gradient + noise texture */
+/* ─── Background System: layered gradient + grid + noise ─── */
 .rpg body,
 .rpg {
   background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, hsl(260 30% 12% / 0.6) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 50% at 80% 100%, hsl(200 40% 8% / 0.5) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 40% at 10% 80%, hsl(280 30% 10% / 0.4) 0%, transparent 50%),
-    hsl(var(--background));
+    radial-gradient(ellipse 120% 80% at 50% -20%, hsl(250 40% 14% / 0.7) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 100% 80%, hsl(220 50% 8% / 0.6) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 0% 60%, hsl(270 35% 10% / 0.5) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, hsl(240 25% 6%) 0%, hsl(240 20% 3%) 100%);
   background-attachment: fixed;
 }
 
-/* Noise overlay via pseudo-element on the app root */
+/* Noise texture overlay */
 .rpg #root::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 200px 200px;
 }
+
+/* Subtle grid overlay */
+.rpg #root::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image:
+    linear-gradient(hsl(var(--rpg-glow) / 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--rpg-glow) / 0.3) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
 .rpg #root {
   position: relative;
   z-index: 0;
@@ -185,108 +202,297 @@
   z-index: 1;
 }
 
-/* Cards: gradient bg + glow border */
+/* ─── HUD Cards: holographic tactical panels ─── */
 .rpg .bg-card {
-  background: linear-gradient(
-    145deg,
-    hsl(240 18% 10%) 0%,
-    hsl(240 18% 8%) 50%,
-    hsl(250 20% 9%) 100%
-  );
-  border-color: hsl(var(--rpg-glow) / 0.12);
+  background:
+    linear-gradient(
+      145deg,
+      hsl(240 20% 11% / 0.85) 0%,
+      hsl(245 22% 9% / 0.9) 50%,
+      hsl(250 18% 8% / 0.95) 100%
+    );
+  border-color: hsl(var(--rpg-glow) / 0.15);
   box-shadow:
-    0 0 1px hsl(var(--rpg-glow) / 0.15),
-    0 1px 3px hsl(240 20% 2% / 0.4),
-    inset 0 1px 0 hsl(var(--rpg-glow) / 0.04);
+    0 0 1px hsl(var(--rpg-glow) / 0.2),
+    0 0 12px hsl(var(--rpg-glow) / 0.06),
+    0 4px 16px hsl(240 30% 2% / 0.5),
+    inset 0 1px 0 hsl(var(--rpg-glow) / 0.08),
+    inset 0 0 20px hsl(var(--rpg-glow) / 0.02);
+  backdrop-filter: blur(8px);
 }
 
-/* Key numbers glow */
+/* Card top-edge highlight line */
+.rpg .rounded-xl.border {
+  position: relative;
+}
+.rpg .rounded-xl.border::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--rpg-glow) / 0.3) 30%,
+    hsl(var(--rpg-glow) / 0.5) 50%,
+    hsl(var(--rpg-glow) / 0.3) 70%,
+    transparent 100%
+  );
+  border-radius: 1px;
+  z-index: 1;
+}
+
+/* ─── Visual Hierarchy: key numbers dominate ─── */
 .rpg .text-primary {
-  text-shadow: 0 0 12px hsl(var(--primary) / 0.4);
+  text-shadow:
+    0 0 8px hsl(var(--primary) / 0.5),
+    0 0 20px hsl(var(--primary) / 0.2);
 }
 .rpg .text-success {
-  text-shadow: 0 0 10px hsl(var(--success) / 0.35);
+  text-shadow:
+    0 0 8px hsl(var(--success) / 0.5),
+    0 0 18px hsl(var(--success) / 0.15);
 }
 .rpg .text-warning {
-  text-shadow: 0 0 10px hsl(var(--warning) / 0.35);
+  text-shadow:
+    0 0 8px hsl(var(--warning) / 0.5),
+    0 0 18px hsl(var(--warning) / 0.15);
 }
 .rpg .text-gold {
-  text-shadow: 0 0 12px hsl(var(--gold) / 0.4);
+  text-shadow:
+    0 0 10px hsl(var(--gold) / 0.5),
+    0 0 24px hsl(var(--gold) / 0.2);
 }
 .rpg .text-beast-purple {
-  text-shadow: 0 0 12px hsl(var(--purple) / 0.4);
+  text-shadow:
+    0 0 10px hsl(var(--purple) / 0.5),
+    0 0 24px hsl(var(--purple) / 0.2);
 }
 
-/* Progress bars glow */
+/* Large stat numbers: stronger weight */
+.rpg .text-2xl.font-bold,
+.rpg .text-3xl.font-bold {
+  letter-spacing: -0.02em;
+}
+
+/* Dimmer secondary text for extreme hierarchy */
+.rpg .text-muted-foreground {
+  color: hsl(210 15% 36%);
+  letter-spacing: 0.01em;
+}
+.rpg .uppercase.tracking-wider {
+  letter-spacing: 0.12em;
+  font-size: 0.65rem;
+}
+
+/* ─── Progress bars: neon glow ─── */
 .rpg .bg-primary:not(button):not(a) {
-  box-shadow: 0 0 8px hsl(var(--primary) / 0.4);
+  box-shadow:
+    0 0 6px hsl(var(--primary) / 0.5),
+    0 0 16px hsl(var(--primary) / 0.2);
 }
 .rpg .bg-success:not(button):not(a) {
-  box-shadow: 0 0 8px hsl(var(--success) / 0.35);
+  box-shadow:
+    0 0 6px hsl(var(--success) / 0.45),
+    0 0 14px hsl(var(--success) / 0.15);
 }
 .rpg .bg-warning:not(button):not(a) {
-  box-shadow: 0 0 8px hsl(var(--warning) / 0.3);
-}
-
-/* Dimmer secondary text for stronger hierarchy */
-.rpg .text-muted-foreground {
-  color: hsl(200 15% 42%);
-}
-
-/* Status variant cards */
-.rpg .border-success\/30 {
-  border-color: hsl(var(--success) / 0.25);
   box-shadow:
-    0 0 10px hsl(var(--success) / 0.08),
-    inset 0 1px 0 hsl(var(--success) / 0.05);
+    0 0 6px hsl(var(--warning) / 0.4),
+    0 0 14px hsl(var(--warning) / 0.15);
+}
+.rpg .bg-gold:not(button):not(a) {
+  box-shadow:
+    0 0 6px hsl(var(--gold) / 0.5),
+    0 0 16px hsl(var(--gold) / 0.2);
+}
+
+/* ─── Status variant cards with glow states ─── */
+.rpg .border-success\/30 {
+  border-color: hsl(var(--success) / 0.2);
+  box-shadow:
+    0 0 12px hsl(var(--success) / 0.08),
+    0 0 1px hsl(var(--success) / 0.25),
+    inset 0 0 16px hsl(var(--success) / 0.03);
 }
 .rpg .border-warning\/30 {
-  border-color: hsl(var(--warning) / 0.25);
+  border-color: hsl(var(--warning) / 0.2);
   box-shadow:
-    0 0 10px hsl(var(--warning) / 0.08),
-    inset 0 1px 0 hsl(var(--warning) / 0.05);
+    0 0 12px hsl(var(--warning) / 0.08),
+    0 0 1px hsl(var(--warning) / 0.25),
+    inset 0 0 16px hsl(var(--warning) / 0.03);
 }
 .rpg .border-gold\/30,
 .rpg .border-gold\/40 {
-  border-color: hsl(var(--gold) / 0.3);
+  border-color: hsl(var(--gold) / 0.25);
   box-shadow:
-    0 0 12px hsl(var(--gold) / 0.1),
-    inset 0 1px 0 hsl(var(--gold) / 0.06);
+    0 0 14px hsl(var(--gold) / 0.1),
+    0 0 1px hsl(var(--gold) / 0.3),
+    inset 0 0 20px hsl(var(--gold) / 0.04);
 }
 .rpg .border-beast-purple\/30,
 .rpg .border-beast-purple\/40 {
+  border-color: hsl(var(--purple) / 0.25);
+  box-shadow:
+    0 0 14px hsl(var(--purple) / 0.1),
+    0 0 1px hsl(var(--purple) / 0.3),
+    inset 0 0 20px hsl(var(--purple) / 0.04);
+}
+.rpg .border-primary\/30 {
+  border-color: hsl(var(--primary) / 0.2);
+  box-shadow:
+    0 0 12px hsl(var(--primary) / 0.08),
+    0 0 1px hsl(var(--primary) / 0.25),
+    inset 0 0 16px hsl(var(--primary) / 0.03);
+}
+
+/* ─── Header: tactical HUD status bar ─── */
+.rpg header {
+  background:
+    linear-gradient(
+      180deg,
+      hsl(240 22% 8% / 0.95) 0%,
+      hsl(240 20% 5% / 0.98) 100%
+    );
+  border-color: hsl(var(--rpg-glow) / 0.12);
+  box-shadow:
+    0 1px 0 hsl(var(--rpg-glow) / 0.1),
+    0 4px 20px hsl(240 30% 2% / 0.6);
+  backdrop-filter: blur(12px);
+}
+
+/* Header brand text gets glow */
+.rpg header .text-primary {
+  text-shadow:
+    0 0 10px hsl(var(--primary) / 0.6),
+    0 0 30px hsl(var(--primary) / 0.2);
+  letter-spacing: 0.04em;
+}
+
+/* ─── Bottom nav: tactical bar ─── */
+.rpg nav.fixed {
+  background:
+    linear-gradient(
+      0deg,
+      hsl(240 22% 5% / 0.97) 0%,
+      hsl(240 20% 7% / 0.95) 100%
+    );
+  border-color: hsl(var(--rpg-glow) / 0.1);
+  box-shadow:
+    0 -1px 0 hsl(var(--rpg-glow) / 0.08),
+    0 -4px 20px hsl(240 30% 2% / 0.5);
+  backdrop-filter: blur(12px);
+}
+
+/* Active nav item glow */
+.rpg .text-primary svg {
+  filter: drop-shadow(0 0 6px hsl(var(--primary) / 0.6));
+}
+
+/* ─── Buttons ─── */
+.rpg button.bg-primary:hover {
+  box-shadow:
+    0 0 12px hsl(var(--primary) / 0.4),
+    0 0 30px hsl(var(--primary) / 0.15);
+}
+.rpg button.bg-primary {
+  border: 1px solid hsl(var(--primary) / 0.3);
+  box-shadow:
+    0 0 6px hsl(var(--primary) / 0.15),
+    inset 0 1px 0 hsl(0 0% 100% / 0.05);
+}
+
+/* ─── Inputs: HUD-style ─── */
+.rpg input,
+.rpg select {
+  border-color: hsl(var(--rpg-glow) / 0.1);
+  background: hsl(240 20% 6% / 0.8);
+}
+.rpg input:focus,
+.rpg select:focus {
+  border-color: hsl(var(--rpg-glow) / 0.3);
+  box-shadow: 0 0 8px hsl(var(--rpg-glow) / 0.15);
+}
+
+/* ─── Achievement Rarity System ─── */
+.rpg .achievement-common {
+  border-color: hsl(210 60% 45% / 0.25);
+  box-shadow:
+    0 0 8px hsl(210 60% 45% / 0.08),
+    inset 0 0 12px hsl(210 60% 45% / 0.03);
+}
+.rpg .achievement-rare {
+  border-color: hsl(185 80% 50% / 0.3);
+  box-shadow:
+    0 0 12px hsl(185 80% 50% / 0.1),
+    0 0 1px hsl(185 80% 50% / 0.3),
+    inset 0 0 16px hsl(185 80% 50% / 0.04);
+}
+.rpg .achievement-rare .text-gold,
+.rpg .achievement-rare .font-semibold {
+  color: hsl(185 80% 55%);
+  text-shadow: 0 0 10px hsl(185 80% 50% / 0.4);
+}
+.rpg .achievement-epic {
   border-color: hsl(var(--purple) / 0.3);
   box-shadow:
-    0 0 12px hsl(var(--purple) / 0.1),
-    inset 0 1px 0 hsl(var(--purple) / 0.06);
+    0 0 14px hsl(var(--purple) / 0.12),
+    0 0 1px hsl(var(--purple) / 0.35),
+    inset 0 0 20px hsl(var(--purple) / 0.05);
+}
+.rpg .achievement-epic .text-gold,
+.rpg .achievement-epic .font-semibold {
+  color: hsl(var(--purple));
+  text-shadow: 0 0 12px hsl(var(--purple) / 0.5);
+}
+.rpg .achievement-legendary {
+  border-color: hsl(var(--gold) / 0.35);
+  box-shadow:
+    0 0 16px hsl(var(--gold) / 0.15),
+    0 0 2px hsl(var(--gold) / 0.4),
+    inset 0 0 24px hsl(var(--gold) / 0.06);
+}
+.rpg .achievement-legendary .text-gold,
+.rpg .achievement-legendary .font-semibold {
+  color: hsl(var(--gold));
+  text-shadow: 0 0 14px hsl(var(--gold) / 0.5);
 }
 
-/* Header / nav bar in RPG */
-.rpg header {
-  background: linear-gradient(
-    180deg,
-    hsl(240 18% 7%) 0%,
-    hsl(240 18% 5%) 100%
-  );
-  border-color: hsl(var(--rpg-glow) / 0.1);
+/* Achievement unlocked badge in RPG */
+.rpg .achievement-legendary .bg-gold\/10 {
+  background: hsl(var(--gold) / 0.15);
+  box-shadow: 0 0 8px hsl(var(--gold) / 0.2);
+}
+.rpg .achievement-epic .bg-gold\/10 {
+  background: hsl(var(--purple) / 0.15);
+  box-shadow: 0 0 8px hsl(var(--purple) / 0.2);
 }
 
-/* Bottom nav in RPG */
-.rpg nav.fixed {
-  background: linear-gradient(
-    0deg,
-    hsl(240 18% 6%) 0%,
-    hsl(240 18% 8%) 100%
-  );
-  border-color: hsl(var(--rpg-glow) / 0.1);
+/* ─── Record Break Moment ─── */
+@keyframes rpg-record-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.rpg .rpg-record-break {
+  animation: rpg-record-pulse 2s ease-in-out 3;
+  text-shadow:
+    0 0 12px hsl(var(--gold) / 0.6),
+    0 0 30px hsl(var(--gold) / 0.25);
 }
 
-/* Active nav item glow in RPG */
-.rpg .text-primary svg {
-  filter: drop-shadow(0 0 4px hsl(var(--primary) / 0.5));
+/* ─── Scrollbar ─── */
+.rpg ::-webkit-scrollbar {
+  width: 4px;
 }
-
-/* Buttons in RPG get subtle glow on hover */
-.rpg button.bg-primary:hover {
-  box-shadow: 0 0 16px hsl(var(--primary) / 0.3);
+.rpg ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.rpg ::-webkit-scrollbar-thumb {
+  background: hsl(var(--rpg-glow) / 0.15);
+  border-radius: 4px;
+}
+.rpg ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--rpg-glow) / 0.25);
 }

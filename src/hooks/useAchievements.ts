@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ACHIEVEMENTS, AchievementState } from "@/lib/achievements";
+import { triggerAchievementToast } from "@/components/AchievementToast";
 import type { WeekRecord } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 
@@ -34,7 +35,22 @@ export function useAchievements(user: User | null, weeks: WeekRecord[]) {
     if (newlyUnlocked.length === 0) return;
     const rows = newlyUnlocked.map(id => ({ user_id: user.id, achievement_id: id }));
     supabase.from("user_achievements").insert(rows).then(({ error }) => {
-      if (!error) reload();
+      if (!error) {
+        // Fire toasts for newly unlocked
+        for (const id of newlyUnlocked) {
+          const def = ACHIEVEMENTS.find(a => a.id === id);
+          if (def) {
+            triggerAchievementToast({
+              id: `toast_${id}_${Date.now()}`,
+              icon: def.icon,
+              title: def.title,
+              description: def.description,
+              rarity: def.rarity || "common",
+            });
+          }
+        }
+        reload();
+      }
     });
   }, [user, weeks, loading, unlockedIds, reload]);
 

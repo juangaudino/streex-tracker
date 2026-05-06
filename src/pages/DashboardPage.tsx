@@ -93,11 +93,10 @@ export default function DashboardPage() {
 
   // Smart systems
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
-  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const todayName = dayNames[now.getDay()];
-  const todayEntry = openWeek.entries.find((d) => d.date === todayStr) ||
-    openWeek.entries.find((d) => d.dayName === todayName) || null;
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+  const todayName = dayNames[now.getDay()] as string;
+  const todayEntry = openWeek.entries.find((d) => d.date === todayStr) ?? null;
   const todayTotal = todayEntry ? dayTotal(todayEntry) : 0;
   const dayRec = getDayOfWeekRecord(weeks, todayName);
   const smartHeader = getSmartHeader(weeks, openWeek, todayEntry, dayRec);

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Zap } from "lucide-react";
+import { Zap, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,7 +23,11 @@ interface QuickEntryWidgetProps {
 
 function getTodayDayIdx(week: WeekRecord): number {
   const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
+  // Use local date parts to avoid timezone offset issues
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, "0");
+  const d = String(today.getDate()).padStart(2, "0");
+  const todayStr = `${y}-${m}-${d}`;
   const idx = week.entries.findIndex((d) => d.date === todayStr);
   if (idx >= 0) return idx;
   // Fallback: match by day name
@@ -39,20 +43,23 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
 
   const [localApps, setLocalApps] = useState<Record<string, number>>({});
   const [localLogged, setLocalLogged] = useState(false);
+  // Store the resolved index at open time so save always targets the same day
+  const [resolvedIdx, setResolvedIdx] = useState(todayIdx);
 
   function handleOpen(isOpen: boolean) {
     if (isOpen && today) {
       setLocalApps({ ...today.apps });
       setLocalLogged(today.logged !== undefined ? today.logged : dayTotal(today) > 0);
+      setResolvedIdx(todayIdx);
     }
     setOpen(isOpen);
   }
 
   function handleSave() {
-    if (!today || todayIdx < 0) return;
+    if (!today || resolvedIdx < 0) return;
     const dt = Object.values(localApps).reduce((s, v) => s + (v || 0), 0);
     const entries = openWeek.entries.map((d, i) => {
-      if (i !== todayIdx) return d;
+      if (i !== resolvedIdx) return d;
       return { ...d, apps: { ...localApps }, logged: dt > 0 ? true : localLogged };
     });
     onSave({ ...openWeek, entries });

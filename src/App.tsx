@@ -11,6 +11,7 @@ import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
 import AchievementsPage from "./pages/AchievementsPage";
 import AuthPage from "./pages/AuthPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import { useAuth } from "./hooks/useAuth";
 import { useWeekStore } from "./hooks/useWeekStore";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -32,7 +33,12 @@ const App = () => {
       <>
         <Toaster />
         <Sonner />
-        <AuthPage signIn={signIn} signUp={signUp} />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="*" element={<AuthPage signIn={signIn} signUp={signUp} />} />
+          </Routes>
+        </BrowserRouter>
       </>
     );
   }

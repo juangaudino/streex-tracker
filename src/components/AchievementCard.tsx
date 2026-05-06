@@ -53,8 +53,11 @@ export default function AchievementCard({ achievement: a, compact }: Props) {
             )}
           </div>
           {!compact && <p className="text-xs text-muted-foreground mt-0.5">{a.description}</p>}
-          {a.unlocked && a.count > 0 && (
+          {a.unlocked && a.repeatable && a.count > 0 && (
             <p className="text-[10px] text-muted-foreground mt-0.5">Achieved {a.count} time{a.count !== 1 ? "s" : ""}</p>
+          )}
+          {a.unlocked && !a.repeatable && (a.firstDate || a.firstRange) && (
+            <p className="text-[10px] text-muted-foreground mt-0.5">Unlocked {a.firstRange || a.firstDate}</p>
           )}
           {!a.unlocked && (
             <div className="mt-2 space-y-1">

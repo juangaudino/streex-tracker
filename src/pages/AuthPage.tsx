@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, UserPlus } from "lucide-react";
+import { LogIn, UserPlus, KeyRound } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthPageProps {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -11,6 +12,7 @@ interface AuthPageProps {
 
 export default function AuthPage({ signIn, signUp }: AuthPageProps) {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgot, setIsForgot] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,8 +20,22 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) return;
+    if (!email.trim() || (!isForgot && !password.trim())) return;
     setLoading(true);
+
+    if (isForgot) {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      setLoading(false);
+      if (error) {
+        toast({ title: "Reset failed", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Password reset email sent. Please check your inbox." });
+        setIsForgot(false);
+      }
+      return;
+    }
 
     const { error } = isSignUp
       ? await signUp(email.trim(), password)
@@ -44,7 +60,7 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-primary tracking-tight">Streex</h1>
           <p className="text-muted-foreground text-sm">
-            {isSignUp ? "Create your account" : "Sign in to track your earnings"}
+            {isForgot ? "Reset your password" : isSignUp ? "Create your account" : "Sign in to track your earnings"}
           </p>
         </div>
 
@@ -58,19 +74,23 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
               required
               autoComplete="email"
             />
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              autoComplete={isSignUp ? "new-password" : "current-password"}
-            />
+            {!isForgot && (
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                autoComplete={isSignUp ? "new-password" : "current-password"}
+              />
+            )}
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {isSignUp ? (
+            {isForgot ? (
+              <><KeyRound className="h-4 w-4 mr-2" /> Send Reset Link</>
+            ) : isSignUp ? (
               <><UserPlus className="h-4 w-4 mr-2" /> Sign Up</>
             ) : (
               <><LogIn className="h-4 w-4 mr-2" /> Sign In</>
@@ -78,16 +98,29 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground">
-          {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-          <button
-            type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-primary hover:underline font-medium"
-          >
-            {isSignUp ? "Sign in" : "Sign up"}
-          </button>
-        </p>
+        <div className="space-y-2 text-center text-sm text-muted-foreground">
+          {!isForgot && (
+            <p>
+              {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+              <button
+                type="button"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-primary hover:underline font-medium"
+              >
+                {isSignUp ? "Sign in" : "Sign up"}
+              </button>
+            </p>
+          )}
+          <p>
+            <button
+              type="button"
+              onClick={() => { setIsForgot(!isForgot); setIsSignUp(false); }}
+              className="text-primary hover:underline font-medium"
+            >
+              {isForgot ? "Back to sign in" : "Forgot password?"}
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );

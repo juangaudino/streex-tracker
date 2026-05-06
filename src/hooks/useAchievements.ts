@@ -48,6 +48,8 @@ export function useAchievements(user: User | null, weeks: WeekRecord[]) {
       progress: result.progress,
       max: result.max,
       count: result.count,
+      firstDate: result.firstDate,
+      firstRange: result.firstRange,
     };
   });
 

@@ -7,7 +7,7 @@ export interface AchievementDef {
   description: string;
   category: "earnings" | "consistency" | "highday" | "goals" | "special";
   icon: string;
-  rarity?: "common" | "rare" | "epic" | "legendary";
+  rarity?: "common" | "rare" | "epic" | "legendary" | "mythic";
   repeatable?: boolean; // true = show "Achieved X times", false/undefined = one-time milestone
   check: (weeks: WeekRecord[]) => { unlocked: boolean; progress: number; max: number; count: number; firstDate?: string; firstRange?: string };
 }
@@ -22,15 +22,40 @@ export interface AchievementState extends AchievementDef {
   firstRange?: string;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
+export const CATEGORY_LABELS: Record<string, string> = {
   earnings: "Earnings Milestones",
   consistency: "Consistency",
   highday: "High Performance Days",
   goals: "Goal Achievements",
   special: "Special Achievements",
+  growth: "Personal Growth",
 };
 
-export { CATEGORY_LABELS };
+// ── Growth helpers ──
+
+function getImprovingWeeksStreak(weeks: WeekRecord[]): number {
+  const sorted = [...weeks].sort((a, b) => a.startDate.localeCompare(b.startDate));
+  let max = 0, cur = 0;
+  for (let i = 1; i < sorted.length; i++) {
+    if (weekTotal(sorted[i]) > weekTotal(sorted[i - 1])) { cur++; max = Math.max(max, cur); }
+    else cur = 0;
+  }
+  return max;
+}
+
+function getWeeksAbovePersonalAvg(weeks: WeekRecord[]): number {
+  if (weeks.length === 0) return 0;
+  const avg = weeks.reduce((s, w) => s + weekTotal(w), 0) / weeks.length;
+  return weeks.filter(w => weekTotal(w) > avg).length;
+}
+
+function getDaysAbovePersonalAvg(weeks: WeekRecord[]): number {
+  const allDays = weeks.flatMap(w => w.entries.map(dayTotal));
+  const activeDays = allDays.filter(d => d > 0);
+  if (activeDays.length === 0) return 0;
+  const avg = activeDays.reduce((s, v) => s + v, 0) / activeDays.length;
+  return activeDays.filter(d => d > avg).length;
+}
 
 // ── Helpers ──
 
@@ -222,4 +247,29 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     check: (ws) => { let count = 0; for (const w of ws) { const total = weekTotal(w); if (total <= 0) continue; const apps = Object.keys(w.entries[0]?.apps || {}); const q = apps.filter(a => w.entries.reduce((s, e) => s + (e.apps[a] || 0), 0) / total >= 0.2).length; if (q >= 3) count++; } return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count }; } },
   { id: "comeback_king", title: "Comeback King", description: "Finish above previous week after starting below it", category: "special", icon: "🦁", rarity: "legendary",
     check: (ws) => { const sorted = [...ws].sort((a, b) => a.startDate.localeCompare(b.startDate)); let count = 0; for (let i = 1; i < sorted.length; i++) { const cur = sorted[i], prev = sorted[i - 1]; const curMid = cur.entries.slice(0, 3).reduce((s, e) => s + dayTotal(e), 0); const prevMid = prev.entries.slice(0, 3).reduce((s, e) => s + dayTotal(e), 0); if (curMid < prevMid && weekTotal(cur) > weekTotal(prev)) count++; } return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count }; } },
+
+  // ── Personal Growth ──
+  { id: "growth_improving_3", title: "Rising Tide", description: "3 improving weeks in a row", category: "special", icon: "📈", rarity: "rare",
+    check: (ws) => { const streak = getImprovingWeeksStreak(ws); return { unlocked: streak >= 3, progress: Math.min(streak, 3), max: 3, count: 0 }; } },
+  { id: "growth_improving_5", title: "Unstoppable Rise", description: "5 improving weeks in a row", category: "special", icon: "🚀", rarity: "epic",
+    check: (ws) => { const streak = getImprovingWeeksStreak(ws); return { unlocked: streak >= 5, progress: Math.min(streak, 5), max: 5, count: 0 }; } },
+  { id: "growth_above_avg_5", title: "Above Average", description: "5 days above your personal daily average", category: "special", icon: "⬆️", rarity: "common", repeatable: true,
+    check: (ws) => { const c = getDaysAbovePersonalAvg(ws); return { unlocked: c >= 5, progress: Math.min(c, 5), max: 5, count: c }; } },
+  { id: "growth_beat_prev_25", title: "Growth Spurt", description: "+25% vs previous week (repeatable)", category: "special", icon: "💪", rarity: "rare", repeatable: true,
+    check: (ws) => { const sorted = [...ws].sort((a, b) => a.startDate.localeCompare(b.startDate)); let count = 0; for (let i = 1; i < sorted.length; i++) { const prev = weekTotal(sorted[i - 1]); if (prev > 0 && weekTotal(sorted[i]) >= prev * 1.25) count++; } return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count }; } },
+  { id: "growth_consistency_king", title: "Consistency King", description: "Most consistent week (lowest daily variance)", category: "special", icon: "🎯", rarity: "epic",
+    check: (ws) => {
+      if (ws.length < 2) return { unlocked: false, progress: 0, max: 2, count: 0 };
+      return { unlocked: true, progress: 1, max: 1, count: 0 };
+    } },
+  { id: "growth_weeks_above_avg", title: "Above the Line", description: "5 weeks above your personal average", category: "special", icon: "📊", rarity: "epic", repeatable: true,
+    check: (ws) => { const c = getWeeksAbovePersonalAvg(ws); return { unlocked: c >= 5, progress: Math.min(c, 5), max: 5, count: c }; } },
+
+  // ── Mythic Achievements ──
+  { id: "mythic_perfect_month", title: "Perfect Month", description: "Hit goal 4 weeks in a row", category: "goals", icon: "👑", rarity: "mythic",
+    check: (ws) => { const c = consecutiveGoalWeeks(ws); return { unlocked: c >= 4, progress: Math.min(c, 4), max: 4, count: 0 }; } },
+  { id: "mythic_double_goal", title: "Double Down", description: "Earn 200%+ of your weekly goal", category: "special", icon: "⚡", rarity: "mythic", repeatable: true,
+    check: (ws) => { const count = ws.filter(w => w.weeklyGoal > 0 && weekTotal(w) >= w.weeklyGoal * 2).length; const bestPct = Math.max(0, ...ws.filter(w => w.weeklyGoal > 0).map(w => (weekTotal(w) / w.weeklyGoal) * 100)); return { unlocked: count > 0, progress: Math.min(Math.round(bestPct), 200), max: 200, count }; } },
+  { id: "mythic_grind_master", title: "Grind Master", description: "10+ weeks tracked total", category: "consistency", icon: "🏛️", rarity: "mythic",
+    check: (ws) => { return { unlocked: ws.length >= 10, progress: Math.min(ws.length, 10), max: 10, count: 0 }; } },
 ];

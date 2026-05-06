@@ -7,6 +7,7 @@ export interface AchievementDef {
   description: string;
   category: "earnings" | "consistency" | "highday" | "goals" | "special";
   icon: string;
+  rarity?: "common" | "rare" | "epic" | "legendary";
   check: (weeks: WeekRecord[]) => { unlocked: boolean; progress: number; max: number; count: number };
 }
 
@@ -115,45 +116,45 @@ function weeksWithAppsUsed(weeks: WeekRecord[], minApps: number): number {
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   // Earnings
-  { id: "earn_500", title: "First $500 Week", description: "Earn $500+ in a single week", category: "earnings", icon: "💵",
+  { id: "earn_500", title: "First $500 Week", description: "Earn $500+ in a single week", category: "earnings", icon: "💵", rarity: "common",
     check: (ws) => { const best = Math.max(0, ...ws.map(weekTotal)); const count = ws.filter(w => weekTotal(w) >= 500).length; return { unlocked: best >= 500, progress: Math.min(best, 500), max: 500, count }; } },
-  { id: "earn_1000", title: "First $1,000 Week", description: "Earn $1,000+ in a single week", category: "earnings", icon: "💰",
+  { id: "earn_1000", title: "First $1,000 Week", description: "Earn $1,000+ in a single week", category: "earnings", icon: "💰", rarity: "rare",
     check: (ws) => { const best = Math.max(0, ...ws.map(weekTotal)); const count = ws.filter(w => weekTotal(w) >= 1000).length; return { unlocked: best >= 1000, progress: Math.min(best, 1000), max: 1000, count }; } },
-  { id: "earn_1500", title: "First $1,500 Week", description: "Earn $1,500+ in a single week", category: "earnings", icon: "🤑",
+  { id: "earn_1500", title: "First $1,500 Week", description: "Earn $1,500+ in a single week", category: "earnings", icon: "🤑", rarity: "epic",
     check: (ws) => { const best = Math.max(0, ...ws.map(weekTotal)); const count = ws.filter(w => weekTotal(w) >= 1500).length; return { unlocked: best >= 1500, progress: Math.min(best, 1500), max: 1500, count }; } },
-  { id: "earn_2000", title: "First $2,000 Week", description: "Earn $2,000+ in a single week", category: "earnings", icon: "👑",
+  { id: "earn_2000", title: "First $2,000 Week", description: "Earn $2,000+ in a single week", category: "earnings", icon: "👑", rarity: "legendary",
     check: (ws) => { const best = Math.max(0, ...ws.map(weekTotal)); const count = ws.filter(w => weekTotal(w) >= 2000).length; return { unlocked: best >= 2000, progress: Math.min(best, 2000), max: 2000, count }; } },
 
   // Consistency
-  { id: "active_3", title: "3-Day Streak", description: "3 active days in a row in one week", category: "consistency", icon: "🔥",
+  { id: "active_3", title: "3-Day Streak", description: "3 active days in a row in one week", category: "consistency", icon: "🔥", rarity: "common",
     check: (ws) => { const r = getBestConsecutiveActiveDaysAllWeeks(ws); return { unlocked: r.best >= 3, progress: Math.min(r.best, 3), max: 3, count: r.totalCount }; } },
-  { id: "active_5", title: "5-Day Grind", description: "5 active days in a row in one week", category: "consistency", icon: "⚡",
+  { id: "active_5", title: "5-Day Grind", description: "5 active days in a row in one week", category: "consistency", icon: "⚡", rarity: "rare",
     check: (ws) => { const r = getBestConsecutiveActiveDaysAllWeeks(ws); return { unlocked: r.best >= 5, progress: Math.min(r.best, 5), max: 5, count: ws.filter(w => getConsecutiveActiveDays(w).max >= 5).length }; } },
-  { id: "active_7", title: "Full Week Warrior", description: "7 active days in a row — no days off", category: "consistency", icon: "🏆",
+  { id: "active_7", title: "Full Week Warrior", description: "7 active days in a row — no days off", category: "consistency", icon: "🏆", rarity: "legendary",
     check: (ws) => { const r = getBestConsecutiveActiveDaysAllWeeks(ws); return { unlocked: r.best >= 7, progress: Math.min(r.best, 7), max: 7, count: ws.filter(w => getConsecutiveActiveDays(w).max >= 7).length }; } },
 
   // High Performance Days
-  { id: "day_100", title: "Century Day", description: "Earn $100+ in a single day", category: "highday", icon: "💯",
+  { id: "day_100", title: "Century Day", description: "Earn $100+ in a single day", category: "highday", icon: "💯", rarity: "common",
     check: (ws) => { const c = highDayCount(ws, 100); return { unlocked: c >= 1, progress: Math.min(c, 1), max: 1, count: c }; } },
-  { id: "day_150", title: "Power Day", description: "Earn $150+ in a single day", category: "highday", icon: "⚡",
+  { id: "day_150", title: "Power Day", description: "Earn $150+ in a single day", category: "highday", icon: "⚡", rarity: "rare",
     check: (ws) => { const c = highDayCount(ws, 150); return { unlocked: c >= 1, progress: Math.min(c, 1), max: 1, count: c }; } },
-  { id: "day_200", title: "Double Century", description: "Earn $200+ in a single day", category: "highday", icon: "🚀",
+  { id: "day_200", title: "Double Century", description: "Earn $200+ in a single day", category: "highday", icon: "🚀", rarity: "epic",
     check: (ws) => { const c = highDayCount(ws, 200); return { unlocked: c >= 1, progress: Math.min(c, 1), max: 1, count: c }; } },
-  { id: "day_300", title: "Triple Threat", description: "Earn $300+ in a single day", category: "highday", icon: "💎",
+  { id: "day_300", title: "Triple Threat", description: "Earn $300+ in a single day", category: "highday", icon: "💎", rarity: "legendary",
     check: (ws) => { const c = highDayCount(ws, 300); return { unlocked: c >= 1, progress: Math.min(c, 1), max: 1, count: c }; } },
 
   // Goals
-  { id: "goal_first", title: "First Goal Hit", description: "Hit your weekly goal for the first time", category: "goals", icon: "🎯",
+  { id: "goal_first", title: "First Goal Hit", description: "Hit your weekly goal for the first time", category: "goals", icon: "🎯", rarity: "common",
     check: (ws) => { const c = goalHitWeeks(ws); return { unlocked: c >= 1, progress: Math.min(c, 1), max: 1, count: c }; } },
-  { id: "goal_3", title: "Triple Crown", description: "Hit your weekly goal 3 times", category: "goals", icon: "👑",
+  { id: "goal_3", title: "Triple Crown", description: "Hit your weekly goal 3 times", category: "goals", icon: "👑", rarity: "rare",
     check: (ws) => { const c = goalHitWeeks(ws); return { unlocked: c >= 3, progress: Math.min(c, 3), max: 3, count: c }; } },
-  { id: "goal_streak_5", title: "Goal Machine", description: "Hit your weekly goal 5 weeks in a row", category: "goals", icon: "🏅",
+  { id: "goal_streak_5", title: "Goal Machine", description: "Hit your weekly goal 5 weeks in a row", category: "goals", icon: "🏅", rarity: "legendary",
     check: (ws) => { const c = consecutiveGoalWeeks(ws); return { unlocked: c >= 5, progress: Math.min(c, 5), max: 5, count: c >= 5 ? 1 : 0 }; } },
 
   // Special
-  { id: "beast_mode", title: "Beast Mode", description: "Earn 120%+ of your weekly goal", category: "special", icon: "🔥",
+  { id: "beast_mode", title: "Beast Mode", description: "Earn 120%+ of your weekly goal", category: "special", icon: "🔥", rarity: "epic",
     check: (ws) => { const count = ws.filter(w => w.weeklyGoal > 0 && weekTotal(w) >= w.weeklyGoal * 1.2).length; const bestPct = Math.max(0, ...ws.filter(w => w.weeklyGoal > 0).map(w => (weekTotal(w) / w.weeklyGoal) * 100)); return { unlocked: count > 0, progress: Math.min(Math.round(bestPct), 120), max: 120, count }; } },
-  { id: "sunday_save", title: "Sunday Save", description: "Reach your goal on Sunday (the last day)", category: "special", icon: "🌅",
+  { id: "sunday_save", title: "Sunday Save", description: "Reach your goal on Sunday (the last day)", category: "special", icon: "🌅", rarity: "epic",
     check: (ws) => {
       let count = 0;
       for (const w of ws) {
@@ -164,7 +165,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       }
       return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count };
     } },
-  { id: "comeback", title: "Comeback Week", description: "Beat previous week by 25%+", category: "special", icon: "📈",
+  { id: "comeback", title: "Comeback Week", description: "Beat previous week by 25%+", category: "special", icon: "📈", rarity: "rare",
     check: (ws) => {
       const sorted = [...ws].sort((a, b) => a.startDate.localeCompare(b.startDate));
       let count = 0;
@@ -175,13 +176,13 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       }
       return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count };
     } },
-  { id: "hot_streak", title: "Hot Streak", description: "3 days earning $150+ in one week", category: "special", icon: "🔥",
+  { id: "hot_streak", title: "Hot Streak", description: "3 days earning $150+ in one week", category: "special", icon: "🔥", rarity: "epic",
     check: (ws) => {
       const best = Math.max(0, ...ws.map(w => w.entries.filter(e => dayTotal(e) >= 150).length));
       const count = ws.filter(w => w.entries.filter(e => dayTotal(e) >= 150).length >= 3).length;
       return { unlocked: best >= 3, progress: Math.min(best, 3), max: 3, count };
     } },
-  { id: "app_master", title: "App Master", description: "One app accounts for 60%+ of weekly total", category: "special", icon: "🎮",
+  { id: "app_master", title: "App Master", description: "One app accounts for 60%+ of weekly total", category: "special", icon: "🎮", rarity: "common",
     check: (ws) => {
       let count = 0;
       for (const w of ws) {
@@ -197,7 +198,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     } },
 
   // New intelligent achievements
-  { id: "app_collector", title: "App Collector", description: "Use 3+ apps in one day", category: "special", icon: "📱",
+  { id: "app_collector", title: "App Collector", description: "Use 3+ apps in one day", category: "special", icon: "📱", rarity: "common",
     check: (ws) => {
       let count = 0;
       for (const w of ws) for (const d of w.entries) {
@@ -205,12 +206,12 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       }
       return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count };
     } },
-  { id: "multi_app_strat", title: "Multi-App Strategist", description: "Use 5+ apps in a week", category: "special", icon: "🧠",
+  { id: "multi_app_strat", title: "Multi-App Strategist", description: "Use 5+ apps in a week", category: "special", icon: "🧠", rarity: "rare",
     check: (ws) => {
       const count = weeksWithAppsUsed(ws, 5);
       return { unlocked: count > 0, progress: Math.min(weeksWithAppsUsed(ws, 5), 1), max: 1, count };
     } },
-  { id: "one_app_carry", title: "One App Carry", description: "One app generates 80%+ of weekly total", category: "special", icon: "💪",
+  { id: "one_app_carry", title: "One App Carry", description: "One app generates 80%+ of weekly total", category: "special", icon: "💪", rarity: "rare",
     check: (ws) => {
       let count = 0;
       for (const w of ws) {
@@ -221,7 +222,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       }
       return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count };
     } },
-  { id: "balanced_week", title: "Balanced Week", description: "3+ apps contribute at least 20% each", category: "special", icon: "⚖️",
+  { id: "balanced_week", title: "Balanced Week", description: "3+ apps contribute at least 20% each", category: "special", icon: "⚖️", rarity: "epic",
     check: (ws) => {
       let count = 0;
       for (const w of ws) {
@@ -233,7 +234,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       }
       return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count };
     } },
-  { id: "comeback_king", title: "Comeback King", description: "Finish above previous week after starting below it", category: "special", icon: "🦁",
+  { id: "comeback_king", title: "Comeback King", description: "Finish above previous week after starting below it", category: "special", icon: "🦁", rarity: "legendary",
     check: (ws) => {
       const sorted = [...ws].sort((a, b) => a.startDate.localeCompare(b.startDate));
       let count = 0;
@@ -246,7 +247,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       }
       return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count };
     } },
-  { id: "chill_week", title: "Chill Week", description: "7 logged days including at least 1 zero-income day", category: "consistency", icon: "🧘",
+  { id: "chill_week", title: "Chill Week", description: "7 logged days including at least 1 zero-income day", category: "consistency", icon: "🧘", rarity: "rare",
     check: (ws) => {
       let count = 0;
       for (const w of ws) {
@@ -259,7 +260,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       }
       return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count };
     } },
-  { id: "full_week_logged", title: "Full Week Logged", description: "7 days logged in a week", category: "consistency", icon: "📋",
+  { id: "full_week_logged", title: "Full Week Logged", description: "7 days logged in a week", category: "consistency", icon: "📋", rarity: "common",
     check: (ws) => {
       let count = 0;
       for (const w of ws) {

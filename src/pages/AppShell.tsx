@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { AchievementToastContainer } from "@/components/AchievementToast";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -33,6 +34,7 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <AchievementToastContainer />
       <header className="border-b border-border px-4 py-3 flex items-center gap-3">
         <span className="text-xl font-bold tracking-tight text-primary">Streex</span>
         <span className="text-sm text-muted-foreground hidden sm:inline">Earnings Tracker</span>

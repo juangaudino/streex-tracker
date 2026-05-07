@@ -15,6 +15,7 @@ import {
 import { getMomentumState, getSmartCommentary, getPersonalGrowthStats } from "@/lib/commentary";
 import { useAchievements } from "@/hooks/useAchievements";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import {
   weekTotal,

@@ -109,8 +109,11 @@ export default function DashboardPage() {
 
   // Smart Commentary & Momentum
   const momentum = getMomentumState(weeks, openWeek, todayTotal, dayRec.avg, pct);
-  const commentary = getSmartCommentary(weeks, openWeek, todayEntry, todayTotal, dayRec, pct, sym);
   const growthStats = getPersonalGrowthStats(weeks, openWeek, todayTotal, todayName, dayRec.avg);
+  const commentary = getSmartCommentary(weeks, openWeek, todayEntry, todayTotal, dayRec, pct, sym, {
+    headlineText: smartHeader,
+    hasGrowthChips: growthStats.length > 0,
+  });
 
   const statusVariant = pct >= 120 ? "purple" as const : pct >= 100 ? "success" as const : pct >= 75 ? "primary" as const : pct >= 40 ? "warning" as const : "default" as const;
 
@@ -149,50 +152,41 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Record Chase Alerts */}
-      {(dailyChase || weeklyChase || commentary) && (
-        <div className="space-y-2">
-          {commentary && (
-            <div className="bg-accent/50 border border-border rounded-xl px-4 py-2.5 text-sm font-medium text-foreground animate-in fade-in duration-500">
-              💬 {commentary}
-            </div>
-          )}
-          {dailyChase && (
-            <div className="bg-gold/10 border border-gold/30 rounded-xl px-4 py-2.5 text-sm font-medium text-gold">
-              🏆 {dailyChase}
-            </div>
-          )}
-          {weeklyChase && (
-            <div className="bg-primary/10 border border-primary/30 rounded-xl px-4 py-2.5 text-sm font-medium text-primary">
-              🎯 {weeklyChase}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Smart Insight — single most important contextual message */}
+      {(() => {
+        // Priority: daily chase > commentary > weekly chase (show only ONE)
+        const insight = dailyChase ?? commentary ?? weeklyChase;
+        if (!insight) return null;
+        const icon = dailyChase ? "🏆" : commentary ? "💬" : "🎯";
+        const colorClass = dailyChase
+          ? "bg-gold/10 border-gold/30 text-gold"
+          : weeklyChase && !commentary
+          ? "bg-primary/10 border-primary/30 text-primary"
+          : "bg-accent/50 border-border text-foreground";
+        return (
+          <div className={`border rounded-xl px-4 py-2.5 text-sm font-medium animate-in fade-in duration-500 ${colorClass}`}>
+            {icon} {insight}
+          </div>
+        );
+      })()}
 
-      {/* Personal Growth Stats */}
-      {growthStats.length > 0 && (
-        <div className="flex gap-2 flex-wrap">
-          {growthStats.map((stat, i) => (
-            <div key={i} className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ${
-              stat.positive ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
-            }`}>
-              <span className="opacity-70">{stat.label}</span>
-              <span className="font-bold font-mono">{stat.value}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Momentum State Badge */}
-      <div className="flex items-center gap-2">
-        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+      {/* Momentum & Stats Chips */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
           momentum.state === "high" ? "bg-success/15 text-success"
           : momentum.state === "medium" ? "bg-primary/15 text-primary"
           : "bg-muted-foreground/15 text-muted-foreground"
         }`}>
           {momentum.label}
         </span>
+        {growthStats.map((stat, i) => (
+          <span key={i} className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+            stat.positive ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+          }`}>
+            <span className="opacity-70">{stat.label}</span>
+            <span className="font-mono">{stat.value}</span>
+          </span>
+        ))}
       </div>
 
       {/* Active Momentum */}

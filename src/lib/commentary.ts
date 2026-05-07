@@ -47,6 +47,7 @@ export function getSmartCommentary(
   dayRecord: { record: number; avg: number; count: number },
   weekPct: number,
   sym: string,
+  context?: { headlineText?: string; hasGrowthChips?: boolean },
 ): string | null {
   if (!openWeek || !todayEntry) return null;
 
@@ -55,6 +56,8 @@ export function getSmartCommentary(
   const activeDays = openWeek.entries.filter((d) => dayTotal(d) > 0);
   const wt = weekTotal(openWeek);
   const goal = openWeek.weeklyGoal;
+  const headline = context?.headlineText ?? "";
+  const hasChips = context?.hasGrowthChips ?? false;
 
   // Check consecutive active days (elite streak)
   let consecutiveActive = 0;
@@ -75,22 +78,30 @@ export function getSmartCommentary(
   }
 
   // vs average
+  // Skip if growth chips already show the vs-average stat
   if (dayRecord.avg > 0 && todayTotal > 0) {
     const pctAbove = ((todayTotal - dayRecord.avg) / dayRecord.avg) * 100;
-    if (pctAbove >= 30) return `+${Math.round(pctAbove)}% vs average ${dayName}`;
-    if (pctAbove >= 10) return `Strong ${dayName} so far`;
+    if (pctAbove >= 30 && !hasChips) return `+${Math.round(pctAbove)}% vs average ${dayName}`;
+    // Don't say "Strong <day>" if headline already says it
+    if (pctAbove >= 10 && !headline.toLowerCase().includes("strong")) {
+      if (!hasChips) return `Strong ${dayName} so far`;
+    }
   }
 
   // Elite streak
-  if (consecutiveActive >= 3) return `${consecutiveActive} elite days in a row`;
+  // Skip if headline already communicates momentum/streak identity
+  if (consecutiveActive >= 3 && !headline.toLowerCase().includes("locked") && !headline.toLowerCase().includes("elite"))
+    return `${consecutiveActive} elite days in a row`;
 
   // Goal proximity
   if (weekPct >= 90 && weekPct < 100) {
     const remaining = goal - wt;
     return `${formatCurrency(remaining, sym)} to close the goal`;
   }
-  if (weekPct >= 100 && weekPct < 120) return "Goal crushed — keep pushing";
-  if (weekPct >= 120) return "Current You is outperforming Past You";
+  if (weekPct >= 100 && weekPct < 120 && !headline.toLowerCase().includes("elite") && !headline.toLowerCase().includes("history"))
+    return "Goal crushed — keep pushing";
+  if (weekPct >= 120 && !headline.toLowerCase().includes("history"))
+    return "Current You is outperforming Past You";
 
   // Comparison to previous weeks
   const closedWeeks = weeks.filter((w) => w.id !== openWeek.id && w.status === "closed");
@@ -104,14 +115,16 @@ export function getSmartCommentary(
   }
 
   // Consistency
-  if (activeDays.length >= 4) return "Consistency improving";
+  if (activeDays.length >= 4) return "Consistency building this week";
 
   // Building momentum
-  if (todayTotal > 0 && activeDays.length >= 2) return "Building momentum";
+  // Skip if headline already says "Building Momentum"
+  if (todayTotal > 0 && activeDays.length >= 2 && !headline.toLowerCase().includes("building"))
+    return "Momentum building — keep stacking";
 
   // Pace check
-  if (dayRecord.avg > 0 && todayTotal > 0 && todayTotal >= dayRecord.avg)
-    return `${dayName} pace above average`;
+  if (dayRecord.avg > 0 && todayTotal > 0 && todayTotal >= dayRecord.avg && !hasChips)
+    return `${dayName} pace above your average`;
 
   return null;
 }

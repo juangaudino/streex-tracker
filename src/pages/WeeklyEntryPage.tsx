@@ -230,6 +230,15 @@ export default function WeeklyEntryPage() {
     setEditWeek({ ...editWeek, entries });
   }
 
+  function handleMileageUpdate(dayIdx: number, val: number) {
+    if (!editWeek) return;
+    const entries = editWeek.entries.map((d, i) => {
+      if (i !== dayIdx) return d;
+      return { ...d, mileage: val };
+    });
+    setEditWeek({ ...editWeek, entries });
+  }
+
   if (!editWeek) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
@@ -311,6 +320,7 @@ export default function WeeklyEntryPage() {
         onBack={() => setSelectedDayIdx(null)}
         onUpdate={handleCellChange}
         onLoggedToggle={handleLoggedToggle}
+        onMileageUpdate={handleMileageUpdate}
         onSave={() => {
           handleSave();
           setSelectedDayIdx(null);

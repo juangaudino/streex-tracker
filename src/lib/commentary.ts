@@ -1,0 +1,159 @@
+import { WeekRecord, DayEntry } from "@/lib/types";
+import { weekTotal, dayTotal, formatCurrency, getLoggedDays } from "@/lib/store";
+import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
+
+export type MomentumState = "low" | "medium" | "high";
+
+export interface MomentumInfo {
+  state: MomentumState;
+  label: string;
+}
+
+export function getMomentumState(
+  weeks: WeekRecord[],
+  openWeek: WeekRecord | null,
+  todayTotal: number,
+  dayAvg: number,
+  weekPct: number,
+): MomentumInfo {
+  if (!openWeek) return { state: "low", label: "Ready to Start" };
+
+  const loggedDays = getLoggedDays(openWeek);
+  const activeDaysCount = openWeek.entries.filter((d) => dayTotal(d) > 0).length;
+
+  // HIGH momentum conditions
+  if (weekPct >= 100 && loggedDays.length <= 5) return { state: "high", label: "Beast Week" };
+  if (weekPct >= 90) return { state: "high", label: "Elite Pace" };
+  if (todayTotal > dayAvg * 1.3 && dayAvg > 0 && activeDaysCount >= 3)
+    return { state: "high", label: "Locked In" };
+  if (weekPct >= 80 && activeDaysCount >= 4) return { state: "high", label: "History Within Reach" };
+
+  // MEDIUM momentum conditions
+  if (weekPct >= 50) return { state: "medium", label: "Strong Rhythm" };
+  if (todayTotal >= dayAvg * 0.9 && dayAvg > 0) return { state: "medium", label: "Consistent Grind" };
+  if (activeDaysCount >= 3) return { state: "medium", label: "Stable Momentum" };
+
+  // LOW momentum conditions
+  if (activeDaysCount >= 1 && weekPct < 30) return { state: "low", label: "Rebuilding Pace" };
+  if (todayTotal > 0) return { state: "low", label: "Slow Recovery" };
+  return { state: "low", label: "Resetting Momentum" };
+}
+
+export function getSmartCommentary(
+  weeks: WeekRecord[],
+  openWeek: WeekRecord | null,
+  todayEntry: DayEntry | null,
+  todayTotal: number,
+  dayRecord: { record: number; avg: number; count: number },
+  weekPct: number,
+  sym: string,
+): string | null {
+  if (!openWeek || !todayEntry) return null;
+
+  const dayName = todayEntry.dayName;
+  const loggedDays = getLoggedDays(openWeek);
+  const activeDays = openWeek.entries.filter((d) => dayTotal(d) > 0);
+  const wt = weekTotal(openWeek);
+  const goal = openWeek.weeklyGoal;
+
+  // Check consecutive active days (elite streak)
+  let consecutiveActive = 0;
+  for (let i = openWeek.entries.length - 1; i >= 0; i--) {
+    if (dayTotal(openWeek.entries[i]) > 0) consecutiveActive++;
+    else break;
+  }
+
+  // Record proximity
+  if (dayRecord.record > 0 && todayTotal > 0) {
+    const gap = dayRecord.record - todayTotal;
+    if (gap > 0 && gap <= dayRecord.record * 0.15) {
+      return `Only ${formatCurrency(gap, sym)} away from your best ${dayName}`;
+    }
+    if (todayTotal > dayRecord.record) {
+      return `New ${dayName} record — you're writing history`;
+    }
+  }
+
+  // vs average
+  if (dayRecord.avg > 0 && todayTotal > 0) {
+    const pctAbove = ((todayTotal - dayRecord.avg) / dayRecord.avg) * 100;
+    if (pctAbove >= 30) return `+${Math.round(pctAbove)}% vs average ${dayName}`;
+    if (pctAbove >= 10) return `Strong ${dayName} so far`;
+  }
+
+  // Elite streak
+  if (consecutiveActive >= 3) return `${consecutiveActive} elite days in a row`;
+
+  // Goal proximity
+  if (weekPct >= 90 && weekPct < 100) {
+    const remaining = goal - wt;
+    return `${formatCurrency(remaining, sym)} to close the goal`;
+  }
+  if (weekPct >= 100 && weekPct < 120) return "Goal crushed — keep pushing";
+  if (weekPct >= 120) return "Current You is outperforming Past You";
+
+  // Comparison to previous weeks
+  const closedWeeks = weeks.filter((w) => w.id !== openWeek.id && w.status === "closed");
+  if (closedWeeks.length > 0) {
+    const lastWeek = closedWeeks.sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+    const lastWt = weekTotal(lastWeek);
+    if (lastWt > 0 && wt > lastWt * 1.05 && loggedDays.length >= 3)
+      return "You're outperforming last week";
+    if (lastWt > 0 && wt > lastWt && loggedDays.length >= 2)
+      return "Ahead of last week's pace";
+  }
+
+  // Consistency
+  if (activeDays.length >= 4) return "Consistency improving";
+
+  // Building momentum
+  if (todayTotal > 0 && activeDays.length >= 2) return "Building momentum";
+
+  // Pace check
+  if (dayRecord.avg > 0 && todayTotal > 0 && todayTotal >= dayRecord.avg)
+    return `${dayName} pace above average`;
+
+  return null;
+}
+
+export function getPersonalGrowthStats(
+  weeks: WeekRecord[],
+  openWeek: WeekRecord | null,
+  todayTotal: number,
+  dayName: string,
+  dayAvg: number,
+): { label: string; value: string; positive: boolean }[] {
+  const stats: { label: string; value: string; positive: boolean }[] = [];
+  if (!openWeek) return stats;
+
+  // vs average day
+  if (dayAvg > 0 && todayTotal > 0) {
+    const diff = ((todayTotal - dayAvg) / dayAvg) * 100;
+    if (Math.abs(diff) >= 5) {
+      stats.push({
+        label: `vs avg ${dayName}`,
+        value: `${diff > 0 ? "+" : ""}${Math.round(diff)}%`,
+        positive: diff > 0,
+      });
+    }
+  }
+
+  // Consistency check: how many of last 4 weeks hit goal
+  const closedWeeks = weeks
+    .filter((w) => w.id !== openWeek.id && w.status === "closed")
+    .sort((a, b) => b.startDate.localeCompare(a.startDate))
+    .slice(0, 4);
+
+  if (closedWeeks.length >= 2) {
+    const goalHits = closedWeeks.filter((w) => weekTotal(w) >= w.weeklyGoal).length;
+    if (goalHits >= 3) {
+      stats.push({
+        label: "Goal consistency",
+        value: `${goalHits}/${closedWeeks.length} weeks`,
+        positive: true,
+      });
+    }
+  }
+
+  return stats;
+}

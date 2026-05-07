@@ -524,6 +524,60 @@
 .rpg ::-webkit-scrollbar {
   width: 4px;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   ACHIEVEMENT RARITY — Classic Light / Dark
+   ══════════════════════════════════════════════════════════════ */
+
+/* Classic: subtle but recognizable rarity borders */
+.light .achievement-common { border-color: hsl(210 50% 70% / 0.4); }
+.light .achievement-rare { border-color: hsl(185 60% 45% / 0.5); }
+.light .achievement-epic { border-color: hsl(270 50% 55% / 0.5); }
+.light .achievement-legendary { border-color: hsl(43 80% 50% / 0.6); }
+.light .achievement-mythic {
+  border-color: hsl(330 60% 60% / 0.5);
+  background: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(330 30% 97%) 100%);
+}
+
+.dark .achievement-common { border-color: hsl(210 50% 45% / 0.3); }
+.dark .achievement-rare {
+  border-color: hsl(185 60% 45% / 0.35);
+  box-shadow: 0 0 8px hsl(185 60% 45% / 0.06);
+}
+.dark .achievement-epic {
+  border-color: hsl(270 50% 55% / 0.35);
+  box-shadow: 0 0 8px hsl(270 50% 55% / 0.06);
+}
+.dark .achievement-legendary {
+  border-color: hsl(43 80% 50% / 0.4);
+  box-shadow: 0 0 10px hsl(43 80% 50% / 0.08);
+}
+.dark .achievement-mythic {
+  border-color: hsl(330 60% 55% / 0.4);
+  box-shadow: 0 0 12px hsl(330 60% 55% / 0.08);
+  background: linear-gradient(145deg, hsl(222 44% 9%) 0%, hsl(280 30% 10%) 100%);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EMOTIONAL MICROFEEDBACK — Animations
+   ══════════════════════════════════════════════════════════════ */
+
+@keyframes value-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.value-highlight {
+  animation: value-pop 0.3s ease-out;
+}
+
+@keyframes soft-glow-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.glow-pulse {
+  animation: soft-glow-pulse 2s ease-in-out infinite;
+}
 .rpg ::-webkit-scrollbar-track {
   background: transparent;
 }

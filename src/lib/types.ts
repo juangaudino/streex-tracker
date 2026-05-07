@@ -25,6 +25,7 @@ export interface DayEntry {
   date: string;
   apps: Record<string, number>;
   logged?: boolean;
+  mileage?: number;
 }
 
 export interface WeekRecord {

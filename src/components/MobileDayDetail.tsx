@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -6,6 +5,7 @@ import { dayTotal, formatCurrency } from "@/lib/store";
 import type { DayEntry } from "@/lib/types";
 import { ArrowLeft, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface MobileDayDetailProps {
   day: DayEntry;
@@ -15,6 +15,7 @@ interface MobileDayDetailProps {
   onBack: () => void;
   onUpdate: (dayIdx: number, app: string, val: string) => void;
   onLoggedToggle: (dayIdx: number, checked: boolean) => void;
+  onMileageUpdate?: (dayIdx: number, val: number) => void;
   onSave: () => void;
 }
 
@@ -26,10 +27,12 @@ export default function MobileDayDetail({
   onBack,
   onUpdate,
   onLoggedToggle,
+  onMileageUpdate,
   onSave,
 }: MobileDayDetailProps) {
   const dt = dayTotal(day);
   const isLogged = day.logged !== undefined ? day.logged : dt > 0;
+  const [mileage, setMileage] = useState(day.mileage?.toString() || "");
 
   return (
     <div className="animate-in slide-in-from-right duration-200 space-y-4 p-4">
@@ -82,6 +85,27 @@ export default function MobileDayDetail({
           </div>
         ))}
       </div>
+
+      {/* Mileage */}
+      {onMileageUpdate && (
+        <div className="flex items-center justify-between bg-card rounded-xl border border-border p-4 gap-4">
+          <span className="text-sm font-medium">Business Miles</span>
+          <div className="relative w-28 shrink-0">
+            <Input
+              type="number"
+              step="0.1"
+              min="0"
+              className="text-right font-mono text-base h-10"
+              value={mileage}
+              placeholder="0.0"
+              onChange={(e) => {
+                setMileage(e.target.value);
+                onMileageUpdate(dayIdx, parseFloat(e.target.value) || 0);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Save */}
       <Button onClick={onSave} className="w-full" size="lg">

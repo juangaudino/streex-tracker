@@ -12,8 +12,10 @@ import {
   getDailyRecordChase,
   getPaceLabel,
 } from "@/components/ActiveMomentum";
+import { getMomentumState, getSmartCommentary, getPersonalGrowthStats } from "@/lib/commentary";
 import { useAchievements } from "@/hooks/useAchievements";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import {
   weekTotal,
@@ -40,6 +42,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { achievements } = useAchievements(user, weeks);
   const sym = settings.currencySymbol;
+  const { mode } = useTheme();
 
   async function handleImport() {
     setImporting(true);
@@ -104,6 +107,11 @@ export default function DashboardPage() {
   const dailyChase = getDailyRecordChase(todayTotal, dayRec.record, todayName, sym);
   const pace = getPaceLabel(todayTotal, dayRec.avg, pct);
 
+  // Smart Commentary & Momentum
+  const momentum = getMomentumState(weeks, openWeek, todayTotal, dayRec.avg, pct);
+  const commentary = getSmartCommentary(weeks, openWeek, todayEntry, todayTotal, dayRec, pct, sym);
+  const growthStats = getPersonalGrowthStats(weeks, openWeek, todayTotal, todayName, dayRec.avg);
+
   const statusVariant = pct >= 120 ? "purple" as const : pct >= 100 ? "success" as const : pct >= 75 ? "primary" as const : pct >= 40 ? "warning" as const : "default" as const;
 
   const barColor =
@@ -142,8 +150,13 @@ export default function DashboardPage() {
       </div>
 
       {/* Record Chase Alerts */}
-      {(dailyChase || weeklyChase) && (
+      {(dailyChase || weeklyChase || commentary) && (
         <div className="space-y-2">
+          {commentary && (
+            <div className="bg-accent/50 border border-border rounded-xl px-4 py-2.5 text-sm font-medium text-foreground animate-in fade-in duration-500">
+              💬 {commentary}
+            </div>
+          )}
           {dailyChase && (
             <div className="bg-gold/10 border border-gold/30 rounded-xl px-4 py-2.5 text-sm font-medium text-gold">
               🏆 {dailyChase}
@@ -156,6 +169,31 @@ export default function DashboardPage() {
           )}
         </div>
       )}
+
+      {/* Personal Growth Stats */}
+      {growthStats.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          {growthStats.map((stat, i) => (
+            <div key={i} className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ${
+              stat.positive ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+            }`}>
+              <span className="opacity-70">{stat.label}</span>
+              <span className="font-bold font-mono">{stat.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Momentum State Badge */}
+      <div className="flex items-center gap-2">
+        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+          momentum.state === "high" ? "bg-success/15 text-success"
+          : momentum.state === "medium" ? "bg-primary/15 text-primary"
+          : "bg-muted-foreground/15 text-muted-foreground"
+        }`}>
+          {momentum.label}
+        </span>
+      </div>
 
       {/* Active Momentum */}
       <ActiveMomentum weeks={weeks} openWeek={openWeek} currencySymbol={sym} />

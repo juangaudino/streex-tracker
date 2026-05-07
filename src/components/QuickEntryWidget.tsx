@@ -43,6 +43,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
 
   const [localApps, setLocalApps] = useState<Record<string, number>>({});
   const [localLogged, setLocalLogged] = useState(false);
+  const [localMileage, setLocalMileage] = useState(0);
   // Store the resolved index at open time so save always targets the same day
   const [resolvedIdx, setResolvedIdx] = useState(todayIdx);
 
@@ -51,6 +52,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
       setLocalApps({ ...today.apps });
       setLocalLogged(today.logged !== undefined ? today.logged : dayTotal(today) > 0);
       setResolvedIdx(todayIdx);
+      setLocalMileage(today.mileage || 0);
     }
     setOpen(isOpen);
   }
@@ -60,7 +62,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     const dt = Object.values(localApps).reduce((s, v) => s + (v || 0), 0);
     const entries = openWeek.entries.map((d, i) => {
       if (i !== resolvedIdx) return d;
-      return { ...d, apps: { ...localApps }, logged: dt > 0 ? true : localLogged };
+      return { ...d, apps: { ...localApps }, logged: dt > 0 ? true : localLogged, mileage: localMileage || d.mileage };
     });
     onSave({ ...openWeek, entries });
     setOpen(false);
@@ -112,6 +114,20 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
               </div>
             ))}
             <div className="flex items-center gap-2 pt-2 border-t border-border">
+              <div className="flex items-center justify-between w-full gap-3 pb-2">
+                <label className="text-sm text-muted-foreground">Miles</label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  className="w-20 text-right font-mono text-sm"
+                  placeholder="0.0"
+                  value={localMileage || ""}
+                  onChange={(e) => setLocalMileage(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 border-t border-border pt-2">
               <Checkbox
                 id="quick-logged"
                 checked={localLogged || Object.values(localApps).some((v) => v > 0)}
@@ -122,7 +138,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                 Mark as logged
               </label>
             </div>
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
                 Total: <span className="font-bold font-mono text-foreground">
                   {formatCurrency(Object.values(localApps).reduce((s, v) => s + (v || 0), 0), currencySymbol)}

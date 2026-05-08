@@ -133,11 +133,11 @@ export function getSmartCommentary(
   if (weekPct >= 100 && weekPct < 120 && !headline.toLowerCase().includes("elite") && !headline.toLowerCase().includes("history"))
   {
     const goalLines = ["Goal crushed — keep pushing", "Target smashed this week", "Goal cleared — surplus mode"];
-    return goalLines[Math.floor(total * 3) % goalLines.length];
+    return goalLines[Math.floor(wt * 3) % goalLines.length];
   }
   if (weekPct >= 120 && !headline.toLowerCase().includes("history")) {
     const eliteLines = ["Current You is outperforming Past You", "Best momentum this month", "Weekly pace improving"];
-    return eliteLines[Math.floor(total * 4) % eliteLines.length];
+    return eliteLines[Math.floor(wt * 4) % eliteLines.length];
   }
 
   // Comparison to previous weeks
@@ -154,7 +154,7 @@ export function getSmartCommentary(
   // Consistency
   if (activeDays.length >= 4) {
     const conLines = ["Consistency building this week", "Locked in — steady grind", "Reliable rhythm this week"];
-    return conLines[Math.floor(total * 5) % conLines.length];
+    return conLines[Math.floor(wt * 5) % conLines.length];
   }
 
   // Building momentum
@@ -175,7 +175,7 @@ export function getSmartCommentary(
   // Low / no earnings yet
   if (todayTotal === 0 && activeDays.length >= 1) {
     const lowLines = ["Slow start. Plenty of time left.", "Day's still young", "Ready when you are"];
-    return lowLines[Math.floor(total * 7) % lowLines.length];
+    return lowLines[Math.floor(wt * 7) % lowLines.length];
   }
 
   return null;

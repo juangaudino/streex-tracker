@@ -71,7 +71,8 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     // Check if this save breaks a record
     if (weeks && today && dt > prevTotal) {
       const dayRec = getDayOfWeekRecord(weeks, today.dayName);
-      if (dt > dayRec.record && dayRec.record > 0) {
+      const dayRecExcluding = getDayOfWeekRecord(weeks, today.dayName, today.date);
+      if (dt > dayRecExcluding.record && dayRecExcluding.record > 0) {
         triggerCelebration({
           id: `day-record-${Date.now()}`,
           type: "weekday-record",

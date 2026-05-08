@@ -13,12 +13,15 @@ import {
 import { dayTotal, formatCurrency } from "@/lib/store";
 import type { WeekRecord, DayEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
+import { triggerCelebration } from "@/components/RecordCelebration";
 
-interface QuickEntryWidgetProps {
+interface QuickEntryWidgetProps {  
   openWeek: WeekRecord;
   apps: string[];
   currencySymbol: string;
   onSave: (updatedWeek: WeekRecord) => void;
+  weeks?: WeekRecord[];
 }
 
 function getTodayDayIdx(week: WeekRecord): number {
@@ -36,7 +39,7 @@ function getTodayDayIdx(week: WeekRecord): number {
   return week.entries.findIndex((d) => d.dayName === todayName);
 }
 
-export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSave }: QuickEntryWidgetProps) {
+export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSave, weeks }: QuickEntryWidgetProps) {
   const [open, setOpen] = useState(false);
   const todayIdx = getTodayDayIdx(openWeek);
   const today = todayIdx >= 0 ? openWeek.entries[todayIdx] : null;
@@ -60,10 +63,25 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
   function handleSave() {
     if (!today || resolvedIdx < 0) return;
     const dt = Object.values(localApps).reduce((s, v) => s + (v || 0), 0);
+    const prevTotal = dayTotal(today);
     const entries = openWeek.entries.map((d, i) => {
       if (i !== resolvedIdx) return d;
       return { ...d, apps: { ...localApps }, logged: dt > 0 ? true : localLogged, mileage: localMileage || d.mileage };
     });
+    // Check if this save breaks a record
+    if (weeks && today && dt > prevTotal) {
+      const dayRec = getDayOfWeekRecord(weeks, today.dayName);
+      if (dt > dayRec.record && dayRec.record > 0) {
+        triggerCelebration({
+          id: `day-record-${Date.now()}`,
+          type: "weekday-record",
+          title: `New ${today.dayName} Record`,
+          value: formatCurrency(dt, currencySymbol),
+          icon: "🏆",
+          subtitle: `Previous best: ${formatCurrency(dayRec.record, currencySymbol)}`,
+        });
+      }
+    }
     onSave({ ...openWeek, entries });
     setOpen(false);
   }

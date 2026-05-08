@@ -71,14 +71,14 @@ function ToastItem({ toast, onDone }: ToastItemProps) {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border px-4 py-3 backdrop-blur-md transition-all duration-400 ease-out",
+        "relative overflow-hidden rounded-2xl border px-5 py-4 backdrop-blur-xl transition-all duration-500 ease-out",
         cfg.border, cfg.glow,
         phase === "enter" && "opacity-0 translate-y-4 scale-95",
         phase === "visible" && "opacity-100 translate-y-0 scale-100",
         phase === "exit" && "opacity-0 -translate-y-2 scale-95",
       )}
       style={{
-        background: "hsl(var(--card) / 0.92)",
+        background: "hsl(var(--card) / 0.95)",
       }}
     >
       {/* Rarity glow bar at top */}
@@ -96,18 +96,18 @@ function ToastItem({ toast, onDone }: ToastItemProps) {
       )} />
 
       <div className="flex items-center gap-3">
-        <span className="text-2xl">{toast.icon}</span>
+        <span className="text-2xl drop-shadow-sm">{toast.icon}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
               🏆 Achievement Unlocked
             </span>
           </div>
-          <p className="font-semibold text-sm text-foreground mt-0.5">{toast.title}</p>
+          <p className="font-bold text-sm text-foreground mt-1">{toast.title}</p>
           {toast.description && (
             <p className="text-xs text-muted-foreground mt-0.5">{toast.description}</p>
           )}
-          <span className={cn("text-[9px] font-bold uppercase tracking-widest mt-1 inline-block", cfg.text)}>
+          <span className={cn("text-[9px] font-bold uppercase tracking-[0.2em] mt-1.5 inline-block", cfg.text)}>
             {cfg.label}
           </span>
         </div>

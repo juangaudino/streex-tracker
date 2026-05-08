@@ -123,12 +123,12 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
         </div>
 
         <div className="text-center space-y-2 pt-4 border-t border-border/50">
-          <p className="text-[11px] font-mono text-muted-foreground/60">Streex v3.4</p>
+          <p className="text-[11px] font-mono text-muted-foreground/60">Streex v4.5</p>
           <div className="text-[10px] text-muted-foreground/40 space-y-0.5">
-            <p>• Smart Momentum System</p>
-            <p>• Mileage Tracking</p>
-            <p>• Dynamic Commentary</p>
-            <p>• Achievement Rarity Evolution</p>
+            <p>• Record celebration effects</p>
+            <p>• Responsive emotional states</p>
+            <p>• Advanced commentary system</p>
+            <p>• UI stability refinements</p>
           </div>
         </div>
       </div>

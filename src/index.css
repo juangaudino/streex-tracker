@@ -588,3 +588,23 @@
 .rpg ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--rpg-glow) / 0.25);
 }
+
+/* Celebration particle animation */
+@keyframes celebration-particle {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-120px) translateX(var(--drift, 20px)) scale(0.3);
+  }
+}
+.animate-celebration-particle {
+  --drift: 0px;
+  animation: celebration-particle 2s ease-out forwards;
+}
+.animate-celebration-particle:nth-child(odd) { --drift: -30px; }
+.animate-celebration-particle:nth-child(3n) { --drift: 40px; }
+.animate-celebration-particle:nth-child(4n) { --drift: -15px; }
+.animate-celebration-particle:nth-child(5n) { --drift: 25px; }

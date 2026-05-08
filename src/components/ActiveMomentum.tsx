@@ -106,8 +106,11 @@ export function getSmartHeader(
   const dayPct = dayRecord.record > 0 ? (todayT / dayRecord.record) * 100 : 0;
 
   // Extreme
-  if (dayPct >= 95 && dayRecord.record > 0 && todayT > 0) return "NEW RECORD IMMINENT 🔥";
-  if (pct >= 120) return "HISTORY INCOMING 🔥";
+  // POST-record states (today already broke it)
+  if (todayT > dayRecord.record && dayRecord.record > 0 && todayT > 0) return `New ${todayEntry.dayName} Record 🏆`;
+  // PRE-record imminent
+  if (dayPct >= 95 && dayRecord.record > 0 && todayT > 0) return "Record Imminent 🔥";
+  if (pct >= 120) return "History Incoming 🔥";
   if (pct >= 100 && loggedDays.length <= 5) return "Elite Pace";
 
   // High

@@ -70,10 +70,21 @@ export function getSmartCommentary(
   if (dayRecord.record > 0 && todayTotal > 0) {
     const gap = dayRecord.record - todayTotal;
     if (gap > 0 && gap <= dayRecord.record * 0.15) {
-      return `Only ${formatCurrency(gap, sym)} away from your best ${dayName}`;
+      const nearRecordLines = [
+        `Only ${formatCurrency(gap, sym)} away from your best ${dayName}`,
+        `Tonight could change your ${dayName} history`,
+        `One more push — ${formatCurrency(gap, sym)} to go`,
+        `${dayName} record within reach`,
+      ];
+      return nearRecordLines[Math.floor(todayTotal * 7) % nearRecordLines.length];
     }
     if (todayTotal > dayRecord.record) {
-      return `New ${dayName} record — you're writing history`;
+      const recordLines = [
+        `History updated — new ${dayName} record`,
+        `${dayName} record destroyed`,
+        `New ${dayName} record secured`,
+      ];
+      return recordLines[Math.floor(todayTotal * 3) % recordLines.length];
     }
   }
 
@@ -81,17 +92,38 @@ export function getSmartCommentary(
   // Skip if growth chips already show the vs-average stat
   if (dayRecord.avg > 0 && todayTotal > 0) {
     const pctAbove = ((todayTotal - dayRecord.avg) / dayRecord.avg) * 100;
-    if (pctAbove >= 30 && !hasChips) return `+${Math.round(pctAbove)}% vs average ${dayName}`;
+    if (pctAbove >= 30 && !hasChips) {
+      const strongLines = [
+        `+${Math.round(pctAbove)}% vs average ${dayName}`,
+        `You're outperforming recent ${dayName}s`,
+        `${dayName} pace accelerating`,
+      ];
+      return strongLines[Math.floor(todayTotal * 5) % strongLines.length];
+    }
     // Don't say "Strong <day>" if headline already says it
     if (pctAbove >= 10 && !headline.toLowerCase().includes("strong")) {
-      if (!hasChips) return `Strong ${dayName} so far`;
+      if (!hasChips) {
+        const midLines = [
+          `Strong ${dayName} so far`,
+          `Solid ${dayName} building`,
+          `${dayName} energy rising`,
+        ];
+        return midLines[Math.floor(todayTotal * 4) % midLines.length];
+      }
     }
   }
 
   // Elite streak
   // Skip if headline already communicates momentum/streak identity
   if (consecutiveActive >= 3 && !headline.toLowerCase().includes("locked") && !headline.toLowerCase().includes("elite"))
-    return `${consecutiveActive} elite days in a row`;
+  {
+    const streakLines = [
+      `${consecutiveActive} elite days in a row`,
+      `${consecutiveActive}-day streak and counting`,
+      `Consistency machine — ${consecutiveActive} days`,
+    ];
+    return streakLines[Math.floor(todayTotal * 6) % streakLines.length];
+  }
 
   // Goal proximity
   if (weekPct >= 90 && weekPct < 100) {
@@ -99,9 +131,14 @@ export function getSmartCommentary(
     return `${formatCurrency(remaining, sym)} to close the goal`;
   }
   if (weekPct >= 100 && weekPct < 120 && !headline.toLowerCase().includes("elite") && !headline.toLowerCase().includes("history"))
-    return "Goal crushed — keep pushing";
-  if (weekPct >= 120 && !headline.toLowerCase().includes("history"))
-    return "Current You is outperforming Past You";
+  {
+    const goalLines = ["Goal crushed — keep pushing", "Target smashed this week", "Goal cleared — surplus mode"];
+    return goalLines[Math.floor(wt * 3) % goalLines.length];
+  }
+  if (weekPct >= 120 && !headline.toLowerCase().includes("history")) {
+    const eliteLines = ["Current You is outperforming Past You", "Best momentum this month", "Weekly pace improving"];
+    return eliteLines[Math.floor(wt * 4) % eliteLines.length];
+  }
 
   // Comparison to previous weeks
   const closedWeeks = weeks.filter((w) => w.id !== openWeek.id && w.status === "closed");
@@ -115,16 +152,31 @@ export function getSmartCommentary(
   }
 
   // Consistency
-  if (activeDays.length >= 4) return "Consistency building this week";
+  if (activeDays.length >= 4) {
+    const conLines = ["Consistency building this week", "Locked in — steady grind", "Reliable rhythm this week"];
+    return conLines[Math.floor(wt * 5) % conLines.length];
+  }
 
   // Building momentum
   // Skip if headline already says "Building Momentum"
   if (todayTotal > 0 && activeDays.length >= 2 && !headline.toLowerCase().includes("building"))
-    return "Momentum building — keep stacking";
+  {
+    const buildLines = ["Momentum building — keep stacking", "Pace picking up", "Getting into the groove"];
+    return buildLines[Math.floor(todayTotal * 2) % buildLines.length];
+  }
 
   // Pace check
   if (dayRecord.avg > 0 && todayTotal > 0 && todayTotal >= dayRecord.avg && !hasChips)
-    return `${dayName} pace above your average`;
+  {
+    const paceLines = [`${dayName} pace above your average`, `Steady ${dayName} — above baseline`];
+    return paceLines[Math.floor(todayTotal * 3) % paceLines.length];
+  }
+
+  // Low / no earnings yet
+  if (todayTotal === 0 && activeDays.length >= 1) {
+    const lowLines = ["Slow start. Plenty of time left.", "Day's still young", "Ready when you are"];
+    return lowLines[Math.floor(wt * 7) % lowLines.length];
+  }
 
   return null;
 }

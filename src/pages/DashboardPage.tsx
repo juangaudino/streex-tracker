@@ -132,13 +132,13 @@ export default function DashboardPage() {
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       {/* Smart Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{smartHeader}</h1>
+        <div className="min-w-0 flex-1 mr-3">
+          <h1 className="text-xl sm:text-2xl font-bold truncate">{smartHeader}</h1>
           <p className="text-sm text-muted-foreground">
             {openWeek.startDate} → {openWeek.endDate}
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-end gap-1 shrink-0">
           {pace && (
             <span className={`text-xs font-bold px-3 py-1 rounded-full ${
               pace.variant === "fire" ? "bg-warning/15 text-warning"
@@ -199,6 +199,7 @@ export default function DashboardPage() {
           apps={settings.activeApps}
           currencySymbol={sym}
           onSave={(updated) => updateWeek(updated)}
+          weeks={weeks}
         />
         {todayEntry && dayRec.count > 1 && (
           <div className="bg-card rounded-xl border border-border p-4 space-y-2">

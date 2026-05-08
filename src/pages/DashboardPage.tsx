@@ -101,7 +101,7 @@ export default function DashboardPage() {
   const todayName = dayNames[now.getDay()] as string;
   const todayEntry = openWeek.entries.find((d) => d.date === todayStr) ?? null;
   const todayTotal = todayEntry ? dayTotal(todayEntry) : 0;
-  const dayRec = getDayOfWeekRecord(weeks, todayName);
+  const dayRec = getDayOfWeekRecord(weeks, todayName, todayStr);
   const smartHeader = getSmartHeader(weeks, openWeek, todayEntry, dayRec);
   const weeklyChase = getWeeklyRecordChase(weeks, openWeek, sym);
   const dailyChase = getDailyRecordChase(todayTotal, dayRec.record, todayName, sym);

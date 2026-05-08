@@ -70,13 +70,13 @@ function activeDayStreak(weeks: WeekRecord[]): number {
   return streak;
 }
 
-export function getDayOfWeekRecord(weeks: WeekRecord[], dayName: string): { record: number; avg: number; count: number } {
+export function getDayOfWeekRecord(weeks: WeekRecord[], dayName: string, excludeDate?: string): { record: number; avg: number; count: number } {
   let best = 0;
   let sum = 0;
   let count = 0;
   for (const w of weeks) {
     for (const d of w.entries) {
-      if (d.dayName === dayName) {
+      if (d.dayName === dayName && (!excludeDate || d.date !== excludeDate)) {
         const t = dayTotal(d);
         const isLogged = d.logged !== undefined ? d.logged : t > 0;
         if (isLogged) {

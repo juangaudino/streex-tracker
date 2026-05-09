@@ -13,6 +13,7 @@ import {
   Crown,
 } from "lucide-react";
 import { useState } from "react";
+import { NavLink as RouterNavLink } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import type { StoreContext } from "./types";
 
@@ -23,7 +24,6 @@ const navItems = [
   { to: "/compare", icon: BarChart3, label: "Compare" },
   { to: "/history", icon: History, label: "History" },
   { to: "/achievements", icon: Trophy, label: "Achieve" },
-  { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
 interface AppShellProps {
@@ -58,6 +58,14 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
                 {user?.email && (
                   <p className="text-xs text-muted-foreground truncate px-1">{user.email}</p>
                 )}
+                <RouterNavLink
+                  to="/settings"
+                  onClick={() => setMobileMenu(false)}
+                  className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                >
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </RouterNavLink>
                 <button
                   onClick={() => { setMobileMenu(false); onSignOut(); }}
                   className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
@@ -87,6 +95,20 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
               {item.label}
             </NavLink>
           ))}
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              }`
+            }
+            aria-label="Settings"
+          >
+            <Settings className="h-4 w-4" />
+            Settings
+          </NavLink>
           <button
             onClick={onSignOut}
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors ml-2"

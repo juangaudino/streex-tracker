@@ -30,15 +30,17 @@ import {
   dayTotal,
 } from "@/lib/store";
 import type { StoreContext } from "./types";
-import { CalendarPlus, Download } from "lucide-react";
+import { CalendarPlus, Download, MoonStar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import EndDayDialog from "@/components/EndDayDialog";
 
 export default function DashboardPage() {
   const { openWeek, weeks, settings, hasLocalData, importLocalData, updateWeek } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [importing, setImporting] = useState(false);
+  const [endDayOpen, setEndDayOpen] = useState(false);
   const { user } = useAuth();
   const { achievements } = useAchievements(user, weeks);
   const sym = settings.currencySymbol;

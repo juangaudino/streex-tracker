@@ -1,0 +1,176 @@
+import { useOutletContext } from "react-router-dom";
+import { computeCareerStats } from "@/lib/career";
+import { formatCurrency } from "@/lib/store";
+import type { StoreContext } from "./types";
+import {
+  Trophy, Flame, Calendar, TrendingUp, Activity, Target,
+  Sparkles, Crown, Zap,
+} from "lucide-react";
+
+export default function CareerPage() {
+  const { weeks, settings } = useOutletContext<StoreContext>();
+  const sym = settings.currencySymbol;
+  const stats = computeCareerStats(weeks);
+
+  if (weeks.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 px-4 text-center">
+        <Crown className="h-10 w-10 text-gold opacity-60" />
+        <h2 className="text-2xl font-bold">Your career starts here</h2>
+        <p className="text-muted-foreground max-w-md text-sm">
+          Log your first week to begin building your gig journey.
+        </p>
+      </div>
+    );
+  }
+
+  const growthPositive = (stats.monthlyGrowth ?? 0) >= 0;
+
+  return (
+    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6">
+      {/* Identity hero */}
+      <section className="relative overflow-hidden rounded-2xl border border-gold/20 bg-gradient-to-br from-card to-card/40 p-6 shadow-sm">
+        <div className="absolute -top-12 -right-12 w-40 h-40 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative space-y-4">
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gold">
+            <Crown className="h-3.5 w-3.5" />
+            Career Identity
+          </div>
+          <div>
+            <p className="text-3xl sm:text-4xl font-bold tracking-tight">{stats.archetype}</p>
+            <p className="text-sm text-muted-foreground mt-1">{stats.momentumStatus}</p>
+          </div>
+          <div className="pt-2 border-t border-border/50">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Lifetime Earnings</p>
+            <p className="text-4xl sm:text-5xl font-bold font-mono text-gold mt-1">
+              {formatCurrency(stats.lifetimeEarnings, sym)}
+            </p>
+          </div>
+          {/* XP placeholder */}
+          <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
+            <Sparkles className="h-3 w-3" />
+            Career Rank · coming soon
+          </div>
+        </div>
+      </section>
+
+      {/* Hero stats row */}
+      <section className="grid grid-cols-2 gap-3">
+        <HeroStat
+          icon={<Trophy className="h-4 w-4" />}
+          label="Best Day Ever"
+          value={stats.bestDay.total > 0 ? formatCurrency(stats.bestDay.total, sym) : "—"}
+          sub={stats.bestDay.dayName !== "—" ? `${stats.bestDay.dayName} · ${stats.bestDay.date}` : "No data yet"}
+          accent="gold"
+        />
+        <HeroStat
+          icon={<Calendar className="h-4 w-4" />}
+          label="Best Week Ever"
+          value={stats.bestWeek.total > 0 ? formatCurrency(stats.bestWeek.total, sym) : "—"}
+          sub={stats.bestWeek.startDate ? `${stats.bestWeek.startDate} → ${stats.bestWeek.endDate}` : "—"}
+          accent="primary"
+        />
+      </section>
+
+      {/* Streaks */}
+      <section className="space-y-2">
+        <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Streaks</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <StatBlock
+            icon={<Flame className="h-4 w-4 text-warning" />}
+            label="Current Streak"
+            value={`${stats.currentStreak} day${stats.currentStreak === 1 ? "" : "s"}`}
+          />
+          <StatBlock
+            icon={<Zap className="h-4 w-4 text-beast-purple" />}
+            label="Longest Streak"
+            value={`${stats.longestStreak} day${stats.longestStreak === 1 ? "" : "s"}`}
+          />
+        </div>
+      </section>
+
+      {/* Performance */}
+      <section className="space-y-2">
+        <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Performance</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <StatBlock
+            icon={<Activity className="h-4 w-4 text-primary" />}
+            label="Avg Daily"
+            value={formatCurrency(stats.avgDaily, sym)}
+          />
+          <StatBlock
+            icon={<TrendingUp className={`h-4 w-4 ${growthPositive ? "text-success" : "text-warning"}`} />}
+            label="Monthly Growth"
+            value={stats.monthlyGrowth === null
+              ? "—"
+              : `${stats.monthlyGrowth > 0 ? "+" : ""}${stats.monthlyGrowth.toFixed(1)}%`}
+          />
+          <StatBlock
+            icon={<Target className="h-4 w-4 text-success" />}
+            label="Total Active Days"
+            value={`${stats.totalActiveDays}`}
+          />
+          <StatBlock
+            icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
+            label="Entries Logged"
+            value={`${stats.totalEntriesLogged}`}
+          />
+        </div>
+      </section>
+
+      {/* Identity insights */}
+      <section className="space-y-2">
+        <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Insights</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <StatBlock
+            icon={<Crown className="h-4 w-4 text-gold" />}
+            label="Best Weekday"
+            value={stats.bestWeekday.dayName !== "—"
+              ? `${stats.bestWeekday.dayName}`
+              : "—"}
+            sub={stats.bestWeekday.avg > 0 ? `${formatCurrency(stats.bestWeekday.avg, sym)} avg` : undefined}
+          />
+          <StatBlock
+            icon={<Sparkles className="h-4 w-4 text-primary" />}
+            label="Most Used App"
+            value={stats.mostUsedApp.app}
+            sub={stats.mostUsedApp.total > 0 ? formatCurrency(stats.mostUsedApp.total, sym) : undefined}
+          />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function HeroStat({ icon, label, value, sub, accent }: {
+  icon: React.ReactNode; label: string; value: string; sub?: string;
+  accent: "gold" | "primary";
+}) {
+  const accentClass = accent === "gold" ? "border-gold/30" : "border-primary/30";
+  const valClass = accent === "gold" ? "text-gold" : "text-primary";
+  return (
+    <div className={`bg-card rounded-xl border ${accentClass} p-4 space-y-1`}>
+      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <p className={`text-xl font-bold font-mono ${valClass}`}>{value}</p>
+      {sub && <p className="text-[11px] text-muted-foreground truncate">{sub}</p>}
+    </div>
+  );
+}
+
+function StatBlock({ icon, label, value, sub }: {
+  icon: React.ReactNode; label: string; value: string; sub?: string;
+}) {
+  return (
+    <div className="bg-card rounded-xl border border-border p-4 space-y-1">
+      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <p className="text-lg font-bold font-mono text-foreground">{value}</p>
+      {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}

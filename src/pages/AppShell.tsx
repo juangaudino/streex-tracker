@@ -10,6 +10,7 @@ import {
   LogOut,
   Trophy,
   User,
+  Crown,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +19,7 @@ import type { StoreContext } from "./types";
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/entry", icon: CalendarDays, label: "Entry" },
+  { to: "/career", icon: Crown, label: "Career" },
   { to: "/compare", icon: BarChart3, label: "Compare" },
   { to: "/history", icon: History, label: "History" },
   { to: "/achievements", icon: Trophy, label: "Achieve" },

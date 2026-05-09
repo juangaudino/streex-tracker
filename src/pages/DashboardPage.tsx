@@ -230,6 +230,41 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* End Day */}
+      {todayEntry && (
+        <div className="flex flex-col items-center gap-1.5 pt-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setEndDayOpen(true)}
+            className="gap-2 border-gold/30 text-gold hover:bg-gold/10 hover:text-gold"
+          >
+            <MoonStar className="h-4 w-4" />
+            End Day
+          </Button>
+          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">Close the chapter</p>
+        </div>
+      )}
+
+      {todayEntry && (
+        <EndDayDialog
+          open={endDayOpen}
+          onOpenChange={setEndDayOpen}
+          openWeek={openWeek}
+          weeks={weeks}
+          todayEntry={todayEntry}
+          currencySymbol={sym}
+          onConfirm={() => {
+            const entries = openWeek.entries.map((d) =>
+              d.date === todayEntry.date ? { ...d, logged: true } : d,
+            );
+            updateWeek({ ...openWeek, entries });
+            setEndDayOpen(false);
+            toast({ title: "Day closed.", description: "The journey continues tomorrow." });
+          }}
+        />
+      )}
+
       {/* Progress bar */}
       <div className="bg-card rounded-xl border border-border p-4 space-y-2">
         <div className="flex justify-between text-sm">

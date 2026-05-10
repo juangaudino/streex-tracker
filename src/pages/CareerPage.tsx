@@ -194,3 +194,50 @@ function StatBlock({ icon, label, value, sub }: {
     </div>
   );
 }
+
+function ProgressionCard({
+  title, pct, currentValue, targetLabel, targetValue, emptyMessage, accent, isRecord,
+}: {
+  title: string;
+  pct: number | null;
+  currentValue: string;
+  targetLabel: string;
+  targetValue: string;
+  emptyMessage: string;
+  accent: "primary" | "gold";
+  isRecord?: boolean;
+}) {
+  const accentBorder = accent === "gold" ? "border-gold/30" : "border-primary/30";
+  const accentText = accent === "gold" ? "text-gold" : "text-primary";
+  const accentBar = accent === "gold" ? "bg-gold" : "bg-primary";
+  const displayPct = pct === null ? null : Math.min(Math.round(pct), 999);
+  const barWidth = pct === null ? 0 : Math.min(pct, 100);
+
+  return (
+    <div className={`relative bg-card rounded-xl border ${accentBorder} p-4 space-y-3 overflow-hidden`}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{title}</p>
+        {isRecord && (
+          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30 uppercase tracking-wider">
+            Record
+          </span>
+        )}
+      </div>
+      {pct === null ? (
+        <p className={`text-sm font-medium ${accentText}`}>{emptyMessage}</p>
+      ) : (
+        <p className={`text-3xl font-bold font-mono ${accentText}`}>{displayPct}% reached</p>
+      )}
+      <div className="h-2 bg-muted rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-700 ${accentBar}`}
+          style={{ width: `${barWidth}%` }}
+        />
+      </div>
+      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+        <span>Current: <span className="font-mono font-bold text-foreground">{currentValue}</span></span>
+        <span>{targetLabel}: <span className="font-mono font-bold text-foreground">{targetValue}</span></span>
+      </div>
+    </div>
+  );
+}

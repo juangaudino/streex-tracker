@@ -25,8 +25,6 @@ export default function CareerPage() {
     );
   }
 
-  const growthPositive = (stats.monthlyGrowth ?? 0) >= 0;
-
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6">
       {/* Identity hero */}

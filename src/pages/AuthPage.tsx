@@ -123,11 +123,12 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
         </div>
 
         <div className="text-center space-y-2 pt-4 border-t border-border/50">
-          <p className="text-[11px] font-mono text-muted-foreground/60">Streex v5.0.1</p>
+          <p className="text-[11px] font-mono text-muted-foreground/60">Streex v5.0.2</p>
           <div className="text-[10px] text-muted-foreground/40 space-y-0.5">
-            <p>• Cleaner mobile navigation</p>
-            <p>• Settings relocation</p>
-            <p>• Improved dashboard hierarchy</p>
+            <p>• Improved emotional dashboard logic</p>
+            <p>• Better monthly progression system</p>
+            <p>• Enhanced End Day flow</p>
+            <p>• Cleaner motivational states</p>
           </div>
         </div>
       </div>

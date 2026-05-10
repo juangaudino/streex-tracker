@@ -15,6 +15,16 @@ export interface CareerStats {
   bestWeekday: { dayName: string; avg: number };
   archetype: string;
   momentumStatus: string;
+  /** Progressive monthly comparison — never punishes early-month progress. */
+  monthlyProgression: {
+    currentMonthTotal: number;
+    lastMonthTotal: number;
+    pctOfLastMonth: number | null; // null when no prior month
+    bestMonthTotal: number;
+    bestMonthLabel: string; // YYYY-MM
+    pctOfBestMonth: number | null;
+    isCurrentBest: boolean;
+  };
 }
 
 function allDaysSorted(weeks: WeekRecord[]) {
@@ -90,6 +100,38 @@ export function computeCareerStats(weeks: WeekRecord[]): CareerStats {
     if (prev > 0) monthlyGrowth = ((last - prev) / prev) * 100;
   }
 
+  // Monthly progression (chase model — never negative)
+  const now = new Date();
+  const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevYM = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
+  const currentMonthTotal = byMonth.get(currentYM) || 0;
+  const lastMonthTotal = byMonth.get(prevYM) || 0;
+  const pctOfLastMonth = lastMonthTotal > 0 ? (currentMonthTotal / lastMonthTotal) * 100 : null;
+
+  let bestMonthTotal = 0;
+  let bestMonthLabel = "";
+  byMonth.forEach((v, k) => {
+    // exclude the current in-progress month from "best month ever" target
+    if (k === currentYM) return;
+    if (v > bestMonthTotal) {
+      bestMonthTotal = v;
+      bestMonthLabel = k;
+    }
+  });
+  const pctOfBestMonth = bestMonthTotal > 0 ? (currentMonthTotal / bestMonthTotal) * 100 : null;
+  const isCurrentBest = currentMonthTotal > 0 && currentMonthTotal >= bestMonthTotal;
+
+  const monthlyProgression = {
+    currentMonthTotal,
+    lastMonthTotal,
+    pctOfLastMonth,
+    bestMonthTotal,
+    bestMonthLabel,
+    pctOfBestMonth,
+    isCurrentBest,
+  };
+
   // Best weekday (by avg)
   const dayBuckets = new Map<string, { sum: number; count: number }>();
   activeDays.forEach((d) => {
@@ -124,6 +166,7 @@ export function computeCareerStats(weeks: WeekRecord[]): CareerStats {
     bestWeekday,
     archetype,
     momentumStatus,
+    monthlyProgression,
   };
 }
 

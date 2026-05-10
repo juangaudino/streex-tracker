@@ -3,7 +3,7 @@ import { computeCareerStats } from "@/lib/career";
 import { formatCurrency } from "@/lib/store";
 import type { StoreContext } from "./types";
 import {
-  Trophy, Flame, Calendar, TrendingUp, Activity, Target,
+  Trophy, Flame, Calendar, Activity, Target,
   Sparkles, Crown, Zap,
 } from "lucide-react";
 
@@ -11,6 +11,7 @@ export default function CareerPage() {
   const { weeks, settings } = useOutletContext<StoreContext>();
   const sym = settings.currencySymbol;
   const stats = computeCareerStats(weeks);
+  const mp = stats.monthlyProgression;
 
   if (weeks.length === 0) {
     return (
@@ -23,8 +24,6 @@ export default function CareerPage() {
       </div>
     );
   }
-
-  const growthPositive = (stats.monthlyGrowth ?? 0) >= 0;
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6">
@@ -89,6 +88,32 @@ export default function CareerPage() {
         </div>
       </section>
 
+      {/* Monthly progression — chase model */}
+      <section className="space-y-2">
+        <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Monthly Progression</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <ProgressionCard
+            title="This Month vs Last Month"
+            pct={mp.pctOfLastMonth}
+            currentValue={formatCurrency(mp.currentMonthTotal, sym)}
+            targetLabel="Last month"
+            targetValue={mp.lastMonthTotal > 0 ? formatCurrency(mp.lastMonthTotal, sym) : "—"}
+            emptyMessage="Building your first comparison."
+            accent="primary"
+          />
+          <ProgressionCard
+            title="Best Month Chase"
+            pct={mp.pctOfBestMonth}
+            currentValue={formatCurrency(mp.currentMonthTotal, sym)}
+            targetLabel={mp.isCurrentBest ? "New record this month" : "Best month ever"}
+            targetValue={mp.bestMonthTotal > 0 ? formatCurrency(mp.bestMonthTotal, sym) : "—"}
+            emptyMessage="Your legacy starts here."
+            accent="gold"
+            isRecord={mp.isCurrentBest}
+          />
+        </div>
+      </section>
+
       {/* Performance */}
       <section className="space-y-2">
         <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Performance</h2>
@@ -97,13 +122,6 @@ export default function CareerPage() {
             icon={<Activity className="h-4 w-4 text-primary" />}
             label="Avg Daily"
             value={formatCurrency(stats.avgDaily, sym)}
-          />
-          <StatBlock
-            icon={<TrendingUp className={`h-4 w-4 ${growthPositive ? "text-success" : "text-warning"}`} />}
-            label="Monthly Growth"
-            value={stats.monthlyGrowth === null
-              ? "—"
-              : `${stats.monthlyGrowth > 0 ? "+" : ""}${stats.monthlyGrowth.toFixed(1)}%`}
           />
           <StatBlock
             icon={<Target className="h-4 w-4 text-success" />}
@@ -171,6 +189,53 @@ function StatBlock({ icon, label, value, sub }: {
       </div>
       <p className="text-lg font-bold font-mono text-foreground">{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}
+
+function ProgressionCard({
+  title, pct, currentValue, targetLabel, targetValue, emptyMessage, accent, isRecord,
+}: {
+  title: string;
+  pct: number | null;
+  currentValue: string;
+  targetLabel: string;
+  targetValue: string;
+  emptyMessage: string;
+  accent: "primary" | "gold";
+  isRecord?: boolean;
+}) {
+  const accentBorder = accent === "gold" ? "border-gold/30" : "border-primary/30";
+  const accentText = accent === "gold" ? "text-gold" : "text-primary";
+  const accentBar = accent === "gold" ? "bg-gold" : "bg-primary";
+  const displayPct = pct === null ? null : Math.min(Math.round(pct), 999);
+  const barWidth = pct === null ? 0 : Math.min(pct, 100);
+
+  return (
+    <div className={`relative bg-card rounded-xl border ${accentBorder} p-4 space-y-3 overflow-hidden`}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{title}</p>
+        {isRecord && (
+          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30 uppercase tracking-wider">
+            Record
+          </span>
+        )}
+      </div>
+      {pct === null ? (
+        <p className={`text-sm font-medium ${accentText}`}>{emptyMessage}</p>
+      ) : (
+        <p className={`text-3xl font-bold font-mono ${accentText}`}>{displayPct}% reached</p>
+      )}
+      <div className="h-2 bg-muted rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-700 ${accentBar}`}
+          style={{ width: `${barWidth}%` }}
+        />
+      </div>
+      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+        <span>Current: <span className="font-mono font-bold text-foreground">{currentValue}</span></span>
+        <span>{targetLabel}: <span className="font-mono font-bold text-foreground">{targetValue}</span></span>
+      </div>
     </div>
   );
 }

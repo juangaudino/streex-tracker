@@ -7,12 +7,10 @@ import QuickEntryWidget from "@/components/QuickEntryWidget";
 import ActiveMomentum from "@/components/ActiveMomentum";
 import {
   getDayOfWeekRecord,
-  getSmartHeader,
   getWeeklyRecordChase,
   getDailyRecordChase,
-  getPaceLabel,
 } from "@/components/ActiveMomentum";
-import { getMomentumState, getSmartCommentary, getPersonalGrowthStats } from "@/lib/commentary";
+import { getDashboardMood, getPersonalGrowthStats } from "@/lib/commentary";
 import { useAchievements } from "@/hooks/useAchievements";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -30,7 +28,7 @@ import {
   dayTotal,
 } from "@/lib/store";
 import type { StoreContext } from "./types";
-import { CalendarPlus, Download, MoonStar } from "lucide-react";
+import { CalendarPlus, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import EndDayDialog from "@/components/EndDayDialog";
@@ -104,18 +102,18 @@ export default function DashboardPage() {
   const todayEntry = openWeek.entries.find((d) => d.date === todayStr) ?? null;
   const todayTotal = todayEntry ? dayTotal(todayEntry) : 0;
   const dayRec = getDayOfWeekRecord(weeks, todayName, todayStr);
-  const smartHeader = getSmartHeader(weeks, openWeek, todayEntry, dayRec);
   const weeklyChase = getWeeklyRecordChase(weeks, openWeek, sym);
   const dailyChase = getDailyRecordChase(todayTotal, dayRec.record, todayName, sym);
-  const pace = getPaceLabel(todayTotal, dayRec.avg, pct);
 
-  // Smart Commentary & Momentum
-  const momentum = getMomentumState(weeks, openWeek, todayTotal, dayRec.avg, pct);
-  const growthStats = getPersonalGrowthStats(weeks, openWeek, todayTotal, todayName, dayRec.avg);
-  const commentary = getSmartCommentary(weeks, openWeek, todayEntry, todayTotal, dayRec, pct, sym, {
-    headlineText: smartHeader,
-    hasGrowthChips: growthStats.length > 0,
-  });
+  // Unified mood engine — headline, pace chip, commentary, momentum all coherent
+  const mood = getDashboardMood(weeks, openWeek, todayEntry, dayRec, sym);
+  const smartHeader = mood.headline;
+  const pace = mood.paceChip;
+  const commentary = mood.commentary;
+  const growthStats = mood.tone === "prerun" || mood.tone === "closed"
+    ? []
+    : getPersonalGrowthStats(weeks, openWeek, todayTotal, todayName, dayRec.avg);
+  const isDayClosed = mood.tone === "closed";
 
   const statusVariant = pct >= 120 ? "purple" as const : pct >= 100 ? "success" as const : pct >= 75 ? "primary" as const : pct >= 40 ? "warning" as const : "default" as const;
 
@@ -157,10 +155,14 @@ export default function DashboardPage() {
       {/* Smart Insight — single most important contextual message */}
       {(() => {
         // Priority: daily chase > commentary > weekly chase (show only ONE)
-        const insight = dailyChase ?? commentary ?? weeklyChase;
+        const insight = isDayClosed
+          ? commentary
+          : (dailyChase ?? commentary ?? weeklyChase);
         if (!insight) return null;
-        const icon = dailyChase ? "🏆" : commentary ? "💬" : "🎯";
-        const colorClass = dailyChase
+        const icon = isDayClosed ? "🌙" : (!isDayClosed && dailyChase) ? "🏆" : commentary ? "💬" : "🎯";
+        const colorClass = isDayClosed
+          ? "bg-gold/10 border-gold/30 text-gold"
+          : dailyChase
           ? "bg-gold/10 border-gold/30 text-gold"
           : weeklyChase && !commentary
           ? "bg-primary/10 border-primary/30 text-primary"
@@ -175,11 +177,11 @@ export default function DashboardPage() {
       {/* Momentum & Stats Chips */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-          momentum.state === "high" ? "bg-success/15 text-success"
-          : momentum.state === "medium" ? "bg-primary/15 text-primary"
+          mood.momentumState === "high" ? "bg-success/15 text-success"
+          : mood.momentumState === "medium" ? "bg-primary/15 text-primary"
           : "bg-muted-foreground/15 text-muted-foreground"
         }`}>
-          {momentum.label}
+          {mood.momentumLabel}
         </span>
         {growthStats.map((stat, i) => (
           <span key={i} className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
@@ -202,8 +204,9 @@ export default function DashboardPage() {
           currencySymbol={sym}
           onSave={(updated) => updateWeek(updated)}
           weeks={weeks}
+          onEndDay={todayEntry && !isDayClosed ? () => setEndDayOpen(true) : undefined}
         />
-        {todayEntry && dayRec.count > 1 && (
+        {todayEntry && dayRec.count > 1 && !isDayClosed && (
           <div className="bg-card rounded-xl border border-border p-4 space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Best {todayName} Ever
@@ -230,23 +233,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* End Day */}
-      {todayEntry && (
-        <div className="flex flex-col items-center gap-1.5 pt-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEndDayOpen(true)}
-            className="gap-2 border-gold/30 text-gold hover:bg-gold/10 hover:text-gold"
-          >
-            <MoonStar className="h-4 w-4" />
-            End Day
-          </Button>
-          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">Close the chapter</p>
-        </div>
-      )}
-
-      {todayEntry && (
+      {todayEntry && !isDayClosed && (
         <EndDayDialog
           open={endDayOpen}
           onOpenChange={setEndDayOpen}
@@ -256,7 +243,7 @@ export default function DashboardPage() {
           currencySymbol={sym}
           onConfirm={() => {
             const entries = openWeek.entries.map((d) =>
-              d.date === todayEntry.date ? { ...d, logged: true } : d,
+              d.date === todayEntry.date ? { ...d, logged: true, dayClosed: true } : d,
             );
             updateWeek({ ...openWeek, entries });
             setEndDayOpen(false);

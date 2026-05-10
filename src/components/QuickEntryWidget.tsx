@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Zap, Check } from "lucide-react";
+import { Zap, MoonStar, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,6 +22,8 @@ interface QuickEntryWidgetProps {
   currencySymbol: string;
   onSave: (updatedWeek: WeekRecord) => void;
   weeks?: WeekRecord[];
+  /** Optional End Day handler — when provided, renders End Day next to Quick Add. */
+  onEndDay?: () => void;
 }
 
 function getTodayDayIdx(week: WeekRecord): number {
@@ -39,7 +41,7 @@ function getTodayDayIdx(week: WeekRecord): number {
   return week.entries.findIndex((d) => d.dayName === todayName);
 }
 
-export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSave, weeks }: QuickEntryWidgetProps) {
+export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSave, weeks, onEndDay }: QuickEntryWidgetProps) {
   const [open, setOpen] = useState(false);
   const todayIdx = getTodayDayIdx(openWeek);
   const today = todayIdx >= 0 ? openWeek.entries[todayIdx] : null;
@@ -92,6 +94,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
   const todayTotal = dayTotal(today);
   const now = new Date();
   const dayLabel = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const isClosed = !!today.dayClosed;
 
   return (
     <div className="bg-card rounded-xl border border-primary/20 p-4 space-y-3">
@@ -100,10 +103,23 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Today</p>
           <p className="text-sm font-semibold">{dayLabel}</p>
         </div>
-        <span className="text-xl font-bold font-mono text-primary">
-          {formatCurrency(todayTotal, currencySymbol)}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-xl font-bold font-mono text-primary">
+            {formatCurrency(todayTotal, currencySymbol)}
+          </span>
+          {isClosed && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30">
+              <Lock className="h-3 w-3" /> Day Closed
+            </span>
+          )}
+        </div>
       </div>
+      {isClosed ? (
+        <p className="text-xs text-muted-foreground/80 leading-relaxed">
+          Day finalized. Edit entries from the Entry screen if needed.
+        </p>
+      ) : (
+      <div className={cn("grid gap-2", onEndDay ? "grid-cols-[1fr_auto]" : "grid-cols-1")}>
       <Sheet open={open} onOpenChange={handleOpen}>
         <SheetTrigger asChild>
           <Button size="sm" className="w-full gap-2">
@@ -168,6 +184,20 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
           </div>
         </SheetContent>
       </Sheet>
+        {onEndDay && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onEndDay}
+            className="gap-2 border-gold/30 text-gold hover:bg-gold/10 hover:text-gold whitespace-nowrap"
+          >
+            <MoonStar className="h-4 w-4" />
+            End Day
+          </Button>
+        )}
+      </div>
+      )}
     </div>
   );
 }

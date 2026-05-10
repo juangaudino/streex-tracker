@@ -9,6 +9,329 @@ export interface MomentumInfo {
   label: string;
 }
 
+// ─────────────────────────────────────────────────────────────────
+// UNIFIED DASHBOARD MOOD ENGINE
+// One source of truth — headline, pace chip, commentary, and
+// momentum label all derive from the same `tone`.
+// ─────────────────────────────────────────────────────────────────
+
+export type DashboardTone =
+  | "closed"
+  | "prerun"
+  | "recovery"
+  | "steady"
+  | "strong"
+  | "elite"
+  | "record";
+
+export interface PaceChip {
+  text: string;
+  variant: "fire" | "primary" | "goal" | "streak";
+}
+
+export interface DashboardMood {
+  tone: DashboardTone;
+  headline: string;
+  paceChip: PaceChip | null;
+  momentumLabel: string;
+  momentumState: MomentumState;
+  commentary: string | null;
+}
+
+function pickRotating<T>(arr: T[], seed: number): T {
+  const idx = Math.abs(Math.floor(seed)) % arr.length;
+  return arr[idx];
+}
+
+export function getDashboardMood(
+  weeks: WeekRecord[],
+  openWeek: WeekRecord | null,
+  todayEntry: DayEntry | null,
+  dayRecord: { record: number; avg: number; count: number },
+  sym: string,
+): DashboardMood {
+  // Empty / no week
+  if (!openWeek || !todayEntry) {
+    return {
+      tone: "prerun",
+      headline: "Ready to Earn",
+      paceChip: null,
+      momentumLabel: "Ready to Start",
+      momentumState: "low",
+      commentary: null,
+    };
+  }
+
+  const todayT = dayTotal(todayEntry);
+  const wt = weekTotal(openWeek);
+  const goal = openWeek.weeklyGoal;
+  const weekPct = goal > 0 ? (wt / goal) * 100 : 0;
+  const dayName = todayEntry.dayName;
+  const loggedDays = getLoggedDays(openWeek);
+  const activeDays = openWeek.entries.filter((d) => dayTotal(d) > 0);
+  const dayPct = dayRecord.record > 0 ? (todayT / dayRecord.record) * 100 : 0;
+  const seed = Math.floor(todayT * 7 + wt * 3 + (todayEntry.date ? todayEntry.date.length : 0));
+
+  // Closed day state takes priority
+  if (todayEntry.dayClosed) {
+    const lines = [
+      `${dayName} closed. Reset and return stronger.`,
+      `Day finalized — tomorrow is another rep.`,
+      `${dayName} in the books. Recovery mode.`,
+    ];
+    return {
+      tone: "closed",
+      headline: `${dayName} Closed`,
+      paceChip: null,
+      momentumLabel: "Day Complete",
+      momentumState: "medium",
+      commentary: pickRotating(lines, seed),
+    };
+  }
+
+  // Determine tone
+  let tone: DashboardTone;
+  if (todayT === 0) {
+    tone = "prerun";
+  } else if (dayRecord.record > 0 && todayT > dayRecord.record) {
+    tone = "record";
+  } else if (dayPct >= 95 || (weekPct >= 100 && loggedDays.length <= 5) || weekPct >= 120) {
+    tone = "elite";
+  } else if (dayPct >= 80 || weekPct >= 80 || (dayRecord.avg > 0 && todayT > dayRecord.avg * 1.2)) {
+    tone = "strong";
+  } else if (
+    weekPct >= 50 ||
+    (dayRecord.avg > 0 && todayT >= dayRecord.avg * 0.9) ||
+    (dayRecord.avg === 0 && todayT > 0)
+  ) {
+    tone = "steady";
+  } else if (dayRecord.avg > 0 && todayT < dayRecord.avg * 0.7) {
+    tone = "recovery";
+  } else {
+    tone = "steady";
+  }
+
+  // Headlines per tone
+  let headline: string;
+  switch (tone) {
+    case "prerun": {
+      const opts = [
+        "Ready To Roll",
+        "Fresh Start",
+        "New Day Ahead",
+        "Time To Build",
+        "Let's Start Strong",
+      ];
+      headline = pickRotating(opts, seed);
+      break;
+    }
+    case "record":
+      headline = `New ${dayName} Record 🏆`;
+      break;
+    case "elite":
+      if (dayPct >= 95 && dayRecord.record > 0) headline = "Record Imminent 🔥";
+      else if (weekPct >= 120) headline = "History Incoming 🔥";
+      else headline = "Elite Pace";
+      break;
+    case "strong": {
+      if (dayPct >= 80 && dayRecord.record > 0) headline = `Big ${dayName} Energy`;
+      else if (weekPct >= 90) headline = "Record Pace ⚡";
+      else headline = "Locked In";
+      break;
+    }
+    case "steady":
+      if (dayRecord.avg > 0 && todayT > dayRecord.avg) headline = `Strong ${dayName}`;
+      else if (weekPct >= 50) headline = "Nice Pace Today";
+      else headline = "Building Momentum";
+      break;
+    case "recovery": {
+      const opts = ["Find Your Rhythm", "Steady Climb", "Back On Track"];
+      headline = pickRotating(opts, seed);
+      break;
+    }
+    default:
+      headline = "Let's Get It 💪";
+  }
+
+  // Pace chip — must agree with tone
+  let paceChip: PaceChip | null = null;
+  switch (tone) {
+    case "prerun":
+      paceChip = null;
+      break;
+    case "record":
+    case "elite":
+      paceChip = { text: "Above Pace ⚡", variant: "fire" };
+      break;
+    case "strong":
+      paceChip = dayRecord.avg > 0 && todayT > dayRecord.avg * 1.2
+        ? { text: "Above Pace ⚡", variant: "fire" }
+        : { text: "On Pace", variant: "primary" };
+      break;
+    case "steady":
+      paceChip = { text: "On Pace", variant: "primary" };
+      break;
+    case "recovery":
+      paceChip = { text: "Build Back", variant: "streak" };
+      break;
+  }
+
+  // Momentum label / state
+  let momentumState: MomentumState = "low";
+  let momentumLabel = "Resetting Momentum";
+  switch (tone) {
+    case "record":
+    case "elite":
+      momentumState = "high";
+      momentumLabel = weekPct >= 120 ? "Beast Week" : "Elite Pace";
+      break;
+    case "strong":
+      momentumState = "high";
+      momentumLabel = activeDays.length >= 3 ? "Locked In" : "Strong Rhythm";
+      break;
+    case "steady":
+      momentumState = "medium";
+      momentumLabel = activeDays.length >= 3 ? "Stable Momentum" : "Building Momentum";
+      break;
+    case "recovery":
+      momentumState = "low";
+      momentumLabel = "Rebuilding Pace";
+      break;
+    case "prerun":
+      momentumState = "low";
+      momentumLabel = activeDays.length >= 1 ? "Ready For Today" : "Fresh Start";
+      break;
+  }
+
+  // Commentary — coherent with tone
+  const commentary = buildCommentary(tone, {
+    weeks,
+    openWeek,
+    todayEntry,
+    todayT,
+    wt,
+    weekPct,
+    dayRecord,
+    sym,
+    seed,
+    activeDaysCount: activeDays.length,
+  });
+
+  return { tone, headline, paceChip, momentumLabel, momentumState, commentary };
+}
+
+function buildCommentary(
+  tone: DashboardTone,
+  ctx: {
+    weeks: WeekRecord[];
+    openWeek: WeekRecord;
+    todayEntry: DayEntry;
+    todayT: number;
+    wt: number;
+    weekPct: number;
+    dayRecord: { record: number; avg: number; count: number };
+    sym: string;
+    seed: number;
+    activeDaysCount: number;
+  },
+): string | null {
+  const { todayEntry, todayT, wt, weekPct, dayRecord, sym, seed, weeks, openWeek, activeDaysCount } = ctx;
+  const dayName = todayEntry.dayName;
+
+  if (tone === "closed") {
+    return null; // headline + commentary already shown in EndDayDialog flow
+  }
+
+  if (tone === "prerun") {
+    const lines = [
+      "Every great week starts with one ride.",
+      "Momentum begins now.",
+      "Today's chapter is unwritten.",
+      "Fresh page. Make it count.",
+      "The grind starts when you do.",
+    ];
+    return pickRotating(lines, seed);
+  }
+
+  if (tone === "record") {
+    const lines = [
+      `History updated — new ${dayName} record`,
+      `${dayName} record destroyed`,
+      `New ${dayName} record secured`,
+    ];
+    return pickRotating(lines, seed);
+  }
+
+  // Near-record (elite + dayPct >= 85)
+  if (dayRecord.record > 0 && todayT > 0) {
+    const gap = dayRecord.record - todayT;
+    if (gap > 0 && gap <= dayRecord.record * 0.15) {
+      const lines = [
+        `Only ${formatCurrency(gap, sym)} away from your best ${dayName}`,
+        `Tonight could change your ${dayName} history`,
+        `One more push — ${formatCurrency(gap, sym)} to go`,
+      ];
+      return pickRotating(lines, seed);
+    }
+  }
+
+  if (tone === "recovery") {
+    const lines = [
+      "Slower start — every rep counts.",
+      "Building back. One ride at a time.",
+      "Steady hands. The day's still open.",
+    ];
+    return pickRotating(lines, seed);
+  }
+
+  // Goal proximity / surplus
+  if (weekPct >= 100 && weekPct < 120) {
+    return pickRotating(["Goal crushed — keep pushing", "Target smashed this week", "Goal cleared — surplus mode"], seed);
+  }
+  if (weekPct >= 120) {
+    return pickRotating(["Current You is outperforming Past You", "Best momentum this month", "Weekly pace improving"], seed);
+  }
+  if (weekPct >= 90 && weekPct < 100) {
+    const remaining = openWeek.weeklyGoal - wt;
+    return `${formatCurrency(remaining, sym)} to close the goal`;
+  }
+
+  // vs average
+  if (dayRecord.avg > 0 && todayT > 0) {
+    const pctAbove = ((todayT - dayRecord.avg) / dayRecord.avg) * 100;
+    if (pctAbove >= 30) {
+      return pickRotating([
+        `+${Math.round(pctAbove)}% vs average ${dayName}`,
+        `You're outperforming recent ${dayName}s`,
+        `${dayName} pace accelerating`,
+      ], seed);
+    }
+  }
+
+  // Comparison to previous weeks
+  const closedWeeks = weeks.filter((w) => w.id !== openWeek.id && w.status === "closed");
+  if (closedWeeks.length > 0) {
+    const lastWeek = closedWeeks.sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+    const lastWt = weekTotal(lastWeek);
+    if (lastWt > 0 && wt > lastWt * 1.05 && activeDaysCount >= 3) return "You're outperforming last week";
+    if (lastWt > 0 && wt > lastWt && activeDaysCount >= 2) return "Ahead of last week's pace";
+  }
+
+  if (activeDaysCount >= 4) {
+    return pickRotating(["Consistency building this week", "Locked in — steady grind", "Reliable rhythm this week"], seed);
+  }
+
+  if (tone === "steady" || tone === "strong") {
+    return pickRotating(["Momentum building — keep stacking", "Pace picking up", "Getting into the groove"], seed);
+  }
+
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Legacy helpers — kept for back-compat callers (tests, etc).
+// ─────────────────────────────────────────────────────────────────
+
 export function getMomentumState(
   weeks: WeekRecord[],
   openWeek: WeekRecord | null,

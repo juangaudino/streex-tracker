@@ -157,7 +157,6 @@ export function getDashboardMood(
   let paceChip: PaceChip | null = null;
   switch (tone) {
     case "prerun":
-    case "closed":
       paceChip = null;
       break;
     case "record":
@@ -201,10 +200,6 @@ export function getDashboardMood(
     case "prerun":
       momentumState = "low";
       momentumLabel = activeDays.length >= 1 ? "Ready For Today" : "Fresh Start";
-      break;
-    case "closed":
-      momentumState = "medium";
-      momentumLabel = "Day Complete";
       break;
   }
 

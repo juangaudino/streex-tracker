@@ -25,6 +25,8 @@ export interface DayEntry {
   date: string;
   apps: Record<string, number>;
   logged?: boolean;
+  /** Day finalized via "End Day". Distinct from `logged` (which auto-flags on any earnings entry). */
+  dayClosed?: boolean;
   mileage?: number;
 }
 

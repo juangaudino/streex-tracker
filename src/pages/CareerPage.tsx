@@ -3,7 +3,7 @@ import { computeCareerStats } from "@/lib/career";
 import { formatCurrency } from "@/lib/store";
 import type { StoreContext } from "./types";
 import {
-  Trophy, Flame, Calendar, TrendingUp, Activity, Target,
+  Trophy, Flame, Calendar, Activity, Target,
   Sparkles, Crown, Zap,
 } from "lucide-react";
 
@@ -11,6 +11,7 @@ export default function CareerPage() {
   const { weeks, settings } = useOutletContext<StoreContext>();
   const sym = settings.currencySymbol;
   const stats = computeCareerStats(weeks);
+  const mp = stats.monthlyProgression;
 
   if (weeks.length === 0) {
     return (
@@ -89,6 +90,32 @@ export default function CareerPage() {
         </div>
       </section>
 
+      {/* Monthly progression — chase model */}
+      <section className="space-y-2">
+        <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Monthly Progression</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <ProgressionCard
+            title="This Month vs Last Month"
+            pct={mp.pctOfLastMonth}
+            currentValue={formatCurrency(mp.currentMonthTotal, sym)}
+            targetLabel="Last month"
+            targetValue={mp.lastMonthTotal > 0 ? formatCurrency(mp.lastMonthTotal, sym) : "—"}
+            emptyMessage="Building your first comparison."
+            accent="primary"
+          />
+          <ProgressionCard
+            title="Best Month Chase"
+            pct={mp.pctOfBestMonth}
+            currentValue={formatCurrency(mp.currentMonthTotal, sym)}
+            targetLabel={mp.isCurrentBest ? "New record this month" : "Best month ever"}
+            targetValue={mp.bestMonthTotal > 0 ? formatCurrency(mp.bestMonthTotal, sym) : "—"}
+            emptyMessage="Your legacy starts here."
+            accent="gold"
+            isRecord={mp.isCurrentBest}
+          />
+        </div>
+      </section>
+
       {/* Performance */}
       <section className="space-y-2">
         <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Performance</h2>
@@ -97,13 +124,6 @@ export default function CareerPage() {
             icon={<Activity className="h-4 w-4 text-primary" />}
             label="Avg Daily"
             value={formatCurrency(stats.avgDaily, sym)}
-          />
-          <StatBlock
-            icon={<TrendingUp className={`h-4 w-4 ${growthPositive ? "text-success" : "text-warning"}`} />}
-            label="Monthly Growth"
-            value={stats.monthlyGrowth === null
-              ? "—"
-              : `${stats.monthlyGrowth > 0 ? "+" : ""}${stats.monthlyGrowth.toFixed(1)}%`}
           />
           <StatBlock
             icon={<Target className="h-4 w-4 text-success" />}

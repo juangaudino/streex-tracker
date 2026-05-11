@@ -90,6 +90,15 @@ export function getDashboardMood(
   }
 
   // Determine tone
+  // ── Grace period — never emit "recovery" / "rebuilding" too early
+  // Conditions for full pacing judgement:
+  //   - at least 2 prior logged days OR weekTotal >= 15% of goal OR today has earnings already
+  //   - prevents harsh feedback when day/week has barely started
+  const enoughForHarsh =
+    loggedDays.length >= 2 ||
+    (goal > 0 && weekPct >= 15) ||
+    todayT > 0;
+
   let tone: DashboardTone;
   if (todayT === 0) {
     tone = "prerun";
@@ -105,10 +114,11 @@ export function getDashboardMood(
     (dayRecord.avg === 0 && todayT > 0)
   ) {
     tone = "steady";
-  } else if (dayRecord.avg > 0 && todayT < dayRecord.avg * 0.7) {
+  } else if (enoughForHarsh && dayRecord.avg > 0 && todayT < dayRecord.avg * 0.7) {
     tone = "recovery";
   } else {
-    tone = "steady";
+    // Not enough data to judge — default to steady/startup energy
+    tone = todayT === 0 ? "prerun" : "steady";
   }
 
   // Headlines per tone

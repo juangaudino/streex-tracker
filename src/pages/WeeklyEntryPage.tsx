@@ -28,6 +28,7 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import MobileWeekOverview from "@/components/MobileWeekOverview";
 import MobileDayDetail from "@/components/MobileDayDetail";
+import WeekClosingDialog from "@/components/WeekClosingDialog";
 
 export default function WeeklyEntryPage() {
   const { openWeek, weeks, settings, addWeek, updateWeek } =
@@ -45,6 +46,7 @@ export default function WeeklyEntryPage() {
     openWeek ? new Date(openWeek.startDate + "T00:00:00") : getMondayOfWeek()
   );
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 
   // Sync when openWeek changes externally
   if (openWeek && (!editWeek || editWeek.id !== openWeek.id)) {
@@ -181,12 +183,16 @@ export default function WeeklyEntryPage() {
 
   function handleClose() {
     if (!editWeek) return;
-    if (!confirm("Close this week? You can still edit it later from History."))
-      return;
+    setCloseDialogOpen(true);
+  }
+
+  function performClose() {
+    if (!editWeek) return;
     const closed = { ...editWeek, status: "closed" as const, weeklyGoal: Number(goalInput) || 0 };
     updateWeek(closed);
     setEditWeek(closed);
     setJustClosed(true);
+    setCloseDialogOpen(false);
     toast({ title: "Week closed." });
   }
 

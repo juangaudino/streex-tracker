@@ -537,6 +537,16 @@ export default function WeeklyEntryPage() {
           <Trash2 className="h-4 w-4 mr-1" /> Clear
         </Button>
       </div>
+      {editWeek.status === "open" && (
+        <WeekClosingDialog
+          open={closeDialogOpen}
+          onOpenChange={setCloseDialogOpen}
+          week={editWeek}
+          weeks={weeks}
+          currencySymbol={sym}
+          onConfirm={performClose}
+        />
+      )}
     </div>
   );
 }

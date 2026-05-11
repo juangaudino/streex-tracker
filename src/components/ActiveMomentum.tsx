@@ -14,6 +14,7 @@ interface StreakItem {
   label: string;
   value: string;
   variant: "fire" | "streak" | "goal" | "primary";
+  ghost?: boolean;
 }
 
 const variantClasses = {
@@ -21,6 +22,13 @@ const variantClasses = {
   streak: "border-beast-purple/30 text-beast-purple",
   goal: "border-success/30 text-success",
   primary: "border-primary/30 text-primary",
+};
+
+const ghostVariantClasses = {
+  fire: "border-warning/15 border-dashed text-warning/60",
+  streak: "border-beast-purple/15 border-dashed text-beast-purple/60",
+  goal: "border-success/15 border-dashed text-success/60",
+  primary: "border-primary/15 border-dashed text-primary/60",
 };
 
 function getAllDaysSorted(weeks: WeekRecord[]): DayEntry[] {
@@ -172,6 +180,7 @@ export function getPaceLabel(
 export default function ActiveMomentum({ weeks, openWeek, currencySymbol }: ActiveMomentumProps) {
   const sym = currencySymbol;
   const items: StreakItem[] = [];
+  const nearItems: StreakItem[] = [];
 
   const activeStreak = activeDayStreak(weeks);
   if (activeStreak >= 2)
@@ -209,23 +218,95 @@ export default function ActiveMomentum({ weeks, openWeek, currencySymbol }: Acti
       variant: "goal",
     });
 
-  if (items.length === 0) return null;
+  // ── Near-momentum items (ghost cards) ──
+  // Look at today's earnings vs streak thresholds
+  const allDays = getAllDaysSorted(weeks);
+  const lastDayTotal = allDays.length > 0 ? dayTotal(allDays[allDays.length - 1]) : 0;
+
+  if (s100 < 2 && lastDayTotal > 0 && lastDayTotal < 100) {
+    nearItems.push({
+      icon: <Zap className="h-4 w-4" />,
+      label: "$100+ Streak",
+      value: `${formatCurrency(100 - lastDayTotal, sym)} away`,
+      variant: "streak",
+      ghost: true,
+    });
+  } else if (s100 < 2 && lastDayTotal >= 100) {
+    nearItems.push({
+      icon: <Zap className="h-4 w-4" />,
+      label: "$100+ Streak",
+      value: `1 more day to start`,
+      variant: "streak",
+      ghost: true,
+    });
+  }
+
+  if (s150 < 2 && lastDayTotal > 0 && lastDayTotal < 150) {
+    nearItems.push({
+      icon: <Zap className="h-4 w-4" />,
+      label: "$150+ Streak",
+      value: `${formatCurrency(150 - lastDayTotal, sym)} away`,
+      variant: "primary",
+      ghost: true,
+    });
+  }
+
+  if (gs === 0 && openWeek) {
+    const wt = weekTotal(openWeek);
+    const gap = Math.max(0, openWeek.weeklyGoal - wt);
+    if (gap > 0 && gap <= openWeek.weeklyGoal * 0.4) {
+      nearItems.push({
+        icon: <Target className="h-4 w-4" />,
+        label: "Goal Streak",
+        value: `${formatCurrency(gap, sym)} to start`,
+        variant: "goal",
+        ghost: true,
+      });
+    }
+  }
+
+  if (activeStreak < 2) {
+    nearItems.push({
+      icon: <Flame className="h-4 w-4" />,
+      label: "Active Days",
+      value: "1 more day to chain",
+      variant: "fire",
+      ghost: true,
+    });
+  }
+
+  // Rotate near items deterministically by date so the section feels alive
+  const dayOfYear = Math.floor((Date.now() / 86400000) % 365);
+  const rotated = [...nearItems].sort((a, b) => {
+    const ah = (a.label.length + dayOfYear) % 7;
+    const bh = (b.label.length + dayOfYear) % 7;
+    return ah - bh;
+  });
+
+  // Cap near items so we always feel alive but not spammy
+  const maxNear = Math.max(0, 4 - items.length);
+  const finalNear = rotated.slice(0, Math.min(maxNear, items.length === 0 ? 4 : 2));
+  const all = [...items, ...finalNear];
+
+  if (all.length === 0) return null;
 
   return (
     <div className="space-y-2">
       <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Active Momentum</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        {items.map((item, i) => (
+        {all.map((item, i) => (
           <div
             key={i}
             className={cn(
               "bg-card rounded-lg border p-3 flex items-center gap-2",
-              variantClasses[item.variant]
+              item.ghost ? ghostVariantClasses[item.variant] : variantClasses[item.variant]
             )}
           >
             {item.icon}
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wider opacity-70">{item.label}</p>
+              <p className="text-[10px] uppercase tracking-wider opacity-70">
+                {item.label}{item.ghost && <span className="ml-1 opacity-60">· near</span>}
+              </p>
               <p className="text-sm font-bold font-mono">{item.value}</p>
             </div>
           </div>

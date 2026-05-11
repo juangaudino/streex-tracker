@@ -35,12 +35,12 @@ const iconColors = {
 
 function MilestoneCard({ icon, title, value, sub, variant }: MilestoneCardProps) {
   return (
-    <div className={cn("rounded-xl border p-3 flex items-start gap-3", variantStyles[variant])}>
-      <div className={cn("mt-0.5", iconColors[variant])}>{icon}</div>
+    <div className={cn("rounded-xl border p-2.5 sm:p-3 flex items-start gap-2 sm:gap-3", variantStyles[variant])}>
+      <div className={cn("mt-0.5 shrink-0", iconColors[variant])}>{icon}</div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
-        <p className="text-sm font-bold font-mono truncate">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground truncate">{sub}</p>}
+        <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider truncate">{title}</p>
+        <p className="text-xs sm:text-sm font-bold font-mono truncate">{value}</p>
+        {sub && <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{sub}</p>}
       </div>
     </div>
   );
@@ -272,7 +272,7 @@ export default function Milestones({ weeks, openWeek, currencySymbol }: Mileston
   return (
     <div className="space-y-3">
       <h2 className="text-lg font-bold">Milestones</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
         {cards.map((card, i) => (
           <MilestoneCard key={i} {...card} />
         ))}

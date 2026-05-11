@@ -54,6 +54,19 @@ export default function DashboardPage() {
   }
 
   if (!openWeek) {
+    const hasHistory = weeks.length > 0;
+    const closedSorted = [...weeks]
+      .filter((w) => w.status === "closed")
+      .sort((a, b) => b.endDate.localeCompare(a.endDate));
+    const lastClosed = closedSorted[0];
+    const lastWt = lastClosed ? weekTotal(lastClosed) : 0;
+    const heroTitle = hasHistory ? "Fresh chapter begins" : "Start your first week";
+    const heroSub = hasHistory
+      ? lastClosed
+        ? `Last week: ${formatCurrency(lastWt, sym)} · ${lastClosed.startDate} → ${lastClosed.endDate}`
+        : "Ready for another run."
+      : "Begin tracking your gig earnings. Create a new week to get started.";
+    const cta = hasHistory ? "Start Next Week" : "Start New Week";
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
         {hasLocalData && (
@@ -66,13 +79,16 @@ export default function DashboardPage() {
             </Button>
           </div>
         )}
-        <h2 className="text-2xl font-bold">Start your first week</h2>
-        <p className="text-muted-foreground max-w-md">
-          Begin tracking your gig earnings. Create a new week to get started.
-        </p>
+        {hasHistory && (
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
+            New Week Unlocked
+          </p>
+        )}
+        <h2 className="text-2xl font-bold">{heroTitle}</h2>
+        <p className="text-muted-foreground max-w-md">{heroSub}</p>
         <Button size="lg" onClick={() => navigate("/entry")}>
           <CalendarPlus className="h-5 w-5 mr-2" />
-          Start New Week
+          {cta}
         </Button>
         {weeks.length > 0 && (
           <Milestones weeks={weeks} openWeek={null} currencySymbol={sym} />

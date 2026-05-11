@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { LogIn, UserPlus, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import ChangelogDialog from "@/components/ChangelogDialog";
+import { CURRENT_VERSION, CHANGELOG } from "@/lib/changelog";
 
 interface AuthPageProps {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -16,6 +18,7 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [changelogOpen, setChangelogOpen] = useState(false);
   const { toast } = useToast();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -123,15 +126,21 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
         </div>
 
         <div className="text-center space-y-2 pt-4 border-t border-border/50">
-          <p className="text-[11px] font-mono text-muted-foreground/60">Streex v5.0.2</p>
+          <button
+            type="button"
+            onClick={() => setChangelogOpen(true)}
+            className="text-[11px] font-mono text-muted-foreground/60 hover:text-primary transition-colors"
+          >
+            Streex v{CURRENT_VERSION} · view changelog
+          </button>
           <div className="text-[10px] text-muted-foreground/40 space-y-0.5">
-            <p>• Improved emotional dashboard logic</p>
-            <p>• Better monthly progression system</p>
-            <p>• Enhanced End Day flow</p>
-            <p>• Cleaner motivational states</p>
+            {CHANGELOG[0].items.slice(0, 4).map((it, i) => (
+              <p key={i}>• {it}</p>
+            ))}
           </div>
         </div>
       </div>
+      <ChangelogDialog open={changelogOpen} onOpenChange={setChangelogOpen} />
     </div>
   );
 }

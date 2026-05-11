@@ -11,11 +11,14 @@ import {
   Trophy,
   User,
   Crown,
+  Sparkles,
+  Map,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink as RouterNavLink } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import type { StoreContext } from "./types";
+import ChangelogDialog from "@/components/ChangelogDialog";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -34,6 +37,7 @@ interface AppShellProps {
 export default function AppShell({ store, onSignOut }: AppShellProps) {  
   const { user } = useAuth();
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [changelogOpen, setChangelogOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -59,6 +63,14 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
                   <p className="text-xs text-muted-foreground truncate px-1">{user.email}</p>
                 )}
                 <RouterNavLink
+                  to="/journey"
+                  onClick={() => setMobileMenu(false)}
+                  className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                >
+                  <Map className="h-4 w-4" />
+                  Journey
+                </RouterNavLink>
+                <RouterNavLink
                   to="/settings"
                   onClick={() => setMobileMenu(false)}
                   className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
@@ -66,6 +78,13 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
                   <Settings className="h-4 w-4" />
                   Settings
                 </RouterNavLink>
+                <button
+                  onClick={() => { setMobileMenu(false); setChangelogOpen(true); }}
+                  className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  What's New
+                </button>
                 <button
                   onClick={() => { setMobileMenu(false); onSignOut(); }}
                   className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
@@ -109,6 +128,26 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
             <Settings className="h-4 w-4" />
             Settings
           </NavLink>
+          <NavLink
+            to="/journey"
+            className={({ isActive }) =>
+              `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              }`
+            }
+          >
+            <Map className="h-4 w-4" />
+            Journey
+          </NavLink>
+          <button
+            onClick={() => setChangelogOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          >
+            <Sparkles className="h-4 w-4" />
+            What's New
+          </button>
           <button
             onClick={onSignOut}
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors ml-2"
@@ -118,6 +157,7 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
           </button>
         </nav>
       </header>
+      <ChangelogDialog open={changelogOpen} onOpenChange={setChangelogOpen} />
       <main className="flex-1 overflow-y-auto pb-20 md:pb-6">
         <Outlet context={store as any} />
       </main>

@@ -1,17 +1,20 @@
-import { useOutletContext } from "react-router-dom";
-import { computeCareerStats } from "@/lib/career";
+import { useOutletContext, useNavigate } from "react-router-dom";
+import { computeCareerStats, computePerformanceInsights } from "@/lib/career";
 import { formatCurrency } from "@/lib/store";
 import type { StoreContext } from "./types";
 import {
   Trophy, Flame, Calendar, Activity, Target,
-  Sparkles, Crown, Zap,
+  Sparkles, Crown, Zap, Map, BarChart3,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function CareerPage() {
   const { weeks, settings } = useOutletContext<StoreContext>();
+  const navigate = useNavigate();
   const sym = settings.currencySymbol;
   const stats = computeCareerStats(weeks);
   const mp = stats.monthlyProgression;
+  const perf = computePerformanceInsights(weeks);
 
   if (weeks.length === 0) {
     return (
@@ -52,6 +55,21 @@ export default function CareerPage() {
           </div>
         </div>
       </section>
+
+      {/* Journey CTA */}
+      <button
+        onClick={() => navigate("/journey")}
+        className="w-full text-left bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:border-primary/40 transition-colors"
+      >
+        <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+          <Map className="h-5 w-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold">View Your Journey</p>
+          <p className="text-[11px] text-muted-foreground">Every milestone, record, and chapter so far.</p>
+        </div>
+        <span className="text-primary text-lg">→</span>
+      </button>
 
       {/* Hero stats row */}
       <section className="grid grid-cols-2 gap-3">
@@ -154,6 +172,34 @@ export default function CareerPage() {
             value={stats.mostUsedApp.app}
             sub={stats.mostUsedApp.total > 0 ? formatCurrency(stats.mostUsedApp.total, sym) : undefined}
           />
+        </div>
+      </section>
+
+      {/* Performance Insights */}
+      <section className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Performance Insights</h2>
+          <BarChart3 className="h-3.5 w-3.5 text-muted-foreground/60" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <StatBlock icon={<Calendar className="h-4 w-4 text-primary" />} label="Avg Weekly" value={formatCurrency(perf.avgWeeklyEarnings, sym)} />
+          <StatBlock icon={<Activity className="h-4 w-4 text-primary" />} label="Avg/Active Day" value={formatCurrency(perf.avgPerActiveDay, sym)} />
+          <StatBlock icon={<Target className="h-4 w-4 text-success" />} label="Avg Entries/Wk" value={`${perf.avgEntriesPerWeek.toFixed(1)}`} />
+          <StatBlock icon={<Crown className="h-4 w-4 text-gold" />} label="Top Weekday" value={perf.highestEarningWeekday.dayName} sub={perf.highestEarningWeekday.avg > 0 ? `${formatCurrency(perf.highestEarningWeekday.avg, sym)} avg` : undefined} />
+          <StatBlock icon={<Sparkles className="h-4 w-4 text-beast-purple" />} label="Most Consistent" value={perf.mostConsistentDay.dayName} />
+          <StatBlock icon={<Flame className="h-4 w-4 text-warning" />} label="Best Day Type" value={perf.productiveDayType} sub={`Wknd ${formatCurrency(perf.weekendAvg, sym)} · Wkdy ${formatCurrency(perf.weekdayAvg, sym)}`} />
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+          {perf.weekdayAverages
+            .filter((w) => w.count > 0)
+            .map((w) => (
+              <div key={w.dayName} className="bg-card rounded-lg border border-border p-2.5">
+                <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">{w.dayName.slice(0, 3)}</p>
+                <p className="text-sm font-bold font-mono mt-0.5">{formatCurrency(w.avg, sym)}</p>
+                <p className="text-[9px] text-muted-foreground/70">{w.count} day{w.count !== 1 ? "s" : ""}</p>
+              </div>
+            ))}
         </div>
       </section>
     </div>

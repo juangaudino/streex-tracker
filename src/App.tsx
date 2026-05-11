@@ -11,6 +11,7 @@ import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
 import AchievementsPage from "./pages/AchievementsPage";
 import CareerPage from "./pages/CareerPage";
+import JourneyPage from "./pages/JourneyPage";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import { useAuth } from "./hooks/useAuth";
@@ -58,6 +59,7 @@ const App = () => {
               <Route path="/history" element={<HistoryPage />} />
               <Route path="/achievements" element={<AchievementsPage />} />
               <Route path="/career" element={<CareerPage />} />
+              <Route path="/journey" element={<JourneyPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />

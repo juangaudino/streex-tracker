@@ -1,5 +1,6 @@
 import { WeekRecord } from "./types";
 import { weekTotal, dayTotal, appTotal } from "./store";
+import { DAY_NAMES } from "./types";
 
 export interface CareerStats {
   lifetimeEarnings: number;
@@ -295,4 +296,154 @@ export function getWeeklyMomentumPreview(
 
   if (currentT >= open.weeklyGoal) return "Goal cleared — momentum strong.";
   return null;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Weekly closing helpers
+// ─────────────────────────────────────────────────────────────────
+
+export function getWeekRanking(weeks: WeekRecord[], weekId: string): { rank: number; total: number } {
+  const closed = weeks.filter((w) => w.status === "closed" || w.id === weekId);
+  const target = closed.find((w) => w.id === weekId);
+  if (!target) return { rank: 0, total: 0 };
+  const t = weekTotal(target);
+  const sorted = [...closed].sort((a, b) => weekTotal(b) - weekTotal(a));
+  const rank = sorted.findIndex((w) => w.id === weekId) + 1;
+  return { rank, total: closed.length };
+}
+
+export function getWeekRecordGap(weeks: WeekRecord[], weekId: string): number | null {
+  const target = weeks.find((w) => w.id === weekId);
+  if (!target) return null;
+  const others = weeks.filter((w) => w.id !== weekId);
+  if (!others.length) return null;
+  const bestT = Math.max(...others.map(weekTotal));
+  const cur = weekTotal(target);
+  if (bestT <= 0) return null;
+  if (cur >= bestT) return 0;
+  return bestT - cur;
+}
+
+export function getWeekdayHistoricalRank(
+  weeks: WeekRecord[],
+  dayName: string,
+  date: string,
+  value: number,
+): { rank: number; total: number } {
+  const all = weeks
+    .flatMap((w) => w.entries)
+    .filter((d) => d.dayName === dayName && dayTotal(d) > 0);
+  const sorted = [...all].sort((a, b) => dayTotal(b) - dayTotal(a));
+  const rank = sorted.findIndex((d) => d.date === date) + 1;
+  return { rank: rank > 0 ? rank : sorted.length + 1, total: sorted.length };
+}
+
+export function getBestDayOfWeek(week: WeekRecord): { dayName: string; total: number; date: string } {
+  let best = { dayName: "—", total: 0, date: "" };
+  for (const d of week.entries) {
+    const t = dayTotal(d);
+    if (t > best.total) best = { dayName: d.dayName, total: t, date: d.date };
+  }
+  return best;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Performance insights
+// ─────────────────────────────────────────────────────────────────
+
+export interface PerformanceInsights {
+  weekdayAverages: { dayName: string; avg: number; count: number }[];
+  weekendAvg: number;
+  weekdayAvg: number;
+  avgWeeklyEarnings: number;
+  highestEarningWeekday: { dayName: string; avg: number };
+  mostConsistentDay: { dayName: string; coefficient: number };
+  avgPerActiveDay: number;
+  avgEntriesPerWeek: number;
+  strongestApp: { app: string; total: number };
+  productiveDayType: "Weekday" | "Weekend" | "Even";
+}
+
+export function computePerformanceInsights(weeks: WeekRecord[]): PerformanceInsights {
+  const buckets = new Map<string, number[]>();
+  DAY_NAMES.forEach((n) => buckets.set(n, []));
+  let weekendSum = 0, weekendCount = 0;
+  let weekdaySum = 0, weekdayCount = 0;
+  let activeSum = 0, activeCount = 0;
+
+  for (const w of weeks) {
+    for (const d of w.entries) {
+      const t = dayTotal(d);
+      if (t <= 0) continue;
+      buckets.get(d.dayName)?.push(t);
+      if (d.dayName === "Saturday" || d.dayName === "Sunday") {
+        weekendSum += t; weekendCount++;
+      } else {
+        weekdaySum += t; weekdayCount++;
+      }
+      activeSum += t; activeCount++;
+    }
+  }
+
+  const weekdayAverages = DAY_NAMES.map((n) => {
+    const arr = buckets.get(n) || [];
+    const avg = arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
+    return { dayName: n, avg, count: arr.length };
+  });
+
+  const highestEarningWeekday = weekdayAverages.reduce(
+    (b, c) => (c.avg > b.avg ? { dayName: c.dayName, avg: c.avg } : b),
+    { dayName: "—", avg: 0 },
+  );
+
+  // Most consistent: lowest coefficient of variation among days with >=2 samples
+  let mostConsistentDay = { dayName: "—", coefficient: Infinity };
+  weekdayAverages.forEach(({ dayName, avg }) => {
+    const arr = buckets.get(dayName) || [];
+    if (arr.length < 2 || avg <= 0) return;
+    const variance = arr.reduce((s, v) => s + (v - avg) ** 2, 0) / arr.length;
+    const sd = Math.sqrt(variance);
+    const cv = sd / avg;
+    if (cv < mostConsistentDay.coefficient) {
+      mostConsistentDay = { dayName, coefficient: cv };
+    }
+  });
+  if (!isFinite(mostConsistentDay.coefficient)) mostConsistentDay = { dayName: "—", coefficient: 0 };
+
+  const closedOrActive = weeks.filter((w) => weekTotal(w) > 0);
+  const avgWeeklyEarnings = closedOrActive.length
+    ? closedOrActive.reduce((s, w) => s + weekTotal(w), 0) / closedOrActive.length
+    : 0;
+
+  const avgPerActiveDay = activeCount > 0 ? activeSum / activeCount : 0;
+  const avgEntriesPerWeek = weeks.length > 0
+    ? weeks.reduce((s, w) => s + w.entries.filter((d) => (d.logged !== undefined ? d.logged : dayTotal(d) > 0)).length, 0) / weeks.length
+    : 0;
+
+  // Strongest app
+  const apps = Object.keys(weeks[0]?.entries[0]?.apps || {});
+  let strongestApp = { app: "—", total: 0 };
+  apps.forEach((a) => {
+    const t = weeks.reduce((s, w) => s + appTotal(w, a), 0);
+    if (t > strongestApp.total) strongestApp = { app: a, total: t };
+  });
+
+  const weekendAvg = weekendCount ? weekendSum / weekendCount : 0;
+  const weekdayAvg = weekdayCount ? weekdaySum / weekdayCount : 0;
+  let productiveDayType: "Weekday" | "Weekend" | "Even" = "Even";
+  if (weekendAvg > weekdayAvg * 1.1) productiveDayType = "Weekend";
+  else if (weekdayAvg > weekendAvg * 1.1) productiveDayType = "Weekday";
+
+  return {
+    weekdayAverages,
+    weekendAvg,
+    weekdayAvg,
+    avgWeeklyEarnings,
+    highestEarningWeekday,
+    mostConsistentDay: { dayName: mostConsistentDay.dayName, coefficient: mostConsistentDay.coefficient },
+    avgPerActiveDay,
+    avgEntriesPerWeek,
+    strongestApp,
+    productiveDayType,
+  };
 }

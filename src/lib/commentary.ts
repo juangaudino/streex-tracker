@@ -71,6 +71,8 @@ export function getDashboardMood(
   const activeDays = openWeek.entries.filter((d) => dayTotal(d) > 0);
   const dayPct = dayRecord.record > 0 ? (todayT / dayRecord.record) * 100 : 0;
   const seed = Math.floor(todayT * 7 + wt * 3 + (todayEntry.date ? todayEntry.date.length : 0));
+  const hour = new Date().getHours();
+  const isEarlyDay = hour < 12;
 
   // Closed day state takes priority
   if (todayEntry.dayClosed) {
@@ -90,14 +92,15 @@ export function getDashboardMood(
   }
 
   // Determine tone
-  // ── Grace period — never emit "recovery" / "rebuilding" too early
-  // Conditions for full pacing judgement:
-  //   - at least 2 prior logged days OR weekTotal >= 15% of goal OR today has earnings already
-  //   - prevents harsh feedback when day/week has barely started
+  // ── Grace period — never emit "recovery" / "rebuilding" too early.
+  // Recovery only allowed when ALL of:
+  //   - today already has meaningful earnings (todayT > 0)
+  //   - at least 2 prior logged days OR week is at least 25% to goal
+  //   - it's no longer early in the day (hour >= 14) — mornings always feel hopeful
   const enoughForHarsh =
-    loggedDays.length >= 2 ||
-    (goal > 0 && weekPct >= 15) ||
-    todayT > 0;
+    todayT > 0 &&
+    (loggedDays.length >= 2 || (goal > 0 && weekPct >= 25)) &&
+    hour >= 14;
 
   let tone: DashboardTone;
   if (todayT === 0) {
@@ -125,13 +128,9 @@ export function getDashboardMood(
   let headline: string;
   switch (tone) {
     case "prerun": {
-      const opts = [
-        "Ready To Roll",
-        "Fresh Start",
-        "New Day Ahead",
-        "Time To Build",
-        "Let's Start Strong",
-      ];
+      const opts = isEarlyDay
+        ? ["Fresh Start", "Opening Pace", "Day Starting", "Rolling In", "Warming Up"]
+        : ["Ready To Roll", "New Chapter", "Time To Build", "Let's Start Strong", "Find Your Rhythm"];
       headline = pickRotating(opts, seed);
       break;
     }
@@ -140,22 +139,24 @@ export function getDashboardMood(
       break;
     case "elite":
       if (dayPct >= 95 && dayRecord.record > 0) headline = "Record Imminent 🔥";
-      else if (weekPct >= 120) headline = "History Incoming 🔥";
-      else headline = "Elite Pace";
+      else if (weekPct >= 120) headline = "Monster Session 🔥";
+      else headline = "Elite Push";
       break;
     case "strong": {
       if (dayPct >= 80 && dayRecord.record > 0) headline = `Big ${dayName} Energy`;
       else if (weekPct >= 90) headline = "Record Pace ⚡";
+      else if (weekPct >= 75) headline = "Goal Hunt";
       else headline = "Locked In";
       break;
     }
     case "steady":
       if (dayRecord.avg > 0 && todayT > dayRecord.avg) headline = `Strong ${dayName}`;
-      else if (weekPct >= 50) headline = "Nice Pace Today";
+      else if (weekPct >= 50) headline = "Steady Climb";
+      else if (weekPct >= 30) headline = "Pace Picking Up";
       else headline = "Building Momentum";
       break;
     case "recovery": {
-      const opts = ["Find Your Rhythm", "Steady Climb", "Back On Track"];
+      const opts = ["Finding Rhythm", "Steady Climb", "Back On Track"];
       headline = pickRotating(opts, seed);
       break;
     }
@@ -193,23 +194,25 @@ export function getDashboardMood(
     case "record":
     case "elite":
       momentumState = "high";
-      momentumLabel = weekPct >= 120 ? "Beast Week" : "Elite Pace";
+      momentumLabel = weekPct >= 120 ? "Monster Session" : "Momentum Surge";
       break;
     case "strong":
       momentumState = "high";
-      momentumLabel = activeDays.length >= 3 ? "Locked In" : "Strong Rhythm";
+      momentumLabel = activeDays.length >= 3 ? "Locked In" : "Strong Pace";
       break;
     case "steady":
       momentumState = "medium";
-      momentumLabel = activeDays.length >= 3 ? "Stable Momentum" : "Building Momentum";
+      momentumLabel = activeDays.length >= 3 ? "Steady Climb" : "Building Momentum";
       break;
     case "recovery":
-      momentumState = "low";
-      momentumLabel = "Rebuilding Pace";
+      momentumState = "medium";
+      momentumLabel = "Finding Rhythm";
       break;
     case "prerun":
       momentumState = "low";
-      momentumLabel = activeDays.length >= 1 ? "Ready For Today" : "Fresh Start";
+      momentumLabel = isEarlyDay
+        ? (activeDays.length >= 1 ? "Warming Up" : "Fresh Start")
+        : (activeDays.length >= 1 ? "Opening Pace" : "Rolling In");
       break;
   }
 
@@ -287,9 +290,9 @@ function buildCommentary(
 
   if (tone === "recovery") {
     const lines = [
-      "Slower start — every rep counts.",
-      "Building back. One ride at a time.",
-      "Steady hands. The day's still open.",
+      "Every rep still counts.",
+      "One ride at a time — day's still open.",
+      "Steady hands. Build it back.",
     ];
     return pickRotating(lines, seed);
   }

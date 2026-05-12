@@ -6,9 +6,23 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.1";
+export const CURRENT_VERSION = "5.1.5";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.1.5",
+    date: "2026-05",
+    title: "Cohesion & Momentum Refinement",
+    tags: ["polish", "balance"],
+    items: [
+      "Milestones grid now uses equal heights and auto-fills with contextual cards",
+      "Removed early-day negative pacing — mornings always feel hopeful",
+      "New early/mid/high state vocabulary (Fresh Start → Locked In → Monster Session)",
+      "Active Momentum never feels empty — near-unlock cards keep building anticipation",
+      "Fresh Chapter screen now echoes last week's wins to bridge continuity",
+      "Smarter motivational logic — time-of-day aware, never punishes a normal start",
+    ],
+  },
   {
     version: "5.1",
     date: "2026-05",

@@ -35,7 +35,7 @@ const iconColors = {
 
 function MilestoneCard({ icon, title, value, sub, variant }: MilestoneCardProps) {
   return (
-    <div className={cn("rounded-xl border p-2.5 sm:p-3 flex items-start gap-2 sm:gap-3", variantStyles[variant])}>
+    <div className={cn("rounded-xl border p-3 flex items-start gap-2 sm:gap-3 h-full min-h-[88px]", variantStyles[variant])}>
       <div className={cn("mt-0.5 shrink-0", iconColors[variant])}>{icon}</div>
       <div className="min-w-0 flex-1">
         <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider truncate">{title}</p>
@@ -269,10 +269,93 @@ export default function Milestones({ weeks, openWeek, currencySymbol }: Mileston
     return null;
   }
 
+  // ── Contextual auto-fill cards ──
+  // Whenever count is odd or low, append narrative cards so the grid
+  // never has awkward empty cells.
+  const contextual: MilestoneCardProps[] = [];
+
+  // Strongest weekday ever
+  const dayBuckets = new Map<string, { best: number; date: string }>();
+  for (const w of allWeeks) {
+    for (const d of w.entries) {
+      const t = dayTotal(d);
+      if (t <= 0) continue;
+      const cur = dayBuckets.get(d.dayName);
+      if (!cur || t > cur.best) dayBuckets.set(d.dayName, { best: t, date: d.date });
+    }
+  }
+  let topWeekday = { dayName: "", best: 0 };
+  dayBuckets.forEach((v, k) => {
+    if (v.best > topWeekday.best) topWeekday = { dayName: k, best: v.best };
+  });
+  if (topWeekday.best > 0) {
+    contextual.push({
+      icon: <Star className="h-4 w-4" />,
+      title: `Strongest ${topWeekday.dayName} Ever`,
+      value: formatCurrency(topWeekday.best, sym),
+      variant: "gold",
+    });
+  }
+
+  // Goal reached last week
+  const closedSorted = allWeeks
+    .filter((w) => w.status === "closed")
+    .sort((a, b) => b.startDate.localeCompare(a.startDate));
+  const lastClosed = closedSorted[0];
+  if (lastClosed && weekTotal(lastClosed) >= lastClosed.weeklyGoal) {
+    contextual.push({
+      icon: <Target className="h-4 w-4" />,
+      title: "Goal Reached Last Week",
+      value: formatCurrency(weekTotal(lastClosed), sym),
+      sub: "Streak alive",
+      variant: "goal",
+    });
+  }
+
+  // Momentum active (any active day this week)
+  if (openWeek && currentTotal > 0) {
+    const activeDaysCount = openWeek.entries.filter((d) => dayTotal(d) > 0).length;
+    if (activeDaysCount >= 1) {
+      contextual.push({
+        icon: <Flame className="h-4 w-4" />,
+        title: "Momentum Active",
+        value: `${activeDaysCount}-day rhythm`,
+        sub: "Carrying forward",
+        variant: "fire",
+      });
+    }
+  }
+
+  // Above same-point of previous week
+  if (openWeek && closedSorted[0]) {
+    const prev = closedSorted[0];
+    const loggedCount = openWeek.entries.filter((d) => (d.logged !== undefined ? d.logged : dayTotal(d) > 0)).length;
+    const prevSP = prev.entries.slice(0, loggedCount).reduce((s, d) => s + dayTotal(d), 0);
+    if (currentTotal > prevSP && prevSP > 0) {
+      contextual.push({
+        icon: <TrendingUp className="h-4 w-4" />,
+        title: "Above Same-Point Avg",
+        value: `+${formatCurrency(currentTotal - prevSP, sym)}`,
+        sub: "vs last week",
+        variant: "default",
+      });
+    }
+  }
+
+  // Append contextual until we have an even count and at least 4 cards
+  for (const c of contextual) {
+    if (cards.length >= 8 && cards.length % 2 === 0) break;
+    if (!cards.find((x) => x.title === c.title)) cards.push(c);
+  }
+  // If still odd, drop one contextual or accept odd — prefer even
+  if (cards.length % 2 === 1 && contextual.length === 0) {
+    // nothing to balance with; accept
+  }
+
   return (
     <div className="space-y-3">
       <h2 className="text-lg font-bold">Milestones</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 auto-rows-fr">
         {cards.map((card, i) => (
           <MilestoneCard key={i} {...card} />
         ))}

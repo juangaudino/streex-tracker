@@ -67,6 +67,34 @@ export default function DashboardPage() {
         : "Ready for another run."
       : "Begin tracking your gig earnings. Create a new week to get started.";
     const cta = hasHistory ? "Start Next Week" : "Start New Week";
+
+    // Carry-over echoes from the previous chapter
+    const echoes: { label: string; value: string }[] = [];
+    if (lastClosed) {
+      if (weekTotal(lastClosed) >= lastClosed.weeklyGoal) {
+        echoes.push({ label: "Goal reached", value: "last week" });
+      }
+      const activeDaysLast = lastClosed.entries.filter((d) => dayTotal(d) > 0).length;
+      if (activeDaysLast >= 4) {
+        echoes.push({ label: "Active days", value: `${activeDaysLast} carried` });
+      }
+      // Best day of last week
+      let best = { dayName: "", total: 0 };
+      for (const d of lastClosed.entries) {
+        const t = dayTotal(d);
+        if (t > best.total) best = { dayName: d.dayName, total: t };
+      }
+      if (best.total > 0) {
+        echoes.push({ label: `Best ${best.dayName}`, value: formatCurrency(best.total, sym) });
+      }
+      // Rank
+      const sortedClosed = [...closedSorted].sort((a, b) => weekTotal(b) - weekTotal(a));
+      const rank = sortedClosed.findIndex((w) => w.id === lastClosed.id) + 1;
+      if (rank > 0 && closedSorted.length >= 3) {
+        echoes.push({ label: "Last week rank", value: `#${rank}` });
+      }
+    }
+
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
         {hasLocalData && (
@@ -86,6 +114,22 @@ export default function DashboardPage() {
         )}
         <h2 className="text-2xl font-bold">{heroTitle}</h2>
         <p className="text-muted-foreground max-w-md">{heroSub}</p>
+        {echoes.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap justify-center max-w-md">
+            {echoes.map((e, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-accent/60 border border-border text-foreground"
+              >
+                <span className="opacity-60">{e.label}</span>
+                <span className="font-mono">{e.value}</span>
+              </span>
+            ))}
+            <span className="text-[10px] text-muted-foreground/70 italic w-full mt-1">
+              Momentum continues
+            </span>
+          </div>
+        )}
         <Button size="lg" onClick={() => navigate("/entry")}>
           <CalendarPlus className="h-5 w-5 mr-2" />
           {cta}

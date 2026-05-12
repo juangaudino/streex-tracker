@@ -66,7 +66,7 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
             <img
               src={streexLogo}
               alt="Streex"
-              className="h-12 w-auto object-contain select-none"
+              className="w-32 sm:w-36 h-auto object-contain select-none"
               draggable={false}
             />
           </div>

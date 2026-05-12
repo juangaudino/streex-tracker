@@ -48,7 +48,7 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
         <img
           src={streexLogo}
           alt="Streex"
-          className="h-8 w-auto object-contain select-none"
+          className="h-10 sm:h-11 md:h-12 w-auto object-contain select-none"
           draggable={false}
         />
         <span className="text-sm text-muted-foreground hidden sm:inline">Earnings Tracker</span>

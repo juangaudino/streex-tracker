@@ -19,6 +19,7 @@ import { NavLink as RouterNavLink } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import type { StoreContext } from "./types";
 import ChangelogDialog from "@/components/ChangelogDialog";
+import streexLogo from "@/assets/streex-logo.png";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -44,7 +45,12 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
       <AchievementToastContainer />
       <CelebrationContainer />
       <header className="border-b border-border px-4 py-3 flex items-center gap-3">
-        <span className="text-xl font-bold tracking-tight text-primary">Streex</span>
+        <img
+          src={streexLogo}
+          alt="Streex"
+          className="h-8 w-auto object-contain select-none"
+          draggable={false}
+        />
         <span className="text-sm text-muted-foreground hidden sm:inline">Earnings Tracker</span>
         {/* Mobile user menu button */}
         <div className="md:hidden ml-auto relative">

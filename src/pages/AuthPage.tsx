@@ -6,6 +6,7 @@ import { LogIn, UserPlus, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ChangelogDialog from "@/components/ChangelogDialog";
 import { CURRENT_VERSION, CHANGELOG } from "@/lib/changelog";
+import streexLogo from "@/assets/streex-logo.png";
 
 interface AuthPageProps {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -61,7 +62,14 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-primary tracking-tight">Streex</h1>
+          <div className="flex justify-center">
+            <img
+              src={streexLogo}
+              alt="Streex"
+              className="h-12 w-auto object-contain select-none"
+              draggable={false}
+            />
+          </div>
           <p className="text-muted-foreground text-sm">
             {isForgot ? "Reset your password" : isSignUp ? "Create your account" : "Sign in to track your earnings"}
           </p>

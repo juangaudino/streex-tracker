@@ -6,9 +6,22 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.1.5";
+export const CURRENT_VERSION = "5.2";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.2",
+    date: "2026-05",
+    title: "Monthly Recap System",
+    tags: ["new", "feature"],
+    items: [
+      "Monthly Recap System — a cinematic end-of-month story",
+      "Monthly Heatmap with all-time best day glow",
+      "Emotional month summaries and closing lines",
+      "Strongest week spotlight inside each month",
+      "Monthly narrative flow integrated into your Journey",
+    ],
+  },
   {
     version: "5.1.5",
     date: "2026-05",

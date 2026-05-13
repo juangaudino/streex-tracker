@@ -98,6 +98,9 @@ export default function DashboardPage() {
 
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
+        <div className="w-full max-w-md">
+          <MonthlyRecapBanner weeks={weeks} currencySymbol={sym} />
+        </div>
         {hasLocalData && (
           <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 max-w-md w-full space-y-2">
             <p className="text-sm font-medium">Local data found from V1</p>

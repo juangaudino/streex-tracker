@@ -44,11 +44,11 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
     <div className="min-h-screen flex flex-col">
       <AchievementToastContainer />
       <CelebrationContainer />
-      <header className="border-b border-border px-4 py-3 flex items-center gap-3">
+      <header className="border-b border-border px-4 py-2 flex items-center gap-3">
         <img
           src={streexLogo}
           alt="Streex"
-          className="h-10 sm:h-11 md:h-12 w-auto object-contain select-none"
+          className="h-16 sm:h-20 md:h-24 w-auto object-contain select-none -my-2"
           draggable={false}
         />
         <span className="text-sm text-muted-foreground hidden sm:inline">Earnings Tracker</span>

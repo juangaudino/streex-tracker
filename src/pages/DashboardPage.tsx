@@ -32,6 +32,7 @@ import { CalendarPlus, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import EndDayDialog from "@/components/EndDayDialog";
+import MonthlyRecapBanner from "@/components/MonthlyRecapBanner";
 
 export default function DashboardPage() {
   const { openWeek, weeks, settings, hasLocalData, importLocalData, updateWeek } = useOutletContext<StoreContext>();
@@ -190,6 +191,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+      <MonthlyRecapBanner weeks={weeks} currencySymbol={sym} />
       {/* Smart Header */}
       <div className="flex items-center justify-between">
         <div className="min-w-0 flex-1 mr-3">

@@ -13,6 +13,7 @@ import {
   Crown,
   Sparkles,
   Map,
+  CalendarRange,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink as RouterNavLink } from "react-router-dom";
@@ -75,6 +76,14 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
                 >
                   <Map className="h-4 w-4" />
                   Journey
+                </RouterNavLink>
+                <RouterNavLink
+                  to="/recap"
+                  onClick={() => setMobileMenu(false)}
+                  className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                >
+                  <CalendarRange className="h-4 w-4" />
+                  Monthly Recap
                 </RouterNavLink>
                 <RouterNavLink
                   to="/settings"
@@ -146,6 +155,19 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
           >
             <Map className="h-4 w-4" />
             Journey
+          </NavLink>
+          <NavLink
+            to="/recap"
+            className={({ isActive }) =>
+              `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              }`
+            }
+          >
+            <CalendarRange className="h-4 w-4" />
+            Recap
           </NavLink>
           <button
             onClick={() => setChangelogOpen(true)}

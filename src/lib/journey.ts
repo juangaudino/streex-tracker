@@ -1,6 +1,7 @@
 import type { WeekRecord, DayEntry } from "./types";
 import type { AchievementState } from "./achievements";
 import { weekTotal, dayTotal, appTotal, formatCurrency } from "./store";
+import { listMonthsWithData, getMonthSummary } from "./monthly";
 
 export type JourneyTone = "milestone" | "record" | "streak" | "achievement" | "goal" | "comeback";
 
@@ -225,6 +226,68 @@ export function buildJourneyEvents(
         icon: a.icon,
       });
     }
+  }
+
+  // Monthly chapter events
+  const monthKeys = listMonthsWithData(weeks);
+  let bestMonthSoFar = 0;
+  let prevMonthTotal = 0;
+  let monthGrowthRun = 0;
+  for (const key of monthKeys) {
+    const [yy, mm] = key.split("-").map(Number);
+    const m = getMonthSummary(weeks, yy, mm - 1);
+    if (m.totalEarned <= 0) continue;
+    const lastDate = `${yy}-${String(mm).padStart(2, "0")}-${String(new Date(yy, mm, 0).getDate()).padStart(2, "0")}`;
+    // Best month ever (after first baseline)
+    if (m.totalEarned > bestMonthSoFar && bestMonthSoFar > 0) {
+      events.push({
+        id: `month-best-${key}`,
+        date: lastDate,
+        title: `Best Month Ever — ${m.monthLabel}`,
+        subtitle: "Strongest month so far",
+        value: formatCurrency(m.totalEarned, sym),
+        tone: "record",
+        icon: "👑",
+      });
+    }
+    // Goal crushed (monthly)
+    if (m.goalSum > 0 && m.totalEarned >= m.goalSum) {
+      events.push({
+        id: `month-goal-${key}`,
+        date: lastDate,
+        title: `Goal Crushed — ${m.monthName}`,
+        subtitle: "Monthly target reached",
+        value: formatCurrency(m.totalEarned, sym),
+        tone: "goal",
+        icon: "🎯",
+      });
+    }
+    // Growth streak
+    if (prevMonthTotal > 0 && m.totalEarned > prevMonthTotal) monthGrowthRun++;
+    else monthGrowthRun = m.totalEarned > 0 ? 1 : 0;
+    if (monthGrowthRun >= 3) {
+      events.push({
+        id: `month-growth-${key}`,
+        date: lastDate,
+        title: `${monthGrowthRun}-Month Growth Streak`,
+        subtitle: "Up month over month",
+        tone: "streak",
+        icon: "📈",
+      });
+    }
+    // Legendary month — top 20%-style (best week was best ever)
+    if (m.strongestWeek?.isBestEver) {
+      events.push({
+        id: `month-legendary-${key}`,
+        date: lastDate,
+        title: `Legendary Month Closed — ${m.monthName}`,
+        subtitle: `Strongest week ever inside ${m.monthName}`,
+        tone: "milestone",
+        icon: "✨",
+      });
+    }
+    bestMonthSoFar = Math.max(bestMonthSoFar, m.totalEarned);
+    prevMonthTotal = m.totalEarned;
   }
 
   // Dedupe by id, sort newest first

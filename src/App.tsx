@@ -12,6 +12,7 @@ import SettingsPage from "./pages/SettingsPage";
 import AchievementsPage from "./pages/AchievementsPage";
 import CareerPage from "./pages/CareerPage";
 import JourneyPage from "./pages/JourneyPage";
+import MonthlyRecapPage from "./pages/MonthlyRecapPage";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import { useAuth } from "./hooks/useAuth";
@@ -60,6 +61,7 @@ const App = () => {
               <Route path="/achievements" element={<AchievementsPage />} />
               <Route path="/career" element={<CareerPage />} />
               <Route path="/journey" element={<JourneyPage />} />
+              <Route path="/recap" element={<MonthlyRecapPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />

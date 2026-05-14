@@ -333,7 +333,7 @@ export function getMonthSummary(
   }
   const weeksShown = heatmap.length / 7;
 
-  const legendaryDays = heatmap.filter((c) => c.tier === "legendary" || c.tier === "top").length;
+  const legendaryDays = heatmap.filter((c) => c.tier === "legendary").length;
   const totalCalDays = lastOfMonth.getDate();
   const daysOff = totalCalDays - daysWorked;
 

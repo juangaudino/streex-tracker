@@ -7,7 +7,7 @@ export interface MonthDayCell {
   total: number;
   logged: boolean;
   worked: boolean; // total > 0
-  tier: "off" | "low" | "avg" | "top" | "legendary";
+  tier: "off" | "low" | "solid" | "strong" | "top" | "legendary";
   isAllTimeBest: boolean;
 }
 
@@ -226,6 +226,34 @@ export function getMonthSummary(
   const top20Cutoff = sortedTotals.length > 0
     ? sortedTotals[Math.max(0, Math.floor(sortedTotals.length * 0.2) - 1)]
     : Infinity;
+  const top30Cutoff = sortedTotals.length > 0
+    ? sortedTotals[Math.max(0, Math.floor(sortedTotals.length * 0.3) - 1)]
+    : Infinity;
+
+  // Lifetime top 10% cutoff (for "top" tier — gold)
+  const lifetimeTotals: number[] = [];
+  for (const w of weeks) {
+    for (const d of w.entries) {
+      const t = dayTotal(d);
+      if (t > 0) lifetimeTotals.push(t);
+    }
+  }
+  lifetimeTotals.sort((a, b) => b - a);
+  const lifetimeTop10Cutoff = lifetimeTotals.length >= 10
+    ? lifetimeTotals[Math.max(0, Math.floor(lifetimeTotals.length * 0.1) - 1)]
+    : Infinity;
+
+  // Best day per weekday (lifetime) — for "new weekday record" legendary trigger
+  const weekdayBest = new Map<number, { total: number; date: string }>();
+  for (const w of weeks) {
+    for (const d of w.entries) {
+      const t = dayTotal(d);
+      if (t <= 0) continue;
+      const wd = new Date(d.date).getDay();
+      const cur = weekdayBest.get(wd);
+      if (!cur || t > cur.total) weekdayBest.set(wd, { total: t, date: d.date });
+    }
+  }
 
   // App "topDays" — count days where the app led and the day was top 20%
   const appTopDays = new Map<string, number>();
@@ -281,12 +309,17 @@ export function getMonthSummary(
     const worked = t > 0;
     let tier: MonthDayCell["tier"] = "off";
     if (worked) {
-      if (t >= top20Cutoff) tier = "top";
-      else if (t >= workedAvg) tier = "avg";
+      if (t >= lifetimeTop10Cutoff) tier = "top";
+      else if (t >= top20Cutoff) tier = "strong";
+      else if (t >= top30Cutoff || t >= workedAvg) tier = "solid";
       else tier = "low";
     }
     const isAllTimeBest = worked && lifetimeBestDay.date === ds && lifetimeBestDay.total > 0;
-    if (isAllTimeBest) tier = "legendary";
+    const isMonthBest = worked && t > 0 && t === bestDay.total && ds === bestDay.date;
+    const wd = cursor.getDay();
+    const wdRec = weekdayBest.get(wd);
+    const isWeekdayRecord = worked && wdRec?.date === ds && (wdRec?.total || 0) > 0;
+    if (isAllTimeBest || isMonthBest || isWeekdayRecord) tier = "legendary";
     heatmap.push({
       date: inMonth ? ds : "",
       dayName: dayNames[(cursor.getDay() + 6) % 7],
@@ -300,7 +333,7 @@ export function getMonthSummary(
   }
   const weeksShown = heatmap.length / 7;
 
-  const legendaryDays = heatmap.filter((c) => c.tier === "legendary" || c.tier === "top").length;
+  const legendaryDays = heatmap.filter((c) => c.tier === "legendary").length;
   const totalCalDays = lastOfMonth.getDate();
   const daysOff = totalCalDays - daysWorked;
 

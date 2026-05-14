@@ -304,8 +304,25 @@ function ScreenHeatmap({ summary, sym }: { summary: MonthSummary; sym: string })
           {summary.daysWorked} days worked · {summary.daysOff} days off
           {summary.legendaryDays > 0 ? ` · ${summary.legendaryDays} legendary day${summary.legendaryDays === 1 ? "" : "s"}` : ""}
         </p>
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground/70 font-mono">
+          <LegendDot className="bg-muted/60" label="Off" />
+          <LegendDot className="bg-success/30" label="Low" />
+          <LegendDot className="bg-success/60" label="Solid" />
+          <LegendDot className="bg-success" label="Strong" />
+          <LegendDot className="bg-gold/80" label="Top" />
+          <LegendDot className="bg-gold ring-1 ring-gold shadow-[0_0_8px_hsl(var(--gold)/0.6)]" label="Legendary" />
+        </div>
       </div>
     </section>
+  );
+}
+
+function LegendDot({ className, label }: { className: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className={`inline-block h-2.5 w-2.5 rounded-sm ${className}`} />
+      {label}
+    </span>
   );
 }
 

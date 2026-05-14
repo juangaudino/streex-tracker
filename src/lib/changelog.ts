@@ -6,9 +6,22 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.2";
+export const CURRENT_VERSION = "5.2.1";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.2.1",
+    date: "2026-05",
+    title: "Branding, Navigation & Heatmap Polish",
+    tags: ["polish"],
+    items: [
+      "Improved Streex branding on splash and header",
+      "Cleaner 4-item bottom navigation",
+      "New Progress Hub for Journey, Recap & Achievements",
+      "Improved monthly heatmap contrast and hierarchy",
+      "Enhanced legendary day visuals with shimmer & glow",
+    ],
+  },
   {
     version: "5.2",
     date: "2026-05",

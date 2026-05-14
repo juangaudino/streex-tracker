@@ -276,14 +276,19 @@ function ScreenHeatmap({ summary, sym }: { summary: MonthSummary; sym: string })
           {summary.heatmap.map((cell, i) => {
             const empty = !cell.date;
             const tone = cellTone(cell);
+            const isLegendary = cell.tier === "legendary";
             return (
               <button
                 key={i}
                 disabled={empty}
                 onClick={() => setTip(tip?.date === cell.date ? null : cell)}
-                className={`aspect-square rounded-md ${tone} ${empty ? "opacity-0" : "hover:scale-110 transition-transform"} ${cell.isAllTimeBest ? "ring-2 ring-gold shadow-[0_0_12px_rgba(255,200,0,0.4)] animate-pulse" : ""}`}
+                className={`relative aspect-square rounded-md ${tone} ${empty ? "opacity-0" : "hover:scale-110 transition-transform"} ${isLegendary ? "ring-2 ring-gold shadow-[0_0_18px_hsl(var(--gold)/0.55)] animate-pulse" : ""}`}
                 aria-label={cell.date}
-              />
+              >
+                {isLegendary && !empty && (
+                  <Sparkles className="absolute inset-0 m-auto h-2.5 w-2.5 text-gold-foreground/90" />
+                )}
+              </button>
             );
           })}
         </div>

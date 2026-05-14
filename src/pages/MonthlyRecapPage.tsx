@@ -313,9 +313,10 @@ function cellTone(c: MonthDayCell): string {
   if (!c.date) return "bg-transparent";
   switch (c.tier) {
     case "legendary": return "bg-gold";
-    case "top": return "bg-gold/70";
-    case "avg": return "bg-success";
-    case "low": return "bg-success/35";
+    case "top": return "bg-gold/80";
+    case "strong": return "bg-success";
+    case "solid": return "bg-success/60";
+    case "low": return "bg-success/30";
     case "off":
     default:
       return "bg-muted/60";

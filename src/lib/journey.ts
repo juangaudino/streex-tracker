@@ -3,7 +3,7 @@ import type { AchievementState } from "./achievements";
 import { weekTotal, dayTotal, appTotal, formatCurrency } from "./store";
 import { listMonthsWithData, getMonthSummary } from "./monthly";
 
-export type JourneyTone = "milestone" | "record" | "streak" | "achievement" | "goal" | "comeback";
+export type JourneyTone = "milestone" | "record" | "streak" | "achievement" | "goal" | "comeback" | "letter";
 
 export interface JourneyEvent {
   id: string;
@@ -13,6 +13,8 @@ export interface JourneyEvent {
   value?: string;
   tone: JourneyTone;
   icon: string;
+  /** When set, this event is a Weekly Letter; the page can render the letter inline. */
+  weekId?: string;
 }
 
 function allDays(weeks: WeekRecord[]): { d: DayEntry; weekStart: string; weekId: string }[] {
@@ -224,6 +226,105 @@ export function buildJourneyEvents(
         subtitle: a.description,
         tone: "achievement",
         icon: a.icon,
+      });
+    }
+  }
+
+  // Weekly Letters — one per closed week
+  for (const w of sortedWeeks.filter((w) => w.status === "closed")) {
+    events.push({
+      id: `letter-${w.id}`,
+      date: w.endDate,
+      title: "Weekly Letter",
+      subtitle: `Reflection for ${w.startDate} → ${w.endDate}`,
+      tone: "letter",
+      icon: "✉️",
+      weekId: w.id,
+    });
+  }
+
+  // Expanded narrative events (V5.3A)
+  // Best weekday $ thresholds — first time crossing $200/$300 on a specific weekday
+  const weekdayThresholds = [200, 300];
+  const weekdayThreshHit = new Map<string, number>(); // key dayName-threshold
+  for (const { d } of allDays(sortedWeeks)) {
+    const t = dayTotal(d);
+    if (t <= 0) continue;
+    for (const th of weekdayThresholds) {
+      const key = `${d.dayName}-${th}`;
+      if (!weekdayThreshHit.has(key) && t >= th) {
+        weekdayThreshHit.set(key, t);
+        events.push({
+          id: `first-${d.dayName.toLowerCase()}-${th}`,
+          date: d.date,
+          title: `First ${sym}${th} ${d.dayName}`,
+          value: formatCurrency(t, sym),
+          tone: "milestone",
+          icon: "⚡",
+        });
+      }
+    }
+  }
+
+  // Three strong days in a row (within a week, top 70% of that week's best day)
+  for (const w of sortedWeeks) {
+    const bestT = w.entries.reduce((m, d) => Math.max(m, dayTotal(d)), 0);
+    if (bestT <= 0) continue;
+    let run = 0;
+    let runEndDate = "";
+    for (const d of w.entries) {
+      if (dayTotal(d) >= bestT * 0.7) {
+        run++;
+        runEndDate = d.date;
+        if (run === 3) {
+          events.push({
+            id: `three-strong-${w.id}`,
+            date: runEndDate,
+            title: "Three strong days in a row",
+            subtitle: "Momentum stacked back-to-back",
+            tone: "streak",
+            icon: "🌊",
+          });
+          break;
+        }
+      } else {
+        run = 0;
+      }
+    }
+  }
+
+  // 5-day streak protected (in-week longest streak >= 5)
+  for (const w of sortedWeeks) {
+    let best = 0, cur = 0;
+    for (const d of w.entries) {
+      if (dayTotal(d) > 0) { cur++; if (cur > best) best = cur; } else cur = 0;
+    }
+    if (best >= 5) {
+      events.push({
+        id: `streak-protected-${w.id}`,
+        date: w.endDate,
+        title: `${best}-day streak protected`,
+        subtitle: "Consistency held through the week",
+        tone: "streak",
+        icon: "🛡️",
+      });
+    }
+  }
+
+  // Goal defended — finished within 95–110% of goal (precise execution)
+  for (const w of sortedWeeks) {
+    if (w.weeklyGoal <= 0 || w.status !== "closed") continue;
+    const t = weekTotal(w);
+    const pct = (t / w.weeklyGoal) * 100;
+    if (pct >= 95 && pct <= 110) {
+      events.push({
+        id: `goal-defended-${w.id}`,
+        date: w.endDate,
+        title: "Goal defended",
+        subtitle: `Landed at ${pct.toFixed(0)}% of target`,
+        value: formatCurrency(t, sym),
+        tone: "goal",
+        icon: "🛡️",
       });
     }
   }

@@ -6,9 +6,22 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.2.1";
+export const CURRENT_VERSION = "5.3A";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.3A",
+    date: "2026-05",
+    title: "Narrative Core",
+    tags: ["new", "feature"],
+    items: [
+      "Weekly Letter — a calm, personal reflection generated from your real week",
+      "Expanded Journey Feed with new narrative events",
+      "Three strong days, streak protection, and goal-defended moments",
+      "First $200/$300 weekday milestones",
+      "Share card foundation for future export & social moments",
+    ],
+  },
   {
     version: "5.2.1",
     date: "2026-05",

@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { weekTotal, dayTotal, formatCurrency } from "@/lib/store";
 import type { WeekRecord } from "@/lib/types";
 import { getBestDayOfWeek, getWeekRanking, getWeekRecordGap, getWeekdayHistoricalRank } from "@/lib/career";
+import { generateWeeklyLetter } from "@/lib/weeklyLetter";
+import WeeklyLetterCard from "@/components/WeeklyLetterCard";
 import { Trophy, Target, Flame, Sparkles, TrendingUp, Calendar } from "lucide-react";
 
 interface Props {
@@ -58,6 +60,8 @@ export default function WeekClosingDialog({
     "Another rep added to the career.",
   ];
   const closingLine = closingLines[Math.floor(wt) % closingLines.length];
+
+  const letter = generateWeeklyLetter(week, weeks, sym);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -123,6 +127,9 @@ export default function WeekClosingDialog({
           <div className="bg-accent/40 border border-border rounded-xl px-4 py-3">
             <p className="text-sm font-medium leading-relaxed">💬 {closingLine}</p>
           </div>
+
+          {/* Weekly Letter — narrative reflection */}
+          <WeeklyLetterCard letter={letter} variant="embedded" showShare={true} />
 
           <div className="flex gap-2 pt-1">
             <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>

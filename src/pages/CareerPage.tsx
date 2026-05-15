@@ -7,6 +7,8 @@ import {
   Sparkles, Crown, Zap, Map, BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { generateWeeklyLetter } from "@/lib/weeklyLetter";
+import WeeklyLetterCard from "@/components/WeeklyLetterCard";
 
 export default function CareerPage() {
   const { weeks, settings } = useOutletContext<StoreContext>();
@@ -15,6 +17,11 @@ export default function CareerPage() {
   const stats = computeCareerStats(weeks);
   const mp = stats.monthlyProgression;
   const perf = computePerformanceInsights(weeks);
+
+  const lastClosed = [...weeks]
+    .filter((w) => w.status === "closed")
+    .sort((a, b) => b.endDate.localeCompare(a.endDate))[0];
+  const latestLetter = lastClosed ? generateWeeklyLetter(lastClosed, weeks, sym) : null;
 
   if (weeks.length === 0) {
     return (
@@ -70,6 +77,14 @@ export default function CareerPage() {
         </div>
         <span className="text-primary text-lg">→</span>
       </button>
+
+      {/* Latest Weekly Letter */}
+      {latestLetter && (
+        <section className="space-y-2">
+          <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Latest Letter</h2>
+          <WeeklyLetterCard letter={latestLetter} />
+        </section>
+      )}
 
       {/* Hero stats row */}
       <section className="grid grid-cols-2 gap-3">

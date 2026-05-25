@@ -6,9 +6,22 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.3A";
+export const CURRENT_VERSION = "5.3A.1";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.3A.1",
+    date: "2026-05",
+    title: "Letters Library & Share Export",
+    tags: ["new", "feature"],
+    items: [
+      "Letters Library — every closed week archived as a chapter",
+      "Each letter tagged by emotional theme and anchored to its weekly total",
+      "Letters now persist permanently — your career leaves a trace",
+      "Share cards can now be saved as images or shared natively",
+      "Letters surfaced inside Progress Hub for easy revisiting",
+    ],
+  },
   {
     version: "5.3A",
     date: "2026-05",

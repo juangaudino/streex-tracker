@@ -15,6 +15,7 @@ import {
   Map,
   CalendarRange,
   Medal,
+  BookOpen,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink as RouterNavLink } from "react-router-dom";
@@ -103,6 +104,13 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
                     className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
                   >
                     <CalendarRange className="h-4 w-4" /> Monthly Recap
+                  </RouterNavLink>
+                  <RouterNavLink
+                    to="/letters"
+                    onClick={() => setProgressMenu(false)}
+                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                  >
+                    <BookOpen className="h-4 w-4" /> Letters
                   </RouterNavLink>
                   <RouterNavLink
                     to="/achievements"

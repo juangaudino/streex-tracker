@@ -61,3 +61,29 @@ export async function shareNodeAsPng(
     return "failed";
   }
 }
+
+/**
+ * Copy a rendered node to the clipboard as a PNG image.
+ * Returns false when the browser does not support clipboard image writes.
+ */
+export async function copyNodeAsPng(node: HTMLElement): Promise<boolean> {
+  try {
+    const nav: any = navigator;
+    if (!nav.clipboard || typeof window === "undefined" || typeof (window as any).ClipboardItem === "undefined") {
+      return false;
+    }
+    const canvas = await html2canvas(node, {
+      backgroundColor: null,
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+    const blob: Blob | null = await new Promise((r) => canvas.toBlob(r, "image/png"));
+    if (!blob) return false;
+    const item = new (window as any).ClipboardItem({ "image/png": blob });
+    await nav.clipboard.write([item]);
+    return true;
+  } catch {
+    return false;
+  }
+}

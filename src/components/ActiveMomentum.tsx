@@ -86,8 +86,9 @@ export function getDayOfWeekRecord(weeks: WeekRecord[], dayName: string, exclude
     for (const d of w.entries) {
       if (d.dayName === dayName && (!excludeDate || d.date !== excludeDate)) {
         const t = dayTotal(d);
-        const isLogged = d.logged !== undefined ? d.logged : t > 0;
-        if (isLogged) {
+        // Match Career > Performance Insights: only count days with actual earnings (t > 0).
+        // Logged-but-zero days are excluded so they don't drag the weekday average down.
+        if (t > 0) {
           if (t > best) best = t;
           sum += t;
           count++;

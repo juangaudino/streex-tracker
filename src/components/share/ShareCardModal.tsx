@@ -1,10 +1,10 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import ShareCard, { type ShareCardData } from "./ShareCard";
+import ShareCard, { type ShareCardData, type ShareCardAspect } from "./ShareCard";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useRef, useState } from "react";
-import { exportNodeAsPng, shareNodeAsPng } from "@/lib/shareExport";
-import { Download, Share2, Copy } from "lucide-react";
+import { exportNodeAsPng, shareNodeAsPng, copyNodeAsPng } from "@/lib/shareExport";
+import { Download, Share2, Copy, ClipboardCopy } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -12,10 +12,17 @@ interface Props {
   card: ShareCardData;
 }
 
+const ASPECTS: { id: ShareCardAspect; label: string }[] = [
+  { id: "9:16", label: "Story" },
+  { id: "1:1", label: "Square" },
+  { id: "16:9", label: "Wide" },
+];
+
 export default function ShareCardModal({ open, onOpenChange, card }: Props) {
   const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
-  const [busy, setBusy] = useState<"save" | "share" | null>(null);
+  const [busy, setBusy] = useState<"save" | "share" | "copy" | null>(null);
+  const [aspect, setAspect] = useState<ShareCardAspect>("9:16");
 
   async function handleCopy() {
     try {
@@ -49,6 +56,17 @@ export default function ShareCardModal({ open, onOpenChange, card }: Props) {
     else toast({ title: "Share failed.", variant: "destructive" });
   }
 
+  async function handleCopyImage() {
+    if (!cardRef.current) return;
+    setBusy("copy");
+    const ok = await copyNodeAsPng(cardRef.current);
+    setBusy(null);
+    toast({
+      title: ok ? "Image copied." : "Copy image not supported.",
+      variant: ok ? "default" : "destructive",
+    });
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm p-5 space-y-4">
@@ -56,8 +74,26 @@ export default function ShareCardModal({ open, onOpenChange, card }: Props) {
           <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary">Share Preview</p>
           <DialogTitle className="text-lg">A moment from your career</DialogTitle>
         </DialogHeader>
+
+        {/* Aspect toggle */}
+        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 w-fit mx-auto">
+          {ASPECTS.map((a) => (
+            <button
+              key={a.id}
+              onClick={() => setAspect(a.id)}
+              className={`px-3 py-1 text-[11px] font-semibold rounded-md transition-colors ${
+                aspect === a.id
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+
         <div ref={cardRef}>
-          <ShareCard card={card} />
+          <ShareCard card={card} aspect={aspect} />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" onClick={handleSave} disabled={!!busy}>
@@ -69,12 +105,23 @@ export default function ShareCardModal({ open, onOpenChange, card }: Props) {
             {busy === "share" ? "…" : "Share"}
           </Button>
         </div>
-        <button
-          onClick={handleCopy}
-          className="w-full text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1.5"
-        >
-          <Copy className="h-3 w-3" /> Copy text instead
-        </button>
+        <div className="flex items-center justify-center gap-4 text-[11px] text-muted-foreground">
+          <button
+            onClick={handleCopyImage}
+            disabled={!!busy}
+            className="hover:text-foreground transition-colors flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <ClipboardCopy className="h-3 w-3" />
+            {busy === "copy" ? "Copying…" : "Copy image"}
+          </button>
+          <span className="text-border">·</span>
+          <button
+            onClick={handleCopy}
+            className="hover:text-foreground transition-colors flex items-center gap-1.5"
+          >
+            <Copy className="h-3 w-3" /> Copy text
+          </button>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -6,9 +6,24 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.3A.1";
+export const CURRENT_VERSION = "5.3B";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.3B",
+    date: "2026-05",
+    title: "Social Layer & Share Center",
+    tags: ["new", "feature"],
+    items: [
+      "Share Center added inside Journey — a calm gallery of your shareable moments",
+      "Premium share cards for weekly highlights, milestones, and career moments",
+      "Monthly flex cards generated straight from your recap",
+      "Weekly letter excerpts as quote-style share cards",
+      "Choose Story, Square, or Wide format before exporting",
+      "Copy image to clipboard where supported, plus Save and Share",
+      "Legendary moments get a quiet gold treatment — no confetti, no noise",
+    ],
+  },
   {
     version: "5.3A.1",
     date: "2026-05",

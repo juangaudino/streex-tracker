@@ -5,8 +5,9 @@ import { buildJourneyEvents, JourneyEvent } from "@/lib/journey";
 import { generateWeeklyLetter } from "@/lib/weeklyLetter";
 import WeeklyLetterCard from "@/components/WeeklyLetterCard";
 import type { StoreContext } from "./types";
-import { Sparkles, Crown } from "lucide-react";
+import { Sparkles, Crown, Share2 } from "lucide-react";
 import { useState } from "react";
+import ShareCenter from "@/components/share/ShareCenter";
 
 const toneClasses: Record<string, { ring: string; text: string; bg: string }> = {
   milestone: { ring: "ring-primary/30", text: "text-primary", bg: "bg-primary/10" },
@@ -24,6 +25,7 @@ export default function JourneyPage() {
   const { achievements } = useAchievements(user, weeks);
   const events = buildJourneyEvents(weeks, achievements, settings.currencySymbol);
   const [openLetters, setOpenLetters] = useState<Record<string, boolean>>({});
+  const [tab, setTab] = useState<"timeline" | "share">("timeline");
 
   if (events.length === 0) {
     return (
@@ -47,6 +49,29 @@ export default function JourneyPage() {
         <p className="text-sm text-muted-foreground">Every milestone, record, and chapter so far.</p>
       </div>
 
+      {/* Tabs */}
+      <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/40 w-fit">
+        <button
+          onClick={() => setTab("timeline")}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+            tab === "timeline" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Sparkles className="h-3 w-3" /> Timeline
+        </button>
+        <button
+          onClick={() => setTab("share")}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+            tab === "share" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Share2 className="h-3 w-3" /> Share Center
+        </button>
+      </div>
+
+      {tab === "share" ? (
+        <ShareCenter weeks={weeks} achievements={achievements} sym={settings.currencySymbol} />
+      ) : (
       <div className="relative space-y-4 pl-6">
         <div className="absolute left-2 top-2 bottom-2 w-px bg-gradient-to-b from-primary/30 via-border to-transparent" />
         {events.map((e) => (
@@ -64,6 +89,7 @@ export default function JourneyPage() {
               : <JourneyCard key={e.id} event={e} />
         ))}
       </div>
+      )}
     </div>
   );
 }

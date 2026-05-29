@@ -1,6 +1,7 @@
 // Ask My Data — v5.3B.3 Beta
 // Scope-aware edge function: verifies JWT, reads through caller-scoped RLS,
-// builds compact analytics context, and streams Lovable AI Gateway responses.
+// builds compact analytics context (including weekend/consecutive-window and
+// app-vs-app head-to-head facts), and streams Lovable AI Gateway responses.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 

@@ -14,6 +14,7 @@ import CareerPage from "./pages/CareerPage";
 import JourneyPage from "./pages/JourneyPage";
 import MonthlyRecapPage from "./pages/MonthlyRecapPage";
 import LettersPage from "./pages/LettersPage";
+import AssistantPage from "./pages/AssistantPage";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import { useAuth } from "./hooks/useAuth";
@@ -73,6 +74,7 @@ const App = () => {
               <Route path="/journey" element={<JourneyPage />} />
               <Route path="/recap" element={<MonthlyRecapPage />} />
               <Route path="/letters" element={<LettersPage />} />
+              <Route path="/assistant" element={<AssistantPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />

@@ -20,6 +20,12 @@ type OpenWeatherHour = {
   pop?: number;
   weather?: { main?: string; description?: string }[];
 };
+type OpenWeatherForecastItem = {
+  dt?: number;
+  pop?: number;
+  main?: { temp?: number };
+  weather?: { main?: string; description?: string }[];
+};
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -66,8 +72,103 @@ function trafficCopy(level: ReturnType<typeof trafficLevel>): string {
   return "Traffic data is limited for this location.";
 }
 
+function buildWeatherPayload(args: {
+  condition: string;
+  temperature: number;
+  precipitationChance: number;
+  nextHours: OpenWeatherHour[];
+  source: "onecall_3_0" | "current_and_forecast_2_5";
+}) {
+  return {
+    status: "live" as ProviderStatus,
+    provider: "OpenWeather",
+    source: args.source,
+    observedAt: new Date().toISOString(),
+    condition: args.condition,
+    temperature: round(args.temperature),
+    precipitationChance: args.precipitationChance,
+    nextHours: args.nextHours.slice(0, 3).map((h) => ({
+      time: new Date(Number(h.dt) * 1000).toISOString(),
+      temperature: round(Number(h.temp ?? 0)),
+      precipitationChance: Math.round(Number(h.pop ?? 0) * 100),
+      condition: String(h.weather?.[0]?.main || "Forecast"),
+    })),
+    copy: weatherCopy(args.condition, args.precipitationChance),
+  };
+}
+
+async function fetchOpenWeatherOneCall(lat: number, lon: number, apiKey: string) {
+  const url = new URL("https://api.openweathermap.org/data/3.0/onecall");
+  url.searchParams.set("lat", String(lat));
+  url.searchParams.set("lon", String(lon));
+  url.searchParams.set("units", "imperial");
+  url.searchParams.set("exclude", "minutely,daily,alerts");
+  url.searchParams.set("appid", apiKey);
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`OpenWeather One Call ${res.status}`);
+  const data = await res.json();
+  const current = data?.current ?? {};
+  const weather = current?.weather?.[0] ?? {};
+  const hourly = Array.isArray(data?.hourly) ? data.hourly.slice(0, 4) : [];
+  const precipChance = Math.round(((hourly[1]?.pop ?? hourly[0]?.pop ?? 0) as number) * 100);
+  const condition = String(weather.description || weather.main || "Current conditions");
+
+  return buildWeatherPayload({
+    condition,
+    temperature: Number(current.temp ?? 0),
+    precipitationChance: precipChance,
+    nextHours: (hourly as OpenWeatherHour[]).slice(1, 4),
+    source: "onecall_3_0",
+  });
+}
+
+async function fetchOpenWeatherFreeEndpoints(lat: number, lon: number, apiKey: string) {
+  const currentUrl = new URL("https://api.openweathermap.org/data/2.5/weather");
+  currentUrl.searchParams.set("lat", String(lat));
+  currentUrl.searchParams.set("lon", String(lon));
+  currentUrl.searchParams.set("units", "imperial");
+  currentUrl.searchParams.set("appid", apiKey);
+
+  const forecastUrl = new URL("https://api.openweathermap.org/data/2.5/forecast");
+  forecastUrl.searchParams.set("lat", String(lat));
+  forecastUrl.searchParams.set("lon", String(lon));
+  forecastUrl.searchParams.set("units", "imperial");
+  forecastUrl.searchParams.set("appid", apiKey);
+
+  const [currentRes, forecastRes] = await Promise.all([
+    fetch(currentUrl),
+    fetch(forecastUrl),
+  ]);
+  if (!currentRes.ok) throw new Error(`OpenWeather Current ${currentRes.status}`);
+  if (!forecastRes.ok) throw new Error(`OpenWeather Forecast ${forecastRes.status}`);
+
+  const current = await currentRes.json();
+  const forecast = await forecastRes.json();
+  const weather = current?.weather?.[0] ?? {};
+  const forecastItems = Array.isArray(forecast?.list)
+    ? (forecast.list as OpenWeatherForecastItem[]).slice(0, 3)
+    : [];
+  const precipChance = Math.round(Number(forecastItems[0]?.pop ?? 0) * 100);
+  const condition = String(weather.description || weather.main || "Current conditions");
+
+  return buildWeatherPayload({
+    condition,
+    temperature: Number(current?.main?.temp ?? 0),
+    precipitationChance: precipChance,
+    nextHours: forecastItems.map((item) => ({
+      dt: item.dt,
+      temp: item.main?.temp,
+      pop: item.pop,
+      weather: item.weather,
+    })),
+    source: "current_and_forecast_2_5",
+  });
+}
+
 async function fetchWeather(lat: number, lon: number) {
-  if (!OPENWEATHER_API_KEY) {
+  const apiKey = OPENWEATHER_API_KEY;
+  if (!apiKey) {
     return {
       status: "not_configured" as ProviderStatus,
       provider: "OpenWeather",
@@ -76,44 +177,19 @@ async function fetchWeather(lat: number, lon: number) {
   }
 
   try {
-    const url = new URL("https://api.openweathermap.org/data/3.0/onecall");
-    url.searchParams.set("lat", String(lat));
-    url.searchParams.set("lon", String(lon));
-    url.searchParams.set("units", "imperial");
-    url.searchParams.set("exclude", "minutely,daily,alerts");
-    url.searchParams.set("appid", OPENWEATHER_API_KEY);
-
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`OpenWeather ${res.status}`);
-    const data = await res.json();
-    const current = data?.current ?? {};
-    const weather = current?.weather?.[0] ?? {};
-    const hourly = Array.isArray(data?.hourly) ? data.hourly.slice(0, 4) : [];
-    const precipChance = Math.round(((hourly[1]?.pop ?? hourly[0]?.pop ?? 0) as number) * 100);
-    const condition = String(weather.description || weather.main || "Current conditions");
-
-    return {
-      status: "live" as ProviderStatus,
-      provider: "OpenWeather",
-      observedAt: new Date().toISOString(),
-      condition,
-      temperature: round(Number(current.temp ?? 0)),
-      precipitationChance: precipChance,
-      nextHours: (hourly as OpenWeatherHour[]).slice(1, 4).map((h) => ({
-        time: new Date(Number(h.dt) * 1000).toISOString(),
-        temperature: round(Number(h.temp ?? 0)),
-        precipitationChance: Math.round(Number(h.pop ?? 0) * 100),
-        condition: String(h.weather?.[0]?.main || "Forecast"),
-      })),
-      copy: weatherCopy(condition, precipChance),
-    };
-  } catch (error) {
-    console.error("weather fetch failed", error);
-    return {
-      status: "unavailable" as ProviderStatus,
-      provider: "OpenWeather",
-      copy: "Weather is temporarily unavailable.",
-    };
+    return await fetchOpenWeatherOneCall(lat, lon, apiKey);
+  } catch (oneCallError) {
+    console.warn("OpenWeather One Call failed; trying free endpoints", oneCallError);
+    try {
+      return await fetchOpenWeatherFreeEndpoints(lat, lon, apiKey);
+    } catch (fallbackError) {
+      console.error("weather fetch failed", fallbackError);
+      return {
+        status: "unavailable" as ProviderStatus,
+        provider: "OpenWeather",
+        copy: "Weather is temporarily unavailable.",
+      };
+    }
   }
 }
 

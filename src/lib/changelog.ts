@@ -6,9 +6,23 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.3B";
+export const CURRENT_VERSION = "5.3B.2";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.3B.2",
+    date: "2026-05",
+    title: "Dashboard Clarity & Data Export",
+    tags: ["feature", "polish"],
+    items: [
+      "Dashboard semantics cleanup",
+      "Adaptive Active Days logic",
+      "Human-readable Active Days labels",
+      "Export My Data added to Settings",
+      "JSON backup export",
+      "CSV earnings export",
+    ],
+  },
   {
     version: "5.3B",
     date: "2026-05",

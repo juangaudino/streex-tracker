@@ -155,6 +155,7 @@ export default function DashboardPage() {
   const record = getRecordWeek(weeks, openWeek);
   const activeDays = getActiveEnteredDays(openWeek);
   const loggedDays = getLoggedDays(openWeek);
+  const showActiveDaysCard = loggedDays.length !== activeDays.length;
   const prevSP = prev ? samePointTotal(prev, loggedDays) : 0;
   const recSP = record ? samePointTotal(record, loggedDays) : 0;
 
@@ -350,7 +351,9 @@ export default function DashboardPage() {
         <StatCard label="Best Day" value={bd.total > 0 ? formatCurrency(bd.total, sym) : "—"} sub={bd.dayName} />
         <StatCard label="Best App" value={ba.total > 0 ? formatCurrency(ba.total, sym) : "—"} sub={ba.app} />
         <StatCard label="Days Logged" value={`${loggedDays.length}/7`} />
-        <StatCard label="Active Days" value={`${activeDays.length}/7`} sub="Earnings > $0" />
+        {showActiveDaysCard && (
+          <StatCard label="Active Days" value={`${activeDays.length}/7`} sub="Days with earnings" />
+        )}
       </div>
 
       {hasLocalData && (

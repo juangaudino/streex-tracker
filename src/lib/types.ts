@@ -28,6 +28,7 @@ export interface DayEntry {
   /** Day finalized via "End Day". Distinct from `logged` (which auto-flags on any earnings entry). */
   dayClosed?: boolean;
   mileage?: number;
+  notes?: string;
 }
 
 export interface WeekRecord {

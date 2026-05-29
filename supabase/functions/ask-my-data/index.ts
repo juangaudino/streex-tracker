@@ -26,6 +26,7 @@ type TokenUsage = {
   outputTokens: number | null;
   totalTokens: number | null;
 };
+type SupabaseClient = ReturnType<typeof createClient>;
 
 interface DayEntry {
   dayName: string;
@@ -254,6 +255,54 @@ function trendBuckets(weeks: NormalizedWeek[]) {
   return buckets;
 }
 
+async function fetchWeeksForScope(supabase: SupabaseClient, scope: DataScope) {
+  const selectFields = "id,start_date,end_date,weekly_goal,status,entries";
+
+  if (scope === "RECENT") {
+    const result = await supabase.from("weeks")
+      .select(selectFields)
+      .order("start_date", { ascending: false })
+      .limit(16);
+
+    return {
+      data: (result.data ?? []) as WeekRow[],
+      error: result.error,
+      rowsFetched: result.data?.length ?? 0,
+      mode: "recent-limit-16",
+    };
+  }
+
+  const pageSize = 1000;
+  const allRows: WeekRow[] = [];
+  for (let from = 0; from < 10000; from += pageSize) {
+    const to = from + pageSize - 1;
+    const result = await supabase.from("weeks")
+      .select(selectFields)
+      .order("start_date", { ascending: false })
+      .range(from, to);
+
+    if (result.error) {
+      return {
+        data: allRows,
+        error: result.error,
+        rowsFetched: allRows.length,
+        mode: "all-history-paginated",
+      };
+    }
+
+    const rows = (result.data ?? []) as WeekRow[];
+    allRows.push(...rows);
+    if (rows.length < pageSize) break;
+  }
+
+  return {
+    data: allRows,
+    error: null,
+    rowsFetched: allRows.length,
+    mode: "all-history-paginated",
+  };
+}
+
 function buildContext(args: {
   scope: DataScope;
   scopeReason: string;
@@ -267,6 +316,14 @@ function buildContext(args: {
     .sort((a, b) => b.startDate.localeCompare(a.startDate));
   const closed = weeks.filter((w) => w.status === "closed");
   const recent = weeks.slice(0, 16);
+  const bestRecentWeek = recent.reduce<NormalizedWeek | null>(
+    (best, w) => (!best || w.total > best.total ? w : best),
+    null,
+  );
+  const bestWeekEver = weeks.reduce<NormalizedWeek | null>(
+    (best, w) => (!best || w.total > best.total ? w : best),
+    null,
+  );
   const bestClosedWeek = closed.reduce<NormalizedWeek | null>(
     (best, w) => (!best || w.total > best.total ? w : best),
     null,
@@ -295,6 +352,16 @@ function buildContext(args: {
         closedWeeks: closed.length,
         lifetimeTotal: round(lifetimeTotal),
         averageClosedWeek,
+        bestWeekEver: bestWeekEver
+          ? {
+            startDate: bestWeekEver.startDate,
+            endDate: bestWeekEver.endDate,
+            status: bestWeekEver.status,
+            total: bestWeekEver.total,
+            daysWorked: bestWeekEver.daysWorked,
+            appTotals: bestWeekEver.appTotals,
+          }
+          : null,
         bestClosedWeek: bestClosedWeek
           ? {
             startDate: bestClosedWeek.startDate,
@@ -333,6 +400,9 @@ function buildContext(args: {
       bestClosedWeek: bestClosedWeek
         ? { startDate: bestClosedWeek.startDate, total: bestClosedWeek.total }
         : null,
+      bestWeekEver: bestWeekEver
+        ? { startDate: bestWeekEver.startDate, total: bestWeekEver.total }
+        : null,
     };
   }
 
@@ -341,7 +411,10 @@ function buildContext(args: {
     recent: {
       weeksTrackedInScope: recent.length,
       averageClosedWeek,
-      bestClosedWeek: bestClosedWeek
+      bestWeekInScope: bestRecentWeek
+        ? { startDate: bestRecentWeek.startDate, total: bestRecentWeek.total }
+        : null,
+      bestClosedWeekInScope: bestClosedWeek
         ? { startDate: bestClosedWeek.startDate, total: bestClosedWeek.total }
         : null,
       appTotals: sumAppTotals(recent),
@@ -577,12 +650,8 @@ Deno.serve(async (req) => {
   }
   const userId = userRes.user.id;
 
-  const weekLimit = scopeResult.scope === "RECENT" ? 16 : 500;
   const [weeksRes, settingsRes, achRes] = await Promise.all([
-    supabase.from("weeks")
-      .select("id,start_date,end_date,weekly_goal,status,entries")
-      .order("start_date", { ascending: false })
-      .limit(weekLimit),
+    fetchWeeksForScope(supabase, scopeResult.scope),
     supabase.from("user_settings")
       .select("default_weekly_goal,currency_symbol,active_apps")
       .maybeSingle(),
@@ -604,12 +673,15 @@ Deno.serve(async (req) => {
       estimatedOutputTokens: 0,
       latencyMs: Date.now() - startedAt,
       usedStreaming: false,
-      metadata: { weekLimit },
+      metadata: {
+        fetchMode: weeksRes.mode,
+        rowsFetched: weeksRes.rowsFetched,
+      },
     });
     return json({ error: "Could not load your data." }, 500);
   }
 
-  const weeks = (weeksRes.data ?? []) as WeekRow[];
+  const weeks = weeksRes.data;
   if (!weeks.length) {
     await logUsage({
       supabase,
@@ -622,7 +694,10 @@ Deno.serve(async (req) => {
       estimatedOutputTokens: 0,
       latencyMs: Date.now() - startedAt,
       usedStreaming: false,
-      metadata: { weekLimit },
+      metadata: {
+        fetchMode: weeksRes.mode,
+        rowsFetched: weeksRes.rowsFetched,
+      },
     });
     return json({
       text:
@@ -642,6 +717,7 @@ Deno.serve(async (req) => {
     "You are 'Ask My Data', an analytics assistant inside Streex — a gig earnings tracker.",
     "Answer ONLY using the JSON context provided. If the answer isn't in the data, say so plainly.",
     "The context has already been scoped to the user's question. Mention the scope briefly only if it helps the answer.",
+    "For best/highest/record week questions, use lifetime.bestWeekEver when available, not a recent-only value.",
     "Be concise, friendly, and specific. Prefer short paragraphs and small markdown lists.",
     "Always format currency using the provided symbol. Reference dates in a human way (e.g. 'week of Mar 10').",
     "Never invent numbers. Never reveal raw JSON or internal fields. No SQL.",
@@ -656,8 +732,9 @@ Deno.serve(async (req) => {
     ...safeMessages.map((m) => `${m.role}: ${m.content}`),
   ].join("\n"));
   const metadata = {
-    weekLimit,
+    fetchMode: weeksRes.mode,
     weeksFetched: weeks.length,
+    rowsFetched: weeksRes.rowsFetched,
     achievementsFetched: achRes.data?.length ?? 0,
     hasSettings: Boolean(settingsRes.data),
     costEstimateBasis: "Gemini Flash token estimate; Lovable credits may differ.",

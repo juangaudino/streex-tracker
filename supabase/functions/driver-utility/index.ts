@@ -75,6 +75,7 @@ async function fetchWeather(lat: number, lon: number) {
     };
   }
 
+  // Try One Call 3.0 first.
   try {
     const url = new URL("https://api.openweathermap.org/data/3.0/onecall");
     url.searchParams.set("lat", String(lat));
@@ -84,7 +85,7 @@ async function fetchWeather(lat: number, lon: number) {
     url.searchParams.set("appid", OPENWEATHER_API_KEY);
 
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`OpenWeather ${res.status}`);
+    if (!res.ok) throw new Error(`OpenWeather onecall ${res.status}`);
     const data = await res.json();
     const current = data?.current ?? {};
     const weather = current?.weather?.[0] ?? {};
@@ -95,6 +96,7 @@ async function fetchWeather(lat: number, lon: number) {
     return {
       status: "live" as ProviderStatus,
       provider: "OpenWeather",
+      source: "onecall_3_0",
       observedAt: new Date().toISOString(),
       condition,
       temperature: round(Number(current.temp ?? 0)),
@@ -108,7 +110,63 @@ async function fetchWeather(lat: number, lon: number) {
       copy: weatherCopy(condition, precipChance),
     };
   } catch (error) {
-    console.error("weather fetch failed", error);
+    console.warn("OpenWeather One Call 3.0 failed, falling back to 2.5:", error);
+  }
+
+  // Fallback: free /data/2.5/weather + /data/2.5/forecast.
+  try {
+    const currentUrl = new URL("https://api.openweathermap.org/data/2.5/weather");
+    currentUrl.searchParams.set("lat", String(lat));
+    currentUrl.searchParams.set("lon", String(lon));
+    currentUrl.searchParams.set("units", "imperial");
+    currentUrl.searchParams.set("appid", OPENWEATHER_API_KEY);
+
+    const forecastUrl = new URL("https://api.openweathermap.org/data/2.5/forecast");
+    forecastUrl.searchParams.set("lat", String(lat));
+    forecastUrl.searchParams.set("lon", String(lon));
+    forecastUrl.searchParams.set("units", "imperial");
+    forecastUrl.searchParams.set("cnt", "4");
+    forecastUrl.searchParams.set("appid", OPENWEATHER_API_KEY);
+
+    const [curRes, fcRes] = await Promise.all([fetch(currentUrl), fetch(forecastUrl)]);
+    if (!curRes.ok) throw new Error(`OpenWeather current ${curRes.status}`);
+    const curData = await curRes.json();
+    const curWeather = curData?.weather?.[0] ?? {};
+    const condition = String(curWeather.description || curWeather.main || "Current conditions");
+    const temperature = round(Number(curData?.main?.temp ?? 0));
+
+    let nextHours: { time: string; temperature: number; precipitationChance: number; condition: string }[] = [];
+    let precipChance = 0;
+    if (fcRes.ok) {
+      const fcData = await fcRes.json();
+      const list = Array.isArray(fcData?.list) ? fcData.list.slice(0, 3) : [];
+      nextHours = list.map((item: {
+        dt: number;
+        main?: { temp?: number };
+        pop?: number;
+        weather?: { main?: string }[];
+      }) => ({
+        time: new Date(Number(item.dt) * 1000).toISOString(),
+        temperature: round(Number(item.main?.temp ?? 0)),
+        precipitationChance: Math.round(Number(item.pop ?? 0) * 100),
+        condition: String(item.weather?.[0]?.main || "Forecast"),
+      }));
+      precipChance = nextHours[0]?.precipitationChance ?? 0;
+    }
+
+    return {
+      status: "live" as ProviderStatus,
+      provider: "OpenWeather",
+      source: "current_and_forecast_2_5",
+      observedAt: new Date().toISOString(),
+      condition,
+      temperature,
+      precipitationChance: precipChance,
+      nextHours,
+      copy: weatherCopy(condition, precipChance),
+    };
+  } catch (error) {
+    console.error("OpenWeather 2.5 fallback failed", error);
     return {
       status: "unavailable" as ProviderStatus,
       provider: "OpenWeather",

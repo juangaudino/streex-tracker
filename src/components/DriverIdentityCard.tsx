@@ -1,6 +1,7 @@
 import { BadgeCheck, Flame, Gauge, Shield, Sparkles, Trophy } from "lucide-react";
 import { formatCurrency } from "@/lib/store";
 import type { DriverIdentitySummary } from "@/lib/driverIdentity";
+import { cn } from "@/lib/utils";
 
 interface DriverIdentityCardProps {
   identity: DriverIdentitySummary;
@@ -23,9 +24,16 @@ export default function DriverIdentityCard({
   loading,
 }: DriverIdentityCardProps) {
   const { level } = identity;
+  const titleToneClass = {
+    forming: "bg-muted text-muted-foreground",
+    steady: "bg-primary/10 text-primary",
+    momentum: "bg-success/10 text-success",
+    record: "bg-gold/10 text-gold",
+    legend: "bg-beast-purple/10 text-beast-purple",
+  }[identity.careerTitle.tone];
 
   return (
-    <section className="bg-card rounded-xl border border-border p-4 space-y-4">
+    <section className={cn("bg-card rounded-xl border border-border p-4 space-y-4", `career-title-${identity.careerTitle.tone}`)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -34,12 +42,15 @@ export default function DriverIdentityCard({
               Driver Identity
             </p>
           </div>
-          <h2 className="text-xl font-bold mt-1 truncate">{level.currentLevel}</h2>
+          <h2 className="text-xl font-bold mt-1 truncate">{identity.careerTitle.title}</h2>
           <p className="text-xs text-muted-foreground">
+            {identity.careerTitle.subtitle}
+          </p>
+          <span className={`inline-flex mt-2 text-[10px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 ${titleToneClass}`}>
             {level.nextLevel
               ? `${level.xpToNext.toLocaleString()} XP to ${level.nextLevel}`
               : "Highest level reached"}
-          </p>
+          </span>
         </div>
         <div className="text-right shrink-0">
           <p className="text-2xl font-bold font-mono text-primary">{identity.totalXp.toLocaleString()}</p>

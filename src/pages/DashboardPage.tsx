@@ -30,11 +30,27 @@ import {
 import type { StoreContext } from "./types";
 import { CalendarPlus, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import EndDayDialog from "@/components/EndDayDialog";
 import MonthlyRecapBanner from "@/components/MonthlyRecapBanner";
 import DriverIdentityCard from "@/components/DriverIdentityCard";
 import { useDriverIdentity } from "@/hooks/useDriverIdentity";
+
+type PulseState = "calm" | "steady" | "strong" | "record" | "streak";
+
+function DashboardPulse({ enabled, state }: { enabled: boolean; state: PulseState }) {
+  useEffect(() => {
+    const root = document.documentElement;
+    const pulseClasses = ["pulse-mode", "pulse-calm", "pulse-steady", "pulse-strong", "pulse-record", "pulse-streak"];
+    root.classList.remove(...pulseClasses);
+    if (enabled) {
+      root.classList.add("pulse-mode", `pulse-${state}`);
+    }
+    return () => root.classList.remove(...pulseClasses);
+  }, [enabled, state]);
+
+  return null;
+}
 
 export default function DashboardPage() {
   const { openWeek, weeks, settings, hasLocalData, importLocalData, updateWeek } = useOutletContext<StoreContext>();
@@ -46,7 +62,7 @@ export default function DashboardPage() {
   const { achievements } = useAchievements(user, weeks);
   const { summary: driverIdentity, loading: identityLoading } = useDriverIdentity(user, weeks, openWeek);
   const sym = settings.currencySymbol;
-  const { mode } = useTheme();
+  const { pulseMode } = useTheme();
 
   async function handleImport() {
     setImporting(true);
@@ -101,6 +117,7 @@ export default function DashboardPage() {
 
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
+        <DashboardPulse enabled={pulseMode} state={hasHistory ? "steady" : "calm"} />
         <div className="w-full max-w-md">
           <MonthlyRecapBanner weeks={weeks} currencySymbol={sym} />
         </div>
@@ -193,6 +210,16 @@ export default function DashboardPage() {
   const isDayClosed = mood.tone === "closed";
 
   const statusVariant = pct >= 120 ? "purple" as const : pct >= 100 ? "success" as const : pct >= 75 ? "primary" as const : pct >= 40 ? "warning" as const : "default" as const;
+  const pulseState: PulseState =
+    dailyChase || weeklyChase || (record && recSP > 0 && total / recSP >= 0.9)
+      ? "record"
+      : isDayClosed || (todayEntry && todayTotal === 0 && mood.tone === "prerun")
+      ? "calm"
+      : pct >= 100 || mood.momentumState === "high"
+      ? "strong"
+      : activeDays.length >= 3
+      ? "streak"
+      : "steady";
 
   const barColor =
     pct >= 120
@@ -207,6 +234,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+      <DashboardPulse enabled={pulseMode} state={pulseState} />
       <MonthlyRecapBanner weeks={weeks} currencySymbol={sym} />
       {/* Smart Header */}
       <div className="flex items-center justify-between">

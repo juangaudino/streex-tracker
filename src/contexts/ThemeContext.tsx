@@ -6,16 +6,20 @@ export type ClassicVariant = "system" | "light" | "dark";
 interface ThemeContextType {
   mode: ThemeMode;
   classicVariant: ClassicVariant;
+  pulseMode: boolean;
   setMode: (m: ThemeMode) => void;
   setClassicVariant: (v: ClassicVariant) => void;
+  setPulseMode: (enabled: boolean) => void;
   isDark: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   mode: "classic",
   classicVariant: "system",
+  pulseMode: false,
   setMode: () => {},
   setClassicVariant: () => {},
+  setPulseMode: () => {},
   isDark: true,
 });
 
@@ -33,6 +37,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   });
   const [classicVariant, setClassicVariantState] = useState<ClassicVariant>(() => {
     return (localStorage.getItem("streex_classic_variant") as ClassicVariant) || "system";
+  });
+  const [pulseMode, setPulseModeState] = useState(() => {
+    return localStorage.getItem("streex_pulse_mode") === "true";
   });
   const [systemDark, setSystemDark] = useState(getSystemDark);
 
@@ -73,8 +80,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("streex_classic_variant", v);
   }
 
+  function setPulseMode(enabled: boolean) {
+    setPulseModeState(enabled);
+    localStorage.setItem("streex_pulse_mode", enabled ? "true" : "false");
+  }
+
   return (
-    <ThemeContext.Provider value={{ mode, classicVariant, setMode, setClassicVariant, isDark }}>
+    <ThemeContext.Provider value={{ mode, classicVariant, pulseMode, setMode, setClassicVariant, setPulseMode, isDark }}>
       {children}
     </ThemeContext.Provider>
   );

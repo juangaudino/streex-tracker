@@ -1,5 +1,31 @@
 # Changelog
 
+## V5.4.2 — Pulse Mode + Career Titles
+
+### Added
+
+- Pulse Mode as an optional momentum-reactive visual layer.
+- Dashboard pulse states for calm, steady, streak, strong, and record-chase moments.
+- Career Title Generator inside Driver Identity.
+- Career titles derived from level, archetype, weekly goal progress, active days, and record proximity.
+- Pulse Mode toggle in Settings.
+
+### Files Modified
+
+- `src/contexts/ThemeContext.tsx`
+- `src/pages/SettingsPage.tsx`
+- `src/pages/DashboardPage.tsx`
+- `src/components/DriverIdentityCard.tsx`
+- `src/lib/driverIdentity.ts`
+- `src/index.css`
+- `src/lib/changelog.ts`
+- `CHANGELOG.md`
+
+### Production Behavior
+
+- No backend, auth, earnings persistence, Ask My Data, exports, Supabase migrations, or XP event writing changed.
+- Pulse Mode is local-only in V5.4.2 and can be disabled instantly.
+
 ## V5.4.1 — Night Drive Theme
 
 ### Added

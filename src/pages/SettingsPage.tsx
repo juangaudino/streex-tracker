@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import type { StoreContext } from "./types";
 import { useToast } from "@/hooks/use-toast";
-import { Download, FileJson, Gamepad2, Monitor, Moon, Palette, Plus, Route, Save, Sun, Table, X } from "lucide-react";
+import { Activity, Download, FileJson, Gamepad2, Monitor, Moon, Palette, Plus, Route, Save, Sun, Table, X } from "lucide-react";
 import { useTheme, ClassicVariant } from "@/contexts/ThemeContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +15,7 @@ export default function SettingsPage() {
   const { weeks, settings, updateSettings } = useOutletContext<StoreContext>();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { mode, classicVariant, setMode, setClassicVariant } = useTheme();
+  const { mode, classicVariant, pulseMode, setMode, setClassicVariant, setPulseMode } = useTheme();
   const [goal, setGoal] = useState(settings.defaultWeeklyGoal.toString());
   const [symbol, setSymbol] = useState(settings.currencySymbol);
   const [apps, setApps] = useState([...settings.activeApps]);
@@ -141,6 +142,18 @@ export default function SettingsPage() {
               ))}
             </div>
           )}
+          <div className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-3">
+            <div className="min-w-0 pr-3">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" />
+                Pulse Mode
+              </label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Let Streex subtly react to your current momentum.
+              </p>
+            </div>
+            <Switch checked={pulseMode} onCheckedChange={setPulseMode} />
+          </div>
         </div>
 
         <div className="space-y-1.5">

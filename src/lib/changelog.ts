@@ -6,9 +6,22 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.4.1";
+export const CURRENT_VERSION = "5.4.2";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.4.2",
+    date: "2026-05",
+    title: "Pulse Mode + Career Titles",
+    tags: ["new", "feature", "polish"],
+    items: [
+      "Pulse Mode added as an optional momentum-reactive visual layer",
+      "Dashboard can now subtly shift visual intensity for calm, steady, streak, strong, and record-chase states",
+      "Career Title Generator added to Driver Identity",
+      "Career titles combine driver level, behavior, goals, records, and archetype signals",
+      "Pulse Mode is stored locally and can be turned on or off from Settings",
+    ],
+  },
   {
     version: "5.4.1",
     date: "2026-05",

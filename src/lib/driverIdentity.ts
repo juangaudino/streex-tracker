@@ -98,11 +98,18 @@ export interface AdaptivePace {
   copy: string;
 }
 
+export interface CareerTitle {
+  title: string;
+  subtitle: string;
+  tone: "forming" | "steady" | "momentum" | "record" | "legend";
+}
+
 export interface DriverIdentitySummary {
   totalXp: number;
   consistencyXp: number;
   performanceXp: number;
   level: DriverLevelProgress;
+  careerTitle: CareerTitle;
   primaryArchetype: DriverArchetype | null;
   secondaryArchetypes: DriverArchetype[];
   archetypeLocked: boolean;
@@ -554,6 +561,59 @@ export function getDayOffCopy(openWeek: WeekRecord | null): string | null {
   return "Quiet day so far. Days off belong in the gig rhythm too.";
 }
 
+export function getCareerTitle(
+  weeks: WeekRecord[],
+  openWeek: WeekRecord | null,
+  level: DriverLevelProgress,
+  primaryArchetype: DriverArchetype | null,
+  archetypeLocked: boolean,
+): CareerTitle {
+  if (archetypeLocked || weeks.length < 2) {
+    return {
+      title: `${level.currentLevel} - Identity Forming`,
+      subtitle: "Keep tracking. Streex is learning your professional rhythm.",
+      tone: "forming",
+    };
+  }
+
+  const currentTotal = openWeek ? weekTotal(openWeek) : 0;
+  const currentGoal = openWeek?.weeklyGoal ?? 0;
+  const activeDays = openWeek?.entries.filter((day) => dayTotal(day) > 0).length ?? 0;
+  const recordWeek = weeks
+    .filter((week) => week.id !== openWeek?.id)
+    .reduce<WeekRecord | null>((best, week) => (!best || weekTotal(week) > weekTotal(best) ? week : best), null);
+  const recordTotal = recordWeek ? weekTotal(recordWeek) : 0;
+  const pctOfRecord = recordTotal > 0 ? currentTotal / recordTotal : 0;
+
+  let identity = primaryArchetype?.name ?? "Momentum Builder";
+  let subtitle = primaryArchetype?.reason ?? "Your tracked history is becoming a professional signature.";
+  let tone: CareerTitle["tone"] = "steady";
+
+  if (level.currentLevel === "Streex Legend") {
+    identity = primaryArchetype?.name ? `Legendary ${primaryArchetype.name}` : "Career Legend";
+    subtitle = "Your history has crossed into legacy territory.";
+    tone = "legend";
+  } else if (pctOfRecord >= 0.85 && recordTotal > 0) {
+    identity = "Record Hunter";
+    subtitle = "Your previous best is close enough to feel in the room.";
+    tone = "record";
+  } else if (currentGoal > 0 && currentTotal >= currentGoal) {
+    identity = "Goal Closer";
+    subtitle = "This week already reached the standard you set.";
+    tone = "momentum";
+  } else if (activeDays >= 5) {
+    identity = "Week Builder";
+    subtitle = "A strong working rhythm is shaping this chapter.";
+    tone = "momentum";
+  }
+
+  return {
+    title: `${level.currentLevel} - ${identity}`,
+    subtitle,
+    tone,
+  };
+}
+
 export function buildDriverIdentitySummary(
   weeks: WeekRecord[],
   openWeek: WeekRecord | null,
@@ -567,13 +627,15 @@ export function buildDriverIdentitySummary(
   const performanceXp = xpEvents
     .filter((event) => event.xpCategory === "performance")
     .reduce((sum, event) => sum + event.xpAmount, 0);
+  const level = getLevelProgress(totalXp);
   const archetypes = calculateArchetypes(weeks);
 
   return {
     totalXp,
     consistencyXp,
     performanceXp,
-    level: getLevelProgress(totalXp),
+    level,
+    careerTitle: getCareerTitle(weeks, openWeek, level, archetypes.primary, archetypes.locked),
     primaryArchetype: archetypes.primary,
     secondaryArchetypes: archetypes.secondary,
     archetypeLocked: archetypes.locked,

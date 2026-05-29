@@ -33,6 +33,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import EndDayDialog from "@/components/EndDayDialog";
 import MonthlyRecapBanner from "@/components/MonthlyRecapBanner";
+import DriverIdentityCard from "@/components/DriverIdentityCard";
+import { useDriverIdentity } from "@/hooks/useDriverIdentity";
 
 export default function DashboardPage() {
   const { openWeek, weeks, settings, hasLocalData, importLocalData, updateWeek } = useOutletContext<StoreContext>();
@@ -42,6 +44,7 @@ export default function DashboardPage() {
   const [endDayOpen, setEndDayOpen] = useState(false);
   const { user } = useAuth();
   const { achievements } = useAchievements(user, weeks);
+  const { summary: driverIdentity, loading: identityLoading } = useDriverIdentity(user, weeks, openWeek);
   const sym = settings.currencySymbol;
   const { mode } = useTheme();
 
@@ -101,6 +104,15 @@ export default function DashboardPage() {
         <div className="w-full max-w-md">
           <MonthlyRecapBanner weeks={weeks} currencySymbol={sym} />
         </div>
+        {hasHistory && (
+          <div className="w-full max-w-2xl text-left">
+            <DriverIdentityCard
+              identity={driverIdentity}
+              currencySymbol={sym}
+              loading={identityLoading}
+            />
+          </div>
+        )}
         {hasLocalData && (
           <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 max-w-md w-full space-y-2">
             <p className="text-sm font-medium">Local data found from V1</p>
@@ -261,6 +273,12 @@ export default function DashboardPage() {
 
       {/* Active Momentum */}
       <ActiveMomentum weeks={weeks} openWeek={openWeek} currencySymbol={sym} />
+
+      <DriverIdentityCard
+        identity={driverIdentity}
+        currencySymbol={sym}
+        loading={identityLoading}
+      />
 
       {/* Daily Record & Quick Entry */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

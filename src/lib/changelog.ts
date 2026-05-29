@@ -6,9 +6,25 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.3B.3";
+export const CURRENT_VERSION = "5.4";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.4",
+    date: "2026-05",
+    title: "XP + Identity System",
+    tags: ["new", "feature"],
+    items: [
+      "Dual XP System with Consistency XP and Performance XP",
+      "Driver Levels from Rookie to Streex Legend",
+      "Automatic Driver Archetypes based on real behavior",
+      "Historical day ranking and healthy rival snippets",
+      "Ideal Week comparison built from your own best weekdays",
+      "Day Off V1 keeps quiet days neutral and non-punitive",
+      "Adaptive Calendar Pace and Worked-Day Pace",
+      "XP ledger with idempotent event keys to avoid duplicate awards",
+    ],
+  },
   {
     version: "5.3B.3",
     date: "2026-05",

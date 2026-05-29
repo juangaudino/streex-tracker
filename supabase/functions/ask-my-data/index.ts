@@ -919,7 +919,6 @@ Deno.serve(async (req) => {
     role: m.role,
     content: String(m.content ?? "").slice(0, 4000),
   }));
-  const scopeResult = detectScope(safeMessages);
   const promptPreview = latestUserPrompt(safeMessages);
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -933,11 +932,17 @@ Deno.serve(async (req) => {
   }
   const userId = userRes.user.id;
 
-  const [weeksRes, settingsRes, achRes] = await Promise.all([
+  // Settings first so we know the user's app list for app-vs-app detection.
+  const settingsRes = await supabase.from("user_settings")
+    .select("default_weekly_goal,currency_symbol,active_apps")
+    .maybeSingle();
+  const knownApps = Array.isArray(settingsRes.data?.active_apps)
+    ? (settingsRes.data!.active_apps as string[])
+    : [];
+  const scopeResult = detectScope(safeMessages, knownApps);
+
+  const [weeksRes, achRes] = await Promise.all([
     fetchWeeksForScope(supabase, scopeResult.scope),
-    supabase.from("user_settings")
-      .select("default_weekly_goal,currency_symbol,active_apps")
-      .maybeSingle(),
     supabase.from("user_achievements")
       .select("achievement_id,unlocked_at")
       .order("unlocked_at", { ascending: false })
@@ -994,6 +999,7 @@ Deno.serve(async (req) => {
     weeks,
     settings: settingsRes.data ?? null,
     achievements: achRes.data ?? [],
+    prompt: promptPreview,
   });
   const metadata = {
     fetchMode: weeksRes.mode,
@@ -1032,12 +1038,15 @@ Deno.serve(async (req) => {
 
   const system = [
     "You are 'Ask My Data', an analytics assistant inside Streex — a gig earnings tracker.",
-    "Answer ONLY using the JSON context provided. If the answer isn't in the data, say so plainly.",
-    "The context has already been scoped to the user's question. Mention the scope briefly only if it helps the answer.",
-    "For best/highest/record week questions, use lifetime.bestWeekEver when available, not a recent-only value.",
-    "Be concise, friendly, and specific. Prefer short paragraphs and small markdown lists.",
-    "Always format currency using the provided symbol. Reference dates in a human way (e.g. 'week of Mar 10').",
-    "Never invent numbers. Never reveal raw JSON or internal fields. No SQL.",
+    "Answer ONLY using the JSON context provided. If the required fact is not in the data, say so plainly.",
+    "HONESTY RULES (highest priority):",
+    "1. Never use the words 'historically', 'all time', 'ever', 'in your full history', 'lifetime', or 'in your career' unless context.coverage.isFullHistoryLoaded is true.",
+    "2. If context.coverage.isFullHistoryLoaded is false and the user asked an all-time / historical / ever question, reply: 'I don't have enough historical data loaded to answer that accurately yet.' Then offer what you can answer from the recent window.",
+    "3. For app-vs-app questions, ONLY use context.analysis.appHeadToHead. If that block is missing, say you don't have enough data to compare those apps. Do NOT infer winners from appTotals alone, and do NOT claim one app 'never' beat another unless aWins / bWins explicitly show 0 over weeksCompared ≥ 1.",
+    "4. For grouped-day questions (e.g. Fri+Sat+Sun, weekends), ONLY use context.analysis.dayCombo. For consecutive/rolling N-day windows, ONLY use context.analysis.consecutiveWindow. If those blocks are missing, say the calculation isn't available for that question.",
+    "5. For best/highest/record week questions, use lifetime.bestWeekEver when present, never a recent-only value.",
+    "6. Never invent numbers, dates, or apps. Never reveal raw JSON or internal field names. No SQL.",
+    "Style: concise, friendly, specific. Short paragraphs and small markdown lists. Always format currency using the provided symbol. Reference dates in a human way (e.g. 'week of Mar 10').",
   ].join(" ");
 
   const contextMessage =

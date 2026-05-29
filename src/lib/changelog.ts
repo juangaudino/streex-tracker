@@ -6,9 +6,22 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.3B.2";
+export const CURRENT_VERSION = "5.3B.3";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.3B.3",
+    date: "2026-05",
+    title: "Ask My Data",
+    tags: ["feature", "polish"],
+    items: [
+      "Ask My Data added as a beta assistant",
+      "Scope-aware answers for recent, all-time, and seasonal questions",
+      "Streaming assistant responses",
+      "AI usage logging for tokens, latency, scope, and estimated cost",
+      "Server-side record answers for best-week questions",
+    ],
+  },
   {
     version: "5.3B.2",
     date: "2026-05",

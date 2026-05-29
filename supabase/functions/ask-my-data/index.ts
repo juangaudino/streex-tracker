@@ -1,4 +1,4 @@
-// Ask My Data — V6.1 Prototype
+// Ask My Data — v5.3B.3 Beta
 // Scope-aware edge function: verifies JWT, reads through caller-scoped RLS,
 // builds compact analytics context, and streams Lovable AI Gateway responses.
 
@@ -478,6 +478,7 @@ function readUsage(value: unknown): TokenUsage {
 async function logUsage(args: {
   supabase: ReturnType<typeof createClient>;
   userId: string;
+  model?: string;
   scope: DataScope;
   promptPreview: string;
   status: "success" | "error";
@@ -485,6 +486,7 @@ async function logUsage(args: {
   usage?: TokenUsage;
   estimatedInputTokens: number;
   estimatedOutputTokens: number;
+  estimatedCostUsd?: number;
   latencyMs: number;
   usedStreaming: boolean;
   metadata?: Record<string, unknown>;
@@ -498,7 +500,7 @@ async function logUsage(args: {
 
   const { error } = await args.supabase.from("ai_usage_logs").insert({
     user_id: args.userId,
-    model: AI_MODEL,
+    model: args.model ?? AI_MODEL,
     scope: args.scope,
     prompt_preview: args.promptPreview.slice(0, 300),
     status: args.status,
@@ -509,7 +511,7 @@ async function logUsage(args: {
     estimated_input_tokens: args.estimatedInputTokens,
     estimated_output_tokens: args.estimatedOutputTokens,
     estimated_total_tokens: estimatedTotalTokens,
-    estimated_cost_usd: estimateCost(costInput, costOutput),
+    estimated_cost_usd: args.estimatedCostUsd ?? estimateCost(costInput, costOutput),
     latency_ms: args.latencyMs,
     used_streaming: args.usedStreaming,
     metadata: args.metadata ?? {},
@@ -518,6 +520,36 @@ async function logUsage(args: {
   if (error) {
     console.error("AI usage log failed", error);
   }
+}
+
+function isBestWeekQuestion(prompt: string): boolean {
+  const q = prompt.toLowerCase();
+  return /\b(best|highest|biggest|top|record)\b/.test(q) &&
+    /\bweek\b/.test(q) &&
+    !/\bapp\b/.test(q);
+}
+
+function directBestWeekAnswer(context: unknown, currency: string): string | null {
+  const c = context as {
+    lifetime?: {
+      bestWeekEver?: {
+        startDate: string;
+        endDate?: string;
+        total: number;
+        status?: string;
+      } | null;
+    };
+  };
+  const best = c.lifetime?.bestWeekEver;
+  if (!best) return null;
+
+  const amount = `${currency}${best.total.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+  const range = best.endDate ? `${best.startDate} to ${best.endDate}` : best.startDate;
+  const statusNote = best.status && best.status !== "closed" ? ` It is currently marked as ${best.status}.` : "";
+  return `Your best week ever was ${range}, when you earned ${amount}.${statusNote}`;
 }
 
 function streamWithUsageLogging(args: {
@@ -712,6 +744,40 @@ Deno.serve(async (req) => {
     settings: settingsRes.data ?? null,
     achievements: achRes.data ?? [],
   });
+  const metadata = {
+    fetchMode: weeksRes.mode,
+    weeksFetched: weeks.length,
+    rowsFetched: weeksRes.rowsFetched,
+    achievementsFetched: achRes.data?.length ?? 0,
+    hasSettings: Boolean(settingsRes.data),
+    costEstimateBasis: "Gemini Flash token estimate; Lovable credits may differ.",
+    estimatedInputUsdPer1M: ESTIMATED_INPUT_USD_PER_1M,
+    estimatedOutputUsdPer1M: ESTIMATED_OUTPUT_USD_PER_1M,
+  };
+
+  if (isBestWeekQuestion(promptPreview)) {
+    const text = directBestWeekAnswer(context, settingsRes.data?.currency_symbol ?? "$");
+    if (text) {
+      await logUsage({
+        supabase,
+        userId,
+        model: "deterministic",
+        scope: "ALL_TIME",
+        promptPreview,
+        status: "success",
+        estimatedInputTokens: estimateTokens(promptPreview || " "),
+        estimatedOutputTokens: estimateTokens(text),
+        estimatedCostUsd: 0,
+        latencyMs: Date.now() - startedAt,
+        usedStreaming: false,
+        metadata: {
+          ...metadata,
+          directAnswer: "best_week_ever",
+        },
+      });
+      return json({ text });
+    }
+  }
 
   const system = [
     "You are 'Ask My Data', an analytics assistant inside Streex — a gig earnings tracker.",
@@ -731,17 +797,6 @@ Deno.serve(async (req) => {
     contextMessage,
     ...safeMessages.map((m) => `${m.role}: ${m.content}`),
   ].join("\n"));
-  const metadata = {
-    fetchMode: weeksRes.mode,
-    weeksFetched: weeks.length,
-    rowsFetched: weeksRes.rowsFetched,
-    achievementsFetched: achRes.data?.length ?? 0,
-    hasSettings: Boolean(settingsRes.data),
-    costEstimateBasis: "Gemini Flash token estimate; Lovable credits may differ.",
-    estimatedInputUsdPer1M: ESTIMATED_INPUT_USD_PER_1M,
-    estimatedOutputUsdPer1M: ESTIMATED_OUTPUT_USD_PER_1M,
-  };
-
   const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {

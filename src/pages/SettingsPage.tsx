@@ -2,21 +2,24 @@ import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DEFAULT_APPS } from "@/lib/types";
 import type { StoreContext } from "./types";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Plus, X } from "lucide-react";
-import { useTheme, ThemeMode, ClassicVariant } from "@/contexts/ThemeContext";
-import { Palette, Sun, Moon, Monitor, Gamepad2 } from "lucide-react";
+import { Download, FileJson, Gamepad2, Monitor, Moon, Palette, Plus, Save, Sun, Table, X } from "lucide-react";
+import { useTheme, ClassicVariant } from "@/contexts/ThemeContext";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { buildJsonBackup, downloadEarningsCsv, downloadJsonBackup } from "@/lib/dataExport";
 
 export default function SettingsPage() {
-  const { settings, updateSettings } = useOutletContext<StoreContext>();
+  const { weeks, settings, updateSettings } = useOutletContext<StoreContext>();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { mode, classicVariant, setMode, setClassicVariant } = useTheme();
   const [goal, setGoal] = useState(settings.defaultWeeklyGoal.toString());
   const [symbol, setSymbol] = useState(settings.currencySymbol);
   const [apps, setApps] = useState([...settings.activeApps]);
   const [newApp, setNewApp] = useState("");
+  const [exporting, setExporting] = useState<"json" | "csv" | null>(null);
 
   function handleSave() {
     updateSettings({
@@ -32,6 +35,51 @@ export default function SettingsPage() {
     if (!name || apps.includes(name)) return;
     setApps([...apps, name]);
     setNewApp("");
+  }
+
+  async function handleJsonExport() {
+    if (!user) return;
+
+    try {
+      setExporting("json");
+      const { data, error } = await supabase
+        .from("user_achievements")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("unlocked_at", { ascending: true });
+
+      if (error) throw error;
+
+      downloadJsonBackup(buildJsonBackup({
+        user,
+        weeks,
+        settings,
+        achievements: data ?? [],
+      }));
+      toast({ title: "Export ready." });
+    } catch {
+      toast({
+        title: "Export failed. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  function handleCsvExport() {
+    try {
+      setExporting("csv");
+      downloadEarningsCsv(weeks);
+      toast({ title: "Export ready." });
+    } catch {
+      toast({
+        title: "Export failed. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(null);
+    }
   }
 
   return (
@@ -151,6 +199,41 @@ export default function SettingsPage() {
               <Plus className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+
+        <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              Export My Data
+            </label>
+            <p className="text-sm text-muted-foreground">
+              Download a copy of your Streex data for backup or analysis.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              onClick={handleJsonExport}
+              disabled={exporting !== null}
+              className="h-auto min-h-10 justify-start whitespace-normal text-left"
+            >
+              <FileJson className="h-4 w-4 mr-2" />
+              {exporting === "json" ? "Preparing..." : "Download JSON Backup"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleCsvExport}
+              disabled={exporting !== null}
+              className="h-auto min-h-10 justify-start whitespace-normal text-left"
+            >
+              <Table className="h-4 w-4 mr-2" />
+              {exporting === "csv" ? "Preparing..." : "Download CSV Export"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Your export is generated from your Streex data. Keep it somewhere safe.
+          </p>
         </div>
       </div>
 

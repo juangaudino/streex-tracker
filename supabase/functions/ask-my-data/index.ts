@@ -114,7 +114,7 @@ function normalizeWeek(w: WeekRow): NormalizedWeek {
   };
 }
 
-function detectScope(messages: ChatMessage[]): { scope: DataScope; reason: string } {
+function detectScope(messages: ChatMessage[], knownApps: string[] = []): { scope: DataScope; reason: string } {
   const latest = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
   const q = latest.toLowerCase();
 
@@ -139,6 +139,14 @@ function detectScope(messages: ChatMessage[]): { scope: DataScope; reason: strin
   }
   if (allTimeTerms.some((term) => q.includes(term))) {
     return { scope: "ALL_TIME", reason: "Question asks for record, lifetime, or historical analytics." };
+  }
+  // App-vs-app, weekday combos, and consecutive-day windows all require full history
+  // to answer truthfully. Force ALL_TIME so we don't hallucinate over a 16-week slice.
+  if (isAppVsAppQuestion(latest, knownApps)) {
+    return { scope: "ALL_TIME", reason: "App-vs-app comparison requires full history to be accurate." };
+  }
+  if (isComboOrWindowQuestion(latest)) {
+    return { scope: "ALL_TIME", reason: "Grouped/consecutive-day analysis requires full history." };
   }
   if (recentTerms.some((term) => q.includes(term))) {
     return { scope: "RECENT", reason: "Question asks about recent performance or momentum." };

@@ -1,5 +1,26 @@
 # Changelog
 
+## V5.4.1 — Night Drive Theme
+
+### Added
+
+- Night Drive theme as a fourth visual mode beside Light, Dark, and RPG.
+- Cockpit-inspired surfaces with streetlight amber, dashboard teal, and asphalt depth.
+- Subtle road-lane atmosphere in the app shell.
+- Settings theme selector updated to include Night mode.
+
+### Files Modified
+
+- `src/contexts/ThemeContext.tsx`
+- `src/pages/SettingsPage.tsx`
+- `src/index.css`
+- `src/lib/changelog.ts`
+- `CHANGELOG.md`
+
+### Production Behavior
+
+- No backend, auth, earnings, XP, Ask My Data, export, dashboard logic, or Supabase behavior changed.
+
 ## V5.4 — XP + Identity System
 
 ### Added

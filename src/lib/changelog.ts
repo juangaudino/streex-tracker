@@ -6,9 +6,21 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.4";
+export const CURRENT_VERSION = "5.4.1";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.4.1",
+    date: "2026-05",
+    title: "Night Drive Theme",
+    tags: ["new", "polish"],
+    items: [
+      "Night Drive added as a fourth visual theme",
+      "Cockpit-style surfaces with streetlight and dashboard accents",
+      "Subtle road-lane atmosphere across the app shell",
+      "Theme selector updated in Settings without changing production data behavior",
+    ],
+  },
   {
     version: "5.4",
     date: "2026-05",

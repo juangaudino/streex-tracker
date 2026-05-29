@@ -139,6 +139,49 @@
     box-shadow: 0 0 16px hsl(var(--rpg-glow) / 0.2),
                 0 0 4px hsl(var(--rpg-glow) / 0.15);
   }
+
+  /* Night Drive — cockpit glow, asphalt depth, streetlight accents */
+  .night-drive {
+    --background: 220 18% 5%;
+    --foreground: 42 32% 90%;
+    --card: 218 20% 9%;
+    --card-foreground: 42 32% 90%;
+    --popover: 218 20% 9%;
+    --popover-foreground: 42 32% 90%;
+    --primary: 174 78% 45%;
+    --primary-foreground: 218 28% 7%;
+    --secondary: 34 28% 13%;
+    --secondary-foreground: 42 32% 84%;
+    --muted: 218 17% 12%;
+    --muted-foreground: 38 14% 58%;
+    --accent: 28 76% 18%;
+    --accent-foreground: 38 92% 78%;
+    --destructive: 3 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 35 24% 20%;
+    --input: 218 17% 15%;
+    --ring: 174 78% 45%;
+    --sidebar-background: 220 20% 6%;
+    --sidebar-foreground: 42 28% 82%;
+    --sidebar-primary: 174 78% 45%;
+    --sidebar-primary-foreground: 218 28% 7%;
+    --sidebar-accent: 28 76% 18%;
+    --sidebar-accent-foreground: 38 92% 78%;
+    --sidebar-border: 35 24% 20%;
+    --sidebar-ring: 174 78% 45%;
+    --success: 152 66% 42%;
+    --success-foreground: 220 18% 5%;
+    --warning: 37 94% 57%;
+    --warning-foreground: 30 30% 8%;
+    --gold: 43 95% 58%;
+    --gold-foreground: 35 38% 10%;
+    --purple: 265 58% 65%;
+    --purple-foreground: 0 0% 100%;
+    --surface: 218 18% 11%;
+    --drive-streetlight: 38 94% 58%;
+    --drive-dashboard: 174 78% 45%;
+    --drive-tail: 3 70% 50%;
+  }
 }
 
 @layer base {
@@ -587,6 +630,138 @@
 }
 .rpg ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--rpg-glow) / 0.25);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NIGHT DRIVE — Premium cockpit theme
+   ══════════════════════════════════════════════════════════════ */
+
+.night-drive body,
+.night-drive {
+  background:
+    linear-gradient(180deg, hsl(220 24% 4%) 0%, hsl(220 18% 5%) 42%, hsl(28 30% 7%) 100%);
+  background-attachment: fixed;
+}
+
+.night-drive #root {
+  position: relative;
+  z-index: 0;
+}
+
+.night-drive #root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.32;
+  background:
+    linear-gradient(115deg, transparent 0 45%, hsl(var(--drive-streetlight) / 0.13) 46%, transparent 51% 100%),
+    linear-gradient(245deg, transparent 0 52%, hsl(var(--drive-dashboard) / 0.09) 53%, transparent 58% 100%),
+    repeating-linear-gradient(90deg, transparent 0 78px, hsl(42 45% 88% / 0.035) 79px 80px, transparent 81px 160px);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+}
+
+.night-drive #root::after {
+  content: "";
+  position: fixed;
+  left: 50%;
+  bottom: -12vh;
+  width: min(460px, 90vw);
+  height: 52vh;
+  z-index: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  opacity: 0.18;
+  background:
+    linear-gradient(92deg, transparent 0 46%, hsl(var(--drive-streetlight) / 0.6) 47% 48%, transparent 49% 100%),
+    linear-gradient(88deg, transparent 0 52%, hsl(var(--drive-streetlight) / 0.6) 53% 54%, transparent 55% 100%);
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+}
+
+.night-drive #root > * {
+  position: relative;
+  z-index: 1;
+}
+
+.night-drive header,
+.night-drive nav.fixed {
+  background:
+    linear-gradient(180deg, hsl(220 20% 6% / 0.92), hsl(218 18% 7% / 0.82));
+  border-color: hsl(var(--drive-streetlight) / 0.18);
+  box-shadow: 0 1px 0 hsl(var(--drive-dashboard) / 0.12);
+  backdrop-filter: blur(14px);
+}
+
+.night-drive .bg-card {
+  background:
+    linear-gradient(145deg, hsl(218 20% 10% / 0.92) 0%, hsl(220 18% 8% / 0.96) 58%, hsl(28 26% 9% / 0.9) 100%);
+  border-color: hsl(var(--drive-streetlight) / 0.2);
+  box-shadow:
+    0 16px 36px hsl(220 25% 2% / 0.45),
+    inset 0 1px 0 hsl(var(--drive-streetlight) / 0.08),
+    inset 0 0 28px hsl(var(--drive-dashboard) / 0.025);
+  backdrop-filter: blur(10px);
+}
+
+.night-drive .rounded-xl.border {
+  position: relative;
+}
+
+.night-drive .rounded-xl.border::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 14px;
+  width: 42%;
+  height: 1px;
+  background: linear-gradient(90deg, hsl(var(--drive-dashboard) / 0.45), hsl(var(--drive-streetlight) / 0.25), transparent);
+  pointer-events: none;
+}
+
+.night-drive .text-primary {
+  color: hsl(var(--drive-dashboard));
+  text-shadow: 0 0 14px hsl(var(--drive-dashboard) / 0.28);
+}
+
+.night-drive .text-warning,
+.night-drive .text-gold {
+  text-shadow: 0 0 12px hsl(var(--drive-streetlight) / 0.24);
+}
+
+.night-drive button.bg-primary {
+  box-shadow: 0 0 0 1px hsl(var(--drive-dashboard) / 0.18), 0 8px 22px hsl(var(--drive-dashboard) / 0.16);
+}
+
+.night-drive input,
+.night-drive select,
+.night-drive textarea {
+  background-color: hsl(218 18% 8% / 0.82);
+  border-color: hsl(var(--drive-streetlight) / 0.18);
+}
+
+.night-drive input:focus,
+.night-drive select:focus,
+.night-drive textarea:focus {
+  border-color: hsl(var(--drive-dashboard) / 0.45);
+  box-shadow: 0 0 0 1px hsl(var(--drive-dashboard) / 0.22), 0 0 18px hsl(var(--drive-dashboard) / 0.1);
+}
+
+.night-drive .achievement-common { border-color: hsl(38 25% 52% / 0.28); }
+.night-drive .achievement-rare {
+  border-color: hsl(var(--drive-dashboard) / 0.32);
+  box-shadow: 0 0 12px hsl(var(--drive-dashboard) / 0.07);
+}
+.night-drive .achievement-epic {
+  border-color: hsl(var(--purple) / 0.36);
+  box-shadow: 0 0 14px hsl(var(--purple) / 0.08);
+}
+.night-drive .achievement-legendary {
+  border-color: hsl(var(--drive-streetlight) / 0.42);
+  box-shadow: 0 0 18px hsl(var(--drive-streetlight) / 0.1);
+}
+.night-drive .achievement-mythic {
+  border-color: hsl(var(--drive-tail) / 0.42);
+  box-shadow: 0 0 20px hsl(var(--drive-tail) / 0.09);
 }
 
 /* Celebration particle animation */

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-export type ThemeMode = "classic" | "rpg";
+export type ThemeMode = "classic" | "rpg" | "night-drive";
 export type ClassicVariant = "system" | "light" | "dark";
 
 interface ThemeContextType {
@@ -44,7 +44,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isDark =
-    mode === "rpg"
+    mode === "rpg" || mode === "night-drive"
       ? true
       : classicVariant === "system"
       ? systemDark
@@ -53,9 +53,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
     // Remove all theme classes
-    root.classList.remove("light", "dark", "rpg");
+    root.classList.remove("light", "dark", "rpg", "night-drive");
     if (mode === "rpg") {
       root.classList.add("dark", "rpg");
+    } else if (mode === "night-drive") {
+      root.classList.add("dark", "night-drive");
     } else {
       root.classList.add(isDark ? "dark" : "light");
     }

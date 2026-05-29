@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { StoreContext } from "./types";
 import { useToast } from "@/hooks/use-toast";
-import { Download, FileJson, Gamepad2, Monitor, Moon, Palette, Plus, Save, Sun, Table, X } from "lucide-react";
+import { Download, FileJson, Gamepad2, Monitor, Moon, Palette, Plus, Route, Save, Sun, Table, X } from "lucide-react";
 import { useTheme, ClassicVariant } from "@/contexts/ThemeContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -93,12 +93,12 @@ export default function SettingsPage() {
             <Palette className="h-4 w-4" />
             Theme
           </label>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <Button
               variant={mode === "classic" ? "default" : "outline"}
               size="sm"
               onClick={() => setMode("classic")}
-              className="flex-1"
+              className="w-full"
             >
               Classic
             </Button>
@@ -106,10 +106,19 @@ export default function SettingsPage() {
               variant={mode === "rpg" ? "default" : "outline"}
               size="sm"
               onClick={() => setMode("rpg")}
-              className="flex-1"
+              className="w-full"
             >
               <Gamepad2 className="h-4 w-4 mr-1" />
               RPG
+            </Button>
+            <Button
+              variant={mode === "night-drive" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMode("night-drive")}
+              className="w-full"
+            >
+              <Route className="h-4 w-4 mr-1" />
+              Night
             </Button>
           </div>
           {mode === "classic" && (

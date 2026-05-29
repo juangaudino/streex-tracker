@@ -129,11 +129,11 @@ export default function AssistantPage() {
           <Sparkles className="h-5 w-5 text-primary" />
           <h1 className="text-xl font-semibold">Ask My Data</h1>
           <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-            <FlaskConical className="h-3 w-3" /> V6.1 Prototype
+            <FlaskConical className="h-3 w-3" /> v5.3B.3 Beta
           </span>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Chat with your earnings. Experimental — answers are based only on your recent tracked data.
+          Chat with your earnings. Beta — answers are based only on your Streex data.
         </p>
       </header>
 
@@ -214,7 +214,7 @@ export default function AssistantPage() {
       </form>
 
       <p className="text-[10px] text-muted-foreground/70 text-center mt-2">
-        Prototype · responses may be imperfect · data stays inside your account
+        Beta · responses may be imperfect · data stays inside your account
       </p>
     </div>
   );

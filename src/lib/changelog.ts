@@ -6,9 +6,25 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.4.2";
+export const CURRENT_VERSION = "5.5";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.5",
+    date: "2026-05",
+    title: "Dashboard Utility Expansion",
+    tags: ["new", "feature", "polish"],
+    items: [
+      "Daily Command Center added to the dashboard as a compact driver utility layer",
+      "Live Weather Strip added through a server-side OpenWeather Edge Function integration",
+      "Live Traffic Insights added through a server-side TomTom traffic flow integration",
+      "Location permission is opt-in and location data remains local-only in the browser",
+      "Currency selector added to Settings with USD, EUR, GBP, CAD, MXN, COP, and ARS",
+      "Regional currency/date formatting is centralized and display-only with no FX conversion",
+      "Milestone share cards expanded with 100 Days Tracked and major XP level-up moments",
+      "Known limitation: weather and traffic require OPENWEATHER_API_KEY and TOMTOM_API_KEY Supabase secrets before live provider data appears",
+    ],
+  },
   {
     version: "5.4.2",
     date: "2026-05",

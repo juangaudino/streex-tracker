@@ -35,6 +35,7 @@ import EndDayDialog from "@/components/EndDayDialog";
 import MonthlyRecapBanner from "@/components/MonthlyRecapBanner";
 import DriverIdentityCard from "@/components/DriverIdentityCard";
 import { useDriverIdentity } from "@/hooks/useDriverIdentity";
+import DailyCommandCenter from "@/components/DailyCommandCenter";
 
 type PulseState = "calm" | "steady" | "strong" | "record" | "streak";
 
@@ -120,6 +121,9 @@ export default function DashboardPage() {
         <DashboardPulse enabled={pulseMode} state={hasHistory ? "steady" : "calm"} />
         <div className="w-full max-w-md">
           <MonthlyRecapBanner weeks={weeks} currencySymbol={sym} />
+        </div>
+        <div className="w-full max-w-2xl text-left">
+          <DailyCommandCenter />
         </div>
         {hasHistory && (
           <div className="w-full max-w-2xl text-left">
@@ -257,6 +261,8 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      <DailyCommandCenter />
 
       {/* Smart Insight — single most important contextual message */}
       {(() => {

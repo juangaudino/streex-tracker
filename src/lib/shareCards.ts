@@ -5,6 +5,7 @@ import { weekTotal, dayTotal, formatCurrency } from "./store";
 import { generateWeeklyLetter } from "./weeklyLetter";
 import { syncStoredLetters } from "./letterStore";
 import { listMonthsWithData, getMonthSummary } from "./monthly";
+import { buildXpEventsFromWeeks, DRIVER_LEVELS } from "./driverIdentity";
 
 export type ShareCategory =
   | "weekly-highlights"
@@ -105,7 +106,7 @@ export function buildShareCards(
       date: firstK.endDate,
       card: {
         kind: "milestone-poster",
-        title: "First $1K Week",
+        title: "First 1K Week",
         subtitle: `${firstK.startDate} → ${firstK.endDate}`,
         body: "A new tier unlocked. The ceiling moved up.",
         footerLabel: "Week Earned",
@@ -155,6 +156,7 @@ export function buildShareCards(
 
   // 30+ active days
   const totalActive = allDaysFlat.filter((d) => dayTotal(d) > 0).length;
+  const totalTracked = allDaysFlat.filter((d) => d.logged === true || d.dayClosed === true || dayTotal(d) > 0).length;
   if (totalActive >= 30) {
     items.push({
       id: "ms-active-30",
@@ -171,10 +173,64 @@ export function buildShareCards(
     });
   }
 
+  if (totalTracked >= 100) {
+    const trackedDays = allDaysFlat
+      .filter((d) => d.logged === true || d.dayClosed === true || dayTotal(d) > 0)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const day100 = trackedDays[99] ?? trackedDays[trackedDays.length - 1];
+    items.push({
+      id: "ms-tracked-100",
+      category: "milestones",
+      date: day100?.date || sortedWeeks[sortedWeeks.length - 1]?.endDate || "",
+      card: {
+        kind: "milestone-poster",
+        title: "100 Days Tracked",
+        subtitle: "A real work history",
+        body: "One hundred days on the record. The data is becoming yours.",
+        footerLabel: "Days Tracked",
+        footer: String(totalTracked),
+        legendary: totalTracked >= 365,
+      },
+    });
+  }
+
+  const xpEvents = buildXpEventsFromWeeks(sortedWeeks);
+  let cumulativeXp = 0;
+  const crossedLevels: { name: string; date: string; xp: number }[] = [];
+  for (const event of xpEvents) {
+    cumulativeXp += event.xpAmount;
+    const date = event.sourceDate || sortedWeeks.find((w) => w.id === event.sourceWeekId)?.endDate || "";
+    for (const level of DRIVER_LEVELS) {
+      if (level.threshold < 1500) continue;
+      const previous = cumulativeXp - event.xpAmount;
+      if (previous < level.threshold && cumulativeXp >= level.threshold) {
+        crossedLevels.push({ name: level.name, date, xp: cumulativeXp });
+      }
+    }
+  }
+  const highestLevelUp = crossedLevels[crossedLevels.length - 1];
+  if (highestLevelUp) {
+    items.push({
+      id: `ms-level-${highestLevelUp.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      category: "milestones",
+      date: highestLevelUp.date,
+      card: {
+        kind: "milestone-poster",
+        title: `${highestLevelUp.name} Unlocked`,
+        subtitle: "Major XP Level-Up",
+        body: "Consistency and performance stacked into a new career tier.",
+        footerLabel: "Total XP",
+        footer: String(highestLevelUp.xp),
+        legendary: highestLevelUp.name === "Streex Legend",
+      },
+    });
+  }
+
   // Achievement-driven milestone posters (legendary-tier only)
   for (const a of achievements || []) {
     if (!a.unlocked || !a.unlockedAt) continue;
-    const rarity = (a as any).rarity || (a as any).tier || "";
+    const extended = a as AchievementState & { rarity?: string; tier?: string };
+    const rarity = extended.rarity || extended.tier || "";
     if (rarity !== "legendary" && rarity !== "epic") continue;
     items.push({
       id: `ms-ach-${a.id}`,

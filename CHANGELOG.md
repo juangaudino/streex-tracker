@@ -1,5 +1,61 @@
 # Changelog
 
+## V5.5 — Dashboard Utility Expansion
+
+### Added
+
+- Dashboard Utility Layer as a compact `Daily Command Center`.
+- Live Weather Strip powered through a Supabase Edge Function and OpenWeather.
+- Live Traffic Insights powered through a Supabase Edge Function and TomTom Traffic Flow.
+- Utility widget layer with clear live, unavailable, denied-location, and provider-not-configured states.
+- Milestone share card expansion for 100 Days Tracked and major XP level-up moments.
+- International Utility Layer with centralized display-only currency and regional date formatting.
+- Currency selector in Settings for USD, EUR, GBP, CAD, MXN, COP, and ARS.
+
+### Files Created
+
+- `src/components/DailyCommandCenter.tsx`
+- `src/hooks/useDriverUtility.ts`
+- `src/lib/currency.ts`
+- `src/lib/currency.test.ts`
+- `src/lib/driverUtility.ts`
+- `src/lib/shareCards.test.ts`
+- `supabase/functions/driver-utility/index.ts`
+
+### Files Modified
+
+- `src/pages/DashboardPage.tsx`
+- `src/pages/SettingsPage.tsx`
+- `src/lib/store.ts`
+- `src/lib/shareCards.ts`
+- `src/lib/changelog.ts`
+- `supabase/functions/ask-my-data/index.ts`
+- `CHANGELOG.md`
+
+### Production Behavior
+
+- No database schema changes were made.
+- No earning values are converted or rewritten.
+- Currency is display-only and persisted through the existing `user_settings.currency_symbol` field as a currency code.
+- JSON and CSV exports continue to preserve raw numeric earnings.
+- Weather and traffic API keys are not exposed to the frontend.
+- Location is opt-in and local-only; coordinates are used for the live utility request and cached in the browser.
+
+### Known Limitations
+
+- Live weather requires `OPENWEATHER_API_KEY` to be configured as a Supabase Edge Function secret.
+- Live traffic requires `TOMTOM_API_KEY` to be configured as a Supabase Edge Function secret.
+- Traffic V5.5 uses TomTom flow around the current browser location; incident detail cards can be added later.
+- Currency formatting does not perform FX conversion by design.
+
+### Testing Notes
+
+- Currency formatting should keep raw values unchanged while changing display format.
+- Dashboard should load even when utility providers are not configured or unavailable.
+- Location denial should not block dashboard usage.
+- Share cards should only appear from real tracked history and derived XP events.
+- Ask My Data direct best-week answers now handle currency codes as well as legacy symbols.
+
 ## V5.4.2 — Pulse Mode + Career Titles
 
 ### Added

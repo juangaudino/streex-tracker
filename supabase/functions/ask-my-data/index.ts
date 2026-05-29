@@ -794,13 +794,38 @@ function directBestWeekAnswer(context: unknown, currency: string): string | null
   const best = c.lifetime?.bestWeekEver;
   if (!best) return null;
 
-  const amount = `${currency}${best.total.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  const amount = formatCurrencyForAssistant(best.total, currency);
   const range = best.endDate ? `${best.startDate} to ${best.endDate}` : best.startDate;
   const statusNote = best.status && best.status !== "closed" ? ` It is currently marked as ${best.status}.` : "";
   return `Your best week ever was ${range}, when you earned ${amount}.${statusNote}`;
+}
+
+function formatCurrencyForAssistant(value: number, currency: string): string {
+  const raw = (currency || "$").trim().toUpperCase();
+  const code = ["USD", "EUR", "GBP", "CAD", "MXN", "COP", "ARS"].includes(raw)
+    ? raw
+    : currency === "€"
+    ? "EUR"
+    : currency === "£"
+    ? "GBP"
+    : "USD";
+
+  if (code === "COP" || code === "ARS") {
+    return `${code} ${value.toLocaleString(code === "COP" ? "es-CO" : "es-AR", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })}`;
+  }
+
+  return new Intl.NumberFormat(
+    code === "EUR" ? "de-DE" : code === "GBP" ? "en-GB" : code === "CAD" ? "en-CA" : code === "MXN" ? "es-MX" : "en-US",
+    {
+      style: "currency",
+      currency: code,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    },
+  ).format(value);
 }
 
 function streamWithUsageLogging(args: {
@@ -1046,7 +1071,7 @@ Deno.serve(async (req) => {
     "4. For grouped-day questions (e.g. Fri+Sat+Sun, weekends), ONLY use context.analysis.dayCombo. For consecutive/rolling N-day windows, ONLY use context.analysis.consecutiveWindow. If those blocks are missing, say the calculation isn't available for that question.",
     "5. For best/highest/record week questions, use lifetime.bestWeekEver when present, never a recent-only value.",
     "6. Never invent numbers, dates, or apps. Never reveal raw JSON or internal field names. No SQL.",
-    "Style: concise, friendly, specific. Short paragraphs and small markdown lists. Always format currency using the provided symbol. Reference dates in a human way (e.g. 'week of Mar 10').",
+    "Style: concise, friendly, specific. Short paragraphs and small markdown lists. Format currency according to the provided currency code/symbol. Reference dates in a human way (e.g. 'week of Mar 10').",
   ].join(" ");
 
   const contextMessage =

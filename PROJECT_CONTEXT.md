@@ -44,7 +44,7 @@ If backend ambiguity exists, stop and verify before applying migrations.
 
 Current app version after recent work:
 
-`V5.4.2 - Pulse Mode + Career Titles`
+`V5.5 - Dashboard Utility Expansion`
 
 ## Recent Features Implemented
 
@@ -147,6 +147,25 @@ Example career titles:
 - Streex Legend - Legendary Spark Specialist
 
 No backend, Supabase, auth, Ask My Data, exports, or XP writing logic changed.
+
+### V5.5 - Dashboard Utility Expansion
+
+Added:
+
+- Daily Command Center on the dashboard
+- Live Weather Strip via Supabase Edge Function + OpenWeather
+- Live Traffic Insights via Supabase Edge Function + TomTom Traffic Flow
+- opt-in location with local-only browser caching
+- currency selector for USD, EUR, GBP, CAD, MXN, COP, and ARS
+- display-only regional currency/date formatting
+- milestone share cards for 100 Days Tracked and major XP level-ups
+
+No database schema changes were made.
+
+Live utility requires Supabase secrets:
+
+- `OPENWEATHER_API_KEY`
+- `TOMTOM_API_KEY`
 
 ## Current Working Branch
 

@@ -1,4 +1,5 @@
 import { WeekRecord, AppSettings, DEFAULT_APPS, DAY_NAMES, DayEntry } from "./types";
+import { formatCurrencyAmount } from "./currency";
 
 const WEEKS_KEY = "streex_weeks";
 const SETTINGS_KEY = "streex_settings";
@@ -160,8 +161,5 @@ export function getRecordWeek(
 }
 
 export function formatCurrency(val: number, symbol: string = "$"): string {
-  return `${symbol}${val.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  return formatCurrencyAmount(val, symbol);
 }

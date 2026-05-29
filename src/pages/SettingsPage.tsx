@@ -10,6 +10,14 @@ import { useTheme, ClassicVariant } from "@/contexts/ThemeContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { buildJsonBackup, downloadEarningsCsv, downloadJsonBackup } from "@/lib/dataExport";
+import { formatCurrencyAmount, getCurrencyCode, getCurrencyConfig, SUPPORTED_CURRENCIES } from "@/lib/currency";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function SettingsPage() {
   const { weeks, settings, updateSettings } = useOutletContext<StoreContext>();
@@ -17,15 +25,16 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const { mode, classicVariant, pulseMode, setMode, setClassicVariant, setPulseMode } = useTheme();
   const [goal, setGoal] = useState(settings.defaultWeeklyGoal.toString());
-  const [symbol, setSymbol] = useState(settings.currencySymbol);
+  const [currencyCode, setCurrencyCode] = useState(getCurrencyCode(settings.currencySymbol));
   const [apps, setApps] = useState([...settings.activeApps]);
   const [newApp, setNewApp] = useState("");
   const [exporting, setExporting] = useState<"json" | "csv" | null>(null);
+  const selectedCurrency = getCurrencyConfig(currencyCode);
 
   function handleSave() {
     updateSettings({
       defaultWeeklyGoal: Number(goal) || 0,
-      currencySymbol: symbol || "$",
+      currencySymbol: currencyCode,
       activeApps: apps,
     });
     toast({ title: "Settings saved." });
@@ -170,13 +179,24 @@ export default function SettingsPage() {
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-muted-foreground">
-            Currency Symbol
+            Currency
           </label>
-          <Input
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
-            className="w-20"
-          />
+          <Select value={currencyCode} onValueChange={(value) => setCurrencyCode(getCurrencyCode(value))}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select currency" />
+            </SelectTrigger>
+            <SelectContent>
+              {SUPPORTED_CURRENCIES.map((currency) => (
+                <SelectItem key={currency.code} value={currency.code}>
+                  {currency.code} · {currency.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Display only. Streex does not convert historical earnings or change stored amounts.
+            Current format: {formatCurrencyAmount(selectedCurrency.fractionDigits === 0 ? 1500000 : 1500, selectedCurrency.code)}
+          </p>
         </div>
 
         <div className="space-y-1.5">

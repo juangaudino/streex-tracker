@@ -164,6 +164,45 @@ export type Database = {
         }
         Relationships: []
       }
+      xp_events: {
+        Row: {
+          created_at: string
+          event_key: string
+          event_type: string
+          id: string
+          metadata: Json
+          source_date: string | null
+          source_week_id: string | null
+          user_id: string
+          xp_amount: number
+          xp_category: string
+        }
+        Insert: {
+          created_at?: string
+          event_key: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          source_date?: string | null
+          source_week_id?: string | null
+          user_id: string
+          xp_amount: number
+          xp_category: string
+        }
+        Update: {
+          created_at?: string
+          event_key?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          source_date?: string | null
+          source_week_id?: string | null
+          user_id?: string
+          xp_amount?: number
+          xp_category?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

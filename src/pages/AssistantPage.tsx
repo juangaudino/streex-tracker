@@ -16,6 +16,18 @@ const STARTERS = [
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-my-data`;
 
+function extractStreamDelta(payload: string): string {
+  try {
+    const parsed = JSON.parse(payload);
+    return parsed?.choices?.[0]?.delta?.content ??
+      parsed?.choices?.[0]?.message?.content ??
+      parsed?.text ??
+      "";
+  } catch {
+    return "";
+  }
+}
+
 export default function AssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -50,14 +62,57 @@ export default function AssistantPage() {
         },
         body: JSON.stringify({ messages: next }),
       });
-      const json = await res.json().catch(() => ({}));
       if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
         if (res.status === 429) setError("Rate limit reached. Wait a moment and try again.");
         else if (res.status === 402) setError("AI credits exhausted. Add credits in workspace settings.");
         else if (res.status === 401) setError("Authentication issue. Please sign in again.");
         else setError(json?.error || "The assistant is unavailable right now.");
         return;
       }
+
+      if (res.body && res.headers.get("Content-Type")?.includes("text/event-stream")) {
+        const assistantIndex = next.length;
+        setMessages([...next, { role: "assistant", content: "" }]);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let fullReply = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split("\n\n");
+          buffer = events.pop() ?? "";
+
+          for (const event of events) {
+            for (const line of event.split("\n")) {
+              if (!line.startsWith("data:")) continue;
+              const payload = line.slice(5).trim();
+              if (!payload || payload === "[DONE]") continue;
+              const delta = extractStreamDelta(payload);
+              if (!delta) continue;
+              fullReply += delta;
+              setMessages((current) =>
+                current.map((message, index) =>
+                  index === assistantIndex
+                    ? { ...message, content: fullReply }
+                    : message,
+                ),
+              );
+            }
+          }
+        }
+
+        if (!fullReply) {
+          setMessages((current) => current.filter((_, index) => index !== assistantIndex));
+          setError("The assistant returned an empty response. Please try again.");
+        }
+        return;
+      }
+
+      const json = await res.json().catch(() => ({}));
       const reply: string = json?.text ?? "(empty response)";
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
     } catch (e) {

@@ -16,6 +16,7 @@ import {
   CalendarRange,
   Medal,
   BookOpen,
+  FlaskConical,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink as RouterNavLink } from "react-router-dom";
@@ -153,6 +154,15 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
                     className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
                   >
                     <Settings className="h-4 w-4" /> Settings
+                  </RouterNavLink>
+                  <RouterNavLink
+                    to="/assistant"
+                    onClick={() => setMobileMenu(false)}
+                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                  >
+                    <FlaskConical className="h-4 w-4" />
+                    <span className="flex-1">Ask My Data</span>
+                    <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400">Beta</span>
                   </RouterNavLink>
                   <button
                     onClick={() => { setMobileMenu(false); setChangelogOpen(true); }}

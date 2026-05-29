@@ -256,6 +256,213 @@ function trendBuckets(weeks: NormalizedWeek[]) {
   return buckets;
 }
 
+// ---------- Grouped / consecutive-day analytics ----------
+
+const DAY_ALIASES: Record<string, string> = {
+  mon: "Monday", monday: "Monday",
+  tue: "Tuesday", tues: "Tuesday", tuesday: "Tuesday",
+  wed: "Wednesday", weds: "Wednesday", wednesday: "Wednesday",
+  thu: "Thursday", thur: "Thursday", thurs: "Thursday", thursday: "Thursday",
+  fri: "Friday", friday: "Friday",
+  sat: "Saturday", saturday: "Saturday",
+  sun: "Sunday", sunday: "Sunday",
+};
+
+function flattenDays(weeks: NormalizedWeek[]) {
+  return weeks
+    .flatMap((w) => w.dayTotals.map((d) => ({ date: d.date, day: d.day, total: d.total })))
+    .filter((d) => !!d.date)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function daysBetween(a: string, b: string): number {
+  const ms = Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z");
+  return Math.round(ms / 86400000);
+}
+
+// Top consecutive-day windows of size N across history (calendar-consecutive).
+function topConsecutiveWindows(weeks: NormalizedWeek[], size: number, topN = 3) {
+  const days = flattenDays(weeks);
+  const results: { startDate: string; endDate: string; total: number; days: { date: string; day: string; total: number }[] }[] = [];
+  for (let i = 0; i + size <= days.length; i++) {
+    const window = days.slice(i, i + size);
+    if (daysBetween(window[0].date, window[size - 1].date) !== size - 1) continue;
+    const total = window.reduce((s, d) => s + d.total, 0);
+    if (total <= 0) continue;
+    results.push({
+      startDate: window[0].date,
+      endDate: window[size - 1].date,
+      total: round(total),
+      days: window.map((d) => ({ date: d.date, day: d.day, total: round(d.total) })),
+    });
+  }
+  results.sort((a, b) => b.total - a.total);
+  return results.slice(0, topN);
+}
+
+// Top combinations within each calendar week matching a specific weekday set.
+function topWeekdayCombos(weeks: NormalizedWeek[], dayNames: string[], topN = 3) {
+  const wanted = new Set(dayNames);
+  const results: { startDate: string; endDate: string; total: number; days: { date: string; day: string; total: number }[] }[] = [];
+  for (const w of weeks) {
+    const matched = w.dayTotals.filter((d) => wanted.has(d.day));
+    if (matched.length !== dayNames.length) continue;
+    const total = matched.reduce((s, d) => s + d.total, 0);
+    if (total <= 0) continue;
+    matched.sort((a, b) => a.date.localeCompare(b.date));
+    results.push({
+      startDate: matched[0].date,
+      endDate: matched[matched.length - 1].date,
+      total: round(total),
+      days: matched.map((d) => ({ date: d.date, day: d.day, total: round(d.total) })),
+    });
+  }
+  results.sort((a, b) => b.total - a.total);
+  const totals = results.map((r) => r.total);
+  const average = totals.length ? round(totals.reduce((s, v) => s + v, 0) / totals.length) : 0;
+  return { top: results.slice(0, topN), sampleSize: results.length, average };
+}
+
+function parseDayCombo(prompt: string): string[] | null {
+  const q = prompt.toLowerCase();
+  const hits: string[] = [];
+  const seen = new Set<string>();
+  // Match word boundaries for day tokens / aliases
+  const tokens = q.match(/\b(mon|monday|tue|tues|tuesday|wed|weds|wednesday|thu|thur|thurs|thursday|fri|friday|sat|saturday|sun|sunday)\b/g) ?? [];
+  for (const t of tokens) {
+    const full = DAY_ALIASES[t];
+    if (full && !seen.has(full)) {
+      seen.add(full);
+      hits.push(full);
+    }
+  }
+  if (hits.length >= 2) return hits;
+  if (/\bweekend\b/.test(q)) return ["Saturday", "Sunday"];
+  return null;
+}
+
+function parseConsecutiveWindow(prompt: string): number | null {
+  const q = prompt.toLowerCase();
+  const m = q.match(/\b(\d+)\s*[- ]?\s*day\b/);
+  if (m) {
+    const n = Number(m[1]);
+    if (n >= 2 && n <= 14) return n;
+  }
+  if (/\bconsecutive\b/.test(q) || /\brolling\b/.test(q) || /\bstreak\b/.test(q)) {
+    // Default to 3-day window if no explicit number
+    return 3;
+  }
+  return null;
+}
+
+// ---------- App-vs-App head-to-head ----------
+
+function normalizeAppName(raw: string, knownApps: string[]): string | null {
+  const q = raw.trim().toLowerCase();
+  if (!q) return null;
+  for (const app of knownApps) {
+    if (app.toLowerCase() === q) return app;
+  }
+  for (const app of knownApps) {
+    if (app.toLowerCase().includes(q) || q.includes(app.toLowerCase())) return app;
+  }
+  return null;
+}
+
+function parseAppPair(prompt: string, knownApps: string[]): [string, string] | null {
+  const q = prompt.toLowerCase();
+  // Find any two distinct known apps mentioned
+  const found: string[] = [];
+  for (const app of knownApps) {
+    const name = app.toLowerCase();
+    const re = new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+    if (re.test(q) && !found.includes(app)) found.push(app);
+    if (found.length === 2) break;
+  }
+  if (found.length === 2) return [found[0], found[1]];
+  // Try a vs b / a beat b pattern with free tokens
+  const m = q.match(/([a-z][a-z0-9 ]{1,20}?)\s+(?:vs\.?|versus|beat|beats|over|against|outearned|outperform(?:ed)?)\s+([a-z][a-z0-9 ]{1,20})/);
+  if (m) {
+    const a = normalizeAppName(m[1], knownApps);
+    const b = normalizeAppName(m[2], knownApps);
+    if (a && b && a !== b) return [a, b];
+  }
+  return null;
+}
+
+function appHeadToHead(weeks: NormalizedWeek[], appA: string, appB: string) {
+  // Only consider weeks where at least one of the two apps has any earnings.
+  const sorted = [...weeks].sort((a, b) => a.startDate.localeCompare(b.startDate));
+  let aWins = 0, bWins = 0, ties = 0;
+  let lastAWin: { startDate: string; endDate: string; aTotal: number; bTotal: number } | null = null;
+  let lastBWin: { startDate: string; endDate: string; aTotal: number; bTotal: number } | null = null;
+  let bestA: { startDate: string; total: number } | null = null;
+  let bestB: { startDate: string; total: number } | null = null;
+  const perWeek: { startDate: string; endDate: string; a: number; b: number; winner: "A" | "B" | "tie" | "none" }[] = [];
+  for (const w of sorted) {
+    const a = round(w.appTotals[appA] ?? 0);
+    const b = round(w.appTotals[appB] ?? 0);
+    if (a === 0 && b === 0) {
+      perWeek.push({ startDate: w.startDate, endDate: w.endDate, a, b, winner: "none" });
+      continue;
+    }
+    if (!bestA || a > bestA.total) bestA = { startDate: w.startDate, total: a };
+    if (!bestB || b > bestB.total) bestB = { startDate: w.startDate, total: b };
+    let winner: "A" | "B" | "tie" = "tie";
+    if (a > b) { aWins++; winner = "A"; lastAWin = { startDate: w.startDate, endDate: w.endDate, aTotal: a, bTotal: b }; }
+    else if (b > a) { bWins++; winner = "B"; lastBWin = { startDate: w.startDate, endDate: w.endDate, aTotal: a, bTotal: b }; }
+    else { ties++; }
+    perWeek.push({ startDate: w.startDate, endDate: w.endDate, a, b, winner });
+  }
+  const decided = aWins + bWins + ties;
+  // Recent vs all-time trend (last 8 weeks with comparable data)
+  const decidedWeeks = perWeek.filter((p) => p.winner !== "none");
+  const recent = decidedWeeks.slice(-8);
+  const recentA = recent.filter((p) => p.winner === "A").length;
+  const recentB = recent.filter((p) => p.winner === "B").length;
+  return {
+    appA, appB,
+    weeksCompared: decided,
+    weeksWithoutEitherApp: perWeek.length - decided,
+    aWins, bWins, ties,
+    bestWeekFor: { [appA]: bestA, [appB]: bestB },
+    lastWeekAppABeatAppB: lastAWin,
+    lastWeekAppBBeatAppA: lastBWin,
+    recentTrend: {
+      windowWeeks: recent.length,
+      [`${appA}Wins`]: recentA,
+      [`${appB}Wins`]: recentB,
+    },
+    allTimeWinner: aWins > bWins ? appA : bWins > aWins ? appB : "tie",
+    // Keep payload compact: cap to 24 most recent compared weeks
+    weeklyTimeline: decidedWeeks.slice(-24),
+  };
+}
+
+// ---------- Intent detection ----------
+
+const HISTORICAL_TERMS = [
+  "history", "historical", "historically", "ever", "all time", "all-time",
+  "lifetime", "career", "in my history", "of all time", "overall",
+];
+
+function isHistoricalQuestion(prompt: string): boolean {
+  const q = prompt.toLowerCase();
+  return HISTORICAL_TERMS.some((t) => q.includes(t));
+}
+
+function isAppVsAppQuestion(prompt: string, knownApps: string[]): boolean {
+  const pair = parseAppPair(prompt, knownApps);
+  if (!pair) return false;
+  const q = prompt.toLowerCase();
+  return /\b(vs\.?|versus|beat|beats|beaten|over|against|outearn|outperform|compare|which.*better|stronger|more than)\b/.test(q)
+    || /\bwin(s|ner)?\b/.test(q);
+}
+
+function isComboOrWindowQuestion(prompt: string): boolean {
+  return parseDayCombo(prompt) !== null || parseConsecutiveWindow(prompt) !== null;
+}
+
 async function fetchWeeksForScope(supabase: SupabaseClient, scope: DataScope) {
   const selectFields = "id,start_date,end_date,weekly_goal,status,entries";
 

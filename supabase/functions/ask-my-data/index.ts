@@ -15,9 +15,17 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
   Deno.env.get("SUPABASE_ANON_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+const AI_MODEL = "google/gemini-2.5-flash";
+const ESTIMATED_INPUT_USD_PER_1M = 0.30;
+const ESTIMATED_OUTPUT_USD_PER_1M = 2.50;
 
 type DataScope = "RECENT" | "ALL_TIME" | "SEASONAL";
 type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
+type TokenUsage = {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+};
 
 interface DayEntry {
   dayName: string;
@@ -55,6 +63,10 @@ function json(body: unknown, status = 200) {
 
 function round(value: number): number {
   return +value.toFixed(2);
+}
+
+function roundCost(value: number): number {
+  return +value.toFixed(8);
 }
 
 function dayTotal(d: DayEntry): number {
@@ -359,7 +371,173 @@ function streamHeaders(contentType = "text/event-stream") {
   };
 }
 
+function estimateTokens(text: string): number {
+  return Math.max(1, Math.ceil(text.length / 4));
+}
+
+function estimateCost(inputTokens: number, outputTokens: number): number {
+  const inputCost = (inputTokens / 1_000_000) * ESTIMATED_INPUT_USD_PER_1M;
+  const outputCost = (outputTokens / 1_000_000) * ESTIMATED_OUTPUT_USD_PER_1M;
+  return roundCost(inputCost + outputCost);
+}
+
+function latestUserPrompt(messages: ChatMessage[]): string {
+  return [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+}
+
+function readUsage(value: unknown): TokenUsage {
+  const usage = value as {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+    input_tokens?: number;
+    output_tokens?: number;
+  } | null;
+
+  const inputTokens = usage?.prompt_tokens ?? usage?.input_tokens ?? null;
+  const outputTokens = usage?.completion_tokens ?? usage?.output_tokens ?? null;
+  const totalTokens = usage?.total_tokens ??
+    (inputTokens !== null && outputTokens !== null ? inputTokens + outputTokens : null);
+
+  return { inputTokens, outputTokens, totalTokens };
+}
+
+async function logUsage(args: {
+  supabase: ReturnType<typeof createClient>;
+  userId: string;
+  scope: DataScope;
+  promptPreview: string;
+  status: "success" | "error";
+  errorType?: string;
+  usage?: TokenUsage;
+  estimatedInputTokens: number;
+  estimatedOutputTokens: number;
+  latencyMs: number;
+  usedStreaming: boolean;
+  metadata?: Record<string, unknown>;
+}) {
+  const inputTokens = args.usage?.inputTokens ?? null;
+  const outputTokens = args.usage?.outputTokens ?? null;
+  const totalTokens = args.usage?.totalTokens ?? null;
+  const estimatedTotalTokens = args.estimatedInputTokens + args.estimatedOutputTokens;
+  const costInput = inputTokens ?? args.estimatedInputTokens;
+  const costOutput = outputTokens ?? args.estimatedOutputTokens;
+
+  const { error } = await args.supabase.from("ai_usage_logs").insert({
+    user_id: args.userId,
+    model: AI_MODEL,
+    scope: args.scope,
+    prompt_preview: args.promptPreview.slice(0, 300),
+    status: args.status,
+    error_type: args.errorType ?? null,
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    total_tokens: totalTokens,
+    estimated_input_tokens: args.estimatedInputTokens,
+    estimated_output_tokens: args.estimatedOutputTokens,
+    estimated_total_tokens: estimatedTotalTokens,
+    estimated_cost_usd: estimateCost(costInput, costOutput),
+    latency_ms: args.latencyMs,
+    used_streaming: args.usedStreaming,
+    metadata: args.metadata ?? {},
+  });
+
+  if (error) {
+    console.error("AI usage log failed", error);
+  }
+}
+
+function streamWithUsageLogging(args: {
+  body: ReadableStream<Uint8Array>;
+  supabase: ReturnType<typeof createClient>;
+  userId: string;
+  scope: DataScope;
+  promptPreview: string;
+  estimatedInputTokens: number;
+  startedAt: number;
+  metadata: Record<string, unknown>;
+}) {
+  const reader = args.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let outputText = "";
+  let usage: TokenUsage | undefined;
+
+  function inspectText(text: string) {
+    buffer += text;
+    const events = buffer.split("\n\n");
+    buffer = events.pop() ?? "";
+
+    for (const event of events) {
+      for (const line of event.split("\n")) {
+        if (!line.startsWith("data:")) continue;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(payload);
+          const delta = parsed?.choices?.[0]?.delta?.content ??
+            parsed?.choices?.[0]?.message?.content ??
+            parsed?.text ??
+            "";
+          if (typeof delta === "string") outputText += delta;
+          if (parsed?.usage) usage = readUsage(parsed.usage);
+        } catch {
+          // Ignore malformed stream frames; the client still receives them unchanged.
+        }
+      }
+    }
+  }
+
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      const { done, value } = await reader.read();
+      if (done) {
+        if (buffer.trim()) inspectText("\n\n");
+        const estimatedOutputTokens = estimateTokens(outputText || " ");
+        await logUsage({
+          supabase: args.supabase,
+          userId: args.userId,
+          scope: args.scope,
+          promptPreview: args.promptPreview,
+          status: "success",
+          usage,
+          estimatedInputTokens: args.estimatedInputTokens,
+          estimatedOutputTokens,
+          latencyMs: Date.now() - args.startedAt,
+          usedStreaming: true,
+          metadata: {
+            ...args.metadata,
+            hasActualTokenUsage: Boolean(usage?.totalTokens),
+          },
+        });
+        controller.close();
+        return;
+      }
+
+      inspectText(decoder.decode(value, { stream: true }));
+      controller.enqueue(value);
+    },
+    async cancel(reason) {
+      await reader.cancel(reason);
+      await logUsage({
+        supabase: args.supabase,
+        userId: args.userId,
+        scope: args.scope,
+        promptPreview: args.promptPreview,
+        status: "error",
+        errorType: "client_cancelled",
+        estimatedInputTokens: args.estimatedInputTokens,
+        estimatedOutputTokens: estimateTokens(outputText || " "),
+        latencyMs: Date.now() - args.startedAt,
+        usedStreaming: true,
+        metadata: args.metadata,
+      });
+    },
+  });
+}
+
 Deno.serve(async (req) => {
+  const startedAt = Date.now();
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -386,6 +564,7 @@ Deno.serve(async (req) => {
     content: String(m.content ?? "").slice(0, 4000),
   }));
   const scopeResult = detectScope(safeMessages);
+  const promptPreview = latestUserPrompt(safeMessages);
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
@@ -396,6 +575,7 @@ Deno.serve(async (req) => {
   if (userErr || !userRes?.user) {
     return json({ error: "Authentication issue. Please sign in again." }, 401);
   }
+  const userId = userRes.user.id;
 
   const weekLimit = scopeResult.scope === "RECENT" ? 16 : 500;
   const [weeksRes, settingsRes, achRes] = await Promise.all([
@@ -413,11 +593,37 @@ Deno.serve(async (req) => {
   ]);
 
   if (weeksRes.error) {
+    await logUsage({
+      supabase,
+      userId,
+      scope: scopeResult.scope,
+      promptPreview,
+      status: "error",
+      errorType: "data_load",
+      estimatedInputTokens: estimateTokens(promptPreview || " "),
+      estimatedOutputTokens: 0,
+      latencyMs: Date.now() - startedAt,
+      usedStreaming: false,
+      metadata: { weekLimit },
+    });
     return json({ error: "Could not load your data." }, 500);
   }
 
   const weeks = (weeksRes.data ?? []) as WeekRow[];
   if (!weeks.length) {
+    await logUsage({
+      supabase,
+      userId,
+      scope: scopeResult.scope,
+      promptPreview,
+      status: "error",
+      errorType: "no_data",
+      estimatedInputTokens: estimateTokens(promptPreview || " "),
+      estimatedOutputTokens: 0,
+      latencyMs: Date.now() - startedAt,
+      usedStreaming: false,
+      metadata: { weekLimit },
+    });
     return json({
       text:
         "I don't see any tracked weeks yet. Log a few days on the Dashboard or in Entry, and I'll be able to analyze your earnings.",
@@ -444,6 +650,20 @@ Deno.serve(async (req) => {
   const contextMessage =
     "USER DATA CONTEXT (SUMMARIZED JSON, NOT RAW DATABASE):\n" +
     JSON.stringify(context);
+  const estimatedInputTokens = estimateTokens([
+    system,
+    contextMessage,
+    ...safeMessages.map((m) => `${m.role}: ${m.content}`),
+  ].join("\n"));
+  const metadata = {
+    weekLimit,
+    weeksFetched: weeks.length,
+    achievementsFetched: achRes.data?.length ?? 0,
+    hasSettings: Boolean(settingsRes.data),
+    costEstimateBasis: "Gemini Flash token estimate; Lovable credits may differ.",
+    estimatedInputUsdPer1M: ESTIMATED_INPUT_USD_PER_1M,
+    estimatedOutputUsdPer1M: ESTIMATED_OUTPUT_USD_PER_1M,
+  };
 
   const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -452,8 +672,9 @@ Deno.serve(async (req) => {
       "Lovable-API-Key": LOVABLE_API_KEY,
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: AI_MODEL,
       stream: true,
+      stream_options: { include_usage: true },
       messages: [
         { role: "system", content: system },
         { role: "system", content: contextMessage },
@@ -463,12 +684,38 @@ Deno.serve(async (req) => {
   });
 
   if (upstream.status === 429) {
+    await logUsage({
+      supabase,
+      userId,
+      scope: scopeResult.scope,
+      promptPreview,
+      status: "error",
+      errorType: "rate_limit",
+      estimatedInputTokens,
+      estimatedOutputTokens: 0,
+      latencyMs: Date.now() - startedAt,
+      usedStreaming: false,
+      metadata,
+    });
     return json(
       { error: "Rate limit reached. Please wait a moment and try again." },
       429,
     );
   }
   if (upstream.status === 402) {
+    await logUsage({
+      supabase,
+      userId,
+      scope: scopeResult.scope,
+      promptPreview,
+      status: "error",
+      errorType: "credits",
+      estimatedInputTokens,
+      estimatedOutputTokens: 0,
+      latencyMs: Date.now() - startedAt,
+      usedStreaming: false,
+      metadata,
+    });
     return json(
       { error: "AI credits exhausted for this workspace. Add credits in Settings → Workspace → Usage." },
       402,
@@ -477,12 +724,34 @@ Deno.serve(async (req) => {
   if (!upstream.ok) {
     const errText = await upstream.text().catch(() => "");
     console.error("Lovable AI error", upstream.status, errText);
+    await logUsage({
+      supabase,
+      userId,
+      scope: scopeResult.scope,
+      promptPreview,
+      status: "error",
+      errorType: "gateway",
+      estimatedInputTokens,
+      estimatedOutputTokens: 0,
+      latencyMs: Date.now() - startedAt,
+      usedStreaming: false,
+      metadata: { ...metadata, upstreamStatus: upstream.status },
+    });
     return json({ error: "The assistant is temporarily unavailable." }, 502);
   }
 
   const contentType = upstream.headers.get("Content-Type") ?? "";
   if (upstream.body && contentType.includes("text/event-stream")) {
-    return new Response(upstream.body, {
+    return new Response(streamWithUsageLogging({
+      body: upstream.body,
+      supabase,
+      userId,
+      scope: scopeResult.scope,
+      promptPreview,
+      estimatedInputTokens,
+      startedAt,
+      metadata,
+    }), {
       status: 200,
       headers: streamHeaders("text/event-stream"),
     });
@@ -492,6 +761,23 @@ Deno.serve(async (req) => {
   const text: string =
     data?.choices?.[0]?.message?.content ??
     "I couldn't generate a response. Please try again.";
+  const usage = data?.usage ? readUsage(data.usage) : undefined;
+  await logUsage({
+    supabase,
+    userId,
+    scope: scopeResult.scope,
+    promptPreview,
+    status: "success",
+    usage,
+    estimatedInputTokens,
+    estimatedOutputTokens: estimateTokens(text),
+    latencyMs: Date.now() - startedAt,
+    usedStreaming: false,
+    metadata: {
+      ...metadata,
+      hasActualTokenUsage: Boolean(usage?.totalTokens),
+    },
+  });
 
   return json({ text });
 });

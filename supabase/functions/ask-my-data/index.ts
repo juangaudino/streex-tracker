@@ -525,8 +525,9 @@ function buildContext(args: {
   weeks: WeekRow[];
   settings: { default_weekly_goal: number; currency_symbol: string; active_apps: string[] } | null;
   achievements: { achievement_id: string; unlocked_at: string }[];
+  prompt?: string;
 }) {
-  const { scope, scopeReason, settings, achievements } = args;
+  const { scope, scopeReason, settings, achievements, prompt = "" } = args;
   const weeks = args.weeks
     .map(normalizeWeek)
     .sort((a, b) => b.startDate.localeCompare(a.startDate));
@@ -551,6 +552,12 @@ function buildContext(args: {
     scope,
     scopeReason,
     currency: settings?.currency_symbol ?? "$",
+    coverage: {
+      totalWeeksAvailable: weeks.length,
+      earliestWeekStart: weeks.length ? weeks[weeks.length - 1].startDate : null,
+      latestWeekStart: weeks.length ? weeks[0].startDate : null,
+      isFullHistoryLoaded: scope !== "RECENT",
+    },
     settings: settings
       ? {
         weeklyGoal: Number(settings.default_weekly_goal),
@@ -559,10 +566,36 @@ function buildContext(args: {
       : null,
   };
 
+  // Compute on-demand analyses for grouped/consecutive/app-vs-app questions.
+  // These run on whatever weeks are loaded; coverage tells the model how much that is.
+  const knownApps = Array.from(
+    new Set([...(settings?.active_apps ?? []), ...weeks.flatMap((w) => Object.keys(w.appTotals))]),
+  );
+  const analysis: Record<string, unknown> = {};
+  if (prompt) {
+    const combo = parseDayCombo(prompt);
+    if (combo) {
+      analysis.dayCombo = { days: combo, ...topWeekdayCombos(weeks, combo, 3) };
+    }
+    const windowSize = parseConsecutiveWindow(prompt);
+    if (windowSize) {
+      analysis.consecutiveWindow = {
+        sizeDays: windowSize,
+        top: topConsecutiveWindows(weeks, windowSize, 3),
+      };
+    }
+    const pair = parseAppPair(prompt, knownApps);
+    if (pair) {
+      analysis.appHeadToHead = appHeadToHead(weeks, pair[0], pair[1]);
+    }
+  }
+  const analysisBlock = Object.keys(analysis).length ? { analysis } : {};
+
   if (scope === "ALL_TIME") {
     const lifetimeTotal = weeks.reduce((sum, w) => sum + w.total, 0);
     return {
       ...base,
+      ...analysisBlock,
       lifetime: {
         weeksTracked: weeks.length,
         closedWeeks: closed.length,
@@ -602,6 +635,7 @@ function buildContext(args: {
     const olderTotal = older.reduce((sum, w) => sum + w.total, 0);
     return {
       ...base,
+      ...analysisBlock,
       periods: {
         monthly: rollupByPeriod(weeks, monthKey),
         quarterly: rollupByPeriod(weeks, quarterKey),
@@ -624,6 +658,7 @@ function buildContext(args: {
 
   return {
     ...base,
+    ...analysisBlock,
     recent: {
       weeksTrackedInScope: recent.length,
       averageClosedWeek,

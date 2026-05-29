@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage_logs: {
+        Row: {
+          created_at: string
+          error_type: string | null
+          estimated_cost_usd: number | null
+          estimated_input_tokens: number | null
+          estimated_output_tokens: number | null
+          estimated_total_tokens: number | null
+          id: string
+          input_tokens: number | null
+          latency_ms: number | null
+          metadata: Json
+          model: string
+          output_tokens: number | null
+          prompt_preview: string | null
+          scope: string
+          status: string
+          total_tokens: number | null
+          used_streaming: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_type?: string | null
+          estimated_cost_usd?: number | null
+          estimated_input_tokens?: number | null
+          estimated_output_tokens?: number | null
+          estimated_total_tokens?: number | null
+          id?: string
+          input_tokens?: number | null
+          latency_ms?: number | null
+          metadata?: Json
+          model: string
+          output_tokens?: number | null
+          prompt_preview?: string | null
+          scope: string
+          status: string
+          total_tokens?: number | null
+          used_streaming?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_type?: string | null
+          estimated_cost_usd?: number | null
+          estimated_input_tokens?: number | null
+          estimated_output_tokens?: number | null
+          estimated_total_tokens?: number | null
+          id?: string
+          input_tokens?: number | null
+          latency_ms?: number | null
+          metadata?: Json
+          model?: string
+          output_tokens?: number | null
+          prompt_preview?: string | null
+          scope?: string
+          status?: string
+          total_tokens?: number | null
+          used_streaming?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_achievements: {
         Row: {
           achievement_id: string

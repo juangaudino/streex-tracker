@@ -428,6 +428,22 @@ export function getHistoricalDayRanking(
   };
 }
 
+function localDateString(date = new Date()): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function getActiveRankingDate(openWeek: WeekRecord | null, date: string): string {
+  if (!openWeek) return date;
+  const todayEntry = openWeek.entries.find((day) => day.date === date);
+  if (todayEntry && (dayTotal(todayEntry) > 0 || todayEntry.dayClosed)) return date;
+
+  const activePastDay = [...openWeek.entries]
+    .filter((day) => day.date <= date && dayTotal(day) > 0 && !day.dayClosed)
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+
+  return activePastDay?.date ?? date;
+}
+
 export function getIdealWeekComparison(weeks: WeekRecord[], openWeek: WeekRecord | null): IdealWeekComparison | null {
   if (!openWeek) return null;
   const bestByDay = new Map<DayName, number>();
@@ -618,7 +634,7 @@ export function buildDriverIdentitySummary(
   weeks: WeekRecord[],
   openWeek: WeekRecord | null,
   xpEvents: StoredXpEvent[],
-  date = new Date().toISOString().slice(0, 10),
+  date = localDateString(),
 ): DriverIdentitySummary {
   const totalXp = xpEvents.reduce((sum, event) => sum + event.xpAmount, 0);
   const consistencyXp = xpEvents
@@ -639,7 +655,7 @@ export function buildDriverIdentitySummary(
     primaryArchetype: archetypes.primary,
     secondaryArchetypes: archetypes.secondary,
     archetypeLocked: archetypes.locked,
-    historicalRanking: getHistoricalDayRanking(weeks, openWeek, date),
+    historicalRanking: getHistoricalDayRanking(weeks, openWeek, getActiveRankingDate(openWeek, date)),
     rival: getRivalSnippet(weeks, openWeek),
     idealWeek: getIdealWeekComparison(weeks, openWeek),
     adaptivePace: getAdaptivePace(openWeek),

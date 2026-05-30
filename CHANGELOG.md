@@ -2,6 +2,14 @@
 
 ## V5.5 — Dashboard Utility Expansion
 
+### Polish / QA
+
+- Daily Command Center presentation tightened by removing location helper copy and reducing vertical noise.
+- Weather and Traffic panels now use a compact responsive side-by-side layout when space allows.
+- Live utility data refreshes automatically about every 30 minutes after location is enabled.
+- Dashboard header spacing and logo footprint compressed while preserving navigation.
+- Historical Day Ranking now stays on the active unfinished work day instead of jumping ahead because of date context.
+
 ### Added
 
 - Dashboard Utility Layer as a compact `Daily Command Center`.

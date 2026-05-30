@@ -87,6 +87,21 @@ describe("driver identity engine", () => {
     expect(ranking?.sampleSize).toBe(3);
   });
 
+  it("keeps historical ranking on the active unfinished work day", () => {
+    const weeks = [
+      week("w1", "2026-05-04", [0, 0, 0, 0, 90, 0, 0]),
+      week("w2", "2026-05-11", [0, 0, 0, 0, 140, 0, 0]),
+      week("w3", "2026-05-18", [0, 0, 0, 0, 120, 0, 0], "open"),
+    ];
+    weeks[2].entries[4].dayClosed = false;
+
+    const summary = buildDriverIdentitySummary(weeks, weeks[2], [], "2026-05-23");
+
+    expect(summary.historicalRanking?.label).toContain("Friday");
+    expect(summary.historicalRanking?.rank).toBe(2);
+    expect(summary.historicalRanking?.sampleSize).toBe(3);
+  });
+
   it("builds an ideal week from best weekday totals", () => {
     const weeks = [
       week("w1", "2026-05-04", [100, 200, 300, 400, 500, 0, 0]),

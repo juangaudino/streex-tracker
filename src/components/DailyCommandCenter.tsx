@@ -98,7 +98,7 @@ export default function DailyCommandCenter() {
   const needsLocation = state === "idle" || state === "denied" || state === "unsupported" || state === "error";
 
   return (
-    <section className="rounded-xl border border-border bg-card/95 p-3 sm:p-4 space-y-3">
+    <section className="rounded-xl border border-border bg-card/95 p-3 sm:p-4 space-y-2.5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary flex items-center gap-1.5">
@@ -106,9 +106,6 @@ export default function DailyCommandCenter() {
             Daily Command Center
           </p>
           <p className="text-sm font-semibold mt-1">{driverReadinessCopy(data)}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Live weather and traffic use your current location only for this request.
-          </p>
         </div>
         {needsLocation ? (
           <Button size="sm" variant="secondary" onClick={enable} disabled={loading} className="shrink-0">
@@ -139,7 +136,7 @@ export default function DailyCommandCenter() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-1 min-[520px]:grid-cols-2 gap-2.5">
         <WeatherPanel data={data} />
         <TrafficPanel data={data} />
       </div>

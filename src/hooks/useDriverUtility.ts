@@ -7,7 +7,8 @@ type UtilityState = "idle" | "requesting-location" | "loading" | "ready" | "deni
 
 const CONSENT_KEY = "streex_driver_utility_location_consent";
 const CACHE_KEY = "streex_driver_utility_cache_v1";
-const CACHE_MS = 20 * 60 * 1000;
+const REFRESH_MS = 30 * 60 * 1000;
+const CACHE_MS = REFRESH_MS;
 
 interface CachedUtility {
   latitude: number;
@@ -113,6 +114,14 @@ export function useDriverUtility() {
 
   useEffect(() => {
     if (consent === "enabled") fetchUtility(false);
+  }, [consent, fetchUtility]);
+
+  useEffect(() => {
+    if (consent !== "enabled") return;
+    const interval = window.setInterval(() => {
+      fetchUtility(true);
+    }, REFRESH_MS);
+    return () => window.clearInterval(interval);
   }, [consent, fetchUtility]);
 
   return {

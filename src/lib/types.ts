@@ -20,6 +20,14 @@ export const DAY_NAMES = [
 
 export type DayName = (typeof DAY_NAMES)[number];
 
+export interface ShiftSession {
+  id: string;
+  startTime: string;
+  endTime?: string;
+  miles?: number;
+  note?: string;
+}
+
 export interface DayEntry {
   dayName: DayName;
   date: string;
@@ -27,6 +35,7 @@ export interface DayEntry {
   logged?: boolean;
   /** Day finalized via "End Day". Distinct from `logged` (which auto-flags on any earnings entry). */
   dayClosed?: boolean;
+  shifts?: ShiftSession[];
   mileage?: number;
   notes?: string;
 }

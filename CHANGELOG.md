@@ -1,5 +1,50 @@
 # Changelog
 
+## V5.6 — Shift + Hours & Pattern Intelligence
+
+### Added
+
+- Shift Intelligence Layer with manual Start Shift and End Shift controls in Entry.
+- Shift duration tracking stored inside existing week/day entry data.
+- Mileage Foundation with manual shift miles, daily miles, weekly miles, and mileage history through saved weeks.
+- Efficiency Snapshot for earnings per hour, earnings per mile, and miles per hour.
+- Pattern Intelligence on Career with strongest hours, productivity windows, morning vs night tendencies, and gentle recovery-window framing.
+- Advanced Mode heatmap for hour-level work patterns and best apps by hour when enough shift data exists.
+- Simple / Advanced Performance Mode setting stored locally.
+
+### Production Behavior
+
+- No database schema changes were made.
+- No GPS, background location, telematics, or automated mileage tracking was added.
+- Shift and mileage data are additive fields inside the existing `weeks.entries` JSON payload.
+- Existing earnings, auth, Ask My Data, exports, XP persistence, dashboard systems, and Supabase architecture were not changed.
+- Pattern intelligence is historical and manual-entry based; it does not predict demand.
+
+### Known Limitations
+
+- App-by-hour and hourly heatmap signals are derived from logged shift windows and daily/app totals, so they are directional rather than per-trip telemetry.
+- Advanced hour patterns stay gated until enough completed shifts exist.
+- Mileage is manual-first in V5.6; Movement Intelligence remains future roadmap.
+
+### Files Created
+
+- `src/lib/shiftIntelligence.ts`
+- `src/lib/shiftIntelligence.test.ts`
+- `src/lib/performanceMode.ts`
+- `src/hooks/usePerformanceMode.ts`
+- `src/components/ShiftIntelligencePanel.tsx`
+
+### Files Modified
+
+- `src/lib/types.ts`
+- `src/pages/WeeklyEntryPage.tsx`
+- `src/components/MobileDayDetail.tsx`
+- `src/components/MobileWeekOverview.tsx`
+- `src/pages/CareerPage.tsx`
+- `src/pages/SettingsPage.tsx`
+- `src/lib/changelog.ts`
+- `CHANGELOG.md`
+
 ## V5.5 — Dashboard Utility Expansion
 
 ### Polish / QA

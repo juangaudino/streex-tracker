@@ -44,7 +44,7 @@ If backend ambiguity exists, stop and verify before applying migrations.
 
 Current app version after recent work:
 
-`V5.5 - Dashboard Utility Expansion`
+`V5.6 - Shift + Hours & Pattern Intelligence`
 
 ## Recent Features Implemented
 
@@ -166,6 +166,39 @@ Live utility requires Supabase secrets:
 
 - `OPENWEATHER_API_KEY`
 - `TOMTOM_API_KEY`
+
+### V5.6 - Shift + Hours & Pattern Intelligence
+
+Added:
+
+- manual Start Shift / End Shift workflow
+- shift duration tracking
+- manual shift mileage
+- daily and weekly mileage foundation
+- earnings per hour
+- earnings per mile
+- miles per hour
+- Simple / Advanced Performance Mode
+- Career Pattern Intelligence
+- hourly heatmap in Advanced Mode
+- strongest hours
+- productivity windows
+- morning vs night comparison
+- gentle Recovery Windows framing instead of dead-hour language
+- best apps by hour when enough shift data exists
+
+Architecture:
+
+- no database schema changes
+- shift and mileage data live inside existing `weeks.entries` JSON
+- no GPS tracking
+- no background location
+- no telematics
+- no Movement Intelligence automation yet
+
+Known limitation:
+
+- hour/app patterns are directional and derived from manually logged shift windows plus daily/app totals, not per-trip telemetry.
 
 ## Current Working Branch
 

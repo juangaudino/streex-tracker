@@ -1,4 +1,5 @@
 import { dayTotal, weekTotal, formatCurrency, getLoggedDays, getActiveEnteredDays } from "@/lib/store";
+import { getDayMiles, getDayShiftHours } from "@/lib/shiftIntelligence";
 import type { WeekRecord } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Check, ChevronRight } from "lucide-react";
@@ -61,6 +62,8 @@ export default function MobileWeekOverview({
           const dt = dayTotal(day);
           const isLogged = day.logged !== undefined ? day.logged : dt > 0;
           const isActive = dt > 0;
+          const shiftHours = getDayShiftHours(day);
+          const miles = getDayMiles(day);
 
           return (
             <button
@@ -79,6 +82,11 @@ export default function MobileWeekOverview({
                   <span className="text-sm font-semibold">{day.dayName}</span>
                   <span className="text-[10px] text-muted-foreground font-mono">{day.date}</span>
                 </div>
+                {(shiftHours > 0 || miles > 0) && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {shiftHours > 0 ? `${shiftHours.toFixed(1)}h` : "No hours"} · {miles.toFixed(1)} mi
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {isLogged && (

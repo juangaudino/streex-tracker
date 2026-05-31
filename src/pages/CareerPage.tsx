@@ -9,6 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { generateWeeklyLetter } from "@/lib/weeklyLetter";
 import WeeklyLetterCard from "@/components/WeeklyLetterCard";
+import ShiftIntelligencePanel from "@/components/ShiftIntelligencePanel";
+import { usePerformanceMode } from "@/hooks/usePerformanceMode";
 
 export default function CareerPage() {
   const { weeks, settings } = useOutletContext<StoreContext>();
@@ -17,6 +19,7 @@ export default function CareerPage() {
   const stats = computeCareerStats(weeks);
   const mp = stats.monthlyProgression;
   const perf = computePerformanceInsights(weeks);
+  const { performanceMode } = usePerformanceMode();
 
   const lastClosed = [...weeks]
     .filter((w) => w.status === "closed")
@@ -191,6 +194,8 @@ export default function CareerPage() {
       </section>
 
       {/* Performance Insights */}
+      <ShiftIntelligencePanel weeks={weeks} currencySymbol={sym} mode={performanceMode} />
+
       <section className="space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Performance Insights</h2>

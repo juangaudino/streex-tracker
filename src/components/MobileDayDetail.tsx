@@ -6,6 +6,7 @@ import type { DayEntry } from "@/lib/types";
 import { ArrowLeft, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { getDayShiftHours, hasActiveShift, shiftDurationHours } from "@/lib/shiftIntelligence";
 
 interface MobileDayDetailProps {
   day: DayEntry;
@@ -16,6 +17,9 @@ interface MobileDayDetailProps {
   onUpdate: (dayIdx: number, app: string, val: string) => void;
   onLoggedToggle: (dayIdx: number, checked: boolean) => void;
   onMileageUpdate?: (dayIdx: number, val: number) => void;
+  onStartShift?: (dayIdx: number) => void;
+  onEndShift?: (dayIdx: number) => void;
+  onShiftMilesUpdate?: (dayIdx: number, shiftId: string, val: string) => void;
   onSave: () => void;
 }
 
@@ -28,11 +32,16 @@ export default function MobileDayDetail({
   onUpdate,
   onLoggedToggle,
   onMileageUpdate,
+  onStartShift,
+  onEndShift,
+  onShiftMilesUpdate,
   onSave,
 }: MobileDayDetailProps) {
   const dt = dayTotal(day);
   const isLogged = day.logged !== undefined ? day.logged : dt > 0;
   const [mileage, setMileage] = useState(day.mileage?.toString() || "");
+  const activeShift = hasActiveShift(day);
+  const shiftHours = getDayShiftHours(day);
 
   return (
     <div className="animate-in slide-in-from-right duration-200 space-y-4 p-4">
@@ -104,6 +113,49 @@ export default function MobileDayDetail({
               }}
             />
           </div>
+        </div>
+      )}
+
+      {/* Shifts */}
+      {onStartShift && onEndShift && (
+        <div className="bg-card rounded-xl border border-border p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Shift Blocks</p>
+              <p className="text-xs text-muted-foreground">{shiftHours.toFixed(1)}h logged today</p>
+            </div>
+            <Button
+              size="sm"
+              variant={activeShift ? "secondary" : "default"}
+              onClick={() => activeShift ? onEndShift(dayIdx) : onStartShift(dayIdx)}
+            >
+              {activeShift ? "End" : "Start"}
+            </Button>
+          </div>
+          {(day.shifts ?? []).map((shift) => (
+            <div key={shift.id} className="grid grid-cols-[1fr_5.5rem] items-center gap-2 rounded-lg bg-background/60 border border-border px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold truncate">
+                  {new Date(shift.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                  {shift.endTime ? ` → ${new Date(shift.endTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : " → active"}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {shift.endTime ? `${shiftDurationHours(shift).toFixed(1)}h` : "running"}
+                </p>
+              </div>
+              {onShiftMilesUpdate && (
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  className="h-8 text-right font-mono text-xs"
+                  value={shift.miles || ""}
+                  placeholder="mi"
+                  onChange={(e) => onShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
+                />
+              )}
+            </div>
+          ))}
         </div>
       )}
 

@@ -29,6 +29,7 @@ import { CalendarIcon } from "lucide-react";
 import MobileWeekOverview from "@/components/MobileWeekOverview";
 import MobileDayDetail from "@/components/MobileDayDetail";
 import WeekClosingDialog from "@/components/WeekClosingDialog";
+import { createShift, endActiveShift, getDayMiles, getDayShiftHours, getWeekMiles, getWeekShiftHours, hasActiveShift, shiftDurationHours } from "@/lib/shiftIntelligence";
 
 export default function WeeklyEntryPage() {
   const { openWeek, weeks, settings, addWeek, updateWeek } =
@@ -253,6 +254,34 @@ export default function WeeklyEntryPage() {
     setEditWeek({ ...editWeek, entries });
   }
 
+  function handleStartShift(dayIdx: number) {
+    if (!editWeek) return;
+    const entries = editWeek.entries.map((d, i) => {
+      if (i !== dayIdx || hasActiveShift(d)) return d;
+      return { ...d, shifts: [...(d.shifts ?? []), createShift(d.date)] };
+    });
+    setEditWeek({ ...editWeek, entries });
+  }
+
+  function handleEndShift(dayIdx: number) {
+    if (!editWeek) return;
+    const entries = editWeek.entries.map((d, i) => i === dayIdx ? endActiveShift(d) : d);
+    setEditWeek({ ...editWeek, entries });
+  }
+
+  function handleShiftMilesUpdate(dayIdx: number, shiftId: string, val: string) {
+    if (!editWeek) return;
+    const miles = parseFloat(val) || 0;
+    const entries = editWeek.entries.map((d, i) => {
+      if (i !== dayIdx) return d;
+      return {
+        ...d,
+        shifts: (d.shifts ?? []).map((shift) => shift.id === shiftId ? { ...shift, miles } : shift),
+      };
+    });
+    setEditWeek({ ...editWeek, entries });
+  }
+
   if (!editWeek) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
@@ -320,6 +349,14 @@ export default function WeeklyEntryPage() {
 
   const wt = weekTotal(editWeek);
   const isClosedView = editWeek.status === "closed" && justClosed;
+  const weekHours = getWeekShiftHours(editWeek);
+  const weekMiles = getWeekMiles(editWeek);
+  const weekEarningsPerHour = weekHours > 0 ? wt / weekHours : null;
+  const weekEarningsPerMile = weekMiles > 0 ? wt / weekMiles : null;
+  const todayIndex = editWeek.entries.findIndex((day) => day.date === formatDate(new Date()));
+  const shiftControlIndex = todayIndex >= 0 ? todayIndex : 0;
+  const shiftControlDay = editWeek.entries[shiftControlIndex];
+  const activeShift = shiftControlDay ? hasActiveShift(shiftControlDay) : false;
 
   // Mobile day detail view
   if (isMobile && selectedDayIdx !== null && editWeek) {
@@ -333,6 +370,9 @@ export default function WeeklyEntryPage() {
         onUpdate={handleCellChange}
         onLoggedToggle={handleLoggedToggle}
         onMileageUpdate={handleMileageUpdate}
+        onStartShift={handleStartShift}
+        onEndShift={handleEndShift}
+        onShiftMilesUpdate={handleShiftMilesUpdate}
         onSave={() => {
           handleSave();
           setSelectedDayIdx(null);
@@ -423,6 +463,68 @@ export default function WeeklyEntryPage() {
           />
         </div>
       </div>
+
+      <section className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Shift + Mileage</p>
+            <p className="text-sm font-semibold mt-0.5">
+              {shiftControlDay.dayName} · {shiftControlDay.date}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant={activeShift ? "secondary" : "default"}
+            onClick={() => activeShift ? handleEndShift(shiftControlIndex) : handleStartShift(shiftControlIndex)}
+          >
+            {activeShift ? "End Shift" : "Start Shift"}
+          </Button>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="rounded-lg bg-background/60 border border-border px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Hours</p>
+            <p className="text-sm font-bold font-mono">{weekHours.toFixed(1)}h</p>
+          </div>
+          <div className="rounded-lg bg-background/60 border border-border px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Miles</p>
+            <p className="text-sm font-bold font-mono">{weekMiles.toFixed(1)}</p>
+          </div>
+          <div className="rounded-lg bg-background/60 border border-border px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Per Hour</p>
+            <p className="text-sm font-bold font-mono">{weekEarningsPerHour ? formatCurrency(weekEarningsPerHour, sym) : "—"}</p>
+          </div>
+          <div className="rounded-lg bg-background/60 border border-border px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Per Mile</p>
+            <p className="text-sm font-bold font-mono">{weekEarningsPerMile ? formatCurrency(weekEarningsPerMile, sym) : "—"}</p>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {editWeek.entries.flatMap((day, dayIdx) =>
+            (day.shifts ?? []).map((shift) => (
+              <div key={shift.id} className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_7rem] items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold truncate">
+                    {day.dayName} · {new Date(shift.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                    {shift.endTime ? ` → ${new Date(shift.endTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : " → active"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {shift.endTime ? `${shiftDurationHours(shift).toFixed(1)}h` : "Shift running"} · manual miles
+                  </p>
+                </div>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  className="h-8 text-right font-mono text-xs"
+                  value={shift.miles || ""}
+                  placeholder="mi"
+                  onChange={(e) => handleShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
+                />
+              </div>
+            )),
+          )}
+        </div>
+      </section>
 
       {/* Mobile: Week Overview with tappable days */}
       {isMobile ? (

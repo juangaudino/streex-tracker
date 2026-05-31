@@ -6,9 +6,26 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.5";
+export const CURRENT_VERSION = "5.6";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.6",
+    date: "2026-05",
+    title: "Shift + Hours & Pattern Intelligence",
+    tags: ["new", "feature", "polish"],
+    items: [
+      "Manual Start Shift and End Shift controls added to Entry",
+      "Shift duration tracking added inside existing week/day data with no schema migration",
+      "Mileage Foundation added with manual shift miles, daily miles, and weekly miles",
+      "Efficiency Snapshot added for earnings per hour, earnings per mile, and miles per hour",
+      "Pattern Intelligence added to Career with strongest hours, productivity windows, and morning vs night tendencies",
+      "Advanced Performance Mode unlocks hourly heatmaps and best apps by hour when enough shift data exists",
+      "Simple Performance Mode keeps the experience calm and lower density by default",
+      "Recovery-window language replaces dead-hour framing to preserve no-shame analytics",
+      "No GPS, background tracking, telematics, Supabase schema changes, or automated mileage tracking were added",
+    ],
+  },
   {
     version: "5.5",
     date: "2026-05",

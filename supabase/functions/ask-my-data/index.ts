@@ -126,16 +126,24 @@ function detectScope(messages: ChatMessage[], knownApps: string[] = []): { scope
   const allTimeTerms = [
     "all time", "all-time", "ever", "career", "lifetime", "record", "best week",
     "highest", "lowest", "evolved", "evolution", "history", "historical",
-    "overall", "my average", "average weekly", "average week",
+    "overall", "my average", "average weekly", "average week", "top", "worst",
+    "bottom", "rank", "ranking", "all my",
   ];
   const recentTerms = [
     "recent", "recently", "lately", "current", "this week", "this month",
-    "last few", "momentum", "trend", "trending", "pattern", "now",
-    "how am i doing",
+    "last few", "now",
   ];
+  const explicitRecentTimeframe = recentTerms.some((term) => q.includes(term)) ||
+    /\b(last|past)\s+\d+\s+(day|days|week|weeks|month|months|year|years)\b/.test(q) ||
+    /\b(last|past)\s+(week|month|year|quarter)\b/.test(q) ||
+    /\bytd\b|\byear to date\b/.test(q) ||
+    /\b\d{4}-\d{2}-\d{2}\b/.test(q);
 
   if (seasonalTerms.some((term) => q.includes(term))) {
     return { scope: "SEASONAL", reason: "Question asks for long-range or time-period comparison." };
+  }
+  if (explicitRecentTimeframe) {
+    return { scope: "RECENT", reason: "Question explicitly asks for a recent or bounded timeframe." };
   }
   if (allTimeTerms.some((term) => q.includes(term))) {
     return { scope: "ALL_TIME", reason: "Question asks for record, lifetime, or historical analytics." };
@@ -148,10 +156,7 @@ function detectScope(messages: ChatMessage[], knownApps: string[] = []): { scope
   if (isComboOrWindowQuestion(latest)) {
     return { scope: "ALL_TIME", reason: "Grouped/consecutive-day analysis requires full history." };
   }
-  if (recentTerms.some((term) => q.includes(term))) {
-    return { scope: "RECENT", reason: "Question asks about recent performance or momentum." };
-  }
-  return { scope: "RECENT", reason: "Defaulting to recent context for a general question." };
+  return { scope: "ALL_TIME", reason: "No timeframe was specified, so defaulting to full career history." };
 }
 
 function sumAppTotals(weeks: NormalizedWeek[]): Record<string, number> {
@@ -283,6 +288,91 @@ function flattenDays(weeks: NormalizedWeek[]) {
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function parseWeekdayMentions(prompt: string): string[] {
+  const q = prompt.toLowerCase();
+  const hits: string[] = [];
+  const seen = new Set<string>();
+  const tokens = q.match(/\b(mon|monday|mondays|tue|tues|tuesday|tuesdays|wed|weds|wednesday|wednesdays|thu|thur|thurs|thursday|thursdays|fri|friday|fridays|sat|saturday|saturdays|sun|sunday|sundays)\b/g) ?? [];
+  for (const raw of tokens) {
+    const token = raw.endsWith("s") && raw.length > 3 ? raw.slice(0, -1) : raw;
+    const full = DAY_ALIASES[token];
+    if (full && !seen.has(full)) {
+      seen.add(full);
+      hits.push(full);
+    }
+  }
+  return hits;
+}
+
+function parseRequestedLimit(prompt: string, fallback: number): number {
+  const m = prompt.toLowerCase().match(/\b(?:top|bottom|first|last)?\s*(\d{1,3})\b/);
+  if (!m) return fallback;
+  return Math.min(100, Math.max(1, Number(m[1])));
+}
+
+function isWorstDayQuestion(prompt: string): boolean {
+  const q = prompt.toLowerCase();
+  return /\b(worst|lowest|bottom|least|bad days|low days)\b/.test(q);
+}
+
+function isBestDayQuestion(prompt: string): boolean {
+  const q = prompt.toLowerCase();
+  return /\b(best|highest|top|strongest)\b/.test(q) &&
+    (/\b(day|days|earning|earnings)\b/.test(q) || parseWeekdayMentions(prompt).length > 0);
+}
+
+function isWeekdayListQuestion(prompt: string): boolean {
+  const q = prompt.toLowerCase();
+  const weekdays = parseWeekdayMentions(prompt);
+  if (weekdays.length !== 1) return false;
+  return /\b(all|show|list|see|only|every|each)\b/.test(q);
+}
+
+function isDayRankingQuestion(prompt: string): boolean {
+  return isWorstDayQuestion(prompt) || isBestDayQuestion(prompt);
+}
+
+function weekdayListAnalysis(weeks: NormalizedWeek[], prompt: string) {
+  const [weekday] = parseWeekdayMentions(prompt);
+  if (!weekday || !isWeekdayListQuestion(prompt)) return null;
+  const limit = parseRequestedLimit(prompt, 60);
+  const days = flattenDays(weeks)
+    .filter((day) => day.day === weekday)
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  return {
+    weekday,
+    totalMatches: days.length,
+    returned: Math.min(days.length, limit),
+    limited: days.length > limit,
+    days: days.slice(0, limit).map((day) => ({ ...day, total: round(day.total) })),
+  };
+}
+
+function dayRankingAnalysis(weeks: NormalizedWeek[], prompt: string) {
+  if (!isDayRankingQuestion(prompt)) return null;
+  const q = prompt.toLowerCase();
+  const limit = parseRequestedLimit(prompt, 20);
+  const weekdays = parseWeekdayMentions(prompt);
+  const includeZeroDays = !/\b(worked|active|earning days|paid days)\b/.test(q);
+  const sortAscending = isWorstDayQuestion(prompt);
+  const days = flattenDays(weeks)
+    .filter((day) => weekdays.length === 0 || weekdays.includes(day.day))
+    .filter((day) => includeZeroDays || day.total > 0)
+    .sort((a, b) => sortAscending ? a.total - b.total || a.date.localeCompare(b.date) : b.total - a.total || a.date.localeCompare(b.date));
+
+  return {
+    kind: sortAscending ? "worst_days" : "best_days",
+    sort: sortAscending ? "ascending_total" : "descending_total",
+    weekdayFilter: weekdays.length ? weekdays : null,
+    includeZeroDays,
+    totalCandidates: days.length,
+    returned: Math.min(days.length, limit),
+    limited: days.length > limit,
+    days: days.slice(0, limit).map((day) => ({ ...day, total: round(day.total) })),
+  };
+}
+
 function daysBetween(a: string, b: string): number {
   const ms = Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z");
   return Math.round(ms / 86400000);
@@ -333,17 +423,7 @@ function topWeekdayCombos(weeks: NormalizedWeek[], dayNames: string[], topN = 3)
 
 function parseDayCombo(prompt: string): string[] | null {
   const q = prompt.toLowerCase();
-  const hits: string[] = [];
-  const seen = new Set<string>();
-  // Match word boundaries for day tokens / aliases
-  const tokens = q.match(/\b(mon|monday|tue|tues|tuesday|wed|weds|wednesday|thu|thur|thurs|thursday|fri|friday|sat|saturday|sun|sunday)\b/g) ?? [];
-  for (const t of tokens) {
-    const full = DAY_ALIASES[t];
-    if (full && !seen.has(full)) {
-      seen.add(full);
-      hits.push(full);
-    }
-  }
+  const hits = parseWeekdayMentions(prompt);
   if (hits.length >= 2) return hits;
   if (/\bweekend\b/.test(q)) return ["Saturday", "Sunday"];
   return null;
@@ -573,6 +653,14 @@ function buildContext(args: {
   );
   const analysis: Record<string, unknown> = {};
   if (prompt) {
+    const weekdayList = weekdayListAnalysis(weeks, prompt);
+    if (weekdayList) {
+      analysis.weekdayList = weekdayList;
+    }
+    const dayRanking = dayRankingAnalysis(weeks, prompt);
+    if (dayRanking) {
+      analysis.dayRanking = dayRanking;
+    }
     const combo = parseDayCombo(prompt);
     if (combo) {
       analysis.dayCombo = { days: combo, ...topWeekdayCombos(weeks, combo, 3) };
@@ -798,6 +886,78 @@ function directBestWeekAnswer(context: unknown, currency: string): string | null
   const range = best.endDate ? `${best.startDate} to ${best.endDate}` : best.startDate;
   const statusNote = best.status && best.status !== "closed" ? ` It is currently marked as ${best.status}.` : "";
   return `Your best week ever was ${range}, when you earned ${amount}.${statusNote}`;
+}
+
+function formatDateForAssistant(date: string): string {
+  const parsed = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return date;
+  return parsed.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function directDayAnalysisAnswer(context: unknown, currency: string): string | null {
+  const c = context as {
+    scope?: DataScope;
+    coverage?: { isFullHistoryLoaded?: boolean };
+    analysis?: {
+      weekdayList?: {
+        weekday: string;
+        totalMatches: number;
+        returned: number;
+        limited: boolean;
+        days: { date: string; day: string; total: number }[];
+      };
+      dayRanking?: {
+        kind: "worst_days" | "best_days";
+        weekdayFilter: string[] | null;
+        includeZeroDays: boolean;
+        totalCandidates: number;
+        returned: number;
+        limited: boolean;
+        days: { date: string; day: string; total: number }[];
+      };
+    };
+  };
+  const scopeText = c.coverage?.isFullHistoryLoaded
+    ? "across your full Streex history"
+    : c.scope === "RECENT"
+    ? "within the requested recent scope"
+    : "within the loaded scope";
+
+  const weekdayList = c.analysis?.weekdayList;
+  if (weekdayList) {
+    if (!weekdayList.days.length) return `I don't see any ${weekdayList.weekday}s in your tracked history yet.`;
+    const lines = weekdayList.days.map((day) =>
+      `- ${formatCurrencyForAssistant(day.total, currency)} on ${formatDateForAssistant(day.date)}`
+    );
+    const cap = weekdayList.limited
+      ? ` Showing the most recent ${weekdayList.returned} to keep the answer readable.`
+      : "";
+    return `Here are your ${weekdayList.totalMatches} tracked ${weekdayList.weekday}s ${scopeText}:${cap}\n\n${lines.join("\n")}`;
+  }
+
+  const ranking = c.analysis?.dayRanking;
+  if (ranking) {
+    if (!ranking.days.length) return "I don't see matching tracked days for that ranking yet.";
+    const label = ranking.kind === "worst_days" ? "lowest earning days" : "highest earning days";
+    const filter = ranking.weekdayFilter?.length ? ` for ${ranking.weekdayFilter.join(", ")}` : "";
+    const zeroNote = ranking.kind === "worst_days" && ranking.includeZeroDays
+      ? " Zero-dollar tracked days are included."
+      : "";
+    const lines = ranking.days.map((day, index) =>
+      `${index + 1}. ${formatCurrencyForAssistant(day.total, currency)} on ${formatDateForAssistant(day.date)}`
+    );
+    const cap = ranking.limited
+      ? ` Showing ${ranking.returned} of ${ranking.totalCandidates} matching days.`
+      : "";
+    return `Here are your ${ranking.returned} ${label}${filter} ${scopeText}.${zeroNote}${cap}\n\n${lines.join("\n")}`;
+  }
+
+  return null;
 }
 
 function formatCurrencyForAssistant(value: number, currency: string): string {
@@ -1061,6 +1221,30 @@ Deno.serve(async (req) => {
     }
   }
 
+  {
+    const text = directDayAnalysisAnswer(context, settingsRes.data?.currency_symbol ?? "$");
+    if (text) {
+      await logUsage({
+        supabase,
+        userId,
+        model: "deterministic",
+        scope: scopeResult.scope,
+        promptPreview,
+        status: "success",
+        estimatedInputTokens: estimateTokens(promptPreview || " "),
+        estimatedOutputTokens: estimateTokens(text),
+        estimatedCostUsd: 0,
+        latencyMs: Date.now() - startedAt,
+        usedStreaming: false,
+        metadata: {
+          ...metadata,
+          directAnswer: "day_list_or_ranking",
+        },
+      });
+      return json({ text });
+    }
+  }
+
   const system = [
     "You are 'Ask My Data', an analytics assistant inside Streex — a gig earnings tracker.",
     "Answer ONLY using the JSON context provided. If the required fact is not in the data, say so plainly.",
@@ -1070,7 +1254,9 @@ Deno.serve(async (req) => {
     "3. For app-vs-app questions, ONLY use context.analysis.appHeadToHead. If that block is missing, say you don't have enough data to compare those apps. Do NOT infer winners from appTotals alone, and do NOT claim one app 'never' beat another unless aWins / bWins explicitly show 0 over weeksCompared ≥ 1.",
     "4. For grouped-day questions (e.g. Fri+Sat+Sun, weekends), ONLY use context.analysis.dayCombo. For consecutive/rolling N-day windows, ONLY use context.analysis.consecutiveWindow. If those blocks are missing, say the calculation isn't available for that question.",
     "5. For best/highest/record week questions, use lifetime.bestWeekEver when present, never a recent-only value.",
-    "6. Never invent numbers, dates, or apps. Never reveal raw JSON or internal field names. No SQL.",
+    "6. For single-weekday lists and best/worst day rankings, ONLY use context.analysis.weekdayList or context.analysis.dayRanking. Worst/lowest days are derivable from tracked day totals; do not claim the system cannot track them when dayRanking is present.",
+    "7. If context.scope is ALL_TIME, treat the answer as full Streex history. Do not mention a hidden 16-week or 112-day limit unless context.coverage.isFullHistoryLoaded is false.",
+    "8. Never invent numbers, dates, or apps. Never reveal raw JSON or internal field names. No SQL.",
     "Style: concise, friendly, specific. Short paragraphs and small markdown lists. Format currency according to the provided currency code/symbol. Reference dates in a human way (e.g. 'week of Mar 10').",
   ].join(" ");
 

@@ -9,6 +9,8 @@
 - Live utility data refreshes automatically about every 30 minutes after location is enabled.
 - Dashboard header spacing and logo footprint compressed while preserving navigation.
 - Historical Day Ranking now stays on the active unfinished work day instead of jumping ahead because of date context.
+- Ask My Data now defaults unspecified timeframe questions to full history instead of the recent 16-week window.
+- Ask My Data can answer weekday lists and best/worst day rankings from tracked day totals without falsely claiming the data is unavailable.
 
 ### Added
 

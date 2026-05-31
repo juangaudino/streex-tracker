@@ -25,6 +25,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Daily Command Center polish removes extra location copy and keeps Weather/Traffic compact side by side when space allows",
       "Live Weather and Traffic refresh automatically about every 30 minutes after location is enabled",
       "Historical Day Ranking now uses the active unfinished work day so it does not jump ahead in the dashboard",
+      "Ask My Data defaults unspecified timeframe questions to full history instead of the recent 16-week window",
+      "Ask My Data can answer weekday lists and best/worst day rankings from tracked day totals",
       "Known limitation: weather and traffic require OPENWEATHER_API_KEY and TOMTOM_API_KEY Supabase secrets before live provider data appears",
     ],
   },

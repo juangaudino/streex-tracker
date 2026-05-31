@@ -1,7 +1,8 @@
 import { AlertTriangle, CloudRain, CloudSun, Gauge, LocateFixed, MapPinned, RefreshCw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { driverReadinessCopy, utilityStatusLabel, type DriverUtilityData, type TrafficLevel } from "@/lib/driverUtility";
+import { driverReadinessCopy, utilityStatusLabel, type DriverUtilityData, type TrafficLevel, type WeatherUtilityData } from "@/lib/driverUtility";
 import { useDriverUtility } from "@/hooks/useDriverUtility";
+import { cn } from "@/lib/utils";
 
 function trafficTone(level?: TrafficLevel) {
   if (level === "heavy" || level === "closed") return "text-warning";
@@ -16,13 +17,26 @@ function providerTitle(kind: "Weather" | "Traffic", status?: string) {
   return "Provider pending";
 }
 
+function weatherMoodClass(weather?: WeatherUtilityData) {
+  if (weather?.status !== "live") return "bg-background/55";
+  const condition = (weather.condition || "").toLowerCase();
+  const temperature = weather.temperature ?? 70;
+
+  if (condition.includes("rain") || condition.includes("storm") || condition.includes("drizzle")) {
+    return "bg-sky-500/[0.08] border-sky-500/20";
+  }
+  if (temperature >= 85) return "bg-amber-500/[0.09] border-amber-500/20";
+  if (temperature <= 45) return "bg-cyan-500/[0.08] border-cyan-500/20";
+  return "bg-background/55";
+}
+
 function WeatherPanel({ data }: { data: DriverUtilityData | null }) {
   const weather = data?.weather;
   const live = weather?.status === "live";
   const Icon = live && (weather.condition || "").toLowerCase().includes("rain") ? CloudRain : CloudSun;
 
   return (
-    <div className="min-w-0 rounded-lg border border-border/70 bg-background/55 p-3 space-y-2">
+    <div className={cn("min-w-0 rounded-lg border border-border/70 p-3 space-y-2 transition-colors duration-500", weatherMoodClass(weather))}>
       <div className="flex items-center justify-between gap-2">
         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
           Weather
@@ -43,8 +57,8 @@ function WeatherPanel({ data }: { data: DriverUtilityData | null }) {
         </div>
       </div>
       {live && weather.nextHours && weather.nextHours.length > 0 && (
-        <div className="grid grid-cols-3 gap-1.5">
-          {weather.nextHours.slice(0, 3).map((hour) => (
+        <div className="grid grid-cols-2 gap-1.5">
+          {weather.nextHours.slice(0, 2).map((hour) => (
             <div key={hour.time} className="rounded-md bg-muted/45 px-2 py-1">
               <p className="text-[9px] font-mono text-muted-foreground">
                 {new Date(hour.time).toLocaleTimeString([], { hour: "numeric" })}

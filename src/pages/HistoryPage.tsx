@@ -13,7 +13,7 @@ import { Eye, Pencil, Copy, Trash2, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function HistoryPage() {
-  const { weeks, settings, deleteWeek, addWeek, updateWeek } =
+  const { weeks, settings, deleteWeek, addWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -96,12 +96,7 @@ export default function HistoryPage() {
                   size="sm"
                   variant="ghost"
                   onClick={() => {
-                    if (w.status === "open") {
-                      navigate("/entry");
-                    } else {
-                      updateWeek({ ...w, status: "open" });
-                      navigate("/entry");
-                    }
+                    navigate(w.status === "open" ? "/entry" : `/entry?weekId=${w.id}`);
                   }}
                 >
                   {w.status === "open" ? (

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useOutletContext, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useOutletContext, useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,10 +35,13 @@ export default function WeeklyEntryPage() {
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
+  const requestedWeekId = searchParams.get("weekId");
+  const requestedWeek = requestedWeekId ? weeks.find((w) => w.id === requestedWeekId) ?? null : null;
   const [selectedDayIdx, setSelectedDayIdx] = useState<number | null>(null);
   const [justClosed, setJustClosed] = useState(false);
-  const [editWeek, setEditWeek] = useState(openWeek);
+  const [editWeek, setEditWeek] = useState(requestedWeek ?? openWeek);
   const [goalInput, setGoalInput] = useState(
     openWeek?.weeklyGoal?.toString() || settings.defaultWeeklyGoal.toString()
   );
@@ -48,15 +51,23 @@ export default function WeeklyEntryPage() {
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 
-  // Sync when openWeek changes externally
-  if (openWeek && (!editWeek || editWeek.id !== openWeek.id)) {
-    setEditWeek(openWeek);
-    setGoalInput(openWeek.weeklyGoal.toString());
-    setStartDate(new Date(openWeek.startDate + "T00:00:00"));
-  }
+  useEffect(() => {
+    const target = requestedWeekId ? requestedWeek : openWeek;
+    if (!target) {
+      if (!requestedWeekId) setEditWeek(null);
+      return;
+    }
+    if (editWeek?.id === target.id) return;
+    setEditWeek(target);
+    setGoalInput(target.weeklyGoal.toString());
+    setStartDate(new Date(target.startDate + "T00:00:00"));
+    setSelectedDayIdx(null);
+    setJustClosed(false);
+  }, [requestedWeekId, requestedWeek, openWeek, editWeek?.id]);
 
   const sym = settings.currencySymbol;
   const apps = settings.activeApps;
+  const isHistoricalEdit = Boolean(requestedWeekId && editWeek?.id === requestedWeekId && editWeek.status === "closed");
 
   // Check for duplicate week
   const selectedMonday = getMondayOfWeek(startDate);
@@ -100,11 +111,9 @@ export default function WeeklyEntryPage() {
         description: "Opening the existing week instead.",
         variant: "destructive",
       });
-      if (existing.status === "closed") {
-        updateWeek({ ...existing, status: "open" });
-      }
-      setEditWeek(existing.status === "closed" ? { ...existing, status: "open" } : existing);
+      setEditWeek(existing);
       setGoalInput(existing.weeklyGoal.toString());
+      if (existing.status === "closed") setSearchParams({ weekId: existing.id });
       return;
     }
 
@@ -129,6 +138,7 @@ export default function WeeklyEntryPage() {
     );
     addWeek(w);
     setEditWeek(w);
+    setSearchParams({});
     toast({ title: "New week started!" });
   }
 
@@ -141,25 +151,23 @@ export default function WeeklyEntryPage() {
         description: "Opening the existing week instead.",
         variant: "destructive",
       });
-      if (existing.status === "closed") {
-        updateWeek({ ...existing, status: "open" });
-      }
-      setEditWeek(existing.status === "closed" ? { ...existing, status: "open" } : existing);
+      setEditWeek(existing);
       setGoalInput(existing.weeklyGoal.toString());
+      if (existing.status === "closed") setSearchParams({ weekId: existing.id });
       return;
     }
 
-    if (openWeek) {
-      updateWeek({ ...openWeek, status: "closed" });
-    }
-
-    const w = createWeek(
-      getMondayOfWeek(startDate),
-      Number(goalInput) || settings.defaultWeeklyGoal,
-      apps
-    );
+    const w = {
+      ...createWeek(
+        getMondayOfWeek(startDate),
+        Number(goalInput) || settings.defaultWeeklyGoal,
+        apps,
+      ),
+      status: "closed" as const,
+    };
     addWeek(w);
     setEditWeek(w);
+    setSearchParams({ weekId: w.id });
     toast({ title: "Historical week created!" });
   }
 
@@ -290,11 +298,9 @@ export default function WeeklyEntryPage() {
                 variant="link"
                 className="text-primary p-0 h-auto"
                 onClick={() => {
-                  if (duplicateWeek.status === "closed") {
-                    updateWeek({ ...duplicateWeek, status: "open" });
-                  }
-                  setEditWeek(duplicateWeek.status === "closed" ? { ...duplicateWeek, status: "open" } : duplicateWeek);
+                  setEditWeek(duplicateWeek);
                   setGoalInput(duplicateWeek.weeklyGoal.toString());
+                  if (duplicateWeek.status === "closed") setSearchParams({ weekId: duplicateWeek.id });
                 }}
               >
                 Open it
@@ -361,7 +367,14 @@ export default function WeeklyEntryPage() {
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold">Weekly Entry</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-xl md:text-2xl font-bold">Weekly Entry</h1>
+            {isHistoricalEdit && (
+              <span className="text-[10px] font-bold uppercase tracking-wider rounded-full bg-muted text-muted-foreground px-2 py-0.5">
+                Historical edit
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2 mt-1">
             <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
               <PopoverTrigger asChild>
@@ -391,6 +404,8 @@ export default function WeeklyEntryPage() {
                 onClick={() => {
                   setEditWeek(duplicateWeek);
                   setGoalInput(duplicateWeek.weeklyGoal.toString());
+                  if (duplicateWeek.status === "closed") setSearchParams({ weekId: duplicateWeek.id });
+                  else setSearchParams({});
                 }}
               >
                 Switch to it
@@ -530,9 +545,15 @@ export default function WeeklyEntryPage() {
             <Lock className="h-4 w-4 mr-1" /> Close Week
           </Button>
         )}
-        <Button variant="outline" onClick={handleStartNew}>
-          <CalendarPlus className="h-4 w-4 mr-1" /> New Week
-        </Button>
+        {isHistoricalEdit ? (
+          <Button variant="outline" onClick={() => navigate("/history")}>
+            <History className="h-4 w-4 mr-1" /> Back to History
+          </Button>
+        ) : (
+          <Button variant="outline" onClick={handleStartNew}>
+            <CalendarPlus className="h-4 w-4 mr-1" /> New Week
+          </Button>
+        )}
         <Button variant="destructive" onClick={handleClear}>
           <Trash2 className="h-4 w-4 mr-1" /> Clear
         </Button>

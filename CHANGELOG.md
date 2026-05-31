@@ -11,6 +11,9 @@
 - Historical Day Ranking now stays on the active unfinished work day instead of jumping ahead because of date context.
 - Ask My Data now defaults unspecified timeframe questions to full history instead of the recent 16-week window.
 - Ask My Data can answer weekday lists and best/worst day rankings from tracked day totals without falsely claiming the data is unavailable.
+- Historical weeks can now be edited from History without converting them to the active open week.
+- Weather forecast preview was reduced to the next two snapshots for a tighter command-center footprint.
+- Weather card now has subtle condition-aware tinting for rain, heat, and cold while preserving the active theme.
 
 ### Added
 

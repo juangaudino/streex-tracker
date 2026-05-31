@@ -27,6 +27,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Historical Day Ranking now uses the active unfinished work day so it does not jump ahead in the dashboard",
       "Ask My Data defaults unspecified timeframe questions to full history instead of the recent 16-week window",
       "Ask My Data can answer weekday lists and best/worst day rankings from tracked day totals",
+      "Historical weeks can be edited from History without converting them into the active open week",
+      "Weather preview reduced to two future snapshots with subtle rain, heat, and cold tinting",
       "Known limitation: weather and traffic require OPENWEATHER_API_KEY and TOMTOM_API_KEY Supabase secrets before live provider data appears",
     ],
   },

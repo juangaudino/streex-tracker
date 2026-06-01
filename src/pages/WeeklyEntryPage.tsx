@@ -31,6 +31,17 @@ import MobileDayDetail from "@/components/MobileDayDetail";
 import WeekClosingDialog from "@/components/WeekClosingDialog";
 import { createShift, endActiveShift, getDayMiles, getDayShiftHours, getWeekMiles, getWeekShiftHours, hasActiveShift, shiftDurationHours } from "@/lib/shiftIntelligence";
 
+function timeInputValue(value?: string): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function applyTimeToShiftDate(dayDate: string, value: string): string {
+  return `${dayDate}T${value || "00:00"}:00`;
+}
+
 export default function WeeklyEntryPage() {
   const { openWeek, weeks, settings, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
@@ -172,8 +183,8 @@ export default function WeeklyEntryPage() {
     toast({ title: "Historical week created!" });
   }
 
-  function handleSave() {
-    if (!editWeek) return;
+  async function handleSave(): Promise<boolean> {
+    if (!editWeek) return false;
     // Check duplicate on save if dates changed
     const dup = weeks.find(
       (w) => w.startDate === editWeek.startDate && w.id !== editWeek.id
@@ -184,10 +195,11 @@ export default function WeeklyEntryPage() {
         description: "A week with this start date already exists.",
         variant: "destructive",
       });
-      return;
+      return false;
     }
-    updateWeek({ ...editWeek, weeklyGoal: Number(goalInput) || 0 });
-    toast({ title: "Week saved." });
+    const saved = await updateWeek({ ...editWeek, weeklyGoal: Number(goalInput) || 0 });
+    if (saved) toast({ title: "Week saved." });
+    return saved;
   }
 
   function handleClose() {
@@ -195,14 +207,16 @@ export default function WeeklyEntryPage() {
     setCloseDialogOpen(true);
   }
 
-  function performClose() {
+  async function performClose() {
     if (!editWeek) return;
     const closed = { ...editWeek, status: "closed" as const, weeklyGoal: Number(goalInput) || 0 };
-    updateWeek(closed);
-    setEditWeek(closed);
-    setJustClosed(true);
-    setCloseDialogOpen(false);
-    toast({ title: "Week closed." });
+    const saved = await updateWeek(closed);
+    if (saved) {
+      setEditWeek(closed);
+      setJustClosed(true);
+      setCloseDialogOpen(false);
+      toast({ title: "Week closed." });
+    }
   }
 
   function handleClear() {
@@ -254,9 +268,11 @@ export default function WeeklyEntryPage() {
     setEditWeek({ ...editWeek, entries });
   }
 
-  function persistShiftState(updatedWeek: WeekRecord) {
+  async function persistShiftState(updatedWeek: WeekRecord) {
+    const previousWeek = editWeek;
     setEditWeek(updatedWeek);
-    updateWeek(updatedWeek);
+    const saved = await updateWeek(updatedWeek);
+    if (!saved && previousWeek) setEditWeek(previousWeek);
   }
 
   function handleStartShift(dayIdx: number) {
@@ -285,7 +301,36 @@ export default function WeeklyEntryPage() {
         shifts: (d.shifts ?? []).map((shift) => shift.id === shiftId ? { ...shift, miles } : shift),
       };
     });
-    setEditWeek({ ...editWeek, entries });
+    persistShiftState({ ...editWeek, entries });
+  }
+
+  function handleShiftTimeUpdate(dayIdx: number, shiftId: string, field: "startTime" | "endTime", val: string) {
+    if (!editWeek) return;
+    const entries = editWeek.entries.map((d, i) => {
+      if (i !== dayIdx) return d;
+      return {
+        ...d,
+        shifts: (d.shifts ?? []).map((shift) => {
+          if (shift.id !== shiftId) return shift;
+          const next = { ...shift, [field]: applyTimeToShiftDate(d.date, val) };
+          if (next.endTime && Date.parse(next.endTime) <= Date.parse(next.startTime)) {
+            return field === "startTime" ? { ...next, endTime: undefined } : shift;
+          }
+          return next;
+        }),
+      };
+    });
+    persistShiftState({ ...editWeek, entries });
+  }
+
+  function handleDeleteShift(dayIdx: number, shiftId: string) {
+    if (!editWeek) return;
+    if (!confirm("Delete this shift block? This cannot be undone.")) return;
+    const entries = editWeek.entries.map((d, i) => {
+      if (i !== dayIdx) return d;
+      return { ...d, shifts: (d.shifts ?? []).filter((shift) => shift.id !== shiftId) };
+    });
+    persistShiftState({ ...editWeek, entries });
   }
 
   if (!editWeek) {
@@ -359,10 +404,14 @@ export default function WeeklyEntryPage() {
   const weekMiles = getWeekMiles(editWeek);
   const weekEarningsPerHour = weekHours > 0 ? wt / weekHours : null;
   const weekEarningsPerMile = weekMiles > 0 ? wt / weekMiles : null;
-  const todayIndex = editWeek.entries.findIndex((day) => day.date === formatDate(new Date()));
-  const shiftControlIndex = todayIndex >= 0 ? todayIndex : 0;
-  const shiftControlDay = editWeek.entries[shiftControlIndex];
+  const currentLocalDate = formatDate(new Date());
+  const todayIndex = editWeek.entries.findIndex((day) => day.date === currentLocalDate);
+  const shiftControlIndex = todayIndex;
+  const shiftControlDay = shiftControlIndex >= 0 ? editWeek.entries[shiftControlIndex] : null;
   const activeShift = shiftControlDay ? hasActiveShift(shiftControlDay) : false;
+  const allShifts = editWeek.entries.flatMap((day, dayIdx) =>
+    (day.shifts ?? []).map((shift) => ({ day, dayIdx, shift })),
+  );
 
   // Mobile day detail view
   if (isMobile && selectedDayIdx !== null && editWeek) {
@@ -379,9 +428,11 @@ export default function WeeklyEntryPage() {
         onStartShift={handleStartShift}
         onEndShift={handleEndShift}
         onShiftMilesUpdate={handleShiftMilesUpdate}
-        onSave={() => {
-          handleSave();
-          setSelectedDayIdx(null);
+        onShiftTimeUpdate={handleShiftTimeUpdate}
+        onDeleteShift={handleDeleteShift}
+        onSave={async () => {
+          const saved = await handleSave();
+          if (saved) setSelectedDayIdx(null);
         }}
       />
     );
@@ -475,12 +526,13 @@ export default function WeeklyEntryPage() {
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Shift + Mileage</p>
             <p className="text-sm font-semibold mt-0.5">
-              {shiftControlDay.dayName} · {shiftControlDay.date}
+              {shiftControlDay ? `${shiftControlDay.dayName} · ${shiftControlDay.date}` : `Today · ${currentLocalDate}`}
             </p>
           </div>
           <Button
             size="sm"
             variant={activeShift ? "secondary" : "default"}
+            disabled={!shiftControlDay}
             onClick={() => activeShift ? handleEndShift(shiftControlIndex) : handleStartShift(shiftControlIndex)}
           >
             {activeShift ? "End Shift" : "Start Shift"}
@@ -505,9 +557,13 @@ export default function WeeklyEntryPage() {
           </div>
         </div>
         <div className="space-y-2">
-          {editWeek.entries.flatMap((day, dayIdx) =>
-            (day.shifts ?? []).map((shift) => (
-              <div key={shift.id} className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_7rem] items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2">
+          {!shiftControlDay && (
+            <p className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+              Today is outside this week. Open a specific day below to edit historical shift blocks.
+            </p>
+          )}
+          {allShifts.map(({ day, dayIdx, shift }) => (
+              <div key={shift.id} className="grid grid-cols-1 sm:grid-cols-[1fr_6.5rem_6.5rem_7rem_auto] items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold truncate">
                     {day.dayName} · {new Date(shift.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
@@ -518,6 +574,19 @@ export default function WeeklyEntryPage() {
                   </p>
                 </div>
                 <Input
+                  type="time"
+                  className="h-8 font-mono text-xs"
+                  value={timeInputValue(shift.startTime)}
+                  onChange={(e) => handleShiftTimeUpdate(dayIdx, shift.id, "startTime", e.target.value)}
+                />
+                <Input
+                  type="time"
+                  className="h-8 font-mono text-xs"
+                  value={timeInputValue(shift.endTime)}
+                  disabled={!shift.endTime}
+                  onChange={(e) => handleShiftTimeUpdate(dayIdx, shift.id, "endTime", e.target.value)}
+                />
+                <Input
                   type="number"
                   step="0.1"
                   min="0"
@@ -526,9 +595,18 @@ export default function WeeklyEntryPage() {
                   placeholder="mi"
                   onChange={(e) => handleShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
                 />
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => handleDeleteShift(dayIdx, shift.id)}
+                  aria-label="Delete shift block"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-            )),
-          )}
+            ))}
         </div>
       </section>
 

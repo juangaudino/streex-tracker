@@ -73,7 +73,7 @@ export function createShift(date: string, now = new Date()): ShiftSession {
   const current = new Date(now);
   const datePrefix = date || current.toISOString().slice(0, 10);
   return {
-    id: `shift_${Date.now()}`,
+    id: `shift_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     startTime: `${datePrefix}T${String(current.getHours()).padStart(2, "0")}:${String(current.getMinutes()).padStart(2, "0")}:00`,
   };
 }

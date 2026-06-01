@@ -78,23 +78,55 @@ export function useWeekStore(user: User | null) {
     await reload();
   }, [user, reload]);
 
-  const updateWeek = useCallback(async (w: WeekRecord) => {
-    if (!user) return;
-    const now = new Date().toISOString();
-    const { error } = await supabase.from("weeks").update({
-      start_date: w.startDate,
-      end_date: w.endDate,
-      weekly_goal: w.weeklyGoal,
-      status: w.status,
-      entries: w.entries as any,
-      updated_at: now,
-    }).eq("id", w.id).eq("user_id", user.id);
-    if (error) {
-      console.error("Update failed:", error);
-      alert("Error updating week: " + error.message);
-      return;
+  const updateWeek = useCallback(async (w: WeekRecord): Promise<boolean> => {
+    if (!user) {
+      console.warn("[weeks.updateWeek] skipped: no authenticated user", { weekId: w.id });
+      return false;
     }
-    setWeeks((prev) => prev.map((x) => (x.id === w.id ? { ...w, updatedAt: now } : x)));
+    const now = new Date().toISOString();
+    try {
+      const payload = {
+        start_date: w.startDate,
+        end_date: w.endDate,
+        weekly_goal: w.weeklyGoal,
+        status: w.status,
+        entries: w.entries as any,
+        updated_at: now,
+      };
+      console.info("[weeks.updateWeek] saving", {
+        weekId: w.id,
+        userId: user.id,
+        startDate: w.startDate,
+        endDate: w.endDate,
+        status: w.status,
+        entries: w.entries.length,
+      });
+      const { error } = await supabase
+        .from("weeks")
+        .update(payload)
+        .eq("id", w.id)
+        .eq("user_id", user.id);
+      if (error) {
+        console.error("[weeks.updateWeek] Supabase update failed", {
+          weekId: w.id,
+          userId: user.id,
+          error,
+          payload,
+        });
+        alert("Could not save this week. Please check your connection and try again.");
+        return false;
+      }
+      setWeeks((prev) => prev.map((x) => (x.id === w.id ? { ...w, updatedAt: now } : x)));
+      return true;
+    } catch (error) {
+      console.error("[weeks.updateWeek] request failed", {
+        weekId: w.id,
+        userId: user.id,
+        error,
+      });
+      alert("Could not save this week. Please check your connection and try again.");
+      return false;
+    }
   }, [user]);
 
   const deleteWeek = useCallback(async (id: string) => {

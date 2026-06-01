@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Zap, MoonStar, Lock } from "lucide-react";
+import { Zap, MoonStar, Lock, Clock, Route } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,12 +15,13 @@ import type { WeekRecord, DayEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
 import { triggerCelebration } from "@/components/RecordCelebration";
+import { createShift, endActiveShift, getDayShiftHours, hasActiveShift, shiftDurationHours } from "@/lib/shiftIntelligence";
 
 interface QuickEntryWidgetProps {  
   openWeek: WeekRecord;
   apps: string[];
   currencySymbol: string;
-  onSave: (updatedWeek: WeekRecord) => void;
+  onSave: (updatedWeek: WeekRecord) => void | Promise<boolean>;
   weeks?: WeekRecord[];
   /** Optional End Day handler — when provided, renders End Day next to Quick Add. */
   onEndDay?: () => void;
@@ -34,11 +35,7 @@ function getTodayDayIdx(week: WeekRecord): number {
   const d = String(today.getDate()).padStart(2, "0");
   const todayStr = `${y}-${m}-${d}`;
   const idx = week.entries.findIndex((d) => d.date === todayStr);
-  if (idx >= 0) return idx;
-  // Fallback: match by day name
-  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const todayName = dayNames[today.getDay()];
-  return week.entries.findIndex((d) => d.dayName === todayName);
+  return idx;
 }
 
 export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSave, weeks, onEndDay }: QuickEntryWidgetProps) {
@@ -62,7 +59,17 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     setOpen(isOpen);
   }
 
-  function handleSave() {
+  async function persistQuickWeek(updatedWeek: WeekRecord): Promise<boolean> {
+    try {
+      const result = await onSave(updatedWeek);
+      return result !== false;
+    } catch (error) {
+      console.error("[QuickEntryWidget] week update failed", { weekId: updatedWeek.id, error });
+      return false;
+    }
+  }
+
+  async function handleSave() {
     if (!today || resolvedIdx < 0) return;
     const dt = Object.values(localApps).reduce((s, v) => s + (v || 0), 0);
     const prevTotal = dayTotal(today);
@@ -85,8 +92,25 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
         });
       }
     }
-    onSave({ ...openWeek, entries });
-    setOpen(false);
+    const saved = await persistQuickWeek({ ...openWeek, entries });
+    if (saved) setOpen(false);
+  }
+
+  async function handleStartShift() {
+    const targetIdx = resolvedIdx >= 0 ? resolvedIdx : todayIdx;
+    if (targetIdx < 0 || openWeek.entries.some(hasActiveShift)) return;
+    const entries = openWeek.entries.map((d, i) => {
+      if (i !== targetIdx) return d;
+      return { ...d, shifts: [...(d.shifts ?? []), createShift(d.date)] };
+    });
+    await persistQuickWeek({ ...openWeek, entries });
+  }
+
+  async function handleEndShift() {
+    const targetIdx = resolvedIdx >= 0 ? resolvedIdx : todayIdx;
+    if (targetIdx < 0) return;
+    const entries = openWeek.entries.map((d, i) => i === targetIdx ? endActiveShift(d) : d);
+    await persistQuickWeek({ ...openWeek, entries });
   }
 
   if (!today || todayIdx < 0) return null;
@@ -95,6 +119,9 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
   const now = new Date();
   const dayLabel = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const isClosed = !!today.dayClosed;
+  const todayHasActiveShift = hasActiveShift(today);
+  const weekHasActiveShift = openWeek.entries.some(hasActiveShift);
+  const shiftHours = getDayShiftHours(today);
 
   return (
     <div className="bg-card rounded-xl border border-primary/20 p-4 space-y-3">
@@ -161,6 +188,50 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                   onChange={(e) => setLocalMileage(parseFloat(e.target.value) || 0)}
                 />
               </div>
+            </div>
+            <div className="border-t border-border pt-3 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    Shift Blocks
+                  </p>
+                  <p className="text-xs text-muted-foreground">{shiftHours.toFixed(1)}h logged today</p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={todayHasActiveShift ? "secondary" : "default"}
+                  disabled={!todayHasActiveShift && weekHasActiveShift}
+                  onClick={todayHasActiveShift ? handleEndShift : handleStartShift}
+                >
+                  {todayHasActiveShift ? "End" : "Start"}
+                </Button>
+              </div>
+              {(today.shifts ?? []).map((shift) => (
+                <div key={shift.id} className="rounded-lg border border-border bg-background/60 px-3 py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold truncate">
+                        {new Date(shift.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                        {shift.endTime ? ` → ${new Date(shift.endTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : " → active"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {shift.endTime ? `${shiftDurationHours(shift).toFixed(1)}h` : "running"}
+                      </p>
+                    </div>
+                    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <Route className="h-3.5 w-3.5" />
+                      {Number(shift.miles || 0).toFixed(1)} mi
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {!todayHasActiveShift && weekHasActiveShift && (
+                <p className="text-xs text-muted-foreground">
+                  Another shift is already active. End it from Entry before starting a new one.
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2 border-t border-border pt-2">
               <Checkbox

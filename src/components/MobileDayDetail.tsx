@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { dayTotal, formatCurrency } from "@/lib/store";
 import type { DayEntry } from "@/lib/types";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { getDayShiftHours, hasActiveShift, shiftDurationHours } from "@/lib/shiftIntelligence";
@@ -20,7 +20,16 @@ interface MobileDayDetailProps {
   onStartShift?: (dayIdx: number) => void;
   onEndShift?: (dayIdx: number) => void;
   onShiftMilesUpdate?: (dayIdx: number, shiftId: string, val: string) => void;
+  onShiftTimeUpdate?: (dayIdx: number, shiftId: string, field: "startTime" | "endTime", val: string) => void;
+  onDeleteShift?: (dayIdx: number, shiftId: string) => void;
   onSave: () => void;
+}
+
+function timeInputValue(value?: string): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 export default function MobileDayDetail({
@@ -35,6 +44,8 @@ export default function MobileDayDetail({
   onStartShift,
   onEndShift,
   onShiftMilesUpdate,
+  onShiftTimeUpdate,
+  onDeleteShift,
   onSave,
 }: MobileDayDetailProps) {
   const dt = dayTotal(day);
@@ -133,7 +144,7 @@ export default function MobileDayDetail({
             </Button>
           </div>
           {(day.shifts ?? []).map((shift) => (
-            <div key={shift.id} className="grid grid-cols-[1fr_5.5rem] items-center gap-2 rounded-lg bg-background/60 border border-border px-3 py-2">
+            <div key={shift.id} className="rounded-lg bg-background/60 border border-border px-3 py-2 space-y-2">
               <div className="min-w-0">
                 <p className="text-xs font-semibold truncate">
                   {new Date(shift.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
@@ -143,7 +154,25 @@ export default function MobileDayDetail({
                   {shift.endTime ? `${shiftDurationHours(shift).toFixed(1)}h` : "running"}
                 </p>
               </div>
-              {onShiftMilesUpdate && (
+              <div className="grid grid-cols-[1fr_1fr_5rem_auto] items-center gap-2">
+                {onShiftTimeUpdate && (
+                  <>
+                    <Input
+                      type="time"
+                      className="h-8 font-mono text-xs"
+                      value={timeInputValue(shift.startTime)}
+                      onChange={(e) => onShiftTimeUpdate(dayIdx, shift.id, "startTime", e.target.value)}
+                    />
+                    <Input
+                      type="time"
+                      className="h-8 font-mono text-xs"
+                      value={timeInputValue(shift.endTime)}
+                      disabled={!shift.endTime}
+                      onChange={(e) => onShiftTimeUpdate(dayIdx, shift.id, "endTime", e.target.value)}
+                    />
+                  </>
+                )}
+                {onShiftMilesUpdate && (
                 <Input
                   type="number"
                   step="0.1"
@@ -153,7 +182,20 @@ export default function MobileDayDetail({
                   placeholder="mi"
                   onChange={(e) => onShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
                 />
-              )}
+                )}
+                {onDeleteShift && (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => onDeleteShift(dayIdx, shift.id)}
+                    aria-label="Delete shift block"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </div>

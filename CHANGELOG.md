@@ -17,6 +17,10 @@
 - Full Focus is local preference only and does not alter stored earnings, weeks, exports, Ask My Data, XP, auth, weather, traffic, or Supabase architecture.
 - Standard Dashboard remains the full exploration, identity, progression, and reflection experience.
 - Full Focus reduces the prominence of reflection systems without deleting them.
+- Shift Blocks now use the correct local target date instead of falling back to Monday when today's date lookup fails.
+- Quick Add shift controls now persist to the same shift block model used by Entry.
+- Entry shift blocks now support editing start time, end time, miles, and delete with confirmation.
+- Week update failures now log useful context and avoid optimistic success messaging when the save request fails.
 
 ### Files Created
 

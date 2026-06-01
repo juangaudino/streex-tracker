@@ -17,6 +17,9 @@
 - No database schema changes were made.
 - No GPS, background location, telematics, or automated mileage tracking was added.
 - Shift and mileage data are additive fields inside the existing `weeks.entries` JSON payload.
+- Active shifts now persist immediately when started or ended, so refresh/reopen keeps the session active until End Shift.
+- Start Shift now no-ops if a shift is already active in the week, preventing duplicate active sessions.
+- Simple Mode now stays glanceable while Advanced Mode shows a distinct Operations Snapshot with shift duration, efficiency, mileage, work blocks, and deeper unlock states.
 - Existing earnings, auth, Ask My Data, exports, XP persistence, dashboard systems, and Supabase architecture were not changed.
 - Pattern intelligence is historical and manual-entry based; it does not predict demand.
 

@@ -59,8 +59,13 @@ describe("shift intelligence", () => {
 
     expect(result.hasEnoughShiftData).toBe(true);
     expect(result.summary.totalHours).toBe(6);
+    expect(result.summary.totalShifts).toBe(3);
+    expect(result.summary.completedShifts).toBe(3);
+    expect(result.summary.workDays).toBe(3);
+    expect(result.summary.averageShiftHours).toBe(2);
     expect(result.summary.totalMiles).toBe(64);
     expect(result.summary.earningsPerHour).toBeCloseTo(113.33);
+    expect(result.summary.milesPerHour).toBeCloseTo(10.67);
     expect(result.strongestHours.length).toBeGreaterThan(0);
     expect(result.bestAppsByHour.length).toBeGreaterThan(0);
   });

@@ -13,7 +13,7 @@ import {
   weekTotal,
   appTotal,
 } from "@/lib/store";
-import { DAY_NAMES } from "@/lib/types";
+import { DAY_NAMES, type WeekRecord } from "@/lib/types";
 import type { StoreContext } from "./types";
 import { CalendarPlus, Save, Lock, Trash2, AlertTriangle, CheckCircle2, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -254,19 +254,25 @@ export default function WeeklyEntryPage() {
     setEditWeek({ ...editWeek, entries });
   }
 
+  function persistShiftState(updatedWeek: WeekRecord) {
+    setEditWeek(updatedWeek);
+    updateWeek(updatedWeek);
+  }
+
   function handleStartShift(dayIdx: number) {
     if (!editWeek) return;
+    if (editWeek.entries.some(hasActiveShift)) return;
     const entries = editWeek.entries.map((d, i) => {
-      if (i !== dayIdx || hasActiveShift(d)) return d;
+      if (i !== dayIdx) return d;
       return { ...d, shifts: [...(d.shifts ?? []), createShift(d.date)] };
     });
-    setEditWeek({ ...editWeek, entries });
+    persistShiftState({ ...editWeek, entries });
   }
 
   function handleEndShift(dayIdx: number) {
     if (!editWeek) return;
     const entries = editWeek.entries.map((d, i) => i === dayIdx ? endActiveShift(d) : d);
-    setEditWeek({ ...editWeek, entries });
+    persistShiftState({ ...editWeek, entries });
   }
 
   function handleShiftMilesUpdate(dayIdx: number, shiftId: string, val: string) {

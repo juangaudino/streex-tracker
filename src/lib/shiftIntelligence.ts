@@ -3,8 +3,12 @@ import type { DayEntry, ShiftSession, WeekRecord } from "./types";
 
 export interface ShiftSummary {
   totalShifts: number;
+  completedShifts: number;
   activeShifts: number;
+  workDays: number;
+  multiShiftDays: number;
   totalHours: number;
+  averageShiftHours: number | null;
   totalMiles: number;
   earningsPerHour: number | null;
   earningsPerMile: number | null;
@@ -106,7 +110,10 @@ export function buildPatternIntelligence(weeks: WeekRecord[]): PatternIntelligen
   let totalMiles = 0;
   let totalShiftEarnings = 0;
   let totalShifts = 0;
+  let completedShifts = 0;
   let activeShifts = 0;
+  let workDays = 0;
+  let multiShiftDays = 0;
   const firstHalf: number[] = [];
   const secondHalf: number[] = [];
 
@@ -114,12 +121,15 @@ export function buildPatternIntelligence(weeks: WeekRecord[]): PatternIntelligen
     for (const day of week.entries) {
       const shifts = day.shifts ?? [];
       if (!shifts.length) continue;
+      workDays += 1;
+      if (shifts.length > 1) multiShiftDays += 1;
       const workedHours = getDayShiftHours(day);
       const earnings = dayTotal(day);
       const miles = getDayMiles(day);
       totalMiles += miles;
       totalShifts += shifts.length;
       activeShifts += shifts.filter((shift) => !shift.endTime).length;
+      completedShifts += shifts.filter((shift) => Boolean(shift.endTime)).length;
       if (workedHours <= 0 || earnings <= 0) continue;
       totalHours += workedHours;
       totalShiftEarnings += earnings;
@@ -187,8 +197,12 @@ export function buildPatternIntelligence(weeks: WeekRecord[]): PatternIntelligen
 
   const summary = {
     totalShifts,
+    completedShifts,
     activeShifts,
+    workDays,
+    multiShiftDays,
     totalHours: round(totalHours),
+    averageShiftHours: completedShifts > 0 ? round(totalHours / completedShifts) : null,
     totalMiles: round(totalMiles),
     earningsPerHour: totalHours > 0 ? round(totalShiftEarnings / totalHours) : null,
     earningsPerMile: totalMiles > 0 ? round(totalShiftEarnings / totalMiles) : null,

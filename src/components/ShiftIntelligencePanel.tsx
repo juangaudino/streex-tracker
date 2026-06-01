@@ -11,9 +11,18 @@ interface ShiftIntelligencePanelProps {
   mode: PerformanceMode;
 }
 
-function Metric({ label, value, sub, icon }: { label: string; value: string; sub?: string; icon: React.ReactNode }) {
+function Metric({ label, value, sub, icon, tone = "default" }: {
+  label: string;
+  value: string;
+  sub?: string;
+  icon: React.ReactNode;
+  tone?: "default" | "primary";
+}) {
   return (
-    <div className="rounded-xl border border-border bg-card p-3 min-w-0">
+    <div className={cn(
+      "rounded-xl border p-3 min-w-0",
+      tone === "primary" ? "border-primary/25 bg-primary/5" : "border-border bg-card",
+    )}>
       <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         {icon}
         <span className="truncate">{label}</span>
@@ -24,10 +33,29 @@ function Metric({ label, value, sub, icon }: { label: string; value: string; sub
   );
 }
 
+function formatNullableCurrency(value: number | null, currencySymbol: string): string {
+  return value ? formatCurrency(value, currencySymbol) : "—";
+}
+
+function formatNullableNumber(value: number | null, suffix = ""): string {
+  return value ? `${value.toFixed(1)}${suffix}` : "—";
+}
+
+function buildEfficiencyInsight(summary: ReturnType<typeof buildPatternIntelligence>["summary"]): string {
+  if (summary.activeShifts > 0) return "A shift is currently active. End it when you finish to lock in duration and efficiency.";
+  if (summary.completedShifts === 0) return "Start and complete shifts to unlock your operating rhythm.";
+  if (summary.earningsPerMile && summary.earningsPerHour) {
+    return `Your saved shifts are averaging ${formatNullableNumber(summary.milesPerHour, " mi/hr")} with a measured efficiency baseline.`;
+  }
+  if (summary.totalMiles <= 0) return "Add miles to completed shifts to unlock earnings-per-mile and miles-per-hour context.";
+  return "Complete a few more shifts to sharpen your efficiency read.";
+}
+
 export default function ShiftIntelligencePanel({ weeks, currencySymbol, mode }: ShiftIntelligencePanelProps) {
   const intelligence = buildPatternIntelligence(weeks);
   const { summary } = intelligence;
   const maxEph = Math.max(1, ...intelligence.hourlyHeatmap.map((bucket) => bucket.earningsPerHour));
+  const isAdvanced = mode === "advanced";
 
   return (
     <section className="space-y-3">
@@ -37,56 +65,107 @@ export default function ShiftIntelligencePanel({ weeks, currencySymbol, mode }: 
             Shift Intelligence
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Manual shift and mileage signals. No GPS, no background tracking.
+            {isAdvanced
+              ? "Operational view with shift, mileage, and efficiency context."
+              : "Simple view for quick shift and earnings rhythm."}
           </p>
         </div>
-        <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-          {mode}
+        <span className={cn(
+          "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+          isAdvanced ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+        )}>
+          {isAdvanced ? "Advanced" : "Simple"}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <Metric icon={<Clock className="h-3.5 w-3.5" />} label="Hours" value={`${summary.totalHours.toFixed(1)}h`} />
-        <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Per Hour" value={summary.earningsPerHour ? formatCurrency(summary.earningsPerHour, currencySymbol) : "—"} />
-        <Metric icon={<Route className="h-3.5 w-3.5" />} label="Miles" value={`${summary.totalMiles.toFixed(1)}`} />
-        <Metric icon={<Gauge className="h-3.5 w-3.5" />} label="Per Mile" value={summary.earningsPerMile ? formatCurrency(summary.earningsPerMile, currencySymbol) : "—"} />
-      </div>
-
-      {!intelligence.hasEnoughShiftData ? (
-        <div className="rounded-xl border border-border bg-card/70 p-4">
-          <p className="text-sm font-semibold">Pattern intelligence is warming up.</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Log at least three completed shifts to unlock stronger hour, app, and productivity patterns.
-          </p>
-        </div>
+      {!isAdvanced ? (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <Metric
+              icon={<Clock className="h-3.5 w-3.5" />}
+              label="Hours"
+              value={`${summary.totalHours.toFixed(1)}h`}
+              sub={`${summary.completedShifts} completed shift${summary.completedShifts === 1 ? "" : "s"}`}
+            />
+            <Metric
+              icon={<Activity className="h-3.5 w-3.5" />}
+              label="Per Hour"
+              value={formatNullableCurrency(summary.earningsPerHour, currencySymbol)}
+              sub="completed shifts"
+            />
+            <Metric
+              icon={<Sparkles className="h-3.5 w-3.5 text-primary" />}
+              label="Best Window"
+              value={intelligence.strongestHours[0]?.label ?? "—"}
+              sub={intelligence.strongestHours[0] ? `${formatCurrency(intelligence.strongestHours[0].earningsPerHour, currencySymbol)}/hr` : "track more shifts"}
+            />
+          </div>
+          {!intelligence.hasEnoughShiftData && (
+            <div className="rounded-xl border border-border bg-card/70 p-4">
+              <p className="text-sm font-semibold">Shift patterns are warming up.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Simple Mode stays light. Switch to Advanced after more completed shifts for deeper operating context.
+              </p>
+            </div>
+          )}
+        </>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {intelligence.strongestHours.map((hour) => (
-              <Metric
-                key={hour.hour}
-                icon={<Sparkles className="h-3.5 w-3.5 text-primary" />}
-                label="Strong Hour"
-                value={hour.label}
-                sub={`${formatCurrency(hour.earningsPerHour, currencySymbol)}/hr`}
-              />
-            ))}
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-4">
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
             <div className="flex items-center gap-2">
-              {intelligence.morningVsNight.style === "night" ? (
-                <Moon className="h-4 w-4 text-primary" />
-              ) : (
-                <Sun className="h-4 w-4 text-gold" />
-              )}
-              <p className="text-sm font-semibold">Morning vs Night</p>
+              <Gauge className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold">Advanced Operations Snapshot</p>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">{intelligence.morningVsNight.copy}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <Metric icon={<Clock className="h-3.5 w-3.5" />} label="Duration" value={`${summary.totalHours.toFixed(1)}h`} sub={`${summary.completedShifts} completed`} tone="primary" />
+              <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Earnings/Hr" value={formatNullableCurrency(summary.earningsPerHour, currencySymbol)} sub="efficiency" tone="primary" />
+              <Metric icon={<Route className="h-3.5 w-3.5" />} label="Miles" value={`${summary.totalMiles.toFixed(1)}`} sub={`${summary.workDays} work day${summary.workDays === 1 ? "" : "s"}`} tone="primary" />
+              <Metric icon={<Gauge className="h-3.5 w-3.5" />} label="Earnings/Mi" value={formatNullableCurrency(summary.earningsPerMile, currencySymbol)} sub={formatNullableNumber(summary.milesPerHour, " mi/hr")} tone="primary" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Active" value={`${summary.activeShifts}`} sub="open shift" />
+              <Metric icon={<Clock className="h-3.5 w-3.5" />} label="Avg Shift" value={formatNullableNumber(summary.averageShiftHours, "h")} sub="completed only" />
+              <Metric icon={<BarChart3 className="h-3.5 w-3.5" />} label="Work Blocks" value={`${summary.totalShifts}`} sub={`${summary.multiShiftDays} split day${summary.multiShiftDays === 1 ? "" : "s"}`} />
+              <Metric icon={<Route className="h-3.5 w-3.5" />} label="Miles/Hr" value={formatNullableNumber(summary.milesPerHour)} sub="movement pace" />
+            </div>
+            <p className="rounded-lg border border-border/70 bg-card/70 p-3 text-xs text-muted-foreground">
+              {buildEfficiencyInsight(summary)}
+            </p>
           </div>
 
-          {mode === "advanced" && (
+          {!intelligence.hasEnoughShiftData ? (
+            <div className="rounded-xl border border-border bg-card/70 p-4">
+              <p className="text-sm font-semibold">Track more shifts to unlock deeper patterns.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Advanced metrics above use real saved data now. Hourly heatmaps, app-by-hour, and recovery windows unlock after at least three completed shifts and three tracked hours.
+              </p>
+            </div>
+          ) : (
             <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {intelligence.strongestHours.map((hour) => (
+                  <Metric
+                    key={hour.hour}
+                    icon={<Sparkles className="h-3.5 w-3.5 text-primary" />}
+                    label="Strong Hour"
+                    value={hour.label}
+                    sub={`${formatCurrency(hour.earningsPerHour, currencySymbol)}/hr`}
+                  />
+                ))}
+              </div>
+
+              <div className="rounded-xl border border-border bg-card p-4">
+                <div className="flex items-center gap-2">
+                  {intelligence.morningVsNight.style === "night" ? (
+                    <Moon className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Sun className="h-4 w-4 text-gold" />
+                  )}
+                  <p className="text-sm font-semibold">Morning vs Night</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">{intelligence.morningVsNight.copy}</p>
+              </div>
+
               <div className="rounded-xl border border-border bg-card p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-primary" />

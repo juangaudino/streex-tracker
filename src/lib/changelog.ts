@@ -6,9 +6,26 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.6";
+export const CURRENT_VERSION = "5.7";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.7",
+    date: "2026-05",
+    title: "Full Focus Dashboard",
+    tags: ["new", "feature", "polish"],
+    items: [
+      "Full Focus Dashboard Experience added as an operational mode separate from themes",
+      "Settings now includes Dashboard Experience with Standard and Full Focus options",
+      "Dashboard includes a compact quick toggle for switching between Standard and Full Focus",
+      "Full Focus prioritizes current earnings, same-day average comparison, goal progress, shift state, momentum, and Quick Add",
+      "Weather, traffic, historical day context, and momentum remain available as calmer secondary operational context",
+      "Driver Identity, achievements, milestones, and longer reflection systems stay in Standard instead of dominating Full Focus",
+      "Header and navigation quiet slightly in Full Focus to reclaim vertical space",
+      "Dashboard Experience is stored locally and survives refresh or app reopen",
+      "No Supabase schema, auth, Ask My Data, XP, exports, weather, traffic, or earnings storage changes were made",
+    ],
+  },
   {
     version: "5.6",
     date: "2026-05",

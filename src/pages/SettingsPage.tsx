@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { buildJsonBackup, downloadEarningsCsv, downloadJsonBackup } from "@/lib/dataExport";
 import { formatCurrencyAmount, getCurrencyCode, getCurrencyConfig, SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { usePerformanceMode } from "@/hooks/usePerformanceMode";
+import { useDashboardExperience } from "@/hooks/useDashboardExperience";
 import {
   Select,
   SelectContent,
@@ -26,6 +27,7 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const { mode, classicVariant, pulseMode, setMode, setClassicVariant, setPulseMode } = useTheme();
   const { performanceMode, setPerformanceMode } = usePerformanceMode();
+  const { dashboardExperience, setDashboardExperience } = useDashboardExperience();
   const [goal, setGoal] = useState(settings.defaultWeeklyGoal.toString());
   const [currencyCode, setCurrencyCode] = useState(getCurrencyCode(settings.currencySymbol));
   const [apps, setApps] = useState([...settings.activeApps]);
@@ -164,6 +166,35 @@ export default function SettingsPage() {
               </p>
             </div>
             <Switch checked={pulseMode} onCheckedChange={setPulseMode} />
+          </div>
+          <div className="rounded-xl border border-border bg-card p-3 space-y-2">
+            <div className="min-w-0">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" />
+                Dashboard Experience
+              </label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Standard keeps the full dashboard. Full Focus turns Dashboard into operational mode.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={dashboardExperience === "standard" ? "default" : "outline"}
+                onClick={() => setDashboardExperience("standard")}
+              >
+                Standard
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={dashboardExperience === "full-focus" ? "default" : "outline"}
+                onClick={() => setDashboardExperience("full-focus")}
+              >
+                Full Focus
+              </Button>
+            </div>
           </div>
           <div className="rounded-xl border border-border bg-card p-3 space-y-2">
             <div className="min-w-0">

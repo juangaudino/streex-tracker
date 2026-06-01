@@ -1,5 +1,38 @@
 # Changelog
 
+## V5.7 — Full Focus Dashboard
+
+### Added
+
+- Full Focus Dashboard Experience as an operational dashboard mode, separate from themes.
+- Settings → Dashboard Experience with Standard and Full Focus options.
+- Persistent local Dashboard Experience preference that survives refresh and app reopen.
+- Compact dashboard quick toggle for switching between Standard and Full Focus.
+- Full Focus operational hierarchy with current earnings, same-day average comparison, goal progress, shift state, momentum, and Quick Add prioritized.
+- Header and navigation quieting when Full Focus is active to reclaim vertical space.
+
+### Production Behavior
+
+- No database schema changes were made.
+- Full Focus is local preference only and does not alter stored earnings, weeks, exports, Ask My Data, XP, auth, weather, traffic, or Supabase architecture.
+- Standard Dashboard remains the full exploration, identity, progression, and reflection experience.
+- Full Focus reduces the prominence of reflection systems without deleting them.
+
+### Files Created
+
+- `src/lib/dashboardExperience.ts`
+- `src/lib/dashboardExperience.test.ts`
+- `src/hooks/useDashboardExperience.ts`
+
+### Files Modified
+
+- `src/pages/DashboardPage.tsx`
+- `src/pages/SettingsPage.tsx`
+- `src/pages/AppShell.tsx`
+- `src/lib/changelog.ts`
+- `CHANGELOG.md`
+- `PROJECT_CONTEXT.md`
+
 ## V5.6 — Shift + Hours & Pattern Intelligence
 
 ### Added

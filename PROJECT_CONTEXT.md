@@ -44,7 +44,7 @@ If backend ambiguity exists, stop and verify before applying migrations.
 
 Current app version after recent work:
 
-`V5.6 - Shift + Hours & Pattern Intelligence`
+`V5.7 - Full Focus Dashboard`
 
 ## Recent Features Implemented
 
@@ -199,6 +199,33 @@ Architecture:
 Known limitation:
 
 - hour/app patterns are directional and derived from manually logged shift windows plus daily/app totals, not per-trip telemetry.
+
+### V5.7 - Full Focus Dashboard
+
+Added:
+
+- Full Focus Dashboard Experience / Operational Mode
+- Settings -> Dashboard Experience selector
+- Standard / Full Focus persistent local preference
+- compact dashboard quick toggle
+- operational-first dashboard hierarchy
+- current earnings priority
+- day vs same-day average
+- weekly goal progress
+- shift state
+- momentum
+- Quick Add kept primary and thumb-friendly
+- weather/traffic and momentum kept as secondary context
+- identity, achievements, milestones, and reflection systems reduced in Full Focus
+- header and navigation quieting while Full Focus is active
+
+Architecture:
+
+- no database schema changes
+- no Supabase architecture changes
+- Full Focus is local preference only
+- Standard Dashboard remains the full exploration/progression/reflection mode
+- Full Focus is dashboard experience logic, not a theme
 
 ## Current Working Branch
 

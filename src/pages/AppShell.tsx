@@ -24,6 +24,8 @@ import { useAuth } from "@/hooks/useAuth";
 import type { StoreContext } from "./types";
 import ChangelogDialog from "@/components/ChangelogDialog";
 import streexLogo from "@/assets/streex-logo.png";
+import { useDashboardExperience } from "@/hooks/useDashboardExperience";
+import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -39,6 +41,7 @@ interface AppShellProps {
 
 export default function AppShell({ store, onSignOut }: AppShellProps) {  
   const { user } = useAuth();
+  const { isFullFocus } = useDashboardExperience();
   const [mobileMenu, setMobileMenu] = useState(false);
   const [progressMenu, setProgressMenu] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
@@ -47,14 +50,23 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
     <div className="min-h-screen flex flex-col">
       <AchievementToastContainer />
       <CelebrationContainer />
-      <header className="border-b border-border px-4 py-1.5 flex items-center gap-3">
+      <header className={cn(
+        "border-b border-border px-4 flex items-center gap-3 transition-all",
+        isFullFocus ? "py-1" : "py-1.5",
+      )}>
         <img
           src={streexLogo}
           alt="Streex"
-          className="h-16 sm:h-20 md:h-24 w-auto object-contain select-none -my-2"
+          className={cn(
+            "w-auto object-contain select-none transition-all",
+            isFullFocus ? "h-12 sm:h-14 md:h-16 -my-1" : "h-16 sm:h-20 md:h-24 -my-2",
+          )}
           draggable={false}
         />
-        <span className="text-sm text-muted-foreground hidden sm:inline">Earnings Tracker</span>
+        <span className={cn(
+          "text-sm text-muted-foreground hidden sm:inline transition-opacity",
+          isFullFocus && "opacity-60",
+        )}>Earnings Tracker</span>
         {/* Right side: Progress hub + Profile hub (always visible) + desktop nav inline */}
         <nav className="hidden md:flex ml-auto gap-1 items-center">
           {navItems.map((item) => (
@@ -63,10 +75,10 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
               to={item.to}
               end={item.to === "/"}
               className={({ isActive }) =>
-                `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                `flex items-center gap-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    ? isFullFocus ? "bg-primary/10 text-primary px-2.5 py-1.5" : "bg-primary/10 text-primary px-3 py-2"
+                    : isFullFocus ? "text-muted-foreground/70 hover:text-foreground hover:bg-accent px-2.5 py-1.5" : "text-muted-foreground hover:text-foreground hover:bg-accent px-3 py-2"
                 }`
               }
             >
@@ -193,9 +205,9 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
             to={item.to}
             end={item.to === "/"}
             className={({ isActive }) =>
-              `flex-1 flex flex-col items-center py-2 text-[10px] font-medium transition-colors ${
+              `flex-1 flex flex-col items-center text-[10px] font-medium transition-colors ${
                 isActive ? "text-primary" : "text-muted-foreground"
-              }`
+              } ${isFullFocus ? "py-1.5" : "py-2"}`
             }
           >
             <item.icon className="h-5 w-5 mb-0.5" />

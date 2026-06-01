@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import type { StoreContext } from "./types";
 import { useToast } from "@/hooks/use-toast";
-import { Activity, Download, FileJson, Gamepad2, Monitor, Moon, Palette, Plus, Route, Save, Sun, Table, X } from "lucide-react";
+import { Activity, Download, FileJson, Gamepad2, Monitor, Moon, Palette, Phone, Plus, Route, Save, Sun, Table, User, X } from "lucide-react";
 import { useTheme, ClassicVariant } from "@/contexts/ThemeContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { buildJsonBackup, downloadEarningsCsv, downloadJsonBackup } from "@/lib/
 import { formatCurrencyAmount, getCurrencyCode, getCurrencyConfig, SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { usePerformanceMode } from "@/hooks/usePerformanceMode";
 import { useDashboardExperience } from "@/hooks/useDashboardExperience";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import {
   Select,
   SelectContent,
@@ -28,12 +29,20 @@ export default function SettingsPage() {
   const { mode, classicVariant, pulseMode, setMode, setClassicVariant, setPulseMode } = useTheme();
   const { performanceMode, setPerformanceMode } = usePerformanceMode();
   const { dashboardExperience, setDashboardExperience } = useDashboardExperience();
+  const { profile, setProfile } = useUserProfile(user?.id);
   const [goal, setGoal] = useState(settings.defaultWeeklyGoal.toString());
   const [currencyCode, setCurrencyCode] = useState(getCurrencyCode(settings.currencySymbol));
   const [apps, setApps] = useState([...settings.activeApps]);
   const [newApp, setNewApp] = useState("");
+  const [firstName, setFirstName] = useState(profile.firstName);
+  const [phoneNumber, setPhoneNumber] = useState(profile.phoneNumber);
   const [exporting, setExporting] = useState<"json" | "csv" | null>(null);
   const selectedCurrency = getCurrencyConfig(currencyCode);
+
+  useEffect(() => {
+    setFirstName(profile.firstName);
+    setPhoneNumber(profile.phoneNumber);
+  }, [profile.firstName, profile.phoneNumber]);
 
   function handleSave() {
     updateSettings({
@@ -49,6 +58,11 @@ export default function SettingsPage() {
     if (!name || apps.includes(name)) return;
     setApps([...apps, name]);
     setNewApp("");
+  }
+
+  function handleProfileSave() {
+    setProfile({ firstName, phoneNumber });
+    toast({ title: "Profile saved." });
   }
 
   async function handleJsonExport() {
@@ -101,6 +115,44 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-bold">Settings</h1>
 
       <div className="space-y-4">
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <User className="h-4 w-4 text-primary" />
+              Profile
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Optional. Used for greetings and daily start context only.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">First Name</label>
+              <Input
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Juan"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <Phone className="h-3.5 w-3.5" />
+                Phone Number
+              </label>
+              <Input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="Optional"
+              />
+            </div>
+            <Button type="button" size="sm" onClick={handleProfileSave}>
+              <Save className="h-4 w-4 mr-1" />
+              Save Profile
+            </Button>
+          </div>
+        </div>
+
         {/* Theme */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">

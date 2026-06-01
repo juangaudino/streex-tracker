@@ -16,6 +16,9 @@
 - Start Shift / End Shift is now available from the persistent top app header and stays synced with the real active shift.
 - Full Focus toggle is now globally accessible from the persistent top app header instead of only appearing on Dashboard.
 - Full Focus header copy now avoids repeating the same momentum wording shown in operational cards.
+- Daily Start Hub added as a session/day welcome overlay when today has no shift blocks yet.
+- Optional local profile fields added for first name and phone number, editable from Settings.
+- Daily Start Hub can start a real persisted shift, dismiss to Dashboard, open Entry weekly setup, or open profile settings.
 
 ### Production Behavior
 
@@ -27,6 +30,7 @@
 - Quick Add shift controls now persist to the same shift block model used by Entry.
 - Entry shift blocks now support editing start time, end time, miles, and delete with confirmation.
 - Week update failures now log useful context and avoid optimistic success messaging when the save request fails.
+- Daily Start Hub and profile fields are additive local UI features and do not change database schema or block app usage.
 
 ### Files Created
 

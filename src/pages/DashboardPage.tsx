@@ -26,6 +26,7 @@ import {
   getLoggedDays,
   samePointTotal,
   dayTotal,
+  formatDate,
 } from "@/lib/store";
 import type { StoreContext } from "./types";
 import { Activity, CalendarPlus, Clock, Download, Target, Zap } from "lucide-react";
@@ -37,8 +38,10 @@ import DriverIdentityCard from "@/components/DriverIdentityCard";
 import { useDriverIdentity } from "@/hooks/useDriverIdentity";
 import DailyCommandCenter from "@/components/DailyCommandCenter";
 import { useDashboardExperience } from "@/hooks/useDashboardExperience";
-import { hasActiveShift } from "@/lib/shiftIntelligence";
+import { createShift, hasActiveShift } from "@/lib/shiftIntelligence";
 import { cn } from "@/lib/utils";
+import DailyStartHub from "@/components/DailyStartHub";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 type PulseState = "calm" | "steady" | "strong" | "record" | "streak";
 
@@ -99,6 +102,33 @@ export default function DashboardPage() {
   const sym = settings.currencySymbol;
   const { pulseMode } = useTheme();
   const { isFullFocus } = useDashboardExperience();
+  const { profile } = useUserProfile(user?.id);
+  const todayStr = formatDate(new Date());
+  const dailyStartHubKey = `streex_daily_start_hub_dismissed_${todayStr}`;
+  const [dailyStartHubDismissed, setDailyStartHubDismissed] = useState(() => {
+    try {
+      return sessionStorage.getItem(dailyStartHubKey) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      setDailyStartHubDismissed(sessionStorage.getItem(dailyStartHubKey) === "1");
+    } catch {
+      setDailyStartHubDismissed(false);
+    }
+  }, [dailyStartHubKey]);
+
+  function dismissDailyStartHub() {
+    try {
+      sessionStorage.setItem(dailyStartHubKey, "1");
+    } catch {
+      // Session-only dismissal.
+    }
+    setDailyStartHubDismissed(true);
+  }
 
   async function handleImport() {
     setImporting(true);
@@ -229,7 +259,6 @@ export default function DashboardPage() {
 
   // Smart systems
   const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
   const todayName = dayNames[now.getDay()] as string;
   const todayEntry = openWeek.entries.find((d) => d.date === todayStr) ?? null;
@@ -278,11 +307,44 @@ export default function DashboardPage() {
   const shiftSub = hasOpenShift ? "shift in progress" : isDayClosed ? "day finalized" : "tap Entry to start";
   const focusMomentumLabel = mood.momentumLabel === "Building Momentum" ? "Building" : mood.momentumLabel;
   const showStandardMomentumChip = mood.momentumLabel !== smartHeader;
+  const todayHasShift = Boolean(todayEntry?.shifts?.length);
+  const showDailyStartHub = Boolean(todayEntry && !todayEntry.dayClosed && !todayHasShift && !dailyStartHubDismissed);
+
+  async function handleDailyStartShift() {
+    if (!todayEntry || openWeek.entries.some(hasActiveShift) || todayHasShift) {
+      dismissDailyStartHub();
+      return;
+    }
+    const entries = openWeek.entries.map((day) => {
+      if (day.date !== todayEntry.date) return day;
+      return { ...day, shifts: [...(day.shifts ?? []), createShift(day.date)] };
+    });
+    const saved = await updateWeek({ ...openWeek, entries });
+    if (saved) dismissDailyStartHub();
+  }
+
+  function handleDailyHubRoute(path: string) {
+    dismissDailyStartHub();
+    navigate(path);
+  }
 
   if (isFullFocus) {
     return (
       <div className="p-3 md:p-5 max-w-3xl mx-auto space-y-3">
         <DashboardPulse enabled={pulseMode} state={pulseState} />
+        {todayEntry && (
+          <DailyStartHub
+            open={showDailyStartHub}
+            profile={profile}
+            today={todayEntry}
+            todayAverage={dayRec.avg}
+            currencySymbol={sym}
+            onStartShift={handleDailyStartShift}
+            onDashboard={dismissDailyStartHub}
+            onWeeklySetup={() => handleDailyHubRoute("/entry")}
+            onProfile={() => handleDailyHubRoute("/settings")}
+          />
+        )}
 
         <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary">Full Focus · Operational</p>
@@ -444,6 +506,19 @@ export default function DashboardPage() {
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       <DashboardPulse enabled={pulseMode} state={pulseState} />
+      {todayEntry && (
+        <DailyStartHub
+          open={showDailyStartHub}
+          profile={profile}
+          today={todayEntry}
+          todayAverage={dayRec.avg}
+          currencySymbol={sym}
+          onStartShift={handleDailyStartShift}
+          onDashboard={dismissDailyStartHub}
+          onWeeklySetup={() => handleDailyHubRoute("/entry")}
+          onProfile={() => handleDailyHubRoute("/settings")}
+        />
+      )}
       <MonthlyRecapBanner weeks={weeks} currencySymbol={sym} />
       {/* Smart Header */}
       <div className="flex items-center justify-between">

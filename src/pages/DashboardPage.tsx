@@ -276,6 +276,8 @@ export default function DashboardPage() {
   const hasOpenShift = openWeek.entries.some(hasActiveShift);
   const shiftLabel = hasOpenShift ? "Active" : isDayClosed ? "Closed" : "Ready";
   const shiftSub = hasOpenShift ? "shift in progress" : isDayClosed ? "day finalized" : "tap Entry to start";
+  const focusMomentumLabel = mood.momentumLabel === "Building Momentum" ? "Building" : mood.momentumLabel;
+  const showStandardMomentumChip = mood.momentumLabel !== smartHeader;
 
   if (isFullFocus) {
     return (
@@ -284,7 +286,7 @@ export default function DashboardPage() {
 
         <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary">Full Focus · Operational</p>
-          <h1 className="text-lg sm:text-xl font-bold truncate">{smartHeader}</h1>
+          <h1 className="text-lg sm:text-xl font-bold truncate">Today's Run</h1>
           <p className="text-xs text-muted-foreground">
             {openWeek.startDate} → {openWeek.endDate}
           </p>
@@ -342,7 +344,7 @@ export default function DashboardPage() {
             <FocusMetric
               icon={<Zap className="h-3.5 w-3.5" />}
               label="Momentum"
-              value={mood.momentumLabel}
+              value={focusMomentumLabel}
               sub={activeDays.length > 0 ? `${activeDays.length} active day${activeDays.length === 1 ? "" : "s"}` : "fresh start"}
               tone={mood.momentumState === "high" ? "success" : mood.momentumState === "medium" ? "primary" : "default"}
             />
@@ -491,13 +493,15 @@ export default function DashboardPage() {
 
       {/* Momentum & Stats Chips */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-          mood.momentumState === "high" ? "bg-success/15 text-success"
-          : mood.momentumState === "medium" ? "bg-primary/15 text-primary"
-          : "bg-muted-foreground/15 text-muted-foreground"
-        }`}>
-          {mood.momentumLabel}
-        </span>
+        {showStandardMomentumChip && (
+          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+            mood.momentumState === "high" ? "bg-success/15 text-success"
+            : mood.momentumState === "medium" ? "bg-primary/15 text-primary"
+            : "bg-muted-foreground/15 text-muted-foreground"
+          }`}>
+            {mood.momentumLabel}
+          </span>
+        )}
         {growthStats.map((stat, i) => (
           <span key={i} className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
             stat.positive ? "bg-success/10 text-success" : "bg-warning/10 text-warning"

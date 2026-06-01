@@ -18,6 +18,8 @@ import {
   BookOpen,
   FlaskConical,
   Gauge,
+  Play,
+  Square,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink as RouterNavLink } from "react-router-dom";
@@ -27,6 +29,8 @@ import ChangelogDialog from "@/components/ChangelogDialog";
 import streexLogo from "@/assets/streex-logo.png";
 import { useDashboardExperience } from "@/hooks/useDashboardExperience";
 import { cn } from "@/lib/utils";
+import { createShift, endActiveShift, hasActiveShift } from "@/lib/shiftIntelligence";
+import { formatDate } from "@/lib/store";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -49,6 +53,26 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
   const [changelogOpen, setChangelogOpen] = useState(false);
   const onDashboard = location.pathname === "/";
   const fullFocusShell = onDashboard && isFullFocus;
+  const openWeek = store.openWeek;
+  const activeShiftDayIdx = openWeek?.entries.findIndex(hasActiveShift) ?? -1;
+  const hasActiveGlobalShift = activeShiftDayIdx >= 0;
+  const currentLocalDate = formatDate(new Date());
+  const currentDayIdx = openWeek?.entries.findIndex((day) => day.date === currentLocalDate) ?? -1;
+  const canStartShift = Boolean(openWeek && currentDayIdx >= 0 && !hasActiveGlobalShift);
+  const canUseShiftControl = Boolean(openWeek && (hasActiveGlobalShift || canStartShift));
+
+  async function handleShiftToggle() {
+    if (!openWeek || !canUseShiftControl) return;
+    const targetIdx = hasActiveGlobalShift ? activeShiftDayIdx : currentDayIdx;
+    if (targetIdx < 0) return;
+    const entries = openWeek.entries.map((day, idx) => {
+      if (idx !== targetIdx) return day;
+      return hasActiveGlobalShift
+        ? endActiveShift(day)
+        : { ...day, shifts: [...(day.shifts ?? []), createShift(day.date)] };
+    });
+    await store.updateWeek({ ...openWeek, entries });
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -63,7 +87,7 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
           alt="Streex"
           className={cn(
             "w-auto object-contain select-none transition-all",
-            fullFocusShell ? "h-12 sm:h-14 md:h-16 -my-1" : "h-16 sm:h-20 md:h-24 -my-2",
+            fullFocusShell ? "h-10 sm:h-14 md:h-16 -my-1" : "h-12 sm:h-20 md:h-24 -my-1 sm:-my-2",
           )}
           draggable={false}
         />
@@ -94,28 +118,43 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
 
         {/* Hubs (always at the right, both mobile + desktop) */}
         <div className="ml-auto md:ml-2 flex items-center gap-1">
-          {onDashboard && (
-            <button
-              type="button"
-              onClick={() => setDashboardExperience(isFullFocus ? "standard" : "full-focus")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors",
-                isFullFocus
-                  ? "border-primary/35 bg-primary/10 text-primary shadow-sm"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent",
-              )}
-              aria-label={isFullFocus ? "Switch to Standard dashboard" : "Switch to Full Focus dashboard"}
-            >
-              <Gauge className="h-3.5 w-3.5" />
-              <span className="hidden min-[380px]:inline">{isFullFocus ? "Full Focus" : "Standard"}</span>
-              <span className="min-[380px]:hidden">{isFullFocus ? "Focus" : "Std"}</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleShiftToggle}
+            disabled={!canUseShiftControl}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-45 disabled:pointer-events-none",
+              hasActiveGlobalShift
+                ? "border-success/35 bg-success/10 text-success shadow-sm"
+                : "border-primary/25 bg-primary/5 text-primary hover:bg-primary/10",
+            )}
+            aria-label={hasActiveGlobalShift ? "End active shift" : "Start shift"}
+            title={!openWeek ? "Start a week before starting a shift" : currentDayIdx < 0 && !hasActiveGlobalShift ? "Today is outside the open week" : undefined}
+          >
+            {hasActiveGlobalShift ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+            <span className="hidden min-[420px]:inline">{hasActiveGlobalShift ? "End Shift" : "Start Shift"}</span>
+            <span className="min-[420px]:hidden">{hasActiveGlobalShift ? "End" : "Start"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setDashboardExperience(isFullFocus ? "standard" : "full-focus")}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors",
+              isFullFocus
+                ? "border-primary/35 bg-primary/10 text-primary shadow-sm"
+                : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent",
+            )}
+            aria-label={isFullFocus ? "Switch to Standard dashboard" : "Switch to Full Focus dashboard"}
+          >
+            <Gauge className="h-3.5 w-3.5" />
+            <span className="hidden min-[470px]:inline">{isFullFocus ? "Full Focus" : "Standard"}</span>
+            <span className="min-[470px]:hidden">{isFullFocus ? "Focus" : "Std"}</span>
+          </button>
           {/* Progress Hub */}
           <div className="relative">
             <button
               onClick={() => { setProgressMenu((v) => !v); setMobileMenu(false); }}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="hidden min-[430px]:inline-flex p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               aria-label="Progress"
             >
               <Medal className="h-5 w-5" />

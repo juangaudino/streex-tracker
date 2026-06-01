@@ -13,6 +13,9 @@
 - Dashboard mode toggle moved into the top app header near Progress/Profile controls, with the active mode clearly visible.
 - Full Focus now uses a compact driver-console layout with Quick Add immediately after the cockpit summary.
 - Daily Command Center renders as a compact utility strip in Full Focus so weather and traffic support the work session without dominating the top.
+- Start Shift / End Shift is now available from the persistent top app header and stays synced with the real active shift.
+- Full Focus toggle is now globally accessible from the persistent top app header instead of only appearing on Dashboard.
+- Full Focus header copy now avoids repeating the same momentum wording shown in operational cards.
 
 ### Production Behavior
 

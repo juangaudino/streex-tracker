@@ -28,7 +28,7 @@ import {
   dayTotal,
 } from "@/lib/store";
 import type { StoreContext } from "./types";
-import { Activity, CalendarPlus, Clock, Download, Gauge, Target, Zap } from "lucide-react";
+import { Activity, CalendarPlus, Clock, Download, Target, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import EndDayDialog from "@/components/EndDayDialog";
@@ -54,31 +54,6 @@ function DashboardPulse({ enabled, state }: { enabled: boolean; state: PulseStat
   }, [enabled, state]);
 
   return null;
-}
-
-function ExperienceToggle({
-  isFullFocus,
-  onToggle,
-}: {
-  isFullFocus: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors",
-        isFullFocus
-          ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
-          : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent",
-      )}
-      aria-label={isFullFocus ? "Switch to Standard dashboard" : "Switch to Full Focus dashboard"}
-    >
-      <Gauge className="h-3.5 w-3.5" />
-      {isFullFocus ? "Full Focus" : "Standard"}
-    </button>
-  );
 }
 
 function FocusMetric({
@@ -123,8 +98,7 @@ export default function DashboardPage() {
   const { summary: driverIdentity, loading: identityLoading } = useDriverIdentity(user, weeks, openWeek);
   const sym = settings.currencySymbol;
   const { pulseMode } = useTheme();
-  const { isFullFocus, setDashboardExperience } = useDashboardExperience();
-  const toggleDashboardExperience = () => setDashboardExperience(isFullFocus ? "standard" : "full-focus");
+  const { isFullFocus } = useDashboardExperience();
 
   async function handleImport() {
     setImporting(true);
@@ -180,9 +154,6 @@ export default function DashboardPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
         <DashboardPulse enabled={pulseMode} state={hasHistory ? "steady" : "calm"} />
-        <div className="w-full max-w-2xl flex justify-end">
-          <ExperienceToggle isFullFocus={isFullFocus} onToggle={toggleDashboardExperience} />
-        </div>
         <div className="w-full max-w-md">
           <MonthlyRecapBanner weeks={weeks} currencySymbol={sym} />
         </div>
@@ -308,25 +279,22 @@ export default function DashboardPage() {
 
   if (isFullFocus) {
     return (
-      <div className="p-3 md:p-5 max-w-4xl mx-auto space-y-4">
+      <div className="p-3 md:p-5 max-w-3xl mx-auto space-y-3">
         <DashboardPulse enabled={pulseMode} state={pulseState} />
 
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary">Operational Mode</p>
-            <h1 className="text-lg sm:text-xl font-bold truncate">{smartHeader}</h1>
-            <p className="text-xs text-muted-foreground">
-              {openWeek.startDate} → {openWeek.endDate}
-            </p>
-          </div>
-          <ExperienceToggle isFullFocus={isFullFocus} onToggle={toggleDashboardExperience} />
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary">Full Focus · Operational</p>
+          <h1 className="text-lg sm:text-xl font-bold truncate">{smartHeader}</h1>
+          <p className="text-xs text-muted-foreground">
+            {openWeek.startDate} → {openWeek.endDate}
+          </p>
         </div>
 
-        <section className="rounded-2xl border border-primary/20 bg-card p-4 space-y-4">
+        <section className="rounded-2xl border border-primary/30 bg-card p-3.5 space-y-3 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Current Earnings</p>
-              <p className="text-4xl sm:text-5xl font-bold font-mono text-primary tracking-normal">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Today Total</p>
+              <p className="text-5xl sm:text-6xl font-bold font-mono text-primary tracking-normal leading-none mt-1">
                 {formatCurrency(todayTotal, sym)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -346,7 +314,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <FocusMetric
               icon={<Activity className="h-3.5 w-3.5" />}
               label="Day vs Avg"
@@ -361,6 +329,9 @@ export default function DashboardPage() {
               sub={`${formatCurrency(remaining, sym)} left`}
               tone={pct >= 100 ? "success" : "primary"}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
             <FocusMetric
               icon={<Clock className="h-3.5 w-3.5" />}
               label="Shift"
@@ -400,6 +371,8 @@ export default function DashboardPage() {
           onEndDay={todayEntry && !isDayClosed ? () => setEndDayOpen(true) : undefined}
         />
 
+        <DailyCommandCenter compact />
+
         {(() => {
           const insight = isDayClosed
             ? commentary
@@ -411,12 +384,6 @@ export default function DashboardPage() {
             </div>
           );
         })()}
-
-        <div className="opacity-90">
-          <DailyCommandCenter />
-        </div>
-
-        <ActiveMomentum weeks={weeks} openWeek={openWeek} currencySymbol={sym} />
 
         {todayEntry && dayRec.count > 1 && !isDayClosed && (
           <div className="bg-card rounded-xl border border-border p-3 space-y-2">
@@ -485,7 +452,6 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
-          <ExperienceToggle isFullFocus={isFullFocus} onToggle={toggleDashboardExperience} />
           {pace && (
             <span className={`text-xs font-bold px-3 py-1 rounded-full ${
               pace.variant === "fire" ? "bg-warning/15 text-warning"

@@ -106,10 +106,52 @@ function TrafficPanel({ data }: { data: DriverUtilityData | null }) {
   );
 }
 
-export default function DailyCommandCenter() {
+export default function DailyCommandCenter({ compact = false }: { compact?: boolean }) {
   const { state, data, error, enable, refresh } = useDriverUtility();
   const loading = state === "requesting-location" || state === "loading";
   const needsLocation = state === "idle" || state === "denied" || state === "unsupported" || state === "error";
+
+  if (compact) {
+    const weather = data?.weather;
+    const traffic = data?.traffic;
+    const weatherLive = weather?.status === "live";
+    const trafficLive = traffic?.status === "live";
+
+    return (
+      <section className="rounded-xl border border-border bg-card/75 px-3 py-2.5 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-1.5">
+            <MapPinned className="h-3.5 w-3.5 text-primary" />
+            Utility
+          </p>
+          {needsLocation ? (
+            <Button size="sm" variant="ghost" onClick={enable} disabled={loading} className="h-7 px-2 text-xs">
+              <LocateFixed className="h-3.5 w-3.5 mr-1" />
+              Enable
+            </Button>
+          ) : (
+            <Button size="icon" variant="ghost" onClick={refresh} disabled={loading} className="h-7 w-7" aria-label="Refresh live utility">
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg bg-background/55 border border-border/70 px-2.5 py-2 min-w-0">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Weather</p>
+            <p className="text-xs font-semibold truncate">
+              {weatherLive ? `${weather.temperature}°F · ${weather.condition}` : utilityStatusLabel(weather?.status || "unavailable")}
+            </p>
+          </div>
+          <div className="rounded-lg bg-background/55 border border-border/70 px-2.5 py-2 min-w-0">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Traffic</p>
+            <p className="text-xs font-semibold capitalize truncate">
+              {trafficLive ? `${traffic.level || "unknown"} flow` : utilityStatusLabel(traffic?.status || "unavailable")}
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-xl border border-border bg-card/95 p-3 sm:p-4 space-y-2.5">

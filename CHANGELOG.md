@@ -10,6 +10,9 @@
 - Compact dashboard quick toggle for switching between Standard and Full Focus.
 - Full Focus operational hierarchy with current earnings, same-day average comparison, goal progress, shift state, momentum, and Quick Add prioritized.
 - Header and navigation quieting when Full Focus is active to reclaim vertical space.
+- Dashboard mode toggle moved into the top app header near Progress/Profile controls, with the active mode clearly visible.
+- Full Focus now uses a compact driver-console layout with Quick Add immediately after the cockpit summary.
+- Daily Command Center renders as a compact utility strip in Full Focus so weather and traffic support the work session without dominating the top.
 
 ### Production Behavior
 

@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { AchievementToastContainer } from "@/components/AchievementToast";
 import { CelebrationContainer } from "@/components/RecordCelebration";
 import {
@@ -17,6 +17,7 @@ import {
   Medal,
   BookOpen,
   FlaskConical,
+  Gauge,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink as RouterNavLink } from "react-router-dom";
@@ -41,10 +42,13 @@ interface AppShellProps {
 
 export default function AppShell({ store, onSignOut }: AppShellProps) {  
   const { user } = useAuth();
-  const { isFullFocus } = useDashboardExperience();
+  const { isFullFocus, setDashboardExperience } = useDashboardExperience();
+  const location = useLocation();
   const [mobileMenu, setMobileMenu] = useState(false);
   const [progressMenu, setProgressMenu] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
+  const onDashboard = location.pathname === "/";
+  const fullFocusShell = onDashboard && isFullFocus;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -52,20 +56,20 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
       <CelebrationContainer />
       <header className={cn(
         "border-b border-border px-4 flex items-center gap-3 transition-all",
-        isFullFocus ? "py-1" : "py-1.5",
+        fullFocusShell ? "py-1" : "py-1.5",
       )}>
         <img
           src={streexLogo}
           alt="Streex"
           className={cn(
             "w-auto object-contain select-none transition-all",
-            isFullFocus ? "h-12 sm:h-14 md:h-16 -my-1" : "h-16 sm:h-20 md:h-24 -my-2",
+            fullFocusShell ? "h-12 sm:h-14 md:h-16 -my-1" : "h-16 sm:h-20 md:h-24 -my-2",
           )}
           draggable={false}
         />
         <span className={cn(
           "text-sm text-muted-foreground hidden sm:inline transition-opacity",
-          isFullFocus && "opacity-60",
+          fullFocusShell && "opacity-60",
         )}>Earnings Tracker</span>
         {/* Right side: Progress hub + Profile hub (always visible) + desktop nav inline */}
         <nav className="hidden md:flex ml-auto gap-1 items-center">
@@ -77,8 +81,8 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
               className={({ isActive }) =>
                 `flex items-center gap-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? isFullFocus ? "bg-primary/10 text-primary px-2.5 py-1.5" : "bg-primary/10 text-primary px-3 py-2"
-                    : isFullFocus ? "text-muted-foreground/70 hover:text-foreground hover:bg-accent px-2.5 py-1.5" : "text-muted-foreground hover:text-foreground hover:bg-accent px-3 py-2"
+                    ? fullFocusShell ? "bg-primary/10 text-primary px-2.5 py-1.5" : "bg-primary/10 text-primary px-3 py-2"
+                    : fullFocusShell ? "text-muted-foreground/70 hover:text-foreground hover:bg-accent px-2.5 py-1.5" : "text-muted-foreground hover:text-foreground hover:bg-accent px-3 py-2"
                 }`
               }
             >
@@ -90,6 +94,23 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
 
         {/* Hubs (always at the right, both mobile + desktop) */}
         <div className="ml-auto md:ml-2 flex items-center gap-1">
+          {onDashboard && (
+            <button
+              type="button"
+              onClick={() => setDashboardExperience(isFullFocus ? "standard" : "full-focus")}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors",
+                isFullFocus
+                  ? "border-primary/35 bg-primary/10 text-primary shadow-sm"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent",
+              )}
+              aria-label={isFullFocus ? "Switch to Standard dashboard" : "Switch to Full Focus dashboard"}
+            >
+              <Gauge className="h-3.5 w-3.5" />
+              <span className="hidden min-[380px]:inline">{isFullFocus ? "Full Focus" : "Standard"}</span>
+              <span className="min-[380px]:hidden">{isFullFocus ? "Focus" : "Std"}</span>
+            </button>
+          )}
           {/* Progress Hub */}
           <div className="relative">
             <button
@@ -207,7 +228,7 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center text-[10px] font-medium transition-colors ${
                 isActive ? "text-primary" : "text-muted-foreground"
-              } ${isFullFocus ? "py-1.5" : "py-2"}`
+              } ${fullFocusShell ? "py-1.5" : "py-2"}`
             }
           >
             <item.icon className="h-5 w-5 mb-0.5" />

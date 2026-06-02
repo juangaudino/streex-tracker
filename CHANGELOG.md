@@ -1,5 +1,38 @@
 # Changelog
 
+## V5.7.2 — Admin Ops + Feedback Inbox + App Version Control
+
+### Added
+
+- Protected `/admin` route for internal Streex operations.
+- Server-side admin access validation through the `admin-ops` Edge Function.
+- `admin_users` foundation with initial owner admin seeded for `juangaudino@gmail.com`.
+- User management overview with total users, recent users, inactive users, blocked users, usage stats, and account actions.
+- Block/unblock support through account access controls.
+- Restricted-account screen for blocked users.
+- App-level Force Sign Out All Users using a global `forced_logout_after` timestamp.
+- App version control with optional or required update notices.
+- Suggestions / Feedback entry in the Avatar menu.
+- Admin Feedback Inbox with status/type filtering and review workflow.
+
+### Production Behavior
+
+- No public admin registration was added.
+- Admin actions are validated server-side and do not rely only on hidden UI.
+- No service role key is exposed in frontend code.
+- Delete user is intentionally implemented as `delete_pending` soft restriction, not destructive hard deletion.
+- No dashboard, earnings, XP, Ask My Data, exports, themes, or Supabase project architecture changes were made.
+
+### Files Created
+
+- `src/pages/AdminPage.tsx`
+- `src/components/AppUpdateNotice.tsx`
+- `src/components/FeedbackDialog.tsx`
+- `src/hooks/useAppRuntime.ts`
+- `src/lib/adminOps.ts`
+- `supabase/functions/admin-ops/index.ts`
+- `supabase/migrations/20260602090000_admin_ops_feedback_version.sql`
+
 ## V5.7.1 — Navigation Cleanup + AI Visibility Layer
 
 ### Changed

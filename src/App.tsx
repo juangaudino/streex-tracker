@@ -15,16 +15,21 @@ import JourneyPage from "./pages/JourneyPage";
 import MonthlyRecapPage from "./pages/MonthlyRecapPage";
 import LettersPage from "./pages/LettersPage";
 import AssistantPage from "./pages/AssistantPage";
+import AdminPage from "./pages/AdminPage";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import { useAuth } from "./hooks/useAuth";
+import { useAppRuntime } from "./hooks/useAppRuntime";
 import { useWeekStore } from "./hooks/useWeekStore";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import streexLogo from "./assets/streex-logo.png";
+import AppUpdateNotice from "./components/AppUpdateNotice";
+import { Button } from "./components/ui/button";
 
 const App = () => {
-  const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
+  const { user, session, loading: authLoading, signIn, signUp, signOut } = useAuth();
   const store = useWeekStore(user);
+  const { access, updateNotice, dismissUpdateNotice } = useAppRuntime(user, session, signOut);
 
   if (authLoading) {
     return (
@@ -57,11 +62,61 @@ const App = () => {
     );
   }
 
+  if (access.loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6 px-6">
+        <img
+          src={streexLogo}
+          alt="Streex"
+          className="w-44 sm:w-52 h-auto object-contain select-none animate-in fade-in duration-700"
+          draggable={false}
+        />
+        <p className="text-xs sm:text-sm uppercase tracking-[0.3em] text-muted-foreground/70 font-medium">
+          Preparing Streex
+        </p>
+      </div>
+    );
+  }
+
+  if (access.status !== "active") {
+    return (
+      <ThemeProvider>
+        <div className="min-h-screen flex items-center justify-center bg-background px-5">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 text-center">
+            <img
+              src={streexLogo}
+              alt="Streex"
+              className="w-36 h-auto object-contain select-none mx-auto"
+              draggable={false}
+            />
+            <div className="space-y-2">
+              <h1 className="text-xl font-bold">Account restricted</h1>
+              <p className="text-sm text-muted-foreground">
+                Your account is currently restricted. Please contact support.
+              </p>
+            </div>
+            <Button type="button" onClick={signOut} className="w-full">
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        {updateNotice && (
+          <AppUpdateNotice
+            latestVersion={updateNotice.latestVersion}
+            message={updateNotice.message}
+            required={updateNotice.required}
+            onLater={dismissUpdateNotice}
+          />
+        )}
         <BrowserRouter>
           <Routes>
             <Route element={<AppShell store={store} onSignOut={signOut} />}>
@@ -76,6 +131,7 @@ const App = () => {
               <Route path="/letters" element={<LettersPage />} />
               <Route path="/assistant" element={<AssistantPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/admin" element={<AdminPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

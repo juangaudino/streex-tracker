@@ -20,6 +20,7 @@ import {
   Gauge,
   Play,
   Square,
+  MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink as RouterNavLink } from "react-router-dom";
@@ -31,6 +32,7 @@ import { useDashboardExperience } from "@/hooks/useDashboardExperience";
 import { cn } from "@/lib/utils";
 import { createShift, endActiveShift, hasActiveShift } from "@/lib/shiftIntelligence";
 import { formatDate } from "@/lib/store";
+import FeedbackDialog from "@/components/FeedbackDialog";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -51,6 +53,7 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [progressMenu, setProgressMenu] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const onDashboard = location.pathname === "/";
   const fullFocusShell = onDashboard && isFullFocus;
   const openWeek = store.openWeek;
@@ -241,6 +244,12 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
                     <Sparkles className="h-4 w-4" /> What's New
                   </button>
                   <button
+                    onClick={() => { setMobileMenu(false); setFeedbackOpen(true); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                  >
+                    <MessageSquare className="h-4 w-4" /> Suggestions / Feedback
+                  </button>
+                  <button
                     onClick={() => { setMobileMenu(false); onSignOut(); }}
                     className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
                   >
@@ -253,6 +262,12 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
         </div>
       </header>
       <ChangelogDialog open={changelogOpen} onOpenChange={setChangelogOpen} />
+      <FeedbackDialog
+        open={feedbackOpen}
+        onOpenChange={setFeedbackOpen}
+        userId={user?.id}
+        userEmail={user?.email}
+      />
       <main className="flex-1 overflow-y-auto pb-20 md:pb-6">
         <Outlet context={store as any} />
       </main>

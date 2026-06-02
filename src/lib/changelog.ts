@@ -6,9 +6,28 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.7.1";
+export const CURRENT_VERSION = "5.7.2";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.7.2",
+    date: "2026-06",
+    title: "Admin Ops + Feedback Inbox + App Version Control",
+    tags: ["new", "feature", "polish"],
+    items: [
+      "Protected /admin route added for internal Streex operations",
+      "Admin access foundation added with server-side validation through the admin-ops Edge Function",
+      "Initial owner admin seeded for juangaudino@gmail.com through the admin_users table",
+      "User management tools added for totals, recent users, inactive users, blocked users, usage stats, and account restriction actions",
+      "Block/unblock support added through account_access_controls with a restricted-account screen on app load",
+      "Delete user action is intentionally implemented as delete_pending soft restriction instead of destructive data deletion",
+      "Force Sign Out All Users added as an app-level forced_logout_after timestamp checked during auth/runtime load",
+      "App version control added with optional or required update notices and a Refresh App action",
+      "Suggestions / Feedback added to the Avatar menu with suggestion, bug report, and general feedback types",
+      "Admin Feedback Inbox added for filtering, reviewing, planning, resolving, dismissing, or deleting feedback",
+      "No dashboard, earnings, XP, Ask My Data, exports, themes, or Supabase project architecture changes were made",
+    ],
+  },
   {
     version: "5.7.1",
     date: "2026-06",

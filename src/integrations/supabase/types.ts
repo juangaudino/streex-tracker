@@ -14,6 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_access_controls: {
+        Row: {
+          blocked_at: string | null
+          blocked_by: string | null
+          created_at: string
+          delete_requested_at: string | null
+          delete_requested_by: string | null
+          internal_note: string | null
+          status: string
+          unblocked_at: string | null
+          unblocked_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          blocked_at?: string | null
+          blocked_by?: string | null
+          created_at?: string
+          delete_requested_at?: string | null
+          delete_requested_by?: string | null
+          internal_note?: string | null
+          status?: string
+          unblocked_at?: string | null
+          unblocked_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          blocked_at?: string | null
+          blocked_by?: string | null
+          created_at?: string
+          delete_requested_at?: string | null
+          delete_requested_by?: string | null
+          internal_note?: string | null
+          status?: string
+          unblocked_at?: string | null
+          unblocked_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_users: {
+        Row: {
+          created_at: string
+          email: string
+          enabled: boolean
+          id: string
+          invited_by: string | null
+          role: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          enabled?: boolean
+          id?: string
+          invited_by?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          enabled?: boolean
+          id?: string
+          invited_by?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_usage_logs: {
         Row: {
           created_at: string
@@ -74,6 +149,69 @@ export type Database = {
           total_tokens?: number | null
           used_streaming?: boolean
           user_id?: string
+        }
+        Relationships: []
+      }
+      app_runtime_config: {
+        Row: {
+          forced_logout_after: string | null
+          latest_version: string
+          singleton: boolean
+          update_message: string
+          update_required: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          forced_logout_after?: string | null
+          latest_version?: string
+          singleton?: boolean
+          update_message?: string
+          update_required?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          forced_logout_after?: string | null
+          latest_version?: string
+          singleton?: boolean
+          update_message?: string
+          update_required?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      feedback_items: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          status: string
+          type: string
+          updated_at: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          status?: string
+          type: string
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          status?: string
+          type?: string
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

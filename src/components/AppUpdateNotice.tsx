@@ -5,6 +5,7 @@ interface AppUpdateNoticeProps {
   message: string;
   required: boolean;
   onLater: () => void;
+  onSignOut?: () => void;
 }
 
 export default function AppUpdateNotice({
@@ -12,6 +13,7 @@ export default function AppUpdateNotice({
   message,
   required,
   onLater,
+  onSignOut,
 }: AppUpdateNoticeProps) {
   return (
     <div className="fixed inset-0 z-[80] bg-background/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
@@ -24,11 +26,16 @@ export default function AppUpdateNotice({
           <p className="text-sm text-muted-foreground">
             {message}
           </p>
+          {required && (
+            <p className="text-xs text-muted-foreground">
+              This update is required before continuing. If refreshing keeps showing this message, the latest build may not be published yet.
+            </p>
+          )}
           <p className="text-xs text-muted-foreground">
             Latest version: v{latestVersion}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           {!required && (
             <Button type="button" variant="outline" className="flex-1" onClick={onLater}>
               Later
@@ -37,6 +44,11 @@ export default function AppUpdateNotice({
           <Button type="button" className="flex-1" onClick={() => window.location.reload()}>
             Refresh App
           </Button>
+          {required && onSignOut && (
+            <Button type="button" variant="outline" className="flex-1" onClick={onSignOut}>
+              Sign Out
+            </Button>
+          )}
         </div>
       </div>
     </div>

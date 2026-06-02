@@ -1,5 +1,21 @@
 # Changelog
 
+## V5.7.4 — Admin Ops UX Hotfix
+
+### Fixed
+
+- Required update notices no longer block admin users from reaching Admin Ops.
+- Required update notices now explain what is happening and include a Sign Out option.
+- Admin login now has a distinct internal Admin Ops presentation and does not offer public sign-up.
+- Avatar menu feedback entry simplified to Feedback.
+- Feedback modal copy simplified.
+- Feedback type selector now opens above the modal layer.
+
+### Production Behavior
+
+- No dashboard, earnings, XP, Ask My Data, exports, or Supabase schema changes were made.
+- This version intentionally matches the tested `5.7.4` update target so a required-update lock clears after deployment.
+
 ## V5.7.2 — Admin Ops + Feedback Inbox + App Version Control
 
 ### Added

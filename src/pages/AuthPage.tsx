@@ -14,6 +14,7 @@ interface AuthPageProps {
 }
 
 export default function AuthPage({ signIn, signUp }: AuthPageProps) {
+  const isAdminRoute = window.location.pathname === "/admin";
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgot, setIsForgot] = useState(false);
   const [email, setEmail] = useState("");
@@ -41,7 +42,7 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
       return;
     }
 
-    const { error } = isSignUp
+    const { error } = isSignUp && !isAdminRoute
       ? await signUp(email.trim(), password)
       : await signIn(email.trim(), password);
 
@@ -53,14 +54,14 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
         description: error.message,
         variant: "destructive",
       });
-    } else if (isSignUp) {
+    } else if (isSignUp && !isAdminRoute) {
       toast({ title: "Account created! You're now logged in." });
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-6">
+    <div className={`min-h-screen flex items-center justify-center px-4 ${isAdminRoute ? "bg-muted/30" : "bg-background"}`}>
+      <div className={`w-full max-w-sm space-y-6 ${isAdminRoute ? "rounded-2xl border border-border bg-card p-6 shadow-xl" : ""}`}>
         <div className="text-center space-y-2">
           <div className="flex justify-center">
             <img
@@ -70,8 +71,19 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
               draggable={false}
             />
           </div>
+          {isAdminRoute && (
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary">
+              Admin Ops
+            </p>
+          )}
           <p className="text-muted-foreground text-sm">
-            {isForgot ? "Reset your password" : isSignUp ? "Create your account" : "Sign in to track your earnings"}
+            {isForgot
+              ? "Reset your password"
+              : isAdminRoute
+                ? "Authorized internal access only"
+                : isSignUp
+                  ? "Create your account"
+                  : "Sign in to track your earnings"}
           </p>
         </div>
 
@@ -110,7 +122,7 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
         </form>
 
         <div className="space-y-2 text-center text-sm text-muted-foreground">
-          {!isForgot && (
+          {!isForgot && !isAdminRoute && (
             <p>
               {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
               <button

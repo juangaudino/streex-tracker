@@ -104,7 +104,7 @@ async function getRuntimeConfig(service: SupabaseClient) {
     .maybeSingle();
 
   return data ?? {
-    latest_version: "5.7.2",
+    latest_version: "5.7.4",
     update_required: false,
     update_message: "A new Streex update is available. Refresh to get the latest version.",
     forced_logout_after: null,

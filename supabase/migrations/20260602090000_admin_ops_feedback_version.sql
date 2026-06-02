@@ -97,7 +97,7 @@ ON public.feedback_items (type, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS public.app_runtime_config (
   singleton BOOLEAN NOT NULL DEFAULT true PRIMARY KEY CHECK (singleton),
-  latest_version TEXT NOT NULL DEFAULT '5.7.2',
+  latest_version TEXT NOT NULL DEFAULT '5.7.4',
   update_required BOOLEAN NOT NULL DEFAULT false,
   update_message TEXT NOT NULL DEFAULT 'A new Streex update is available. Refresh to get the latest version.',
   forced_logout_after TIMESTAMP WITH TIME ZONE,
@@ -118,5 +118,5 @@ TO authenticated
 USING (true);
 
 INSERT INTO public.app_runtime_config (singleton, latest_version, update_required, update_message)
-VALUES (true, '5.7.2', false, 'A new Streex update is available. Refresh to get the latest version.')
+VALUES (true, '5.7.4', false, 'A new Streex update is available. Refresh to get the latest version.')
 ON CONFLICT (singleton) DO NOTHING;

@@ -58,11 +58,11 @@ export default function FeedbackDialog({
           <div className="space-y-1">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
-              Suggestions / Feedback
+              Feedback
             </p>
-            <h2 className="text-xl font-bold">Help shape Streex</h2>
+            <h2 className="text-xl font-bold">Send Feedback</h2>
             <p className="text-sm text-muted-foreground">
-              Send a suggestion, bug report, or general note. Your account is attached automatically.
+              Share a suggestion, bug report, or general note. Your account is attached automatically.
             </p>
           </div>
           <button
@@ -81,7 +81,7 @@ export default function FeedbackDialog({
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[95]">
               <SelectItem value="suggestion">Suggestion</SelectItem>
               <SelectItem value="bug">Bug report</SelectItem>
               <SelectItem value="general">General feedback</SelectItem>

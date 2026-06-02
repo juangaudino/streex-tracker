@@ -6,9 +6,23 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.7.2";
+export const CURRENT_VERSION = "5.7.4";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.7.4",
+    date: "2026-06",
+    title: "Admin Ops UX Hotfix",
+    tags: ["fix", "polish"],
+    items: [
+      "Required update notices no longer block admin users from reaching Admin Ops",
+      "Required update notices now explain what is happening and include a Sign Out option",
+      "Admin login now has a distinct internal Admin Ops presentation and does not offer public sign-up",
+      "Avatar menu feedback entry simplified to Feedback",
+      "Feedback modal copy simplified and the feedback type selector now opens above the modal layer",
+      "No dashboard, earnings, XP, Ask My Data, exports, or Supabase schema changes were made",
+    ],
+  },
   {
     version: "5.7.2",
     date: "2026-06",

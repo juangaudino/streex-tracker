@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { CURRENT_VERSION } from "@/lib/changelog";
 import { supabase } from "@/integrations/supabase/client";
-import type { AccountStatus, AppRuntimeConfig } from "@/lib/adminOps";
+import { callAdminOps, type AccountStatus, type AppRuntimeConfig } from "@/lib/adminOps";
 
 interface AccessState {
   status: AccountStatus;
@@ -28,6 +28,7 @@ function sessionLoginTime(session: Session | null, user: User | null): number {
 export function useAppRuntime(user: User | null, session: Session | null, signOut: () => Promise<void>) {
   const [config, setConfig] = useState<AppRuntimeConfig | null>(null);
   const [access, setAccess] = useState<AccessState>({ status: "active", loading: true });
+  const [isAdmin, setIsAdmin] = useState(false);
   const [dismissedVersion, setDismissedVersion] = useState(() => {
     try {
       return localStorage.getItem(DISMISSED_UPDATE_KEY) ?? "";
@@ -42,12 +43,13 @@ export function useAppRuntime(user: User | null, session: Session | null, signOu
     async function loadRuntime() {
       if (!user) {
         setConfig(null);
+        setIsAdmin(false);
         setAccess({ status: "active", loading: false });
         return;
       }
 
       setAccess((current) => ({ ...current, loading: true }));
-      const [{ data: configData }, { data: accessData }] = await Promise.all([
+      const [configResult, accessResult, adminResult] = await Promise.allSettled([
         (supabase as any)
           .from("app_runtime_config")
           .select("*")
@@ -58,10 +60,24 @@ export function useAppRuntime(user: User | null, session: Session | null, signOu
           .select("status")
           .eq("user_id", user.id)
           .maybeSingle(),
+        callAdminOps<{ config: AppRuntimeConfig }>({ action: "runtimeConfig" }),
       ]);
 
       if (cancelled) return;
+
+      const configData = configResult.status === "fulfilled"
+        ? configResult.value.data
+        : null;
+      const accessData = accessResult.status === "fulfilled"
+        ? accessResult.value.data
+        : null;
+      const adminConfig = adminResult.status === "fulfilled"
+        ? adminResult.value.config
+        : null;
+
+      setIsAdmin(Boolean(adminConfig));
       setConfig(configData ?? null);
+      if (adminConfig) setConfig(adminConfig);
       setAccess({
         status: accessData?.status ?? "active",
         loading: false,
@@ -71,6 +87,7 @@ export function useAppRuntime(user: User | null, session: Session | null, signOu
     loadRuntime().catch((error) => {
       console.warn("[app-runtime] failed to load runtime controls", error);
       if (!cancelled) setAccess({ status: "active", loading: false });
+      if (!cancelled) setIsAdmin(false);
     });
 
     return () => {
@@ -88,6 +105,7 @@ export function useAppRuntime(user: User | null, session: Session | null, signOu
   }, [config?.forced_logout_after, session, signOut, user]);
 
   const updateNotice = useMemo<UpdateNotice | null>(() => {
+    if (isAdmin) return null;
     if (!config?.latest_version || config.latest_version === CURRENT_VERSION) return null;
     if (!config.update_required && dismissedVersion === config.latest_version) return null;
     return {
@@ -95,7 +113,7 @@ export function useAppRuntime(user: User | null, session: Session | null, signOu
       message: config.update_message || "A new Streex update is available. Refresh to get the latest version.",
       required: Boolean(config.update_required),
     };
-  }, [config, dismissedVersion]);
+  }, [config, dismissedVersion, isAdmin]);
 
   function dismissUpdateNotice() {
     if (!config?.latest_version) return;
@@ -110,6 +128,7 @@ export function useAppRuntime(user: User | null, session: Session | null, signOu
   return {
     access,
     config,
+    isAdmin,
     updateNotice,
     dismissUpdateNotice,
   };

@@ -247,7 +247,7 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
                     onClick={() => { setMobileMenu(false); setFeedbackOpen(true); }}
                     className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
                   >
-                    <MessageSquare className="h-4 w-4" /> Suggestions / Feedback
+                    <MessageSquare className="h-4 w-4" /> Feedback
                   </button>
                   <button
                     onClick={() => { setMobileMenu(false); onSignOut(); }}

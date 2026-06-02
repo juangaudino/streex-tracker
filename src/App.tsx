@@ -115,6 +115,7 @@ const App = () => {
             message={updateNotice.message}
             required={updateNotice.required}
             onLater={dismissUpdateNotice}
+            onSignOut={signOut}
           />
         )}
         <BrowserRouter>

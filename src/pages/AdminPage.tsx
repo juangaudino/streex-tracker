@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Bug, CheckCircle2, Clock, Inbox, RefreshCw, Shield, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, Bug, CheckCircle2, Clock, Inbox, Mail, RefreshCw, Send, Shield, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,9 +12,11 @@ import {
 } from "@/components/ui/select";
 import { CURRENT_VERSION } from "@/lib/changelog";
 import {
+  callAdminEmail,
   callAdminOps,
   type AccountStatus,
   type AdminUserSummary,
+  type EmailCampaign,
   type AppRuntimeConfig,
   type FeedbackItem,
   type FeedbackStatus,
@@ -28,6 +30,8 @@ type AdminRow = {
   enabled: boolean;
   created_at: string;
 };
+
+type EmailAudience = "test" | "specific" | "inactive" | "all_active";
 
 interface OverviewResponse {
   totals: {
@@ -76,19 +80,33 @@ export default function AdminPage() {
   const [updateRequired, setUpdateRequired] = useState(false);
   const [updateMessage, setUpdateMessage] = useState("A new Streex update is available. Refresh to get the latest version.");
   const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>([]);
+  const [emailFrom, setEmailFrom] = useState("");
+  const [emailAudience, setEmailAudience] = useState<EmailAudience>("test");
+  const [emailSubject, setEmailSubject] = useState("New Streex features are live");
+  const [emailBody, setEmailBody] = useState(
+    "Hey - Streex just got a few new tools for tracking shifts, mileage, focus mode, and feedback.\n\nIf you have a minute, come back in, try the latest version, and tell us what feels useful or what needs work.\n\nOpen Streex: {{app_url}}",
+  );
+  const [emailAppUrl, setEmailAppUrl] = useState("");
+  const [specificEmail, setSpecificEmail] = useState("");
+  const [confirmBroadcast, setConfirmBroadcast] = useState(false);
   const [working, setWorking] = useState<string | null>(null);
 
   async function loadAdmin() {
     try {
       setLoading(true);
       setError(null);
-      const [overviewResult, feedbackResult, configResult] = await Promise.all([
+      const [overviewResult, feedbackResult, configResult, campaignResult] = await Promise.all([
         callAdminOps<OverviewResponse>({ action: "overview" }),
         callAdminOps<{ feedback: FeedbackItem[] }>({ action: "listFeedback" }),
         callAdminOps<{ config: AppRuntimeConfig }>({ action: "runtimeConfig" }),
+        callAdminEmail<{ campaigns: EmailCampaign[]; appUrl: string; fromEmail: string }>({ action: "listCampaigns" }),
       ]);
       setOverview(overviewResult);
       setFeedback(feedbackResult.feedback);
+      setEmailCampaigns(campaignResult.campaigns);
+      setEmailAppUrl(campaignResult.appUrl);
+      setEmailFrom(campaignResult.fromEmail);
       setConfig(configResult.config);
       setLatestVersion(configResult.config.latest_version || CURRENT_VERSION);
       setUpdateRequired(Boolean(configResult.config.update_required));
@@ -190,6 +208,43 @@ export default function AdminPage() {
       await loadAdmin();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Admin invite failed.");
+    } finally {
+      setWorking(null);
+    }
+  }
+
+  async function sendReEngagementEmail() {
+    const isBroadcast = emailAudience !== "test";
+    if (isBroadcast && !confirmBroadcast) {
+      setError("Confirm broadcast before sending to users.");
+      return;
+    }
+    const label = emailAudience === "test"
+      ? "send a test email"
+      : emailAudience === "specific"
+        ? `send this email to ${specificEmail}`
+        : `send this email to ${emailAudience === "inactive" ? "inactive users" : "all active users"}`;
+    if (!window.confirm(`Confirm: ${label}?`)) return;
+
+    try {
+      setWorking("email");
+      setError(null);
+      const result = await callAdminEmail<{ sentCount: number; failedCount: number; requestedCount: number }>({
+        action: "sendCampaign",
+        audience: emailAudience,
+        subject: emailSubject,
+        body: emailBody,
+        appUrl: emailAppUrl,
+        specificEmail,
+        confirmBroadcast,
+      });
+      setConfirmBroadcast(false);
+      await loadAdmin();
+      setError(result.failedCount
+        ? `Email campaign sent to ${result.sentCount}/${result.requestedCount}; ${result.failedCount} failed.`
+        : null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Email campaign failed.");
     } finally {
       setWorking(null);
     }
@@ -348,6 +403,127 @@ export default function AdminPage() {
                 <div key={admin.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
                   <span className="truncate">{admin.email}</span>
                   <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{admin.role}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-4 space-y-4">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              User Re-Engagement
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Send a manual product update email. Start with a test before broadcasting.
+            </p>
+          </div>
+          <div className="rounded-lg border border-border bg-background/50 px-3 py-2 text-xs text-muted-foreground">
+            From: <span className="font-semibold text-foreground">{emailFrom || "not configured"}</span>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-[1fr_0.8fr] gap-4">
+          <div className="space-y-3">
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Audience</label>
+                <Select value={emailAudience} onValueChange={(value) => {
+                  setEmailAudience(value as EmailAudience);
+                  setConfirmBroadcast(false);
+                }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="test">Test to me</SelectItem>
+                    <SelectItem value="specific">Specific user</SelectItem>
+                    <SelectItem value="inactive">Inactive users</SelectItem>
+                    <SelectItem value="all_active">All active users</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Specific/Test email</label>
+                <Input
+                  value={specificEmail}
+                  onChange={(event) => setSpecificEmail(event.target.value)}
+                  placeholder={emailAudience === "test" ? "Optional: defaults to your admin email" : "user@email.com"}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Subject</label>
+              <Input value={emailSubject} onChange={(event) => setEmailSubject(event.target.value)} />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">App link</label>
+              <Input value={emailAppUrl} onChange={(event) => setEmailAppUrl(event.target.value)} />
+              <p className="text-xs text-muted-foreground">
+                This defaults from APP_PUBLIC_URL. You can edit it before each send.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Message</label>
+              <Textarea
+                value={emailBody}
+                onChange={(event) => setEmailBody(event.target.value)}
+                className="min-h-40"
+              />
+              <p className="text-xs text-muted-foreground">
+                Use {"{{app_url}}"} where you want the app link to appear. Unsubscribe is added automatically.
+              </p>
+            </div>
+
+            {emailAudience !== "test" && (
+              <label className="flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={confirmBroadcast}
+                  onChange={(event) => setConfirmBroadcast(event.target.checked)}
+                  className="mt-1"
+                />
+                <span>
+                  I confirm this is ready to send to real users and includes a clear product update/feedback request.
+                </span>
+              </label>
+            )}
+
+            <Button type="button" onClick={sendReEngagementEmail} disabled={working === "email"} className="w-full sm:w-auto">
+              <Send className="h-4 w-4 mr-1" />
+              {emailAudience === "test" ? "Send Test Email" : "Send Campaign"}
+            </Button>
+          </div>
+
+          <div className="space-y-3">
+            <div className="rounded-xl border border-border bg-background/50 p-4 space-y-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Preview</p>
+              <p className="font-bold">{emailSubject || "Subject"}</p>
+              <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {(emailBody || "Message").replaceAll("{{app_url}}", emailAppUrl || "APP_PUBLIC_URL")}
+              </div>
+              <p className="text-xs text-muted-foreground border-t border-border pt-3">
+                Unsubscribe link will be appended automatically.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-background/50 p-4 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Recent campaigns</p>
+              {emailCampaigns.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No campaigns yet.</p>
+              ) : emailCampaigns.slice(0, 5).map((campaign) => (
+                <div key={campaign.id} className="rounded-lg border border-border px-3 py-2 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-semibold truncate">{campaign.subject}</p>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{campaign.status}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {campaign.audience} · sent {campaign.sent_count}/{campaign.requested_count} · failed {campaign.failed_count}
+                  </p>
                 </div>
               ))}
             </div>

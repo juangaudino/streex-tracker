@@ -1,5 +1,30 @@
 # Changelog
 
+## V5.7.5 — Admin Re-Engagement Email
+
+### Added
+
+- Manual User Re-Engagement email panel in Admin Ops.
+- Test email flow before broadcasting to users.
+- Audience options: test, specific user, inactive users, and all active users.
+- Editable campaign subject, message, and app link.
+- `APP_PUBLIC_URL` support for default app link, with admin override before send.
+- Server-side `admin-email` Edge Function for sending through Resend.
+- Marketing unsubscribe support through tokenized unsubscribe links.
+- Email campaign and recipient audit tables.
+
+### Production Behavior
+
+- `RESEND_API_KEY` stays server-side and is never exposed in frontend code.
+- Broadcasts require explicit confirmation.
+- Blocked, delete-pending, and opted-out users are excluded from non-test audiences.
+- No SMS, automated campaigns, dashboard, earnings, XP, Ask My Data, or exports changes were made.
+
+### Files Created
+
+- `supabase/functions/admin-email/index.ts`
+- `supabase/migrations/20260602124500_reengagement_email_campaigns.sql`
+
 ## V5.7.4 — Admin Ops UX Hotfix
 
 ### Fixed

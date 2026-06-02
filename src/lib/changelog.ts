@@ -6,9 +6,26 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.7.4";
+export const CURRENT_VERSION = "5.7.5";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.7.5",
+    date: "2026-06",
+    title: "Admin Re-Engagement Email",
+    tags: ["new", "feature"],
+    items: [
+      "Admin Ops now includes a manual User Re-Engagement email panel",
+      "Admins can send a test email before broadcasting to users",
+      "Email campaigns support test, specific user, inactive users, and all active users audiences",
+      "Campaign subject, message, and app link are editable before each send",
+      "APP_PUBLIC_URL can provide the default app link while the admin can still override it",
+      "Email sending uses the server-side admin-email Edge Function and keeps RESEND_API_KEY out of frontend code",
+      "Marketing unsubscribe support added through email_preferences and tokenized unsubscribe links",
+      "Email campaigns and recipients are recorded for basic audit history",
+      "No SMS, automated campaigns, dashboard, earnings, XP, Ask My Data, or exports changes were made",
+    ],
+  },
   {
     version: "5.7.4",
     date: "2026-06",

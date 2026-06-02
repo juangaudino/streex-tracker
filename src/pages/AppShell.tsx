@@ -36,7 +36,7 @@ const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/entry", icon: CalendarDays, label: "Entry" },
   { to: "/career", icon: Crown, label: "Career" },
-  { to: "/compare", icon: BarChart3, label: "Compare" },
+  { to: "/assistant", icon: FlaskConical, label: "Ask AI" },
 ];
 
 interface AppShellProps {
@@ -154,7 +154,7 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
           <div className="relative">
             <button
               onClick={() => { setProgressMenu((v) => !v); setMobileMenu(false); }}
-              className="hidden min-[430px]:inline-flex p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="inline-flex p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               aria-label="Progress"
             >
               <Medal className="h-5 w-5" />
@@ -192,6 +192,20 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
                   >
                     <Trophy className="h-4 w-4" /> Achievements
                   </RouterNavLink>
+                  <RouterNavLink
+                    to="/history"
+                    onClick={() => setProgressMenu(false)}
+                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                  >
+                    <History className="h-4 w-4" /> History
+                  </RouterNavLink>
+                  <RouterNavLink
+                    to="/compare"
+                    onClick={() => setProgressMenu(false)}
+                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                  >
+                    <BarChart3 className="h-4 w-4" /> Compare
+                  </RouterNavLink>
                 </div>
               </>
             )}
@@ -214,27 +228,11 @@ export default function AppShell({ store, onSignOut }: AppShellProps) {
                     <p className="text-xs text-muted-foreground truncate px-1 pb-1">{user.email}</p>
                   )}
                   <RouterNavLink
-                    to="/history"
-                    onClick={() => setMobileMenu(false)}
-                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                  >
-                    <History className="h-4 w-4" /> History
-                  </RouterNavLink>
-                  <RouterNavLink
                     to="/settings"
                     onClick={() => setMobileMenu(false)}
                     className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
                   >
                     <Settings className="h-4 w-4" /> Settings
-                  </RouterNavLink>
-                  <RouterNavLink
-                    to="/assistant"
-                    onClick={() => setMobileMenu(false)}
-                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                  >
-                    <FlaskConical className="h-4 w-4" />
-                    <span className="flex-1">Ask My Data</span>
-                    <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400">Beta</span>
                   </RouterNavLink>
                   <button
                     onClick={() => { setMobileMenu(false); setChangelogOpen(true); }}

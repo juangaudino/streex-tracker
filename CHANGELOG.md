@@ -1,5 +1,20 @@
 # Changelog
 
+## V5.7.1 — Navigation Cleanup + AI Visibility Layer
+
+### Changed
+
+- Ask AI is now promoted to the primary bottom navigation for stronger Ask My Data visibility.
+- Compare moved from the bottom navigation into the Progress menu.
+- History moved from the Avatar menu into the Progress menu.
+- Progress menu now groups Journey, Monthly Recap, Letters, Achievements, History, and Compare.
+- Avatar menu simplified to Settings, What's New, and Sign Out.
+
+### Production Behavior
+
+- No routes were removed or renamed.
+- No dashboard logic, auth, earnings, XP, analytics, Supabase, or backend behavior changed.
+
 ## V5.7 — Full Focus Dashboard
 
 ### Added

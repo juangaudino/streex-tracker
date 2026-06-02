@@ -504,7 +504,7 @@ export default function AdminPage() {
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Preview</p>
               <p className="font-bold">{emailSubject || "Subject"}</p>
               <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {(emailBody || "Message").replaceAll("{{app_url}}", emailAppUrl || "APP_PUBLIC_URL")}
+                {(emailBody || "Message").split("{{app_url}}").join(emailAppUrl || "APP_PUBLIC_URL")}
               </div>
               <p className="text-xs text-muted-foreground border-t border-border pt-3">
                 Unsubscribe link will be appended automatically.

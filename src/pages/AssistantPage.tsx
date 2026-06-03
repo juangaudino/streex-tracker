@@ -123,33 +123,33 @@ export default function AssistantPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 flex flex-col h-[calc(100vh-8rem)]">
-      <header className="mb-4">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-semibold">Ask My Data</h1>
-          <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+    <div className="mx-auto flex h-[calc(100svh-8.5rem)] max-w-3xl min-h-0 flex-col px-3 py-3 sm:h-[calc(100vh-8rem)] sm:px-4 sm:py-6">
+      <header className="mb-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <Sparkles className="h-5 w-5 shrink-0 text-primary" />
+          <h1 className="min-w-0 text-xl font-semibold leading-tight">Ask My Data</h1>
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
             <FlaskConical className="h-3 w-3" /> v5.3B.3 Beta
           </span>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="mt-1 text-sm leading-snug text-muted-foreground">
           Chat with your earnings. Beta — answers are based only on your Streex data.
         </p>
       </header>
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto rounded-xl border border-border bg-card/40 p-4 space-y-4"
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-border bg-card/40 p-3 sm:space-y-4 sm:p-4"
       >
         {messages.length === 0 && (
-          <div className="space-y-3">
+          <div className="space-y-3 pb-2">
             <p className="text-sm text-muted-foreground">Try a starter:</p>
             <div className="flex flex-wrap gap-2">
               {STARTERS.map((s) => (
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  className="text-xs px-3 py-1.5 rounded-full border border-border hover:bg-accent transition-colors"
+                  className="rounded-full border border-border px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent"
                 >
                   {s}
                 </button>
@@ -164,14 +164,14 @@ export default function AssistantPage() {
             className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
+              className={`min-w-0 max-w-[88%] break-words rounded-2xl px-3 py-2.5 text-sm sm:max-w-[85%] sm:px-4 ${
                 m.role === "user"
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-foreground"
               }`}
             >
               {m.role === "assistant" ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2">
+                <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-ul:my-2">
                   <ReactMarkdown>{m.content}</ReactMarkdown>
                 </div>
               ) : (
@@ -199,21 +199,21 @@ export default function AssistantPage() {
           e.preventDefault();
           send(input);
         }}
-        className="mt-3 flex gap-2"
+        className="flex shrink-0 gap-2 pt-3"
       >
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask anything about your earnings…"
-          className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           disabled={loading}
         />
-        <Button type="submit" disabled={loading || !input.trim()}>
+        <Button type="submit" className="shrink-0" disabled={loading || !input.trim()}>
           <Send className="h-4 w-4" />
         </Button>
       </form>
 
-      <p className="text-[10px] text-muted-foreground/70 text-center mt-2">
+      <p className="mt-2 shrink-0 pb-[env(safe-area-inset-bottom)] text-center text-[10px] text-muted-foreground/70">
         Beta · responses may be imperfect · data stays inside your account
       </p>
     </div>

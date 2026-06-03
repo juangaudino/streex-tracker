@@ -281,6 +281,8 @@ const DAY_ALIASES: Record<string, string> = {
   sun: "Sunday", sunday: "Sunday",
 };
 
+const WEEKDAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
 function flattenDays(weeks: NormalizedWeek[]) {
   return weeks
     .flatMap((w) => w.dayTotals.map((d) => ({ date: d.date, day: d.day, total: d.total })))
@@ -373,6 +375,51 @@ function dayRankingAnalysis(weeks: NormalizedWeek[], prompt: string) {
   };
 }
 
+function isConsecutiveDayOffQuestion(prompt: string): boolean {
+  const q = prompt.toLowerCase();
+  const asksForRest =
+    /\b(day off|days off|off day|off days|rest|break|take off)\b/.test(q) ||
+    /\b(descansar|descanso|libre|libres|dia libre|día libre|dias libres|días libres)\b/.test(q);
+  const asksForTwo =
+    /\b(two|2|dos)\b/.test(q) || /\bpair|pareja\b/.test(q);
+  const asksForConsecutive =
+    /\b(consecutive|back-to-back|together|in a row|seguidos|seguidas|consecutivos|consecutivas)\b/.test(q);
+  return asksForRest && asksForTwo && asksForConsecutive;
+}
+
+function consecutiveDayOffAnalysis(weeks: NormalizedWeek[], prompt: string) {
+  if (!isConsecutiveDayOffQuestion(prompt)) return null;
+  const stats = weekdayStats(weeks) as Record<string, { average: number; count: number; best: number; bestDate: string | null }>;
+  const weekdayAverages = WEEKDAY_ORDER
+    .map((day) => ({ day, average: stats[day]?.average ?? null, count: stats[day]?.count ?? 0 }))
+    .filter((item) => item.average !== null);
+  const pairs = WEEKDAY_ORDER.slice(0, -1)
+    .map((day, index) => {
+      const nextDay = WEEKDAY_ORDER[index + 1];
+      const first = stats[day];
+      const second = stats[nextDay];
+      if (!first || !second) return null;
+      return {
+        days: [day, nextDay],
+        combinedAverage: round(first.average + second.average),
+        averages: [
+          { day, average: first.average, count: first.count },
+          { day: nextDay, average: second.average, count: second.count },
+        ],
+        minimumSampleSize: Math.min(first.count, second.count),
+      };
+    })
+    .filter((pair): pair is NonNullable<typeof pair> => Boolean(pair))
+    .sort((a, b) => a.combinedAverage - b.combinedAverage);
+
+  return {
+    method: "weekday_average_consecutive_pairs_lowest_combined_impact",
+    weekdayAverages,
+    pairs,
+    recommendation: pairs[0] ?? null,
+  };
+}
+
 function daysBetween(a: string, b: string): number {
   const ms = Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z");
   return Math.round(ms / 86400000);
@@ -436,7 +483,8 @@ function parseConsecutiveWindow(prompt: string): number | null {
     const n = Number(m[1]);
     if (n >= 2 && n <= 14) return n;
   }
-  if (/\bconsecutive\b/.test(q) || /\brolling\b/.test(q) || /\bstreak\b/.test(q)) {
+  if (/\bconsecutive\b/.test(q) || /\brolling\b/.test(q) || /\bstreak\b/.test(q) ||
+    /\bseguidos|seguidas|consecutivos|consecutivas\b/.test(q)) {
     // Default to 3-day window if no explicit number
     return 3;
   }
@@ -660,6 +708,10 @@ function buildContext(args: {
     const dayRanking = dayRankingAnalysis(weeks, prompt);
     if (dayRanking) {
       analysis.dayRanking = dayRanking;
+    }
+    const consecutiveDayOff = consecutiveDayOffAnalysis(weeks, prompt);
+    if (consecutiveDayOff) {
+      analysis.consecutiveDayOff = consecutiveDayOff;
     }
     const combo = parseDayCombo(prompt);
     if (combo) {
@@ -899,11 +951,44 @@ function formatDateForAssistant(date: string): string {
   });
 }
 
-function directDayAnalysisAnswer(context: unknown, currency: string): string | null {
+function usesSpanish(prompt: string): boolean {
+  return /[áéíóúñ¿¡]/i.test(prompt) ||
+    /\b(si|quiero|descansar|dias|días|semana|cuáles|cuales|deberían|deberian|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo|lunes)\b/i.test(prompt);
+}
+
+function localizedDay(day: string, spanish: boolean): string {
+  if (!spanish) return day;
+  const labels: Record<string, string> = {
+    Monday: "lunes",
+    Tuesday: "martes",
+    Wednesday: "miércoles",
+    Thursday: "jueves",
+    Friday: "viernes",
+    Saturday: "sábado",
+    Sunday: "domingo",
+  };
+  return labels[day] ?? day;
+}
+
+function directDayAnalysisAnswer(context: unknown, currency: string, prompt = ""): string | null {
   const c = context as {
     scope?: DataScope;
     coverage?: { isFullHistoryLoaded?: boolean };
     analysis?: {
+      consecutiveDayOff?: {
+        pairs: {
+          days: string[];
+          combinedAverage: number;
+          averages: { day: string; average: number; count: number }[];
+          minimumSampleSize: number;
+        }[];
+        recommendation: {
+          days: string[];
+          combinedAverage: number;
+          averages: { day: string; average: number; count: number }[];
+          minimumSampleSize: number;
+        } | null;
+      };
       weekdayList?: {
         weekday: string;
         totalMatches: number;
@@ -927,6 +1012,50 @@ function directDayAnalysisAnswer(context: unknown, currency: string): string | n
     : c.scope === "RECENT"
     ? "within the requested recent scope"
     : "within the loaded scope";
+
+  const consecutiveDayOff = c.analysis?.consecutiveDayOff;
+  if (consecutiveDayOff) {
+    const best = consecutiveDayOff.recommendation;
+    if (!best) {
+      return usesSpanish(prompt)
+        ? "Todavía no tengo suficientes promedios por día para recomendar dos días consecutivos con confianza."
+        : "I don't have enough weekday averages yet to recommend two consecutive days off confidently.";
+    }
+
+    const spanish = usesSpanish(prompt);
+    const pairLines = consecutiveDayOff.pairs.map((pair) => {
+      const label = pair.days.map((day) => localizedDay(day, spanish)).join(spanish ? " + " : " + ");
+      return `- ${label}: ${formatCurrencyForAssistant(pair.combinedAverage, currency)}`;
+    });
+    const bestDays = best.days.map((day) => localizedDay(day, spanish));
+    const first = best.averages[0];
+    const second = best.averages[1];
+    const weaker = first.average <= second.average ? first : second;
+    const other = first.average <= second.average ? second : first;
+    if (spanish) {
+      return [
+        `Para dos días seguidos de descanso, la mejor combinación por menor impacto promedio es **${bestDays[0]} + ${bestDays[1]}**.`,
+        "",
+        `Esa pareja suma ${formatCurrencyForAssistant(best.combinedAverage, currency)} de promedio combinado (${localizedDay(first.day, true)} ${formatCurrencyForAssistant(first.average, currency)} + ${localizedDay(second.day, true)} ${formatCurrencyForAssistant(second.average, currency)}).`,
+        "",
+        "Comparé todas las parejas consecutivas válidas:",
+        ...pairLines,
+        "",
+        `${localizedDay(weaker.day, true)} es el día individual más débil dentro de esta pareja, y aunque ${localizedDay(other.day, true)} no necesariamente sea tu segundo día más débil, juntos producen el menor impacto combinado.`,
+      ].join("\n");
+    }
+
+    return [
+      `For two consecutive days off, the lowest average earnings impact is **${bestDays[0]} + ${bestDays[1]}**.`,
+      "",
+      `That pair combines for ${formatCurrencyForAssistant(best.combinedAverage, currency)} on average (${first.day} ${formatCurrencyForAssistant(first.average, currency)} + ${second.day} ${formatCurrencyForAssistant(second.average, currency)}).`,
+      "",
+      "I compared every valid consecutive pair:",
+      ...pairLines,
+      "",
+      `${weaker.day} is the weaker individual day in this pair, and while ${other.day} may not be your second weakest day, the combination produces the lowest combined impact.`,
+    ].join("\n");
+  }
 
   const weekdayList = c.analysis?.weekdayList;
   if (weekdayList) {
@@ -1222,7 +1351,7 @@ Deno.serve(async (req) => {
   }
 
   {
-    const text = directDayAnalysisAnswer(context, settingsRes.data?.currency_symbol ?? "$");
+    const text = directDayAnalysisAnswer(context, settingsRes.data?.currency_symbol ?? "$", promptPreview);
     if (text) {
       await logUsage({
         supabase,
@@ -1238,7 +1367,7 @@ Deno.serve(async (req) => {
         usedStreaming: false,
         metadata: {
           ...metadata,
-          directAnswer: "day_list_or_ranking",
+          directAnswer: "day_analysis",
         },
       });
       return json({ text });
@@ -1252,7 +1381,7 @@ Deno.serve(async (req) => {
     "1. Never use the words 'historically', 'all time', 'ever', 'in your full history', 'lifetime', or 'in your career' unless context.coverage.isFullHistoryLoaded is true.",
     "2. If context.coverage.isFullHistoryLoaded is false and the user asked an all-time / historical / ever question, reply: 'I don't have enough historical data loaded to answer that accurately yet.' Then offer what you can answer from the recent window.",
     "3. For app-vs-app questions, ONLY use context.analysis.appHeadToHead. If that block is missing, say you don't have enough data to compare those apps. Do NOT infer winners from appTotals alone, and do NOT claim one app 'never' beat another unless aWins / bWins explicitly show 0 over weeksCompared ≥ 1.",
-    "4. For grouped-day questions (e.g. Fri+Sat+Sun, weekends), ONLY use context.analysis.dayCombo. For consecutive/rolling N-day windows, ONLY use context.analysis.consecutiveWindow. If those blocks are missing, say the calculation isn't available for that question.",
+    "4. For grouped-day questions (e.g. Fri+Sat+Sun, weekends), ONLY use context.analysis.dayCombo. For consecutive/rolling N-day windows, ONLY use context.analysis.consecutiveWindow. For two consecutive days off / rest questions, ONLY use context.analysis.consecutiveDayOff and compare combined weekday-pair averages, not individual weekday rankings. If those blocks are missing, say the calculation isn't available for that question.",
     "5. For best/highest/record week questions, use lifetime.bestWeekEver when present, never a recent-only value.",
     "6. For single-weekday lists and best/worst day rankings, ONLY use context.analysis.weekdayList or context.analysis.dayRanking. Worst/lowest days are derivable from tracked day totals; do not claim the system cannot track them when dayRanking is present.",
     "7. If context.scope is ALL_TIME, treat the answer as full Streex history. Do not mention a hidden 16-week or 112-day limit unless context.coverage.isFullHistoryLoaded is false.",

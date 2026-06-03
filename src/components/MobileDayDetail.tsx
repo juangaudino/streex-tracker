@@ -144,9 +144,18 @@ export default function MobileDayDetail({
             </Button>
           </div>
           {(day.shifts ?? []).map((shift) => (
-            <div key={shift.id} className="rounded-lg bg-background/60 border border-border px-3 py-2 space-y-2">
+            <div
+              key={shift.id}
+              className={cn(
+                "rounded-lg border px-3 py-2 space-y-3",
+                shift.endTime ? "bg-background/60 border-border" : "bg-success/5 border-success/25",
+              )}
+            >
               <div className="min-w-0">
-                <p className="text-xs font-semibold truncate">
+                {!shift.endTime && (
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-success">Active Shift</p>
+                )}
+                <p className="text-sm font-semibold truncate">
                   {new Date(shift.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                   {shift.endTime ? ` → ${new Date(shift.endTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : " → active"}
                 </p>
@@ -154,41 +163,50 @@ export default function MobileDayDetail({
                   {shift.endTime ? `${shiftDurationHours(shift).toFixed(1)}h` : "running"}
                 </p>
               </div>
-              <div className="grid grid-cols-[1fr_1fr_5rem_auto] items-center gap-2">
+              <div className="grid grid-cols-2 items-end gap-2">
                 {onShiftTimeUpdate && (
                   <>
-                    <Input
-                      type="time"
-                      className="h-8 font-mono text-xs"
-                      value={timeInputValue(shift.startTime)}
-                      onChange={(e) => onShiftTimeUpdate(dayIdx, shift.id, "startTime", e.target.value)}
-                    />
-                    <Input
-                      type="time"
-                      className="h-8 font-mono text-xs"
-                      value={timeInputValue(shift.endTime)}
-                      disabled={!shift.endTime}
-                      onChange={(e) => onShiftTimeUpdate(dayIdx, shift.id, "endTime", e.target.value)}
-                    />
+                    <label className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Start</span>
+                      <Input
+                        type="time"
+                        className="h-9 font-mono text-xs"
+                        value={timeInputValue(shift.startTime)}
+                        onChange={(e) => onShiftTimeUpdate(dayIdx, shift.id, "startTime", e.target.value)}
+                      />
+                    </label>
+                    <label className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">End</span>
+                      <Input
+                        type="time"
+                        className="h-9 font-mono text-xs"
+                        value={timeInputValue(shift.endTime)}
+                        disabled={!shift.endTime}
+                        onChange={(e) => onShiftTimeUpdate(dayIdx, shift.id, "endTime", e.target.value)}
+                      />
+                    </label>
                   </>
                 )}
                 {onShiftMilesUpdate && (
-                <Input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  className="h-8 text-right font-mono text-xs"
-                  value={shift.miles || ""}
-                  placeholder="mi"
-                  onChange={(e) => onShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
-                />
+                  <label className="space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Miles</span>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      className="h-9 text-right font-mono text-xs"
+                      value={shift.miles || ""}
+                      placeholder="mi"
+                      onChange={(e) => onShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
+                    />
+                  </label>
                 )}
                 {onDeleteShift && (
                   <Button
                     type="button"
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    className="h-9 w-9 justify-self-end text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={() => onDeleteShift(dayIdx, shift.id)}
                     aria-label="Delete shift block"
                   >

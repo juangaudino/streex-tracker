@@ -6,9 +6,24 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.7.5";
+export const CURRENT_VERSION = "5.7.6";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.7.6",
+    date: "2026-06",
+    title: "Master Consolidation Polish",
+    tags: ["fix", "polish"],
+    items: [
+      "Dashboard generic motivation banner removed so utility flows directly into actionable record context",
+      "Ask My Data mobile layout stabilized with a fixed input area and scrollable conversation region",
+      "Ask My Data now calculates two consecutive days off by comparing combined weekday-pair averages",
+      "Entry Shift + Mileage now separates active shift state from historical shift blocks",
+      "Historical shift blocks renamed to This Week's Shifts and converted to compact expandable rows",
+      "Shift edit controls rebalanced on mobile to prevent Start, End, and Miles fields from overlapping",
+      "No database schema, XP, achievements, analytics model, auth, exports, or roadmap systems were changed",
+    ],
+  },
   {
     version: "5.7.5",
     date: "2026-06",

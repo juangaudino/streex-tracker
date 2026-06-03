@@ -1,5 +1,22 @@
 # Changelog
 
+## V5.7.6 — Master Consolidation Polish
+
+### Fixed
+
+- Removed the generic standalone motivation banner between Utility and record context.
+- Stabilized Ask My Data mobile layout with a scrollable message region and fixed input area.
+- Fixed Ask My Data consecutive day-off reasoning to compare combined weekday-pair averages.
+- Added a dedicated active shift card in Entry.
+- Renamed historical shifts to `This Week's Shifts (N)`.
+- Converted historical shift blocks into compact expandable rows.
+- Balanced mobile shift edit fields so Start, End, Miles, and Delete no longer overlap.
+
+### Production Behavior
+
+- No database schema changes were added for V5.7.6.
+- No XP, achievements, rival systems, auth, exports, dashboard calculations, or roadmap systems were changed.
+
 ## V5.7.5 — Admin Re-Engagement Email
 
 ### Added

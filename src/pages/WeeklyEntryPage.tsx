@@ -13,9 +13,9 @@ import {
   weekTotal,
   appTotal,
 } from "@/lib/store";
-import { DAY_NAMES, type WeekRecord } from "@/lib/types";
+import { DAY_NAMES, type DayEntry, type ShiftSession, type WeekRecord } from "@/lib/types";
 import type { StoreContext } from "./types";
-import { CalendarPlus, Save, Lock, Trash2, AlertTriangle, CheckCircle2, History } from "lucide-react";
+import { CalendarPlus, Save, Lock, Trash2, AlertTriangle, CheckCircle2, History, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -42,6 +42,19 @@ function applyTimeToShiftDate(dayDate: string, value: string): string {
   return `${dayDate}T${value || "00:00"}:00`;
 }
 
+function liveShiftDurationHours(shift: ShiftSession): number {
+  const start = Date.parse(shift.startTime);
+  if (Number.isNaN(start)) return 0;
+  return Math.max(0, (Date.now() - start) / 3600000);
+}
+
+function formatShiftTime(value?: string): string {
+  if (!value) return "active";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "active";
+  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
 export default function WeeklyEntryPage() {
   const { openWeek, weeks, settings, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
@@ -62,6 +75,7 @@ export default function WeeklyEntryPage() {
   );
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [expandedShiftIds, setExpandedShiftIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const target = requestedWeekId ? requestedWeek : openWeek;
@@ -333,6 +347,15 @@ export default function WeeklyEntryPage() {
     persistShiftState({ ...editWeek, entries });
   }
 
+  function toggleShiftExpanded(shiftId: string) {
+    setExpandedShiftIds((current) => {
+      const next = new Set(current);
+      if (next.has(shiftId)) next.delete(shiftId);
+      else next.add(shiftId);
+      return next;
+    });
+  }
+
   if (!editWeek) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
@@ -412,6 +435,15 @@ export default function WeeklyEntryPage() {
   const allShifts = editWeek.entries.flatMap((day, dayIdx) =>
     (day.shifts ?? []).map((shift) => ({ day, dayIdx, shift })),
   );
+  const activeShiftBlock = allShifts.find(({ shift }) => !shift.endTime) ?? null;
+  const historicalShifts = allShifts.filter(({ shift }) => shift.endTime);
+  const shiftRate = (day: DayEntry, shift: ShiftSession) => {
+    const completedShiftsForDay = (day.shifts ?? []).filter((item) => item.endTime).length;
+    if (completedShiftsForDay !== 1) return null;
+    const hours = shiftDurationHours(shift);
+    if (hours <= 0) return null;
+    return dayTotal(day) / hours;
+  };
 
   // Mobile day detail view
   if (isMobile && selectedDayIdx !== null && editWeek) {
@@ -562,51 +594,118 @@ export default function WeeklyEntryPage() {
               Today is outside this week. Open a specific day below to edit historical shift blocks.
             </p>
           )}
-          {allShifts.map(({ day, dayIdx, shift }) => (
-              <div key={shift.id} className="grid grid-cols-1 sm:grid-cols-[1fr_6.5rem_6.5rem_7rem_auto] items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2">
+          {activeShiftBlock && (
+            <div className="rounded-xl border border-success/25 bg-success/5 p-3">
+              <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold truncate">
-                    {day.dayName} · {new Date(shift.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
-                    {shift.endTime ? ` → ${new Date(shift.endTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : " → active"}
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-success">Active Shift</p>
+                  <p className="mt-1 text-sm font-semibold">
+                    Started: {formatShiftTime(activeShiftBlock.shift.startTime)}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {shift.endTime ? `${shiftDurationHours(shift).toFixed(1)}h` : "Shift running"} · manual miles
+                  <p className="text-xs text-muted-foreground">
+                    {activeShiftBlock.day.dayName} · {liveShiftDurationHours(activeShiftBlock.shift).toFixed(1)}h running
                   </p>
                 </div>
-                <Input
-                  type="time"
-                  className="h-8 font-mono text-xs"
-                  value={timeInputValue(shift.startTime)}
-                  onChange={(e) => handleShiftTimeUpdate(dayIdx, shift.id, "startTime", e.target.value)}
-                />
-                <Input
-                  type="time"
-                  className="h-8 font-mono text-xs"
-                  value={timeInputValue(shift.endTime)}
-                  disabled={!shift.endTime}
-                  onChange={(e) => handleShiftTimeUpdate(dayIdx, shift.id, "endTime", e.target.value)}
-                />
                 <Input
                   type="number"
                   step="0.1"
                   min="0"
-                  className="h-8 text-right font-mono text-xs"
-                  value={shift.miles || ""}
+                  className="h-9 w-24 shrink-0 text-right font-mono text-xs"
+                  value={activeShiftBlock.shift.miles || ""}
                   placeholder="mi"
-                  onChange={(e) => handleShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
+                  onChange={(e) => handleShiftMilesUpdate(activeShiftBlock.dayIdx, activeShiftBlock.shift.id, e.target.value)}
                 />
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => handleDeleteShift(dayIdx, shift.id)}
-                  aria-label="Delete shift block"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
-            ))}
+            </div>
+          )}
+
+          <div className="pt-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              This Week&apos;s Shifts ({allShifts.length})
+            </p>
+          </div>
+
+          {historicalShifts.length === 0 && !activeShiftBlock && (
+            <p className="rounded-lg border border-border bg-background/50 px-3 py-2 text-xs text-muted-foreground">
+              No shift blocks logged yet.
+            </p>
+          )}
+
+          {historicalShifts.map(({ day, dayIdx, shift }) => {
+            const expanded = expandedShiftIds.has(shift.id);
+            const hours = shiftDurationHours(shift);
+            const rate = shiftRate(day, shift);
+            return (
+              <div key={shift.id} className="rounded-lg border border-border bg-background/50 px-3 py-2">
+                <button
+                  type="button"
+                  className="flex w-full items-start gap-2 text-left"
+                  onClick={() => toggleShiftExpanded(shift.id)}
+                  aria-expanded={expanded}
+                >
+                  {expanded ? (
+                    <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">
+                      {day.dayName} · {formatShiftTime(shift.startTime)} → {formatShiftTime(shift.endTime)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {hours.toFixed(1)}h · {rate ? `${formatCurrency(rate, sym)}/hr` : "—/hr"} · {(shift.miles ?? 0).toFixed(1)} mi
+                    </p>
+                  </div>
+                </button>
+
+                {expanded && (
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-[7rem_7rem_7rem_auto] sm:items-end">
+                    <label className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Start</span>
+                      <Input
+                        type="time"
+                        className="h-9 font-mono text-xs"
+                        value={timeInputValue(shift.startTime)}
+                        onChange={(e) => handleShiftTimeUpdate(dayIdx, shift.id, "startTime", e.target.value)}
+                      />
+                    </label>
+                    <label className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">End</span>
+                      <Input
+                        type="time"
+                        className="h-9 font-mono text-xs"
+                        value={timeInputValue(shift.endTime)}
+                        disabled={!shift.endTime}
+                        onChange={(e) => handleShiftTimeUpdate(dayIdx, shift.id, "endTime", e.target.value)}
+                      />
+                    </label>
+                    <label className="col-span-2 space-y-1 sm:col-span-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Miles</span>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        className="h-9 text-right font-mono text-xs"
+                        value={shift.miles || ""}
+                        placeholder="mi"
+                        onChange={(e) => handleShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
+                      />
+                    </label>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-9 w-9 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => handleDeleteShift(dayIdx, shift.id)}
+                      aria-label="Delete shift block"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
 

@@ -267,11 +267,10 @@ export default function DashboardPage() {
   const weeklyChase = getWeeklyRecordChase(weeks, openWeek, sym);
   const dailyChase = getDailyRecordChase(todayTotal, dayRec.record, todayName, sym);
 
-  // Unified mood engine — headline, pace chip, commentary, momentum all coherent
+  // Unified mood engine — headline, pace chip, and momentum all coherent
   const mood = getDashboardMood(weeks, openWeek, todayEntry, dayRec, sym);
   const smartHeader = mood.headline;
   const pace = mood.paceChip;
-  const commentary = mood.commentary;
   const growthStats = mood.tone === "prerun" || mood.tone === "closed"
     ? []
     : getPersonalGrowthStats(weeks, openWeek, todayTotal, todayName, dayRec.avg);
@@ -438,9 +437,7 @@ export default function DashboardPage() {
         <DailyCommandCenter compact />
 
         {(() => {
-          const insight = isDayClosed
-            ? commentary
-            : (dailyChase ?? commentary ?? weeklyChase);
+          const insight = !isDayClosed ? (dailyChase ?? weeklyChase) : null;
           if (!insight) return null;
           return (
             <div className="rounded-xl border border-border bg-card/70 px-3 py-2.5 text-sm text-muted-foreground">
@@ -544,21 +541,14 @@ export default function DashboardPage() {
 
       <DailyCommandCenter />
 
-      {/* Smart Insight — single most important contextual message */}
+      {/* Smart Insight — single actionable contextual message */}
       {(() => {
-        // Priority: daily chase > commentary > weekly chase (show only ONE)
-        const insight = isDayClosed
-          ? commentary
-          : (dailyChase ?? commentary ?? weeklyChase);
+        const insight = !isDayClosed ? (dailyChase ?? weeklyChase) : null;
         if (!insight) return null;
-        const icon = isDayClosed ? "🌙" : (!isDayClosed && dailyChase) ? "🏆" : commentary ? "💬" : "🎯";
-        const colorClass = isDayClosed
+        const icon = dailyChase ? "🏆" : "🎯";
+        const colorClass = dailyChase
           ? "bg-gold/10 border-gold/30 text-gold"
-          : dailyChase
-          ? "bg-gold/10 border-gold/30 text-gold"
-          : weeklyChase && !commentary
-          ? "bg-primary/10 border-primary/30 text-primary"
-          : "bg-accent/50 border-border text-foreground";
+          : "bg-primary/10 border-primary/30 text-primary";
         return (
           <div className={`border rounded-xl px-4 py-2.5 text-sm font-medium animate-in fade-in duration-500 ${colorClass}`}>
             {icon} {insight}

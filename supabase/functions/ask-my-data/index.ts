@@ -22,6 +22,21 @@ const ESTIMATED_OUTPUT_USD_PER_1M = 2.50;
 
 type DataScope = "RECENT" | "ALL_TIME" | "SEASONAL";
 type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
+type AskIntent =
+  | "DAY"
+  | "WEEK"
+  | "MONTH"
+  | "STREAK"
+  | "HOUR"
+  | "PACE"
+  | "GOAL"
+  | "RANKING"
+  | "RIVAL"
+  | "INSIGHT"
+  | "PATTERN"
+  | "COACHING"
+  | "UNSUPPORTED"
+  | "GENERAL";
 type TokenUsage = {
   inputTokens: number | null;
   outputTokens: number | null;
@@ -117,6 +132,7 @@ function normalizeWeek(w: WeekRow): NormalizedWeek {
 function detectScope(messages: ChatMessage[], knownApps: string[] = []): { scope: DataScope; reason: string } {
   const latest = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
   const q = latest.toLowerCase();
+  const intent = detectIntent(latest, knownApps);
 
   const seasonalTerms = [
     "season", "seasonal", "summer", "winter", "spring", "fall", "autumn",
@@ -139,13 +155,14 @@ function detectScope(messages: ChatMessage[], knownApps: string[] = []): { scope
     /\bytd\b|\byear to date\b/.test(q) ||
     /\b\d{4}-\d{2}-\d{2}\b/.test(q);
 
-  if (seasonalTerms.some((term) => q.includes(term))) {
+  if (intent === "MONTH" || seasonalTerms.some((term) => q.includes(term))) {
     return { scope: "SEASONAL", reason: "Question asks for long-range or time-period comparison." };
   }
   if (explicitRecentTimeframe) {
     return { scope: "RECENT", reason: "Question explicitly asks for a recent or bounded timeframe." };
   }
-  if (allTimeTerms.some((term) => q.includes(term))) {
+  if (intent === "STREAK" || intent === "RANKING" || intent === "INSIGHT" || intent === "PATTERN" || intent === "COACHING" ||
+    allTimeTerms.some((term) => q.includes(term))) {
     return { scope: "ALL_TIME", reason: "Question asks for record, lifetime, or historical analytics." };
   }
   // App-vs-app, weekday combos, and consecutive-day windows all require full history
@@ -252,6 +269,29 @@ function rollupByPeriod(weeks: NormalizedWeek[], keyOf: (date: string) => string
     .sort((a, b) => a.period.localeCompare(b.period));
 }
 
+function rollupDaysByMonth(weeks: NormalizedWeek[]) {
+  const map = new Map<string, { total: number; daysTracked: number; activeDays: number }>();
+  for (const w of weeks) {
+    for (const day of w.dayTotals) {
+      const key = monthKey(day.date);
+      const cur = map.get(key) || { total: 0, daysTracked: 0, activeDays: 0 };
+      cur.total += day.total;
+      cur.daysTracked += 1;
+      if (day.total > 0) cur.activeDays += 1;
+      map.set(key, cur);
+    }
+  }
+  return [...map.entries()]
+    .map(([period, v]) => ({
+      period,
+      total: round(v.total),
+      daysTracked: v.daysTracked,
+      activeDays: v.activeDays,
+      averageActiveDay: v.activeDays ? round(v.total / v.activeDays) : 0,
+    }))
+    .sort((a, b) => a.period.localeCompare(b.period));
+}
+
 function trendBuckets(weeks: NormalizedWeek[]) {
   const closed = weeks.filter((w) => w.status === "closed").sort((a, b) => a.startDate.localeCompare(b.startDate));
   const size = Math.max(1, Math.ceil(closed.length / 4));
@@ -319,6 +359,8 @@ function isWorstDayQuestion(prompt: string): boolean {
 
 function isBestDayQuestion(prompt: string): boolean {
   const q = prompt.toLowerCase();
+  const intent = detectIntent(prompt);
+  if (intent === "HOUR" || intent === "STREAK" || intent === "MONTH") return false;
   return /\b(best|highest|top|strongest)\b/.test(q) &&
     (/\b(day|days|earning|earnings)\b/.test(q) || parseWeekdayMentions(prompt).length > 0);
 }
@@ -354,7 +396,8 @@ function weekdayListAnalysis(weeks: NormalizedWeek[], prompt: string) {
 function dayRankingAnalysis(weeks: NormalizedWeek[], prompt: string) {
   if (!isDayRankingQuestion(prompt)) return null;
   const q = prompt.toLowerCase();
-  const limit = parseRequestedLimit(prompt, 20);
+  const singularBestDay = /\b(best|highest|top|strongest)\b/.test(q) && /\bday\b/.test(q) && !/\bdays\b/.test(q);
+  const limit = parseRequestedLimit(prompt, singularBestDay ? 1 : 20);
   const weekdays = parseWeekdayMentions(prompt);
   const includeZeroDays = !/\b(worked|active|earning days|paid days)\b/.test(q);
   const sortAscending = isWorstDayQuestion(prompt);
@@ -375,7 +418,7 @@ function dayRankingAnalysis(weeks: NormalizedWeek[], prompt: string) {
   };
 }
 
-function isConsecutiveDayOffQuestion(prompt: string): boolean {
+function restPairMode(prompt: string): "take_off" | "protect" | null {
   const q = prompt.toLowerCase();
   const asksForRest =
     /\b(day off|days off|off day|off days|rest|break|take off)\b/.test(q) ||
@@ -384,11 +427,20 @@ function isConsecutiveDayOffQuestion(prompt: string): boolean {
     /\b(two|2|dos)\b/.test(q) || /\bpair|pareja\b/.test(q);
   const asksForConsecutive =
     /\b(consecutive|back-to-back|together|in a row|seguidos|seguidas|consecutivos|consecutivas)\b/.test(q);
-  return asksForRest && asksForTwo && asksForConsecutive;
+  const asksWhatToProtect =
+    /\b(should not|shouldn't|dont rest|don't rest|not rest|avoid resting|no descansar|no deberia|no debería|no deberia descansar|no debería descansar)\b/.test(q);
+  if (asksForRest && asksForTwo && asksWhatToProtect) return "protect";
+  if (asksForRest && asksForTwo && asksForConsecutive) return "take_off";
+  return null;
+}
+
+function isConsecutiveDayOffQuestion(prompt: string): boolean {
+  return restPairMode(prompt) !== null;
 }
 
 function consecutiveDayOffAnalysis(weeks: NormalizedWeek[], prompt: string) {
-  if (!isConsecutiveDayOffQuestion(prompt)) return null;
+  const mode = restPairMode(prompt);
+  if (!mode) return null;
   const stats = weekdayStats(weeks) as Record<string, { average: number; count: number; best: number; bestDate: string | null }>;
   const weekdayAverages = WEEKDAY_ORDER
     .map((day) => ({ day, average: stats[day]?.average ?? null, count: stats[day]?.count ?? 0 }))
@@ -414,9 +466,10 @@ function consecutiveDayOffAnalysis(weeks: NormalizedWeek[], prompt: string) {
 
   return {
     method: "weekday_average_consecutive_pairs_lowest_combined_impact",
+    mode,
     weekdayAverages,
     pairs,
-    recommendation: pairs[0] ?? null,
+    recommendation: mode === "protect" ? pairs[pairs.length - 1] ?? null : pairs[0] ?? null,
   };
 }
 
@@ -466,6 +519,126 @@ function topWeekdayCombos(weeks: NormalizedWeek[], dayNames: string[], topN = 3)
   const totals = results.map((r) => r.total);
   const average = totals.length ? round(totals.reduce((s, v) => s + v, 0) / totals.length) : 0;
   return { top: results.slice(0, topN), sampleSize: results.length, average };
+}
+
+function monthRankingAnalysis(weeks: NormalizedWeek[]) {
+  const months = rollupDaysByMonth(weeks).sort((a, b) => b.total - a.total || a.period.localeCompare(b.period));
+  const chronological = [...months].sort((a, b) => a.period.localeCompare(b.period));
+  return {
+    strongest: months[0] ?? null,
+    weakest: [...months].reverse().find((m) => m.total > 0) ?? null,
+    monthsCompared: months.length,
+    chronological,
+    top: months.slice(0, 5),
+  };
+}
+
+function highestEarningStreakAnalysis(weeks: NormalizedWeek[]) {
+  const days = flattenDays(weeks);
+  const streaks: { startDate: string; endDate: string; days: number; total: number; averageDay: number }[] = [];
+  let current: { startDate: string; endDate: string; days: number; total: number } | null = null;
+
+  for (const day of days) {
+    if (day.total <= 0) {
+      if (current) {
+        streaks.push({ ...current, total: round(current.total), averageDay: round(current.total / current.days) });
+        current = null;
+      }
+      continue;
+    }
+
+    if (!current || daysBetween(current.endDate, day.date) !== 1) {
+      if (current) {
+        streaks.push({ ...current, total: round(current.total), averageDay: round(current.total / current.days) });
+      }
+      current = { startDate: day.date, endDate: day.date, days: 1, total: day.total };
+      continue;
+    }
+
+    current.endDate = day.date;
+    current.days += 1;
+    current.total += day.total;
+  }
+
+  if (current) {
+    streaks.push({ ...current, total: round(current.total), averageDay: round(current.total / current.days) });
+  }
+
+  return {
+    highestByTotal: [...streaks].sort((a, b) => b.total - a.total || b.days - a.days)[0] ?? null,
+    longest: [...streaks].sort((a, b) => b.days - a.days || b.total - a.total)[0] ?? null,
+    topByTotal: [...streaks].sort((a, b) => b.total - a.total || b.days - a.days).slice(0, 5),
+    streaksCompared: streaks.length,
+  };
+}
+
+function weekendTrendAnalysis(weeks: NormalizedWeek[]) {
+  const sorted = [...weeks].sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const rows = sorted.map((week) => {
+    const saturday = week.dayTotals.find((day) => day.day === "Saturday")?.total ?? 0;
+    const sunday = week.dayTotals.find((day) => day.day === "Sunday")?.total ?? 0;
+    return { startDate: week.startDate, endDate: week.endDate, total: round(saturday + sunday), saturday, sunday };
+  }).filter((row) => row.total > 0);
+
+  const recent = rows.slice(-4);
+  const prior = rows.slice(-8, -4);
+  const recentAverage = recent.length ? round(recent.reduce((sum, row) => sum + row.total, 0) / recent.length) : 0;
+  const priorAverage = prior.length ? round(prior.reduce((sum, row) => sum + row.total, 0) / prior.length) : 0;
+  return {
+    recentWeeks: recent.length,
+    priorWeeks: prior.length,
+    recentAverage,
+    priorAverage,
+    change: round(recentAverage - priorAverage),
+    direction: recentAverage > priorAverage ? "stronger" : recentAverage < priorAverage ? "weaker" : "flat",
+    bestWeekend: rows.sort((a, b) => b.total - a.total)[0] ?? null,
+  };
+}
+
+function currentWeekSnapshot(weeks: NormalizedWeek[]) {
+  const latest = [...weeks].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+  if (!latest) return null;
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const exactToday = latest.dayTotals.find((day) => day.date === todayIso);
+  const latestPositive = [...latest.dayTotals].reverse().find((day) => day.total > 0);
+  const focusDay = exactToday ?? latestPositive ?? latest.dayTotals[0] ?? null;
+  const weekTotal = latest.total;
+  const goalLeft = Math.max(0, latest.goal - weekTotal);
+  const remainingDays = focusDay
+    ? latest.dayTotals.filter((day) => day.date >= focusDay.date).length
+    : latest.dayTotals.length;
+  const allDays = flattenDays(weeks).filter((day) => day.total > 0).sort((a, b) => b.total - a.total);
+  const todayRank = focusDay && focusDay.total > 0
+    ? allDays.findIndex((day) => day.date === focusDay.date) + 1
+    : 0;
+  const bestSameWeekday = focusDay
+    ? allDays.filter((day) => day.day === focusDay.day).sort((a, b) => b.total - a.total)[0] ?? null
+    : null;
+  const bestDayEver = allDays[0] ?? null;
+
+  return {
+    week: {
+      startDate: latest.startDate,
+      endDate: latest.endDate,
+      status: latest.status,
+      goal: latest.goal,
+      total: latest.total,
+      daysWorked: latest.daysWorked,
+    },
+    focusDay,
+    goalLeft: round(goalLeft),
+    remainingDays,
+    neededPerRemainingDay: remainingDays > 0 ? round(goalLeft / remainingDays) : 0,
+    todayRank: todayRank > 0 ? { rank: todayRank, outOf: allDays.length } : null,
+    recordChase: focusDay
+      ? {
+        bestDayEver,
+        bestSameWeekday,
+        gapToBestDayEver: bestDayEver ? round(bestDayEver.total - focusDay.total) : null,
+        gapToBestSameWeekday: bestSameWeekday ? round(bestSameWeekday.total - focusDay.total) : null,
+      }
+      : null,
+  };
 }
 
 function parseDayCombo(prompt: string): string[] | null {
@@ -587,6 +760,23 @@ function isHistoricalQuestion(prompt: string): boolean {
   return HISTORICAL_TERMS.some((t) => q.includes(t));
 }
 
+function detectIntent(prompt: string, knownApps: string[] = []): AskIntent {
+  const q = prompt.toLowerCase();
+  if (/\b(hour|hours|hourly|earning hour|best hour)\b/.test(q)) return "HOUR";
+  if (/\b(streak|streaks|racha|racha de ganancias)\b/.test(q)) return "STREAK";
+  if (/\b(month|months|monthly|mes|meses)\b/.test(q)) return "MONTH";
+  if (/\b(goal|target|meta|hit my goal|need per day|per day to hit|rest of the week|restante|por día|por dia)\b/.test(q)) return "GOAL";
+  if (/\b(today rank|rank today|where does today rank|closest record|record.*closest|closest.*record|ranking.*today)\b/.test(q)) return "RANKING";
+  if (/\b(rival|past me|version of me|toughest rival|mi rival|yo del pasado)\b/.test(q)) return "RIVAL";
+  if (/\b(surprising|surprise|unusual|weird|interesting|opportunity|story|tell me something|most unusual|biggest opportunity)\b/.test(q)) return "INSIGHT";
+  if (/\b(pattern|trend|changed the most|pay attention|getting stronger|getting weaker|improving|improvement|growth|weaker|stronger)\b/.test(q)) return "PATTERN";
+  if (/\b(coach|coaching|focus on|mistake|decision|schedule|healthiest|ideal work|work schedule)\b/.test(q)) return "COACHING";
+  if (isAppVsAppQuestion(prompt, knownApps)) return "RANKING";
+  if (/\b(week|weekly)\b/.test(q)) return "WEEK";
+  if (/\b(day|days|weekday|weekdays|today|saturday|sunday|monday|tuesday|wednesday|thursday|friday)\b/.test(q)) return "DAY";
+  return "GENERAL";
+}
+
 function isAppVsAppQuestion(prompt: string, knownApps: string[]): boolean {
   const pair = parseAppPair(prompt, knownApps);
   if (!pair) return false;
@@ -699,8 +889,10 @@ function buildContext(args: {
   const knownApps = Array.from(
     new Set([...(settings?.active_apps ?? []), ...weeks.flatMap((w) => Object.keys(w.appTotals))]),
   );
+  const intent = detectIntent(prompt, knownApps);
   const analysis: Record<string, unknown> = {};
   if (prompt) {
+    analysis.intent = intent;
     const weekdayList = weekdayListAnalysis(weeks, prompt);
     if (weekdayList) {
       analysis.weekdayList = weekdayList;
@@ -727,6 +919,18 @@ function buildContext(args: {
     const pair = parseAppPair(prompt, knownApps);
     if (pair) {
       analysis.appHeadToHead = appHeadToHead(weeks, pair[0], pair[1]);
+    }
+    if (intent === "MONTH") {
+      analysis.monthRanking = monthRankingAnalysis(weeks);
+    }
+    if (intent === "STREAK") {
+      analysis.earningStreak = highestEarningStreakAnalysis(weeks);
+    }
+    if (intent === "GOAL" || intent === "RANKING") {
+      analysis.currentWeek = currentWeekSnapshot(weeks);
+    }
+    if ((intent === "PATTERN" || intent === "INSIGHT" || intent === "COACHING") && /\bweekend|weekends|saturday|sunday|sábado|sabado|domingo\b/i.test(prompt)) {
+      analysis.weekendTrend = weekendTrendAnalysis(weeks);
     }
   }
   const analysisBlock = Object.keys(analysis).length ? { analysis } : {};
@@ -940,6 +1144,166 @@ function directBestWeekAnswer(context: unknown, currency: string): string | null
   return `Your best week ever was ${range}, when you earned ${amount}.${statusNote}`;
 }
 
+function directIntentAnswer(context: unknown, currency: string, prompt: string): string | null {
+  const c = context as {
+    lifetime?: {
+      averageClosedWeek?: number;
+      appTotals?: Record<string, number>;
+      weekdayStats?: Record<string, { average: number; count: number; best: number; bestDate: string | null }>;
+      evolution?: { from: string; to: string; weeks: number; averageWeek: number }[];
+    };
+    analysis?: {
+      intent?: AskIntent;
+      monthRanking?: ReturnType<typeof monthRankingAnalysis>;
+      earningStreak?: ReturnType<typeof highestEarningStreakAnalysis>;
+      currentWeek?: ReturnType<typeof currentWeekSnapshot>;
+      weekendTrend?: ReturnType<typeof weekendTrendAnalysis>;
+    };
+  };
+  const intent = c.analysis?.intent ?? detectIntent(prompt);
+  const q = prompt.toLowerCase();
+  const spanish = usesSpanish(prompt);
+
+  if (intent === "HOUR") {
+    return spanish
+      ? "Todavía no puedo calcular tu mejor hora de ganancias porque Streex no guarda ganancias por hora. Puedo analizar días, semanas, meses y shifts cuando estén registrados, pero no horas individuales todavía."
+      : "I can't calculate your best earning hour yet because Streex does not store earnings by hour. I can analyze days, weeks, months, and tracked shifts, but not individual hourly earnings yet.";
+  }
+
+  if (intent === "RIVAL") {
+    return spanish
+      ? "Todavía no tengo una capa determinística para comparar versiones de ti como rivales. Puedo comparar periodos concretos, por ejemplo: 'compárame contra mis últimas 4 semanas' o 'compárame contra mi mejor periodo'."
+      : "I don't have a deterministic rival/version-of-you comparison layer yet. I can compare specific periods, for example: 'compare me against my last 4 weeks' or 'compare me against my best period'.";
+  }
+
+  if (intent === "MONTH") {
+    const ranking = c.analysis?.monthRanking;
+    if (!ranking?.strongest) return null;
+    if (/\b(strongest|best|highest|most|mejor|más fuerte|mas fuerte)\b/.test(q)) {
+      const topLines = ranking.top
+        .map((month, index) => `${index + 1}. ${month.period}: ${formatCurrencyForAssistant(month.total, currency)}`)
+        .join("\n");
+      return `Your strongest month was **${ranking.strongest.period}** with ${formatCurrencyForAssistant(ranking.strongest.total, currency)}.\n\nTop months:\n${topLines}`;
+    }
+  }
+
+  if (intent === "STREAK") {
+    const streak = c.analysis?.earningStreak?.highestByTotal;
+    if (!streak) {
+      return "I don't see enough consecutive active days yet to calculate an earning streak.";
+    }
+    return [
+      `Your highest earning streak was **${streak.days} consecutive active days**, from ${formatDateForAssistant(streak.startDate)} to ${formatDateForAssistant(streak.endDate)}.`,
+      "",
+      `Total: ${formatCurrencyForAssistant(streak.total, currency)}`,
+      `Average per active day: ${formatCurrencyForAssistant(streak.averageDay, currency)}`,
+      "",
+      "I’m treating an earning streak as consecutive days with tracked earnings, then ranking those streaks by total earnings.",
+    ].join("\n");
+  }
+
+  if (intent === "GOAL") {
+    const current = c.analysis?.currentWeek;
+    if (!current) return null;
+    const left = formatCurrencyForAssistant(current.goalLeft, currency);
+    const needed = formatCurrencyForAssistant(current.neededPerRemainingDay, currency);
+    const dayLabel = current.focusDay ? `${current.focusDay.day}, ${current.focusDay.date}` : "the current tracked day";
+    return [
+      `Your current week total is ${formatCurrencyForAssistant(current.week.total, currency)} against a ${formatCurrencyForAssistant(current.week.goal, currency)} goal.`,
+      "",
+      `You have ${left} left.`,
+      `From ${dayLabel} through the end of the tracked week, that is about **${needed} per day** across ${current.remainingDays} day${current.remainingDays === 1 ? "" : "s"}.`,
+    ].join("\n");
+  }
+
+  if (intent === "RANKING") {
+    const current = c.analysis?.currentWeek;
+    if (!current?.focusDay) return null;
+    if (/\btoday rank|rank today|where does today rank|ranking.*today\b/.test(q)) {
+      if (!current.todayRank) return "Today does not have tracked earnings yet, so I cannot rank it against your earning days.";
+      return `${current.focusDay.day}, ${current.focusDay.date} is currently ranked **#${current.todayRank.rank} of ${current.todayRank.outOf}** earning days in your Streex history, with ${formatCurrencyForAssistant(current.focusDay.total, currency)}.`;
+    }
+    if (/\bclosest record|record.*closest|closest.*record\b/.test(q) && current.recordChase) {
+      const same = current.recordChase.bestSameWeekday;
+      const best = current.recordChase.bestDayEver;
+      const sameGap = current.recordChase.gapToBestSameWeekday;
+      const bestGap = current.recordChase.gapToBestDayEver;
+      const options = [
+        same && sameGap !== null && sameGap >= 0 ? `same-weekday record (${same.day}): ${formatCurrencyForAssistant(sameGap, currency)} away from ${formatCurrencyForAssistant(same.total, currency)}` : null,
+        best && bestGap !== null && bestGap >= 0 ? `all-time daily record: ${formatCurrencyForAssistant(bestGap, currency)} away from ${formatCurrencyForAssistant(best.total, currency)}` : null,
+      ].filter(Boolean);
+      if (!options.length) return null;
+      return `The closest visible record from today’s tracked total is:\n\n- ${options.join("\n- ")}`;
+    }
+  }
+
+  if (c.analysis?.weekendTrend && /\bweekend|weekends|saturday|sunday|sábado|sabado|domingo\b/i.test(prompt)) {
+    const trend = c.analysis.weekendTrend;
+    return [
+      `Your combined Saturday + Sunday trend is **${trend.direction}** right now.`,
+      "",
+      `Recent weekend average: ${formatCurrencyForAssistant(trend.recentAverage, currency)}`,
+      `Prior weekend average: ${formatCurrencyForAssistant(trend.priorAverage, currency)}`,
+      `Change: ${formatCurrencyForAssistant(trend.change, currency)}`,
+      trend.bestWeekend ? `Best weekend: ${trend.bestWeekend.startDate} to ${trend.bestWeekend.endDate}, ${formatCurrencyForAssistant(trend.bestWeekend.total, currency)}` : "",
+    ].filter(Boolean).join("\n");
+  }
+
+  if (intent === "INSIGHT" || intent === "PATTERN" || intent === "COACHING") {
+    const evolution = c.lifetime?.evolution ?? [];
+    const weekdayStats = c.lifetime?.weekdayStats ?? {};
+    const appTotals = c.lifetime?.appTotals ?? {};
+    const strongestDay = Object.entries(weekdayStats)
+      .sort(([, a], [, b]) => b.average - a.average)[0];
+    const weakestDay = Object.entries(weekdayStats)
+      .sort(([, a], [, b]) => a.average - b.average)[0];
+    const topApp = Object.entries(appTotals).sort(([, a], [, b]) => b - a)[0];
+    const latestBucket = evolution[evolution.length - 1];
+    const peakBucket = [...evolution].sort((a, b) => b.averageWeek - a.averageWeek)[0];
+    if (!strongestDay && !topApp && !peakBucket) return null;
+
+    if (intent === "COACHING") {
+      return [
+        "Insight:",
+        peakBucket && latestBucket
+          ? `Your best period averaged ${formatCurrencyForAssistant(peakBucket.averageWeek, currency)} per week, while your latest period averages ${formatCurrencyForAssistant(latestBucket.averageWeek, currency)}.`
+          : `Your historical average week is ${formatCurrencyForAssistant(c.lifetime?.averageClosedWeek ?? 0, currency)}.`,
+        "",
+        "Evidence:",
+        strongestDay ? `${strongestDay[0]} is your strongest weekday at ${formatCurrencyForAssistant(strongestDay[1].average, currency)} on average.` : "Your weekday mix is the clearest signal available.",
+        "",
+        "Opportunity:",
+        strongestDay && weakestDay
+          ? `Protect ${strongestDay[0]} and be more selective with ${weakestDay[0]}. That is the cleanest schedule lever in your data.`
+          : "Focus on recreating the conditions from your peak earning period.",
+      ].join("\n");
+    }
+
+    return [
+      "Insight:",
+      strongestDay && weakestDay
+        ? `${strongestDay[0]} earns ${formatCurrencyForAssistant(strongestDay[1].average - weakestDay[1].average, currency)} more than ${weakestDay[0]} on an average active day.`
+        : topApp
+        ? `${topApp[0]} is your largest app contributor.`
+        : `Your peak period averaged ${formatCurrencyForAssistant(peakBucket.averageWeek, currency)} per week.`,
+      "",
+      "Evidence:",
+      strongestDay && weakestDay
+        ? `${strongestDay[0]} averages ${formatCurrencyForAssistant(strongestDay[1].average, currency)}; ${weakestDay[0]} averages ${formatCurrencyForAssistant(weakestDay[1].average, currency)}.`
+        : peakBucket
+        ? `${peakBucket.from} to ${peakBucket.to} was your strongest period.`
+        : "This comes from your full Streex history.",
+      "",
+      "Opportunity:",
+      strongestDay
+        ? `Build around ${strongestDay[0]} first, then use weaker days more intentionally for recovery or lighter work.`
+        : "Look for what made your strongest period different and try to repeat that pattern.",
+    ].join("\n");
+  }
+
+  return null;
+}
+
 function formatDateForAssistant(date: string): string {
   const parsed = new Date(`${date}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) return date;
@@ -976,6 +1340,7 @@ function directDayAnalysisAnswer(context: unknown, currency: string, prompt = ""
     coverage?: { isFullHistoryLoaded?: boolean };
     analysis?: {
       consecutiveDayOff?: {
+        mode?: "take_off" | "protect";
         pairs: {
           days: string[];
           combinedAverage: number;
@@ -1023,6 +1388,7 @@ function directDayAnalysisAnswer(context: unknown, currency: string, prompt = ""
     }
 
     const spanish = usesSpanish(prompt);
+    const protectMode = consecutiveDayOff.mode === "protect";
     const pairLines = consecutiveDayOff.pairs.map((pair) => {
       const label = pair.days.map((day) => localizedDay(day, spanish)).join(spanish ? " + " : " + ");
       return `- ${label}: ${formatCurrencyForAssistant(pair.combinedAverage, currency)}`;
@@ -1033,6 +1399,19 @@ function directDayAnalysisAnswer(context: unknown, currency: string, prompt = ""
     const weaker = first.average <= second.average ? first : second;
     const other = first.average <= second.average ? second : first;
     if (spanish) {
+      if (protectMode) {
+        return [
+          `Si tu objetivo es proteger tus mejores ventanas, los dos días consecutivos que **menos conviene descansar** son **${bestDays[0]} + ${bestDays[1]}**.`,
+          "",
+          `Esa pareja suma ${formatCurrencyForAssistant(best.combinedAverage, currency)} de promedio combinado (${localizedDay(first.day, true)} ${formatCurrencyForAssistant(first.average, currency)} + ${localizedDay(second.day, true)} ${formatCurrencyForAssistant(second.average, currency)}).`,
+          "",
+          "Comparé todas las parejas consecutivas válidas:",
+          ...pairLines,
+          "",
+          "Es la combinación con mayor impacto potencial en tus ganancias si la tomaras libre.",
+        ].join("\n");
+      }
+
       return [
         `Para dos días seguidos de descanso, la mejor combinación por menor impacto promedio es **${bestDays[0]} + ${bestDays[1]}**.`,
         "",
@@ -1042,6 +1421,19 @@ function directDayAnalysisAnswer(context: unknown, currency: string, prompt = ""
         ...pairLines,
         "",
         `${localizedDay(weaker.day, true)} es el día individual más débil dentro de esta pareja, y aunque ${localizedDay(other.day, true)} no necesariamente sea tu segundo día más débil, juntos producen el menor impacto combinado.`,
+      ].join("\n");
+    }
+
+    if (protectMode) {
+      return [
+        `If your goal is to protect your strongest windows, the two consecutive days you should **avoid taking off** are **${bestDays[0]} + ${bestDays[1]}**.`,
+        "",
+        `That pair combines for ${formatCurrencyForAssistant(best.combinedAverage, currency)} on average (${first.day} ${formatCurrencyForAssistant(first.average, currency)} + ${second.day} ${formatCurrencyForAssistant(second.average, currency)}).`,
+        "",
+        "I compared every valid consecutive pair:",
+        ...pairLines,
+        "",
+        "It is the highest combined-impact pair in your history.",
       ].join("\n");
     }
 
@@ -1351,6 +1743,31 @@ Deno.serve(async (req) => {
   }
 
   {
+    const text = directIntentAnswer(context, settingsRes.data?.currency_symbol ?? "$", promptPreview);
+    if (text) {
+      await logUsage({
+        supabase,
+        userId,
+        model: "deterministic",
+        scope: scopeResult.scope,
+        promptPreview,
+        status: "success",
+        estimatedInputTokens: estimateTokens(promptPreview || " "),
+        estimatedOutputTokens: estimateTokens(text),
+        estimatedCostUsd: 0,
+        latencyMs: Date.now() - startedAt,
+        usedStreaming: false,
+        metadata: {
+          ...metadata,
+          directAnswer: "intent_router",
+          intent: detectIntent(promptPreview, knownApps),
+        },
+      });
+      return json({ text });
+    }
+  }
+
+  {
     const text = directDayAnalysisAnswer(context, settingsRes.data?.currency_symbol ?? "$", promptPreview);
     if (text) {
       await logUsage({
@@ -1384,8 +1801,10 @@ Deno.serve(async (req) => {
     "4. For grouped-day questions (e.g. Fri+Sat+Sun, weekends), ONLY use context.analysis.dayCombo. For consecutive/rolling N-day windows, ONLY use context.analysis.consecutiveWindow. For two consecutive days off / rest questions, ONLY use context.analysis.consecutiveDayOff and compare combined weekday-pair averages, not individual weekday rankings. If those blocks are missing, say the calculation isn't available for that question.",
     "5. For best/highest/record week questions, use lifetime.bestWeekEver when present, never a recent-only value.",
     "6. For single-weekday lists and best/worst day rankings, ONLY use context.analysis.weekdayList or context.analysis.dayRanking. Worst/lowest days are derivable from tracked day totals; do not claim the system cannot track them when dayRanking is present.",
-    "7. If context.scope is ALL_TIME, treat the answer as full Streex history. Do not mention a hidden 16-week or 112-day limit unless context.coverage.isFullHistoryLoaded is false.",
-    "8. Never invent numbers, dates, or apps. Never reveal raw JSON or internal field names. No SQL.",
+    "7. Use context.analysis.intent as the routing hint. Do not answer HOUR questions with day rankings, STREAK questions with top days, or MONTH questions with weekly records.",
+    "8. If a capability is not supported by the context (hourly earnings, trip locations, ride types, health/biometrics), say that cleanly and offer the closest supported Streex analysis.",
+    "9. If context.scope is ALL_TIME, treat the answer as full Streex history. Do not mention a hidden 16-week or 112-day limit unless context.coverage.isFullHistoryLoaded is false.",
+    "10. Never invent numbers, dates, or apps. Never reveal raw JSON or internal field names. No SQL.",
     "Style: concise, friendly, specific. Short paragraphs and small markdown lists. Format currency according to the provided currency code/symbol. Reference dates in a human way (e.g. 'week of Mar 10').",
   ].join(" ");
 

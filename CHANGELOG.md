@@ -1,5 +1,24 @@
 # Changelog
 
+## V5.7.7 — Ask My Data Intent Router
+
+### Fixed
+
+- Added Ask My Data intent routing before answer selection.
+- Prevented hour, streak, and month questions from falling through to best-day rankings.
+- Added deterministic support for strongest month, highest earning streak, current goal pace, today ranking, closest record, and combined weekend trend.
+- Added clearer capability-aware responses for unsupported hourly, location, ride-type, and rival/version questions.
+- Added data-backed Insight / Evidence / Opportunity responses for insight and coaching prompts.
+
+### QA
+
+- Added `docs/ASK_MY_DATA_CHALLENGE_SET.md` for repeatable Ask My Data manual certification.
+
+### Production Behavior
+
+- No database schema changes were added for V5.7.7.
+- No auth, dashboard, earnings storage, XP, achievements, exports, or roadmap systems were changed.
+
 ## V5.7.6 — Master Consolidation Polish
 
 ### Fixed

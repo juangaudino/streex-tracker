@@ -6,9 +6,24 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.7.6";
+export const CURRENT_VERSION = "5.7.7";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.7.7",
+    date: "2026-06",
+    title: "Ask My Data Intent Router",
+    tags: ["fix", "polish"],
+    items: [
+      "Ask My Data now classifies question intent before choosing an answer path",
+      "Hour, streak, month, goal, ranking, insight, pattern, coaching, and unsupported intents now avoid falling into day-ranking answers",
+      "Strongest month, highest earning streak, current goal pace, today ranking, closest record, and combined weekend trend now have deterministic support where data is available",
+      "Unsupported hourly, location, ride-type, and rival/version questions now return clearer capability-aware responses",
+      "Insight and coaching prompts now return data-backed Insight, Evidence, and Opportunity style responses",
+      "Ask My Data Challenge Set added for repeatable manual QA certification",
+      "No database schema, auth, dashboard, XP, achievements, exports, or roadmap systems were changed",
+    ],
+  },
   {
     version: "5.7.6",
     date: "2026-06",

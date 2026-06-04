@@ -141,7 +141,7 @@ function normalizeWeek(w: WeekRow): NormalizedWeek {
   };
 }
 
-function detectScope(messages: ChatMessage[], knownApps: string[] = []): { scope: DataScope; reason: string } {
+export function detectScope(messages: ChatMessage[], knownApps: string[] = []): { scope: DataScope; reason: string } {
   const latest = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
   const q = latest.toLowerCase();
   const intent = detectIntent(latest, knownApps);
@@ -816,7 +816,7 @@ function isHistoricalQuestion(prompt: string): boolean {
   return HISTORICAL_TERMS.some((t) => q.includes(t));
 }
 
-function detectIntent(prompt: string, knownApps: string[] = []): AskIntent {
+export function detectIntent(prompt: string, knownApps: string[] = []): AskIntent {
   const q = prompt.toLowerCase();
   if (/\b(hour|hours|hourly|earning hour|best hour)\b/.test(q)) return "HOUR";
   if (/\b(streak|streaks|racha|racha de ganancias)\b/.test(q)) return "STREAK";

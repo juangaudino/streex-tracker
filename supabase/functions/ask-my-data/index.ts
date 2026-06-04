@@ -1390,7 +1390,7 @@ function localizedDay(day: string, spanish: boolean): string {
   return labels[day] ?? day;
 }
 
-function directDayAnalysisAnswer(context: unknown, currency: string, prompt = ""): string | null {
+export function directDayAnalysisAnswer(context: unknown, currency: string, prompt = ""): string | null {
   const c = context as {
     scope?: DataScope;
     coverage?: { isFullHistoryLoaded?: boolean };
@@ -1409,6 +1409,8 @@ function directDayAnalysisAnswer(context: unknown, currency: string, prompt = ""
           averages: { day: string; average: number; count: number }[];
           minimumSampleSize: number;
         } | null;
+        lowSampleSize?: boolean;
+        sampleSizeFloor?: number;
       };
       weekdayList?: {
         weekday: string;
@@ -1454,6 +1456,11 @@ function directDayAnalysisAnswer(context: unknown, currency: string, prompt = ""
     const second = best.averages[1];
     const weaker = first.average <= second.average ? first : second;
     const other = first.average <= second.average ? second : first;
+    const sampleSizeNote = consecutiveDayOff.lowSampleSize
+      ? spanish
+        ? `Nota: esta recomendación es direccional porque uno de los días tiene menos de ${consecutiveDayOff.sampleSizeFloor ?? SAMPLE_SIZE_FLOOR} muestras históricas.`
+        : `Note: this recommendation is directional because one weekday has fewer than ${consecutiveDayOff.sampleSizeFloor ?? SAMPLE_SIZE_FLOOR} historical samples.`
+      : null;
     if (spanish) {
       if (protectMode) {
         return [
@@ -1465,6 +1472,7 @@ function directDayAnalysisAnswer(context: unknown, currency: string, prompt = ""
           ...pairLines,
           "",
           "Es la combinación con mayor impacto potencial en tus ganancias si la tomaras libre.",
+          ...(sampleSizeNote ? ["", sampleSizeNote] : []),
         ].join("\n");
       }
 
@@ -1477,6 +1485,7 @@ function directDayAnalysisAnswer(context: unknown, currency: string, prompt = ""
         ...pairLines,
         "",
         `${localizedDay(weaker.day, true)} es el día individual más débil dentro de esta pareja, y aunque ${localizedDay(other.day, true)} no necesariamente sea tu segundo día más débil, juntos producen el menor impacto combinado.`,
+        ...(sampleSizeNote ? ["", sampleSizeNote] : []),
       ].join("\n");
     }
 
@@ -1490,6 +1499,7 @@ function directDayAnalysisAnswer(context: unknown, currency: string, prompt = ""
         ...pairLines,
         "",
         "It is the highest combined-impact pair in your history.",
+        ...(sampleSizeNote ? ["", sampleSizeNote] : []),
       ].join("\n");
     }
 
@@ -1502,6 +1512,7 @@ function directDayAnalysisAnswer(context: unknown, currency: string, prompt = ""
       ...pairLines,
       "",
       `${weaker.day} is the weaker individual day in this pair, and while ${other.day} may not be your second weakest day, the combination produces the lowest combined impact.`,
+      ...(sampleSizeNote ? ["", sampleSizeNote] : []),
     ].join("\n");
   }
 

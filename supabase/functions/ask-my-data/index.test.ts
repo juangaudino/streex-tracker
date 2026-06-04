@@ -6,6 +6,7 @@ import {
   consecutiveDayOffAnalysis,
   detectIntent,
   detectScope,
+  directDayAnalysisAnswer,
   restPairMode,
 } from "./index.ts";
 
@@ -288,6 +289,31 @@ Deno.test("consecutiveDayOffAnalysis: asymmetric and small samples surface lowSa
   assertEquals(result.recommendation?.minimumSampleSize, 1);
   assertEquals(result.lowSampleSize, true);
   assert(result.sampleSizeCaveat, "expected a sample-size caveat string");
+});
+
+// ---------- visible deterministic answer ----------
+
+Deno.test("directDayAnalysisAnswer: surfaces small-sample caveat to the user", () => {
+  const weeks = buildHistory(1, {
+    Monday: 10,
+    Tuesday: 10,
+    Wednesday: 200,
+    Thursday: 200,
+    Friday: 200,
+    Saturday: 200,
+    Sunday: 200,
+  });
+  const analysis = consecutiveDayOffAnalysis(
+    weeks,
+    "If I wanted to take two days off in a row, which should they be?",
+  );
+  const answer = directDayAnalysisAnswer(
+    { scope: "ALL_TIME", coverage: { isFullHistoryLoaded: true }, analysis: { consecutiveDayOff: analysis } },
+    "$",
+    "If I wanted to take two days off in a row, which should they be?",
+  );
+  assert(answer?.includes("recommendation is directional"));
+  assert(answer?.includes("fewer than 4 historical samples"));
 });
 
 // ---------- intent + scope ----------

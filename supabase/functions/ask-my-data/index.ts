@@ -1702,6 +1702,7 @@ Deno.serve(async (req) => {
     ? (settingsRes.data!.active_apps as string[])
     : [];
   const scopeResult = detectScope(safeMessages, knownApps);
+  amdDebug("scope", { scope: scopeResult.scope, reason: scopeResult.reason });
 
   const [weeksRes, achRes] = await Promise.all([
     fetchWeeksForScope(supabase, scopeResult.scope),
@@ -1763,6 +1764,26 @@ Deno.serve(async (req) => {
     achievements: achRes.data ?? [],
     prompt: promptPreview,
   });
+  {
+    const intent = detectIntent(promptPreview, knownApps);
+    const restMode = restPairMode(promptPreview);
+    amdDebug("intent", { intent, restPairMode: restMode });
+    if (restMode) {
+      const rest = consecutiveDayOffAnalysis(
+        weeks.map(normalizeWeek).sort((a, b) => b.startDate.localeCompare(a.startDate)),
+        promptPreview,
+      );
+      if (rest) {
+        amdDebug("rest_pair", {
+          mode: rest.mode,
+          pairCount: rest.pairs.length,
+          recommended: rest.recommendation?.days ?? null,
+          minSampleSize: rest.recommendation?.minimumSampleSize ?? null,
+          lowSampleSize: rest.lowSampleSize,
+        });
+      }
+    }
+  }
   const metadata = {
     fetchMode: weeksRes.mode,
     weeksFetched: weeks.length,

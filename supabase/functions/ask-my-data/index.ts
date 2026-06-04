@@ -1950,8 +1950,10 @@ Deno.serve(async (req) => {
     );
   }
   if (!upstream.ok) {
+    // Drain body to free the connection but do NOT log it — upstream errors can
+    // echo the user prompt or other content. Log only metadata.
     const errText = await upstream.text().catch(() => "");
-    console.error("Lovable AI error", upstream.status, errText);
+    console.error("Lovable AI error", { status: upstream.status, bodyLength: errText.length });
     await logUsage({
       supabase,
       userId,

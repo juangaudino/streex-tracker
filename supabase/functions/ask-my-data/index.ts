@@ -20,6 +20,18 @@ const AI_MODEL = "google/gemini-2.5-flash";
 const ESTIMATED_INPUT_USD_PER_1M = 0.30;
 const ESTIMATED_OUTPUT_USD_PER_1M = 2.50;
 
+// Metadata-only debug logging. Toggle via env AMD_DEBUG=1. NEVER logs prompts,
+// messages, AI responses, weeks, earnings, emails, tokens, or user IDs.
+const AMD_DEBUG = Deno.env.get("AMD_DEBUG") === "1";
+export function amdDebug(event: string, data: Record<string, unknown> = {}) {
+  if (!AMD_DEBUG) return;
+  try {
+    console.info(`[amd] ${event}`, JSON.stringify(data));
+  } catch {
+    // ignore serialization errors
+  }
+}
+
 type DataScope = "RECENT" | "ALL_TIME" | "SEASONAL";
 type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
 type AskIntent =
@@ -129,7 +141,7 @@ function normalizeWeek(w: WeekRow): NormalizedWeek {
   };
 }
 
-function detectScope(messages: ChatMessage[], knownApps: string[] = []): { scope: DataScope; reason: string } {
+export function detectScope(messages: ChatMessage[], knownApps: string[] = []): { scope: DataScope; reason: string } {
   const latest = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
   const q = latest.toLowerCase();
   const intent = detectIntent(latest, knownApps);
@@ -418,7 +430,7 @@ function dayRankingAnalysis(weeks: NormalizedWeek[], prompt: string) {
   };
 }
 
-function restPairMode(prompt: string): "take_off" | "protect" | null {
+export function restPairMode(prompt: string): "take_off" | "protect" | null {
   const q = prompt.toLowerCase();
   const asksForRest =
     /\b(day off|days off|off day|off days|rest|break|take off)\b/.test(q) ||
@@ -438,38 +450,82 @@ function isConsecutiveDayOffQuestion(prompt: string): boolean {
   return restPairMode(prompt) !== null;
 }
 
-function consecutiveDayOffAnalysis(weeks: NormalizedWeek[], prompt: string) {
+// Real-life consecutive weekday pairs. Includes Sunday→Monday so
+// recommendations reflect calendar reality even when the pair crosses the
+// Streex Monday–Sunday week boundary.
+const CONSECUTIVE_WEEKDAY_PAIRS: ReadonlyArray<readonly [string, string]> = [
+  ["Monday", "Tuesday"],
+  ["Tuesday", "Wednesday"],
+  ["Wednesday", "Thursday"],
+  ["Thursday", "Friday"],
+  ["Friday", "Saturday"],
+  ["Saturday", "Sunday"],
+  ["Sunday", "Monday"],
+];
+const SAMPLE_SIZE_FLOOR = 4;
+
+export function consecutiveDayOffAnalysis(weeks: NormalizedWeek[], prompt: string) {
   const mode = restPairMode(prompt);
   if (!mode) return null;
   const stats = weekdayStats(weeks) as Record<string, { average: number; count: number; best: number; bestDate: string | null }>;
   const weekdayAverages = WEEKDAY_ORDER
     .map((day) => ({ day, average: stats[day]?.average ?? null, count: stats[day]?.count ?? 0 }))
     .filter((item) => item.average !== null);
-  const pairs = WEEKDAY_ORDER.slice(0, -1)
-    .map((day, index) => {
-      const nextDay = WEEKDAY_ORDER[index + 1];
-      const first = stats[day];
-      const second = stats[nextDay];
-      if (!first || !second) return null;
-      return {
-        days: [day, nextDay],
-        combinedAverage: round(first.average + second.average),
-        averages: [
-          { day, average: first.average, count: first.count },
-          { day: nextDay, average: second.average, count: second.count },
-        ],
-        minimumSampleSize: Math.min(first.count, second.count),
-      };
-    })
-    .filter((pair): pair is NonNullable<typeof pair> => Boolean(pair))
-    .sort((a, b) => a.combinedAverage - b.combinedAverage);
+  const rawPairs = CONSECUTIVE_WEEKDAY_PAIRS.map(([day, nextDay], naturalOrder) => {
+    const first = stats[day];
+    const second = stats[nextDay];
+    if (!first || !second) return null;
+    const minimumSampleSize = Math.min(first.count, second.count);
+    return {
+      days: [day, nextDay] as [string, string],
+      combinedAverage: round(first.average + second.average),
+      averages: [
+        { day, average: first.average, count: first.count },
+        { day: nextDay, average: second.average, count: second.count },
+      ],
+      minimumSampleSize,
+      crossesWeekBoundary: day === "Sunday" && nextDay === "Monday",
+      lowSample: minimumSampleSize < SAMPLE_SIZE_FLOOR,
+      naturalOrder,
+    };
+  }).filter((pair): pair is NonNullable<typeof pair> => Boolean(pair));
+
+  // Default presentation order: ascending combined average (lowest-impact first).
+  // Deterministic tie-breaks: larger minimum sample size first, then natural
+  // weekday-pair order (Mon→Tue ... Sun→Mon).
+  const pairs = [...rawPairs].sort((a, b) =>
+    a.combinedAverage - b.combinedAverage
+    || b.minimumSampleSize - a.minimumSampleSize
+    || a.naturalOrder - b.naturalOrder
+  );
+
+  let recommendation: (typeof pairs)[number] | null = null;
+  if (pairs.length) {
+    if (mode === "protect") {
+      // Highest combined average; same tie-breakers.
+      recommendation = [...rawPairs].sort((a, b) =>
+        b.combinedAverage - a.combinedAverage
+        || b.minimumSampleSize - a.minimumSampleSize
+        || a.naturalOrder - b.naturalOrder
+      )[0] ?? null;
+    } else {
+      recommendation = pairs[0] ?? null;
+    }
+  }
+
+  const lowSampleSize = recommendation ? recommendation.minimumSampleSize < SAMPLE_SIZE_FLOOR : false;
 
   return {
     method: "weekday_average_consecutive_pairs_lowest_combined_impact",
     mode,
     weekdayAverages,
     pairs,
-    recommendation: mode === "protect" ? pairs[pairs.length - 1] ?? null : pairs[0] ?? null,
+    recommendation,
+    sampleSizeFloor: SAMPLE_SIZE_FLOOR,
+    lowSampleSize,
+    sampleSizeCaveat: lowSampleSize
+      ? `Recommendation based on fewer than ${SAMPLE_SIZE_FLOOR} historical samples for one of the weekdays; treat as directional.`
+      : null,
   };
 }
 
@@ -760,7 +816,7 @@ function isHistoricalQuestion(prompt: string): boolean {
   return HISTORICAL_TERMS.some((t) => q.includes(t));
 }
 
-function detectIntent(prompt: string, knownApps: string[] = []): AskIntent {
+export function detectIntent(prompt: string, knownApps: string[] = []): AskIntent {
   const q = prompt.toLowerCase();
   if (/\b(hour|hours|hourly|earning hour|best hour)\b/.test(q)) return "HOUR";
   if (/\b(streak|streaks|racha|racha de ganancias)\b/.test(q)) return "STREAK";
@@ -1646,6 +1702,7 @@ Deno.serve(async (req) => {
     ? (settingsRes.data!.active_apps as string[])
     : [];
   const scopeResult = detectScope(safeMessages, knownApps);
+  amdDebug("scope", { scope: scopeResult.scope, reason: scopeResult.reason });
 
   const [weeksRes, achRes] = await Promise.all([
     fetchWeeksForScope(supabase, scopeResult.scope),
@@ -1707,6 +1764,26 @@ Deno.serve(async (req) => {
     achievements: achRes.data ?? [],
     prompt: promptPreview,
   });
+  if (AMD_DEBUG) {
+    const intent = detectIntent(promptPreview, knownApps);
+    const restMode = restPairMode(promptPreview);
+    amdDebug("intent", { intent, restPairMode: restMode });
+    if (restMode) {
+      const rest = consecutiveDayOffAnalysis(
+        weeks.map(normalizeWeek).sort((a, b) => b.startDate.localeCompare(a.startDate)),
+        promptPreview,
+      );
+      if (rest) {
+        amdDebug("rest_pair", {
+          mode: rest.mode,
+          pairCount: rest.pairs.length,
+          recommended: rest.recommendation?.days ?? null,
+          minSampleSize: rest.recommendation?.minimumSampleSize ?? null,
+          lowSampleSize: rest.lowSampleSize,
+        });
+      }
+    }
+  }
   const metadata = {
     fetchMode: weeksRes.mode,
     weeksFetched: weeks.length,
@@ -1873,8 +1950,10 @@ Deno.serve(async (req) => {
     );
   }
   if (!upstream.ok) {
+    // Drain body to free the connection but do NOT log it — upstream errors can
+    // echo the user prompt or other content. Log only metadata.
     const errText = await upstream.text().catch(() => "");
-    console.error("Lovable AI error", upstream.status, errText);
+    console.error("Lovable AI error", { status: upstream.status, bodyLength: errText.length });
     await logUsage({
       supabase,
       userId,

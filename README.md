@@ -10,6 +10,15 @@ It is built for one feeling:
 
 **"My work has a story. My data belongs to me. My progress is real."**
 
+## Project Continuity
+
+New contributors and new Codex chats should begin with:
+
+- `AGENTS.md`
+- `docs/PROJECT_CONTEXT.md`
+- `docs/STREEX_AI_WORKFLOW.md`
+- `docs/PRODUCT_STATUS.md`
+
 ---
 
 ## ✨ What Makes Streex Different

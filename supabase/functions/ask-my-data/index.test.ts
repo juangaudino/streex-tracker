@@ -58,10 +58,11 @@ function buildHistory(
 // ---------- restPairMode routing ----------
 
 Deno.test("restPairMode: English take_off phrasing", () => {
-  const r = restPairMode("If I wanted to take two days off in a row, which should they be?");
-  console.log("DEBUG result:", r);
-  assertEquals(r, "take_off");
-  assertEquals(restPairMode("best back-to-back days off"), "take_off");
+  assertEquals(
+    restPairMode("If I wanted to take two days off in a row, which should they be?"),
+    "take_off",
+  );
+  assertEquals(restPairMode("two back-to-back days off"), "take_off");
   assertEquals(restPairMode("two consecutive days off"), "take_off");
 });
 

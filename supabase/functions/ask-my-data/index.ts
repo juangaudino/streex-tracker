@@ -20,6 +20,18 @@ const AI_MODEL = "google/gemini-2.5-flash";
 const ESTIMATED_INPUT_USD_PER_1M = 0.30;
 const ESTIMATED_OUTPUT_USD_PER_1M = 2.50;
 
+// Metadata-only debug logging. Toggle via env AMD_DEBUG=1. NEVER logs prompts,
+// messages, AI responses, weeks, earnings, emails, tokens, or user IDs.
+const AMD_DEBUG = Deno.env.get("AMD_DEBUG") === "1";
+export function amdDebug(event: string, data: Record<string, unknown> = {}) {
+  if (!AMD_DEBUG) return;
+  try {
+    console.info(`[amd] ${event}`, JSON.stringify(data));
+  } catch {
+    // ignore serialization errors
+  }
+}
+
 type DataScope = "RECENT" | "ALL_TIME" | "SEASONAL";
 type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
 type AskIntent =

@@ -1764,7 +1764,7 @@ Deno.serve(async (req) => {
     achievements: achRes.data ?? [],
     prompt: promptPreview,
   });
-  {
+  if (AMD_DEBUG) {
     const intent = detectIntent(promptPreview, knownApps);
     const restMode = restPairMode(promptPreview);
     amdDebug("intent", { intent, restPairMode: restMode });

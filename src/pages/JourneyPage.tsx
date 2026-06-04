@@ -1,5 +1,4 @@
 import { useOutletContext } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import { useAchievements } from "@/hooks/useAchievements";
 import { buildJourneyEvents, JourneyEvent } from "@/lib/journey";
 import { generateWeeklyLetter } from "@/lib/weeklyLetter";
@@ -20,8 +19,7 @@ const toneClasses: Record<string, { ring: string; text: string; bg: string }> = 
 };
 
 export default function JourneyPage() {
-  const { weeks, settings } = useOutletContext<StoreContext>();
-  const { user } = useAuth();
+  const { user, weeks, settings } = useOutletContext<StoreContext>();
   const { achievements } = useAchievements(user, weeks);
   const events = buildJourneyEvents(weeks, achievements, settings.currencySymbol);
   const [openLetters, setOpenLetters] = useState<Record<string, boolean>>({});

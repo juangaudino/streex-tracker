@@ -1,5 +1,26 @@
 # Changelog
 
+## V5.7.8 — App Resume Persistence Audit
+
+### Fixed
+
+- Supabase auth restoration now relies on the initial auth session event instead of racing it against a separate session lookup.
+- Auth state is cached in memory so React remounts and quick app resumes do not briefly fall back to login or replay the splash screen.
+- Runtime access and version checks retain their last validated state during background refreshes instead of blocking the full app again.
+- Update notices now appear only when the configured deployed version is newer than the client, preventing stale version settings from blocking a newer build.
+- Week, settings, and active-shift state retain the last hydrated in-memory snapshot while the backend refreshes.
+- Dashboard, Settings, Journey, Achievements, and the persistent app header now reuse the root authenticated user instead of creating competing auth subscriptions.
+
+### Diagnostics
+
+- Added development-safe lifecycle logging for app mount, splash reasons, auth restoration, visibility/page events, runtime checks, version checks, hydration, and intentional update reloads.
+- Production logging remains quiet unless `streex_debug_lifecycle` is explicitly set to `1` in local storage.
+
+### Production Behavior
+
+- No database schema, navigation, dashboard design, earnings calculations, XP, achievements, exports, or Supabase backend architecture changes were made.
+- A true cold launch, intentional refresh, or iOS process termination may still show the splash while the session is restored.
+
 ## V5.7.7 — Ask My Data Intent Router
 
 ### Fixed

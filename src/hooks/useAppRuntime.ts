@@ -3,6 +3,8 @@ import type { Session, User } from "@supabase/supabase-js";
 import { CURRENT_VERSION } from "@/lib/changelog";
 import { supabase } from "@/integrations/supabase/client";
 import { callAdminOps, type AccountStatus, type AppRuntimeConfig } from "@/lib/adminOps";
+import { lifecycleDebug } from "@/lib/appLifecycle";
+import { isVersionNewer } from "@/lib/appVersion";
 
 interface AccessState {
   status: AccountStatus;
@@ -17,6 +19,15 @@ interface UpdateNotice {
 
 const DISMISSED_UPDATE_KEY = "streex_update_notice_dismissed";
 
+interface RuntimeSnapshot {
+  userId: string;
+  config: AppRuntimeConfig | null;
+  access: AccessState;
+  isAdmin: boolean;
+}
+
+let cachedRuntime: RuntimeSnapshot | null = null;
+
 function sessionLoginTime(session: Session | null, user: User | null): number {
   const lastSignIn = user?.last_sign_in_at ? Date.parse(user.last_sign_in_at) : 0;
   const issuedAt = session?.expires_at && session?.expires_in
@@ -26,9 +37,13 @@ function sessionLoginTime(session: Session | null, user: User | null): number {
 }
 
 export function useAppRuntime(user: User | null, session: Session | null, signOut: () => Promise<void>) {
-  const [config, setConfig] = useState<AppRuntimeConfig | null>(null);
-  const [access, setAccess] = useState<AccessState>({ status: "active", loading: true });
-  const [isAdmin, setIsAdmin] = useState(false);
+  const cachedForUser = user && cachedRuntime?.userId === user.id ? cachedRuntime : null;
+  const [config, setConfig] = useState<AppRuntimeConfig | null>(() => cachedForUser?.config ?? null);
+  const [access, setAccess] = useState<AccessState>(() => cachedForUser?.access ?? {
+    status: "active",
+    loading: Boolean(user),
+  });
+  const [isAdmin, setIsAdmin] = useState(() => cachedForUser?.isAdmin ?? false);
   const [dismissedVersion, setDismissedVersion] = useState(() => {
     try {
       return localStorage.getItem(DISMISSED_UPDATE_KEY) ?? "";
@@ -42,13 +57,17 @@ export function useAppRuntime(user: User | null, session: Session | null, signOu
 
     async function loadRuntime() {
       if (!user) {
+        cachedRuntime = null;
         setConfig(null);
         setIsAdmin(false);
         setAccess({ status: "active", loading: false });
         return;
       }
 
-      setAccess((current) => ({ ...current, loading: true }));
+      const hasCachedRuntime = cachedRuntime?.userId === user.id && !cachedRuntime.access.loading;
+      if (!hasCachedRuntime) {
+        setAccess((current) => ({ ...current, loading: true }));
+      }
       const [configResult, accessResult, adminResult] = await Promise.allSettled([
         (supabase as any)
           .from("app_runtime_config")
@@ -75,19 +94,46 @@ export function useAppRuntime(user: User | null, session: Session | null, signOu
         ? adminResult.value.config
         : null;
 
-      setIsAdmin(Boolean(adminConfig));
-      setConfig(configData ?? null);
-      if (adminConfig) setConfig(adminConfig);
-      setAccess({
+      const nextConfig = adminConfig ?? configData ?? null;
+      const nextAccess: AccessState = {
         status: accessData?.status ?? "active",
         loading: false,
+      };
+      const nextIsAdmin = Boolean(adminConfig);
+      cachedRuntime = {
+        userId: user.id,
+        config: nextConfig,
+        access: nextAccess,
+        isAdmin: nextIsAdmin,
+      };
+      setIsAdmin(nextIsAdmin);
+      setConfig(nextConfig);
+      setAccess(nextAccess);
+      lifecycleDebug("runtime check result", {
+        userId: user.id,
+        accessStatus: nextAccess.status,
+        isAdmin: nextIsAdmin,
+        latestVersion: nextConfig?.latest_version,
+        currentVersion: CURRENT_VERSION,
       });
     }
 
     loadRuntime().catch((error) => {
       console.warn("[app-runtime] failed to load runtime controls", error);
-      if (!cancelled) setAccess({ status: "active", loading: false });
-      if (!cancelled) setIsAdmin(false);
+      lifecycleDebug("runtime check failed", { message: error instanceof Error ? error.message : String(error) });
+      if (!cancelled && cachedRuntime?.userId !== user?.id) {
+        const fallbackAccess: AccessState = { status: "active", loading: false };
+        if (user) {
+          cachedRuntime = {
+            userId: user.id,
+            config: null,
+            access: fallbackAccess,
+            isAdmin: false,
+          };
+        }
+        setAccess(fallbackAccess);
+        setIsAdmin(false);
+      }
     });
 
     return () => {
@@ -106,7 +152,7 @@ export function useAppRuntime(user: User | null, session: Session | null, signOu
 
   const updateNotice = useMemo<UpdateNotice | null>(() => {
     if (isAdmin) return null;
-    if (!config?.latest_version || config.latest_version === CURRENT_VERSION) return null;
+    if (!config?.latest_version || !isVersionNewer(config.latest_version, CURRENT_VERSION)) return null;
     if (!config.update_required && dismissedVersion === config.latest_version) return null;
     return {
       latestVersion: config.latest_version,
@@ -114,6 +160,16 @@ export function useAppRuntime(user: User | null, session: Session | null, signOu
       required: Boolean(config.update_required),
     };
   }, [config, dismissedVersion, isAdmin]);
+
+  useEffect(() => {
+    lifecycleDebug("version check result", {
+      currentVersion: CURRENT_VERSION,
+      latestVersion: config?.latest_version,
+      updateRequired: Boolean(config?.update_required),
+      noticeShown: Boolean(updateNotice),
+      isAdmin,
+    });
+  }, [config?.latest_version, config?.update_required, isAdmin, updateNotice]);
 
   function dismissUpdateNotice() {
     if (!config?.latest_version) return;
@@ -126,7 +182,9 @@ export function useAppRuntime(user: User | null, session: Session | null, signOu
   }
 
   return {
-    access,
+    access: user && cachedRuntime?.userId !== user.id
+      ? { ...access, loading: true }
+      : access,
     config,
     isAdmin,
     updateNotice,

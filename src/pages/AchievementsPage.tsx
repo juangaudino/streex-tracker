@@ -1,5 +1,4 @@
 import { useOutletContext } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import { useAchievements } from "@/hooks/useAchievements";
 import AchievementCard from "@/components/AchievementCard";
 import { CATEGORY_LABELS } from "@/lib/achievements";
@@ -7,8 +6,7 @@ import { Trophy } from "lucide-react";
 import type { StoreContext } from "./types";
 
 export default function AchievementsPage() {
-  const { weeks } = useOutletContext<StoreContext>();
-  const { user } = useAuth();
+  const { user, weeks } = useOutletContext<StoreContext>();
   const { achievements, loading } = useAchievements(user, weeks);
 
   const unlocked = achievements.filter(a => a.unlocked).length;

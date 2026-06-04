@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`V5.7.7 - Ask My Data Intent Router`
+`V5.7.8 - App Resume Persistence Audit`
 
 Source of truth:
 
@@ -35,6 +35,7 @@ Current emphasis:
 - Admin Ops, feedback inbox, app version control, and re-engagement email foundation
 - V5.7.6 dashboard, Ask My Data mobile, and shift tracking consolidation
 - V5.7.7 Ask My Data intent routing and capability awareness
+- V5.7.8 iOS/Safari/PWA app resume and lifecycle persistence hardening
 
 ## Ask My Data
 
@@ -65,4 +66,3 @@ After changing `supabase/functions/ask-my-data/index.ts`, deploy the updated `as
 - backend architecture changes
 - a known limitation is resolved
 - the product direction materially changes
-

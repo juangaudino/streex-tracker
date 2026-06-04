@@ -7,7 +7,6 @@ import type { StoreContext } from "./types";
 import { useToast } from "@/hooks/use-toast";
 import { Activity, Download, FileJson, Gamepad2, Monitor, Moon, Palette, Phone, Plus, Route, Save, Sun, Table, User, X } from "lucide-react";
 import { useTheme, ClassicVariant } from "@/contexts/ThemeContext";
-import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { buildJsonBackup, downloadEarningsCsv, downloadJsonBackup } from "@/lib/dataExport";
 import { formatCurrencyAmount, getCurrencyCode, getCurrencyConfig, SUPPORTED_CURRENCIES } from "@/lib/currency";
@@ -23,9 +22,8 @@ import {
 } from "@/components/ui/select";
 
 export default function SettingsPage() {
-  const { weeks, settings, updateSettings } = useOutletContext<StoreContext>();
+  const { user, weeks, settings, updateSettings } = useOutletContext<StoreContext>();
   const { toast } = useToast();
-  const { user } = useAuth();
   const { mode, classicVariant, pulseMode, setMode, setClassicVariant, setPulseMode } = useTheme();
   const { performanceMode, setPerformanceMode } = usePerformanceMode();
   const { dashboardExperience, setDashboardExperience } = useDashboardExperience();

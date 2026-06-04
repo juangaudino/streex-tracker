@@ -6,9 +6,25 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.7.7";
+export const CURRENT_VERSION = "5.7.8";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.7.8",
+    date: "2026-06",
+    title: "App Resume Persistence Audit",
+    tags: ["fix", "polish"],
+    items: [
+      "Auth restoration now uses Supabase's initial session event without a competing session lookup",
+      "Quick React remounts and app resumes retain the authenticated session instead of briefly falling back to login or replaying the splash",
+      "Runtime access and version checks refresh in the background after their first successful validation",
+      "Update notices now require a genuinely newer configured version instead of any version mismatch",
+      "Weeks, settings, and active-shift state retain the last hydrated in-memory snapshot while backend data refreshes",
+      "Authenticated pages now reuse the root user session instead of creating competing auth subscriptions",
+      "Development-safe lifecycle diagnostics added for splash, auth, visibility, runtime, version, hydration, and intentional reload events",
+      "No database schema, navigation, dashboard design, earnings calculations, XP, achievements, exports, or backend architecture changes were made",
+    ],
+  },
   {
     version: "5.7.7",
     date: "2026-06",

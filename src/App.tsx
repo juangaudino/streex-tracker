@@ -25,13 +25,17 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import streexLogo from "./assets/streex-logo.png";
 import AppUpdateNotice from "./components/AppUpdateNotice";
 import { Button } from "./components/ui/button";
+import { useAppLifecycle } from "./hooks/useAppLifecycle";
+import { lifecycleDebug } from "./lib/appLifecycle";
 
 const App = () => {
+  useAppLifecycle();
   const { user, session, loading: authLoading, signIn, signUp, signOut } = useAuth();
   const store = useWeekStore(user);
   const { access, updateNotice, dismissUpdateNotice } = useAppRuntime(user, session, signOut);
 
   if (authLoading) {
+    lifecycleDebug("splash shown", { reason: "auth session restoration" });
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6 px-6">
         <img
@@ -63,6 +67,7 @@ const App = () => {
   }
 
   if (access.loading) {
+    lifecycleDebug("splash shown", { reason: "initial account access validation", userId: user.id });
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6 px-6">
         <img
@@ -120,7 +125,7 @@ const App = () => {
         )}
         <BrowserRouter>
           <Routes>
-            <Route element={<AppShell store={store} onSignOut={signOut} />}>
+            <Route element={<AppShell store={store} user={user} onSignOut={signOut} />}>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/entry" element={<WeeklyEntryPage />} />
               <Route path="/compare" element={<ComparisonsPage />} />

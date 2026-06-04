@@ -1,26 +1,57 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { User, Session } from "@supabase/supabase-js";
+import type { AuthChangeEvent, User, Session } from "@supabase/supabase-js";
+import { lifecycleDebug } from "@/lib/appLifecycle";
+
+interface AuthSnapshot {
+  session: Session | null;
+  user: User | null;
+  loading: boolean;
+}
+
+let cachedAuth: AuthSnapshot = {
+  session: null,
+  user: null,
+  loading: true,
+};
+
+function updateCachedAuth(event: AuthChangeEvent, session: Session | null): AuthSnapshot {
+  if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") {
+    cachedAuth = {
+      session,
+      user: session?.user ?? null,
+      loading: false,
+    };
+  } else if (session) {
+    cachedAuth = {
+      session,
+      user: session.user,
+      loading: false,
+    };
+  }
+  return cachedAuth;
+}
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [auth, setAuth] = useState<AuthSnapshot>(() => cachedAuth);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+      (event, session) => {
+        const nextAuth = updateCachedAuth(event, session);
+        lifecycleDebug("auth state change", {
+          event,
+          hasSession: Boolean(session),
+          userId: session?.user.id,
+        });
+        if (session) {
+          lifecycleDebug("auth session restored", { event, userId: session.user.id });
+        } else {
+          lifecycleDebug("auth null detected", { event });
+        }
+        setAuth(nextAuth);
       }
     );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -39,5 +70,12 @@ export function useAuth() {
     await supabase.auth.signOut();
   }, []);
 
-  return { user, session, loading, signUp, signIn, signOut };
+  return {
+    user: auth.user,
+    session: auth.session,
+    loading: auth.loading,
+    signUp,
+    signIn,
+    signOut,
+  };
 }

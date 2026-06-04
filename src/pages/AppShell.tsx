@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink as RouterNavLink } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import type { StoreContext } from "./types";
 import ChangelogDialog from "@/components/ChangelogDialog";
 import streexLogo from "@/assets/streex-logo.png";
@@ -43,11 +43,11 @@ const navItems = [
 
 interface AppShellProps {
   store: StoreContext;
+  user: SupabaseUser;
   onSignOut: () => void;
 }
 
-export default function AppShell({ store, onSignOut }: AppShellProps) {  
-  const { user } = useAuth();
+export default function AppShell({ store, user, onSignOut }: AppShellProps) {
   const { isFullFocus, setDashboardExperience } = useDashboardExperience();
   const location = useLocation();
   const [mobileMenu, setMobileMenu] = useState(false);

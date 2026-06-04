@@ -12,7 +12,6 @@ import {
 } from "@/components/ActiveMomentum";
 import { getDashboardMood, getPersonalGrowthStats } from "@/lib/commentary";
 import { useAchievements } from "@/hooks/useAchievements";
-import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -91,12 +90,11 @@ function FocusMetric({
 }
 
 export default function DashboardPage() {
-  const { openWeek, weeks, settings, hasLocalData, importLocalData, updateWeek } = useOutletContext<StoreContext>();
+  const { user, openWeek, weeks, settings, hasLocalData, importLocalData, updateWeek } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [importing, setImporting] = useState(false);
   const [endDayOpen, setEndDayOpen] = useState(false);
-  const { user } = useAuth();
   const { achievements } = useAchievements(user, weeks);
   const { summary: driverIdentity, loading: identityLoading } = useDriverIdentity(user, weeks, openWeek);
   const sym = settings.currencySymbol;

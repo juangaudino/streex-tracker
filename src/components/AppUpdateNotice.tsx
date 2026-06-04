@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { lifecycleDebug } from "@/lib/appLifecycle";
 
 interface AppUpdateNoticeProps {
   latestVersion: string;
@@ -41,7 +42,14 @@ export default function AppUpdateNotice({
               Later
             </Button>
           )}
-          <Button type="button" className="flex-1" onClick={() => window.location.reload()}>
+          <Button
+            type="button"
+            className="flex-1"
+            onClick={() => {
+              lifecycleDebug("forced reload", { reason: "user selected Refresh App", latestVersion });
+              window.location.reload();
+            }}
+          >
             Refresh App
           </Button>
           {required && onSignOut && (

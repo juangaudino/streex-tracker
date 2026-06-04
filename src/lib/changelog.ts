@@ -6,9 +6,23 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.7.8";
+export const CURRENT_VERSION = "5.7.9";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "5.7.9",
+    date: "2026-06",
+    title: "Branded PWA App Icons",
+    tags: ["fix", "polish"],
+    items: [
+      "Branded Streex icons added for iPhone and iPad Home Screen installation",
+      "Android installed PWA icons configured through a production manifest",
+      "Browser favicon references now use the dedicated Streex icon asset",
+      "Stable public icon URLs replace generic fallback icon behavior",
+      "Existing Home Screen installations may need to be removed and added again because installed app icons are cached by the operating system",
+      "No dashboard, auth, earnings, shift, analytics, XP, exports, navigation, or backend behavior changed",
+    ],
+  },
   {
     version: "5.7.8",
     date: "2026-06",

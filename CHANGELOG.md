@@ -1,5 +1,19 @@
 # Changelog
 
+## V5.7.9 — Branded PWA App Icons
+
+### Fixed
+
+- Added a production manifest with branded Streex application icons for installed Android PWAs.
+- Added explicit Apple touch icons for iPhone and iPad Home Screen installation.
+- Added branded PNG favicon references for supported browser tab sizes.
+- Replaced generic icon fallback behavior with stable public icon URLs.
+
+### Production Behavior
+
+- No dashboard, auth, earnings, shift, analytics, XP, exports, navigation, or backend behavior changed.
+- Users with an existing Home Screen installation may need to remove and add Streex again because iOS and Android cache installed app icons aggressively.
+
 ## V5.7.8 — App Resume Persistence Audit
 
 ### Fixed

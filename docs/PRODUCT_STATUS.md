@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`V5.7.8 - App Resume Persistence Audit`
+`V5.7.9 - Branded PWA App Icons`
 
 Source of truth:
 
@@ -36,6 +36,7 @@ Current emphasis:
 - V5.7.6 dashboard, Ask My Data mobile, and shift tracking consolidation
 - V5.7.7 Ask My Data intent routing and capability awareness
 - V5.7.8 iOS/Safari/PWA app resume and lifecycle persistence hardening
+- V5.7.9 branded iOS, Android, and browser PWA icon configuration
 
 ## Ask My Data
 

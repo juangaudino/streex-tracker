@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.2.2";
+export const CURRENT_VERSION = "0.2.3";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.2.3",
+    date: "2026-06",
+    title: "Operations Scope Clarity",
+    tags: ["polish"],
+    items: [
+      "Career Shift Intelligence now labels its snapshot as Lifetime Operations Snapshot so historical scope is clear",
+      "Dashboard now surfaces This Week Operations Snapshot for current-week hours, efficiency, miles, work blocks, active shifts, and average shift context",
+      "Weekly operations reuse the existing Shift Intelligence calculation path with current-week data only",
+      "Current-week earnings snapshots are filtered to the active week so Dashboard timing context does not mix career history",
+      "No database schema, stored earning amounts, auth, XP, achievements, Ask My Data backend logic, exports, or Supabase project architecture behavior changed",
+    ],
+  },
   {
     version: "0.2.2",
     date: "2026-06",

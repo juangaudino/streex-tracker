@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`Beta 0.2.2 - Reward Income Classification`
+`Beta 0.2.3 - Operations Scope Clarity`
 
 Source of truth:
 
@@ -59,6 +59,7 @@ Beta highlights:
 - 0.2.0 Earnings Snapshots V1 and honest timing-source labels for Shift Intelligence
 - 0.2.1 Late earnings adjustments improve real totals without contaminating observed timing patterns
 - 0.2.2 Octopus reward income classification for cleaner operational efficiency metrics
+- 0.2.3 Career and weekly operations snapshots now have clear lifetime vs current-week scope labels
 
 ## Pattern Intelligence Source Truth
 
@@ -79,6 +80,15 @@ Octopus is treated as reward income by app name.
 - Real money totals include Octopus: day totals, week totals, records, Best Day, exports, and general earnings history.
 - Operational performance excludes Octopus: shift efficiency, earnings per hour, earnings per mile, hourly timing, and app-by-hour patterns.
 - Historical Octopus entries are reinterpreted automatically by calculation rules; stored amounts are not changed.
+
+## Operations Snapshot Scope
+
+Operational metrics must clearly state their scope.
+
+- Career tab: lifetime/career-wide operations context.
+- Dashboard: current-week operations context.
+
+Avoid generic snapshot labels when the user cannot immediately tell whether the number is weekly, monthly, or lifetime.
 
 ## Ask My Data
 

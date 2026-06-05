@@ -194,7 +194,17 @@ export default function CareerPage() {
       </section>
 
       {/* Performance Insights */}
-      <ShiftIntelligencePanel weeks={weeks} earningsSnapshots={earningsSnapshots} currencySymbol={sym} mode={performanceMode} />
+      <ShiftIntelligencePanel
+        weeks={weeks}
+        earningsSnapshots={earningsSnapshots}
+        currencySymbol={sym}
+        mode={performanceMode}
+        heading="Career Shift Intelligence"
+        description={performanceMode === "advanced"
+          ? "Lifetime view across your saved shifts, mileage, and efficiency."
+          : "Career-wide shift and earnings rhythm."}
+        snapshotTitle="Lifetime Operations Snapshot"
+      />
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">

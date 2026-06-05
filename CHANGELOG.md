@@ -2,6 +2,19 @@
 
 ## Beta Releases
 
+### Beta 0.2.3 — Operations Scope Clarity
+
+### Changed
+
+- Career Shift Intelligence now labels its snapshot as Lifetime Operations Snapshot so historical scope is clear.
+- Dashboard now surfaces This Week Operations Snapshot for current-week hours, efficiency, miles, work blocks, active shifts, and average shift context.
+- Weekly operations reuse the existing Shift Intelligence calculation path with current-week data only.
+- Current-week earnings snapshots are filtered to the active week so Dashboard timing context does not mix career history.
+
+### Production Behavior
+
+- No database schema, stored earning amounts, auth, XP, achievements, Ask My Data backend logic, exports, or Supabase project architecture behavior changed.
+
 ### Beta 0.2.2 — Reward Income Classification
 
 ### Changed

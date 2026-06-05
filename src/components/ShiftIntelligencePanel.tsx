@@ -10,6 +10,11 @@ interface ShiftIntelligencePanelProps {
   earningsSnapshots?: EarningsSnapshot[];
   currencySymbol: string;
   mode: PerformanceMode;
+  heading?: string;
+  description?: string;
+  snapshotTitle?: string;
+  snapshotOnly?: boolean;
+  showModeBadge?: boolean;
 }
 
 function Metric({ label, value, sub, icon, tone = "default" }: {
@@ -65,36 +70,74 @@ function formatTimingMetric(
   return `${formatCurrency(hour.earningsPerHour, currencySymbol)}/hr est.`;
 }
 
-export default function ShiftIntelligencePanel({ weeks, earningsSnapshots = [], currencySymbol, mode }: ShiftIntelligencePanelProps) {
+export default function ShiftIntelligencePanel({
+  weeks,
+  earningsSnapshots = [],
+  currencySymbol,
+  mode,
+  heading = "Shift Intelligence",
+  description,
+  snapshotTitle = "Advanced Operations Snapshot",
+  snapshotOnly = false,
+  showModeBadge = true,
+}: ShiftIntelligencePanelProps) {
   const intelligence = buildPatternIntelligence(weeks, earningsSnapshots);
   const { summary } = intelligence;
   const maxEph = Math.max(1, ...intelligence.hourlyHeatmap.map((bucket) => bucket.earningsPerHour));
   const isAdvanced = mode === "advanced";
   const strongWindowLabel = intelligence.timingSource === "snapshot" ? "Observed Update Hour" : "Estimated Window";
   const heatmapTitle = intelligence.timingSource === "snapshot" ? "Update Heatmap" : "Estimated Hourly Heatmap";
+  const headerDescription = description ?? (isAdvanced
+    ? "Operational view with shift, mileage, and efficiency context."
+    : "Simple view for quick shift and earnings rhythm.");
+  const snapshot = (
+    <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <Gauge className="h-4 w-4 text-primary" />
+        <p className="text-sm font-semibold">{snapshotTitle}</p>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <Metric icon={<Clock className="h-3.5 w-3.5" />} label="Duration" value={`${summary.totalHours.toFixed(1)}h`} sub={`${summary.completedShifts} completed`} tone="primary" />
+        <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Earnings/Hr" value={formatNullableCurrency(summary.earningsPerHour, currencySymbol)} sub="efficiency" tone="primary" />
+        <Metric icon={<Route className="h-3.5 w-3.5" />} label="Miles" value={`${summary.totalMiles.toFixed(1)}`} sub={`${summary.workDays} work day${summary.workDays === 1 ? "" : "s"}`} tone="primary" />
+        <Metric icon={<Gauge className="h-3.5 w-3.5" />} label="Earnings/Mi" value={formatNullableCurrency(summary.earningsPerMile, currencySymbol)} sub={formatNullableNumber(summary.milesPerHour, " mi/hr")} tone="primary" />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Active" value={`${summary.activeShifts}`} sub="open shift" />
+        <Metric icon={<Clock className="h-3.5 w-3.5" />} label="Avg Shift" value={formatNullableNumber(summary.averageShiftHours, "h")} sub="completed only" />
+        <Metric icon={<BarChart3 className="h-3.5 w-3.5" />} label="Work Blocks" value={`${summary.totalShifts}`} sub={`${summary.multiShiftDays} split day${summary.multiShiftDays === 1 ? "" : "s"}`} />
+        <Metric icon={<Route className="h-3.5 w-3.5" />} label="Miles/Hr" value={formatNullableNumber(summary.milesPerHour)} sub="movement pace" />
+      </div>
+      <p className="rounded-lg border border-border/70 bg-card/70 p-3 text-xs text-muted-foreground">
+        {buildEfficiencyInsight(summary)}
+      </p>
+    </div>
+  );
 
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <div>
           <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
-            Shift Intelligence
+            {heading}
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {isAdvanced
-              ? "Operational view with shift, mileage, and efficiency context."
-              : "Simple view for quick shift and earnings rhythm."}
+            {headerDescription}
           </p>
         </div>
-        <span className={cn(
-          "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-          isAdvanced ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-        )}>
-          {isAdvanced ? "Advanced" : "Simple"}
-        </span>
+        {showModeBadge && (
+          <span className={cn(
+            "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+            isAdvanced ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+          )}>
+            {isAdvanced ? "Advanced" : "Simple"}
+          </span>
+        )}
       </div>
 
-      {!isAdvanced ? (
+      {snapshotOnly ? (
+        snapshot
+      ) : !isAdvanced ? (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <Metric
@@ -127,27 +170,7 @@ export default function ShiftIntelligencePanel({ weeks, earningsSnapshots = [], 
         </>
       ) : (
         <>
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Gauge className="h-4 w-4 text-primary" />
-              <p className="text-sm font-semibold">Advanced Operations Snapshot</p>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <Metric icon={<Clock className="h-3.5 w-3.5" />} label="Duration" value={`${summary.totalHours.toFixed(1)}h`} sub={`${summary.completedShifts} completed`} tone="primary" />
-              <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Earnings/Hr" value={formatNullableCurrency(summary.earningsPerHour, currencySymbol)} sub="efficiency" tone="primary" />
-              <Metric icon={<Route className="h-3.5 w-3.5" />} label="Miles" value={`${summary.totalMiles.toFixed(1)}`} sub={`${summary.workDays} work day${summary.workDays === 1 ? "" : "s"}`} tone="primary" />
-              <Metric icon={<Gauge className="h-3.5 w-3.5" />} label="Earnings/Mi" value={formatNullableCurrency(summary.earningsPerMile, currencySymbol)} sub={formatNullableNumber(summary.milesPerHour, " mi/hr")} tone="primary" />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Active" value={`${summary.activeShifts}`} sub="open shift" />
-              <Metric icon={<Clock className="h-3.5 w-3.5" />} label="Avg Shift" value={formatNullableNumber(summary.averageShiftHours, "h")} sub="completed only" />
-              <Metric icon={<BarChart3 className="h-3.5 w-3.5" />} label="Work Blocks" value={`${summary.totalShifts}`} sub={`${summary.multiShiftDays} split day${summary.multiShiftDays === 1 ? "" : "s"}`} />
-              <Metric icon={<Route className="h-3.5 w-3.5" />} label="Miles/Hr" value={formatNullableNumber(summary.milesPerHour)} sub="movement pace" />
-            </div>
-            <p className="rounded-lg border border-border/70 bg-card/70 p-3 text-xs text-muted-foreground">
-              {buildEfficiencyInsight(summary)}
-            </p>
-          </div>
+          {snapshot}
 
           {!intelligence.hasEnoughTimingData ? (
             <div className="rounded-xl border border-border bg-card/70 p-4">

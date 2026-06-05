@@ -41,6 +41,7 @@ import { createShift, hasActiveShift } from "@/lib/shiftIntelligence";
 import { cn } from "@/lib/utils";
 import DailyStartHub from "@/components/DailyStartHub";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import ShiftIntelligencePanel from "@/components/ShiftIntelligencePanel";
 
 type PulseState = "calm" | "steady" | "strong" | "record" | "streak";
 
@@ -90,7 +91,7 @@ function FocusMetric({
 }
 
 export default function DashboardPage() {
-  const { user, openWeek, weeks, settings, hasLocalData, importLocalData, updateWeek } = useOutletContext<StoreContext>();
+  const { user, openWeek, weeks, settings, earningsSnapshots, hasLocalData, importLocalData, updateWeek } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [importing, setImporting] = useState(false);
@@ -306,6 +307,7 @@ export default function DashboardPage() {
   const showStandardMomentumChip = mood.momentumLabel !== smartHeader;
   const todayHasShift = Boolean(todayEntry?.shifts?.length);
   const showDailyStartHub = Boolean(todayEntry && !todayEntry.dayClosed && !todayHasShift && !dailyStartHubDismissed);
+  const currentWeekSnapshots = earningsSnapshots.filter((snapshot) => snapshot.weekId === openWeek.id);
 
   async function handleDailyStartShift() {
     if (!todayEntry || openWeek.entries.some(hasActiveShift) || todayHasShift) {
@@ -430,6 +432,18 @@ export default function DashboardPage() {
           onSave={(updated) => updateWeek(updated)}
           weeks={weeks}
           onEndDay={todayEntry && !isDayClosed ? () => setEndDayOpen(true) : undefined}
+        />
+
+        <ShiftIntelligencePanel
+          weeks={[openWeek]}
+          earningsSnapshots={currentWeekSnapshots}
+          currencySymbol={sym}
+          mode="advanced"
+          heading="This Week Operations"
+          description="Current week shift, mileage, and efficiency snapshot."
+          snapshotTitle="This Week Operations Snapshot"
+          snapshotOnly
+          showModeBadge={false}
         />
 
         <DailyCommandCenter compact />
@@ -620,6 +634,18 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      <ShiftIntelligencePanel
+        weeks={[openWeek]}
+        earningsSnapshots={currentWeekSnapshots}
+        currencySymbol={sym}
+        mode="advanced"
+        heading="This Week Operations"
+        description="Current week shift, mileage, and efficiency snapshot."
+        snapshotTitle="This Week Operations Snapshot"
+        snapshotOnly
+        showModeBadge={false}
+      />
 
       {todayEntry && !isDayClosed && (
         <EndDayDialog

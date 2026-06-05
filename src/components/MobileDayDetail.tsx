@@ -163,14 +163,14 @@ export default function MobileDayDetail({
                   {shift.endTime ? `${shiftDurationHours(shift).toFixed(1)}h` : "running"}
                 </p>
               </div>
-              <div className="grid grid-cols-2 items-end gap-2">
+              <div className="grid min-w-0 grid-cols-2 gap-2">
                 {onShiftTimeUpdate && (
                   <>
                     <label className="space-y-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Start</span>
                       <Input
                         type="time"
-                        className="h-9 font-mono text-xs"
+                        className="h-10 min-w-0 w-full font-mono text-sm"
                         value={timeInputValue(shift.startTime)}
                         onChange={(e) => onShiftTimeUpdate(dayIdx, shift.id, "startTime", e.target.value)}
                       />
@@ -179,7 +179,7 @@ export default function MobileDayDetail({
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">End</span>
                       <Input
                         type="time"
-                        className="h-9 font-mono text-xs"
+                        className="h-10 min-w-0 w-full font-mono text-sm"
                         value={timeInputValue(shift.endTime)}
                         disabled={!shift.endTime}
                         onChange={(e) => onShiftTimeUpdate(dayIdx, shift.id, "endTime", e.target.value)}
@@ -188,25 +188,39 @@ export default function MobileDayDetail({
                   </>
                 )}
                 {onShiftMilesUpdate && (
-                  <label className="space-y-1">
+                  <label className="col-span-2 min-w-0 space-y-1">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Miles</span>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      className="h-9 text-right font-mono text-xs"
-                      value={shift.miles || ""}
-                      placeholder="mi"
-                      onChange={(e) => onShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
-                    />
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        className="h-10 min-w-0 flex-1 text-right font-mono text-sm"
+                        value={shift.miles || ""}
+                        placeholder="mi"
+                        onChange={(e) => onShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
+                      />
+                      {onDeleteShift && (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-10 w-10 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => onDeleteShift(dayIdx, shift.id)}
+                          aria-label="Delete shift block"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </label>
                 )}
-                {onDeleteShift && (
+                {onDeleteShift && !onShiftMilesUpdate && (
                   <Button
                     type="button"
                     size="icon"
                     variant="ghost"
-                    className="h-9 w-9 justify-self-end text-destructive hover:text-destructive hover:bg-destructive/10"
+                    className="h-10 w-10 justify-self-end text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={() => onDeleteShift(dayIdx, shift.id)}
                     aria-label="Delete shift block"
                   >

@@ -659,12 +659,12 @@ export default function WeeklyEntryPage() {
                 </button>
 
                 {expanded && (
-                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-[7rem_7rem_7rem_auto] sm:items-end">
+                  <div className="mt-3 grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-[minmax(0,7rem)_minmax(0,7rem)_minmax(0,1fr)_auto] sm:items-end">
                     <label className="space-y-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Start</span>
                       <Input
                         type="time"
-                        className="h-9 font-mono text-xs"
+                        className="h-10 min-w-0 w-full font-mono text-sm sm:h-9 sm:text-xs"
                         value={timeInputValue(shift.startTime)}
                         onChange={(e) => handleShiftTimeUpdate(dayIdx, shift.id, "startTime", e.target.value)}
                       />
@@ -673,7 +673,7 @@ export default function WeeklyEntryPage() {
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">End</span>
                       <Input
                         type="time"
-                        className="h-9 font-mono text-xs"
+                        className="h-10 min-w-0 w-full font-mono text-sm sm:h-9 sm:text-xs"
                         value={timeInputValue(shift.endTime)}
                         disabled={!shift.endTime}
                         onChange={(e) => handleShiftTimeUpdate(dayIdx, shift.id, "endTime", e.target.value)}
@@ -685,7 +685,7 @@ export default function WeeklyEntryPage() {
                         type="number"
                         step="0.1"
                         min="0"
-                        className="h-9 text-right font-mono text-xs"
+                        className="h-10 min-w-0 w-full text-right font-mono text-sm sm:h-9 sm:text-xs"
                         value={shift.miles || ""}
                         placeholder="mi"
                         onChange={(e) => handleShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
@@ -695,7 +695,7 @@ export default function WeeklyEntryPage() {
                       type="button"
                       size="icon"
                       variant="ghost"
-                      className="h-9 w-9 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      className="col-span-2 h-10 w-10 justify-self-end text-destructive hover:bg-destructive/10 hover:text-destructive sm:col-span-1 sm:h-9 sm:w-9"
                       onClick={() => handleDeleteShift(dayIdx, shift.id)}
                       aria-label="Delete shift block"
                     >

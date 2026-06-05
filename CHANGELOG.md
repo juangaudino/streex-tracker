@@ -2,6 +2,18 @@
 
 ## Beta Releases
 
+### Beta 0.1.2 — Shift Blocks Mobile Layout Fix
+
+### Fixed
+
+- Fixed mobile Shift Blocks editing layout so Start and End time fields no longer overlap or spill outside the card.
+- Rebalanced Miles editing with the delete action so the miles field stays readable and proportional on narrow screens.
+- Applied the same responsive safeguard to expanded weekly shift rows.
+
+### Production Behavior
+
+- No shift calculations, persistence, earnings data, auth, Ask My Data, XP, exports, backend schema, or Supabase architecture behavior changed.
+
 ### Beta 0.1.1 — Ask My Data Mobile Composer Fix
 
 ### Fixed

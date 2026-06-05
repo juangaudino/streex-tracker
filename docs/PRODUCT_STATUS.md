@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`Beta 0.1.1 - Ask My Data Mobile Composer Fix`
+`Beta 0.1.2 - Shift Blocks Mobile Layout Fix`
 
 Source of truth:
 
@@ -55,6 +55,7 @@ Beta highlights:
 
 - 0.1.0 public beta versioning baseline
 - 0.1.1 Ask My Data mobile composer stability, voice input, and copy conversation
+- 0.1.2 Entry Shift Blocks mobile layout fix
 
 ## Ask My Data
 

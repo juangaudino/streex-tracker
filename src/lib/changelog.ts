@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.1.1";
+export const CURRENT_VERSION = "0.1.2";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.1.2",
+    date: "2026-06",
+    title: "Shift Blocks Mobile Layout Fix",
+    tags: ["fix", "polish"],
+    items: [
+      "Entry Shift Blocks now use stable mobile grids so Start and End time fields no longer overlap or spill outside the card",
+      "Miles editing now sits in a balanced row with the delete action instead of being squeezed into a broken narrow column",
+      "The same layout safeguard was applied to expanded weekly shift rows for narrow screens",
+      "No shift calculations, persistence, earnings data, auth, Ask My Data, XP, exports, backend schema, or Supabase architecture behavior changed",
+    ],
+  },
   {
     version: "0.1.1",
     date: "2026-06",

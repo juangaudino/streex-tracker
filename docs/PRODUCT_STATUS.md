@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`Beta 0.2.0 - Earnings Snapshots + Honest Pattern Intelligence`
+`Beta 0.2.2 - Reward Income Classification`
 
 Source of truth:
 
@@ -57,6 +57,8 @@ Beta highlights:
 - 0.1.1 Ask My Data mobile composer stability, voice input, and copy conversation
 - 0.1.2 Entry Shift Blocks mobile layout fix
 - 0.2.0 Earnings Snapshots V1 and honest timing-source labels for Shift Intelligence
+- 0.2.1 Late earnings adjustments improve real totals without contaminating observed timing patterns
+- 0.2.2 Octopus reward income classification for cleaner operational efficiency metrics
 
 ## Pattern Intelligence Source Truth
 
@@ -66,8 +68,17 @@ Timing intelligence must label its source clearly:
 
 - Earnings Snapshots: observed from saved earning-update deltas.
 - Estimated Windows: inferred by spreading daily earnings across completed shift duration.
+- Late earning adjustments: improve real totals and efficiency stats, but are excluded from observed timing if saved after the original work day.
 
 Do not present timing cards as exact ride-level hourly earnings unless a future integration provides ride timestamps.
+
+## Reward Income Rule
+
+Octopus is treated as reward income by app name.
+
+- Real money totals include Octopus: day totals, week totals, records, Best Day, exports, and general earnings history.
+- Operational performance excludes Octopus: shift efficiency, earnings per hour, earnings per mile, hourly timing, and app-by-hour patterns.
+- Historical Octopus entries are reinterpreted automatically by calculation rules; stored amounts are not changed.
 
 ## Ask My Data
 

@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.2.0";
+export const CURRENT_VERSION = "0.2.2";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,32 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.2.2",
+    date: "2026-06",
+    title: "Reward Income Classification",
+    tags: ["polish", "balance"],
+    items: [
+      "Octopus is now treated as reward income for operational performance calculations",
+      "Reward income still counts in real day totals, week totals, records, Best Day, exports, and general earnings history",
+      "Shift efficiency, earnings per hour, earnings per mile, hourly timing, and app-by-hour patterns now exclude reward income so work performance is not distorted",
+      "Existing Octopus history is automatically interpreted as reward income by app name; no historical data migration or manual recoding is required",
+      "No database schema, stored earning amounts, auth, XP, achievements, Ask My Data backend logic, exports, or Supabase project architecture behavior changed",
+    ],
+  },
+  {
+    version: "0.2.1",
+    date: "2026-06",
+    title: "Late Earnings Adjustment Handling",
+    tags: ["fix", "polish"],
+    items: [
+      "Late tips and historical earning edits now continue improving real day, week, record, efficiency, and Ask My Data totals",
+      "Historical earning adjustments are excluded from observed timing patterns when the update is saved after the original work day",
+      "Observed Update Hour now uses same-day earning updates only, preventing old tips from making the edit time look like a strong earning hour",
+      "Estimated timing fallback remains available when there are not enough same-day earning updates",
+      "No database schema, earnings storage, exports, auth, XP, achievements, Ask My Data logic, or Supabase project architecture behavior changed",
+    ],
+  },
   {
     version: "0.2.0",
     date: "2026-06",

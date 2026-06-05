@@ -1,4 +1,4 @@
-import { dayTotal } from "./store";
+import { isRewardApp, operationalDayTotal } from "./rewardIncome";
 import type { DayEntry, EarningsSnapshot, ShiftSession, WeekRecord } from "./types";
 
 export interface ShiftSummary {
@@ -109,14 +109,30 @@ function overlapHours(startMs: number, endMs: number, hour: number, date: string
   return overlap / 3600000;
 }
 
+function localDateKey(value: Date): string {
+  return [
+    value.getFullYear(),
+    String(value.getMonth() + 1).padStart(2, "0"),
+    String(value.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function isSameDayEarningUpdate(snapshot: EarningsSnapshot): boolean {
+  const created = new Date(snapshot.createdAt);
+  if (Number.isNaN(created.getTime())) return false;
+  return localDateKey(created) === snapshot.dayDate;
+}
+
 function buildSnapshotHourMap(earningsSnapshots: EarningsSnapshot[]) {
   const hourMap = new Map<number, { earnings: number; observations: number; appTotals: Record<string, number> }>();
 
   for (const snapshot of earningsSnapshots) {
     const delta = Number(snapshot.delta) || 0;
     if (delta <= 0) continue;
+    if (isRewardApp(snapshot.app)) continue;
     const created = new Date(snapshot.createdAt);
     if (Number.isNaN(created.getTime())) continue;
+    if (!isSameDayEarningUpdate(snapshot)) continue;
     const hour = created.getHours();
     const current = hourMap.get(hour) ?? { earnings: 0, observations: 0, appTotals: {} };
     current.earnings += delta;
@@ -151,7 +167,7 @@ export function buildPatternIntelligence(
       workDays += 1;
       if (shifts.length > 1) multiShiftDays += 1;
       const workedHours = getDayShiftHours(day);
-      const earnings = dayTotal(day);
+      const earnings = operationalDayTotal(day);
       const miles = getDayMiles(day);
       totalMiles += miles;
       totalShifts += shifts.length;
@@ -179,6 +195,7 @@ export function buildPatternIntelligence(
           current.hours += hours;
           current.earnings += shiftEarnings * (hours / duration);
           for (const [app, value] of Object.entries(day.apps || {})) {
+            if (isRewardApp(app)) continue;
             current.appTotals[app] = (current.appTotals[app] || 0) + (Number(value) || 0) * shiftShare * (hours / duration);
           }
           hourMap.set(hour, current);
@@ -299,7 +316,7 @@ export function buildPatternIntelligence(
     timingSource,
     timingSourceLabel: hasSnapshotTimingData ? "Observed from earnings updates" : "Estimated from shift duration",
     timingCopy: hasSnapshotTimingData
-      ? "Based on saved earnings updates. This is more grounded than shift spreading, but still not ride-level timestamp data."
-      : "Estimated by spreading daily earnings across completed shift time. This is directional, not ride-level hourly truth.",
+      ? "Based on same-day saved earnings updates. Late tips and historical adjustments improve totals, but are excluded from timing so the heatmap does not pretend they happened today."
+      : "Estimated by spreading operational earnings across completed shift time. Rewards like Octopus still count in totals, but are excluded from timing so efficiency stays work-focused.",
   };
 }

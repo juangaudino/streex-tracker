@@ -30,6 +30,7 @@ import MobileWeekOverview from "@/components/MobileWeekOverview";
 import MobileDayDetail from "@/components/MobileDayDetail";
 import WeekClosingDialog from "@/components/WeekClosingDialog";
 import { createShift, endActiveShift, getDayMiles, getDayShiftHours, getWeekMiles, getWeekShiftHours, hasActiveShift, shiftDurationHours } from "@/lib/shiftIntelligence";
+import { operationalDayTotal, operationalWeekTotal } from "@/lib/rewardIncome";
 
 function timeInputValue(value?: string): string {
   if (!value) return "";
@@ -426,11 +427,12 @@ export default function WeeklyEntryPage() {
   }
 
   const wt = weekTotal(editWeek);
+  const operationalWt = operationalWeekTotal(editWeek);
   const isClosedView = editWeek.status === "closed" && justClosed;
   const weekHours = getWeekShiftHours(editWeek);
   const weekMiles = getWeekMiles(editWeek);
-  const weekEarningsPerHour = weekHours > 0 ? wt / weekHours : null;
-  const weekEarningsPerMile = weekMiles > 0 ? wt / weekMiles : null;
+  const weekEarningsPerHour = weekHours > 0 ? operationalWt / weekHours : null;
+  const weekEarningsPerMile = weekMiles > 0 ? operationalWt / weekMiles : null;
   const currentLocalDate = formatDate(new Date());
   const todayIndex = editWeek.entries.findIndex((day) => day.date === currentLocalDate);
   const shiftControlIndex = todayIndex;
@@ -446,7 +448,7 @@ export default function WeeklyEntryPage() {
     if (completedShiftsForDay !== 1) return null;
     const hours = shiftDurationHours(shift);
     if (hours <= 0) return null;
-    return dayTotal(day) / hours;
+    return operationalDayTotal(day) / hours;
   };
 
   // Mobile day detail view

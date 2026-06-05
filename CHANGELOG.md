@@ -2,6 +2,31 @@
 
 ## Beta Releases
 
+### Beta 0.2.2 — Reward Income Classification
+
+### Changed
+
+- Octopus is now treated as reward income for operational performance calculations.
+- Reward income still counts in real day totals, week totals, records, Best Day, exports, and general earnings history.
+- Shift efficiency, earnings per hour, earnings per mile, hourly timing, and app-by-hour patterns now exclude reward income so work performance is not distorted.
+- Existing Octopus history is automatically interpreted as reward income by app name, with no historical data migration or manual recoding required.
+
+### Production Behavior
+
+- No database schema, stored earning amounts, auth, XP, achievements, Ask My Data backend logic, exports, or Supabase project architecture behavior changed.
+
+### Beta 0.2.1 — Late Earnings Adjustment Handling
+
+### Fixed
+
+- Late tips and historical earning edits now keep improving real day, week, record, efficiency, and Ask My Data totals.
+- Historical earning adjustments are excluded from observed timing patterns when the update is saved after the original work day.
+- Observed Update Hour now uses same-day earning updates only, preventing old tips from making the edit time look like a strong earning hour.
+
+### Production Behavior
+
+- No database schema, earnings storage, exports, auth, XP, achievements, Ask My Data logic, or Supabase project architecture behavior changed.
+
 ### Beta 0.2.0 — Earnings Snapshots + Honest Pattern Intelligence
 
 ### Added

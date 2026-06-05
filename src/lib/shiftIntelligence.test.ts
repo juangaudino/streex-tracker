@@ -69,7 +69,7 @@ describe("shift intelligence", () => {
     expect(result.strongestHours.length).toBeGreaterThan(0);
     expect(result.bestAppsByHour.length).toBeGreaterThan(0);
     expect(result.timingSource).toBe("estimated");
-    expect(result.timingCopy).toContain("spreading daily earnings");
+    expect(result.timingCopy).toContain("spreading operational earnings");
   });
 
   it("uses earnings snapshots for observed update timing when enough updates exist", () => {
@@ -97,6 +97,63 @@ describe("shift intelligence", () => {
     expect(result.strongestHours[0].hour).toBe(18);
     expect(result.strongestHours[0].earnings).toBe(70);
     expect(result.strongestHours[0].observations).toBe(2);
+    expect(result.bestAppsByHour[0].app).toBe("Uber");
+  });
+
+  it("excludes late earning adjustments from observed update timing", () => {
+    const weeks = [
+      week([
+        day(0, 240, [{ id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00", miles: 24 }]),
+        day(1, 180, [{ id: "s2", startTime: "2026-05-05T18:00:00", endTime: "2026-05-05T20:00:00", miles: 18 }]),
+        day(2, 260, [{ id: "s3", startTime: "2026-05-06T08:00:00", endTime: "2026-05-06T10:00:00", miles: 22 }]),
+        day(3, 0),
+        day(4, 0),
+        day(5, 0),
+        day(6, 0),
+      ]),
+    ];
+    const snapshots: EarningsSnapshot[] = [
+      snapshot("late1", "2026-05-04", "Uber", 30, "2026-05-20T21:00:00"),
+      snapshot("late2", "2026-05-05", "Uber", 25, "2026-05-20T21:15:00"),
+      snapshot("late3", "2026-05-06", "Spark Driver", 20, "2026-05-20T21:30:00"),
+    ];
+
+    const result = buildPatternIntelligence(weeks, snapshots);
+
+    expect(result.timingSource).toBe("estimated");
+    expect(result.timingCopy).toContain("spreading operational earnings");
+    expect(result.summary.earningsPerHour).toBeCloseTo(113.33);
+  });
+
+  it("excludes Octopus reward income from operational shift efficiency", () => {
+    const weeks = [
+      week([
+        {
+          ...day(0, 0, [{ id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00", miles: 24 }]),
+          logged: true,
+          apps: { Uber: 100, Octopus: 25 },
+        },
+        day(1, 0),
+        day(2, 0),
+        day(3, 0),
+        day(4, 0),
+        day(5, 0),
+        day(6, 0),
+      ]),
+    ];
+    const snapshots: EarningsSnapshot[] = [
+      snapshot("snap1", "2026-05-04", "Octopus", 25, "2026-05-04T18:05:00"),
+      snapshot("snap2", "2026-05-04", "Uber", 40, "2026-05-04T18:15:00"),
+      snapshot("snap3", "2026-05-04", "Uber", 30, "2026-05-04T18:45:00"),
+      snapshot("snap4", "2026-05-04", "Uber", 30, "2026-05-04T19:00:00"),
+    ];
+
+    const result = buildPatternIntelligence(weeks, snapshots);
+
+    expect(result.summary.earningsPerHour).toBe(50);
+    expect(result.summary.earningsPerMile).toBeCloseTo(4.17);
+    expect(result.timingSource).toBe("snapshot");
+    expect(result.strongestHours[0].earnings).toBe(70);
     expect(result.bestAppsByHour[0].app).toBe("Uber");
   });
 });

@@ -167,7 +167,7 @@ export default function MobileDayDetail({
                   {shift.endTime ? `${shiftDurationHours(shift).toFixed(1)}h` : "running"}
                 </p>
               </div>
-              <div className="grid min-w-0 grid-cols-2 gap-2">
+              <div className="grid min-w-0 grid-cols-1 gap-2">
                 {onShiftTimeUpdate && (
                   <>
                     <label className="space-y-1">
@@ -214,7 +214,7 @@ export default function MobileDayDetail({
                   </>
                 )}
                 {onShiftMilesUpdate && (
-                  <label className="col-span-2 min-w-0 space-y-1">
+                  <label className="min-w-0 space-y-1">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Miles</span>
                     <div className="flex min-w-0 items-center gap-2">
                       <Input

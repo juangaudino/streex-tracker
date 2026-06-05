@@ -663,7 +663,7 @@ export default function WeeklyEntryPage() {
                 </button>
 
                 {expanded && (
-                  <div className="mt-3 grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-[minmax(0,7rem)_minmax(0,7rem)_minmax(0,1fr)_auto] sm:items-end">
+                  <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 md:grid-cols-[minmax(0,7rem)_minmax(0,7rem)_minmax(0,1fr)_auto] md:items-end">
                     <label className="space-y-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Start</span>
                       <Input
@@ -672,7 +672,7 @@ export default function WeeklyEntryPage() {
                         inputMode="numeric"
                         maxLength={5}
                         placeholder="HH:mm"
-                        className="h-10 min-w-0 w-full appearance-none rounded-lg text-center font-mono text-sm sm:h-9 sm:text-xs"
+                        className="h-10 min-w-0 w-full appearance-none rounded-lg text-center font-mono text-sm md:h-9 md:text-xs"
                         defaultValue={timeInputValue(shift.startTime)}
                         onBlur={(e) => {
                           const value = e.currentTarget.value.trim();
@@ -692,7 +692,7 @@ export default function WeeklyEntryPage() {
                         inputMode="numeric"
                         maxLength={5}
                         placeholder="HH:mm"
-                        className="h-10 min-w-0 w-full appearance-none rounded-lg text-center font-mono text-sm sm:h-9 sm:text-xs"
+                        className="h-10 min-w-0 w-full appearance-none rounded-lg text-center font-mono text-sm md:h-9 md:text-xs"
                         defaultValue={timeInputValue(shift.endTime)}
                         disabled={!shift.endTime}
                         onBlur={(e) => {
@@ -705,13 +705,13 @@ export default function WeeklyEntryPage() {
                         }}
                       />
                     </label>
-                    <label className="col-span-2 space-y-1 sm:col-span-1">
+                    <label className="space-y-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Miles</span>
                       <Input
                         type="number"
                         step="0.1"
                         min="0"
-                        className="h-10 min-w-0 w-full text-right font-mono text-sm sm:h-9 sm:text-xs"
+                        className="h-10 min-w-0 w-full text-right font-mono text-sm md:h-9 md:text-xs"
                         value={shift.miles || ""}
                         placeholder="mi"
                         onChange={(e) => handleShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
@@ -721,7 +721,7 @@ export default function WeeklyEntryPage() {
                       type="button"
                       size="icon"
                       variant="ghost"
-                      className="col-span-2 h-10 w-10 justify-self-end text-destructive hover:bg-destructive/10 hover:text-destructive sm:col-span-1 sm:h-9 sm:w-9"
+                      className="h-10 w-10 justify-self-end text-destructive hover:bg-destructive/10 hover:text-destructive md:h-9 md:w-9"
                       onClick={() => handleDeleteShift(dayIdx, shift.id)}
                       aria-label="Delete shift block"
                     >

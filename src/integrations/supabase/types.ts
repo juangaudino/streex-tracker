@@ -152,53 +152,6 @@ export type Database = {
         }
         Relationships: []
       }
-      earnings_snapshots: {
-        Row: {
-          app: string
-          created_at: string
-          day_date: string
-          delta: number
-          id: string
-          new_amount: number
-          previous_amount: number
-          shift_id: string | null
-          user_id: string
-          week_id: string
-        }
-        Insert: {
-          app: string
-          created_at?: string
-          day_date: string
-          delta: number
-          id?: string
-          new_amount: number
-          previous_amount: number
-          shift_id?: string | null
-          user_id: string
-          week_id: string
-        }
-        Update: {
-          app?: string
-          created_at?: string
-          day_date?: string
-          delta?: number
-          id?: string
-          new_amount?: number
-          previous_amount?: number
-          shift_id?: string | null
-          user_id?: string
-          week_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "earnings_snapshots_week_id_fkey"
-            columns: ["week_id"]
-            isOneToOne: false
-            referencedRelation: "weeks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       app_runtime_config: {
         Row: {
           forced_logout_after: string | null

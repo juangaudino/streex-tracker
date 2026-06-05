@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.1.0";
+export const CURRENT_VERSION = "0.1.1";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,20 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.1.1",
+    date: "2026-06",
+    title: "Ask My Data Mobile Composer Fix",
+    tags: ["fix", "polish"],
+    items: [
+      "Ask My Data mobile composer now stays compact and contained when the iOS/Safari keyboard opens",
+      "Conversation area uses isolated scrolling with safe-area-aware composer spacing to reduce mobile overflow and layout breakage",
+      "Voice input button added using browser-native speech recognition when available",
+      "Unsupported voice input now fails gracefully without breaking normal text entry",
+      "Copy Conversation button added for copying the current Ask My Data chat as readable plain text",
+      "No Ask My Data analytics logic, auth, navigation, earnings data, backend schema, XP, exports, or Supabase architecture behavior changed",
+    ],
+  },
   {
     version: "0.1.0",
     date: "2026-06",

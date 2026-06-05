@@ -2,6 +2,24 @@
 
 ## Beta Releases
 
+### Beta 0.1.1 — Ask My Data Mobile Composer Fix
+
+### Fixed
+
+- Stabilized the Ask My Data mobile composer so it stays compact and contained when the iOS/Safari keyboard opens.
+- Isolated the conversation scroll region and added safe-area-aware composer spacing to reduce visual overflow on mobile.
+- Prevented the input area from expanding excessively while still allowing short multi-line prompts.
+
+### Added
+
+- Added browser-native voice input for Ask My Data when supported by the device/browser.
+- Added graceful unsupported-state messaging when voice input is unavailable.
+- Added Copy Conversation for copying the current Ask My Data chat as readable plain text.
+
+### Production Behavior
+
+- No Ask My Data analytics logic, auth, navigation, earnings data, backend schema, XP, exports, or Supabase architecture behavior changed.
+
 ### Beta 0.1.0 — Baseline
 
 ### Changed

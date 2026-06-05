@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`Beta 0.1.0 - Stabilization Baseline`
+`Beta 0.1.1 - Ask My Data Mobile Composer Fix`
 
 Source of truth:
 
@@ -50,6 +50,11 @@ Alpha Archive highlights:
 - V5.7.7 Ask My Data intent routing and capability awareness
 - V5.7.8 iOS/Safari/PWA app resume and lifecycle persistence hardening
 - V5.7.9 branded iOS, Android, and browser PWA icon configuration
+
+Beta highlights:
+
+- 0.1.0 public beta versioning baseline
+- 0.1.1 Ask My Data mobile composer stability, voice input, and copy conversation
 
 ## Ask My Data
 

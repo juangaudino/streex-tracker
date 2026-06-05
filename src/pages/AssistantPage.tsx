@@ -1,10 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Sparkles, Send, Loader2, FlaskConical } from "lucide-react";
+import { Clipboard, FlaskConical, Loader2, Mic, MicOff, Send, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+type SpeechRecognitionLike = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+type SpeechRecognitionEventLike = {
+  resultIndex: number;
+  results: ArrayLike<{
+    isFinal: boolean;
+    0: { transcript: string };
+  }>;
+};
 
 const STARTERS = [
   "What was my best week?",
@@ -15,6 +35,7 @@ const STARTERS = [
 ];
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-my-data`;
+const VOICE_UNSUPPORTED = "Voice input is not available on this device/browser yet.";
 
 function extractStreamDelta(payload: string): string {
   try {
@@ -28,16 +49,50 @@ function extractStreamDelta(payload: string): string {
   }
 }
 
+function getSpeechRecognition(): SpeechRecognitionConstructor | null {
+  if (typeof window === "undefined") return null;
+  const speechWindow = window as Window & {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  };
+  return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
+}
+
+function formatConversation(messages: ChatMessage[]): string {
+  return messages
+    .map((message) => `${message.role === "user" ? "User" : "Streex AI"}:\n${message.content.trim()}`)
+    .join("\n\n");
+}
+
 export default function AssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const voiceBaseInputRef = useRef("");
+  const { toast } = useToast();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+    textarea.style.height = "0px";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 96)}px`;
+  }, [input]);
 
   async function send(text: string) {
     const content = text.trim();
@@ -122,24 +177,110 @@ export default function AssistantPage() {
     }
   }
 
+  async function copyConversation() {
+    const text = formatConversation(messages);
+    if (!text) {
+      toast({ title: "Nothing to copy yet." });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Conversation copied." });
+    } catch {
+      toast({ title: "Copy failed.", variant: "destructive" });
+    }
+  }
+
+  function toggleVoiceInput() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+
+    const SpeechRecognition = getSpeechRecognition();
+    if (!SpeechRecognition) {
+      toast({ title: VOICE_UNSUPPORTED });
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = navigator.language || "en-US";
+      recognitionRef.current = recognition;
+      voiceBaseInputRef.current = input.trim();
+      let finalTranscript = "";
+
+      recognition.onresult = (event) => {
+        let interimTranscript = "";
+        for (let index = event.resultIndex; index < event.results.length; index += 1) {
+          const result = event.results[index];
+          if (result.isFinal) finalTranscript += result[0].transcript;
+          else interimTranscript += result[0].transcript;
+        }
+        const spokenText = `${finalTranscript}${interimTranscript}`.trim();
+        setInput([voiceBaseInputRef.current, spokenText].filter(Boolean).join(" "));
+      };
+
+      recognition.onerror = (event) => {
+        setListening(false);
+        const title = event.error === "not-allowed"
+          ? "Microphone permission was denied."
+          : "Voice input stopped.";
+        toast({ title });
+      };
+
+      recognition.onend = () => {
+        setListening(false);
+        recognitionRef.current = null;
+        inputRef.current?.focus();
+      };
+
+      recognition.start();
+      setListening(true);
+    } catch {
+      setListening(false);
+      toast({ title: VOICE_UNSUPPORTED });
+    }
+  }
+
   return (
-    <div className="mx-auto flex h-[calc(100svh-8.5rem)] max-w-3xl min-h-0 flex-col px-3 py-3 sm:h-[calc(100vh-8rem)] sm:px-4 sm:py-6">
-      <header className="mb-3 shrink-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <Sparkles className="h-5 w-5 shrink-0 text-primary" />
-          <h1 className="min-w-0 text-xl font-semibold leading-tight">Ask My Data</h1>
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-            <FlaskConical className="h-3 w-3" /> v5.3B.3 Beta
-          </span>
+    <div className="mx-auto flex h-[calc(100dvh-8.75rem)] min-h-[420px] max-w-3xl min-w-0 flex-col overflow-hidden px-3 py-3 sm:h-[calc(100dvh-8rem)] sm:px-4 sm:py-6">
+      <header className="mb-3 shrink-0 space-y-2">
+        <div className="flex min-w-0 items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <Sparkles className="h-5 w-5 shrink-0 text-primary" />
+              <h1 className="min-w-0 text-xl font-semibold leading-tight">Ask My Data</h1>
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                <FlaskConical className="h-3 w-3" /> v5.3B.3 Beta
+              </span>
+            </div>
+            <p className="mt-1 text-sm leading-snug text-muted-foreground">
+              Chat with your earnings. Beta — answers are based only on your Streex data.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 shrink-0 px-2 text-xs"
+            onClick={copyConversation}
+            disabled={messages.length === 0}
+            title={messages.length === 0 ? "Nothing to copy yet" : "Copy conversation"}
+          >
+            <Clipboard className="h-3.5 w-3.5" />
+            <span className="hidden min-[420px]:inline">Copy</span>
+          </Button>
         </div>
-        <p className="mt-1 text-sm leading-snug text-muted-foreground">
-          Chat with your earnings. Beta — answers are based only on your Streex data.
-        </p>
       </header>
 
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-border bg-card/40 p-3 sm:space-y-4 sm:p-4"
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain rounded-xl border border-border bg-card/40 p-3 sm:space-y-4 sm:p-4"
       >
         {messages.length === 0 && (
           <div className="space-y-3 pb-2">
@@ -199,21 +340,43 @@ export default function AssistantPage() {
           e.preventDefault();
           send(input);
         }}
-        className="flex shrink-0 gap-2 pt-3"
+        className="shrink-0 pt-3"
       >
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask anything about your earnings…"
-          className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-          disabled={loading}
-        />
-        <Button type="submit" className="shrink-0" disabled={loading || !input.trim()}>
-          <Send className="h-4 w-4" />
-        </Button>
+        <div className="flex min-w-0 items-end gap-2 rounded-xl border border-border bg-background p-2 shadow-sm">
+          <Textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                send(input);
+              }
+            }}
+            placeholder="Ask anything about your earnings…"
+            rows={1}
+            className="max-h-24 min-h-10 flex-1 resize-none overflow-y-auto border-0 bg-transparent px-1 py-2 text-base leading-5 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 sm:text-sm"
+            disabled={loading}
+          />
+          <Button
+            type="button"
+            variant={listening ? "secondary" : "ghost"}
+            size="icon"
+            className="h-10 w-10 shrink-0 rounded-lg"
+            onClick={toggleVoiceInput}
+            disabled={loading}
+            aria-label={listening ? "Stop voice input" : "Start voice input"}
+            title={listening ? "Stop voice input" : "Start voice input"}
+          >
+            {listening ? <MicOff className="h-4 w-4 text-primary" /> : <Mic className="h-4 w-4" />}
+          </Button>
+          <Button type="submit" className="h-10 w-10 shrink-0 rounded-lg p-0" disabled={loading || !input.trim()}>
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
       </form>
 
-      <p className="mt-2 shrink-0 pb-[env(safe-area-inset-bottom)] text-center text-[10px] text-muted-foreground/70">
+      <p className="mt-2 shrink-0 pb-[max(env(safe-area-inset-bottom),0.25rem)] text-center text-[10px] text-muted-foreground/70">
         Beta · responses may be imperfect · data stays inside your account
       </p>
     </div>

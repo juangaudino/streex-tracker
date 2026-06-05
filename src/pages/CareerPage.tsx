@@ -13,7 +13,7 @@ import ShiftIntelligencePanel from "@/components/ShiftIntelligencePanel";
 import { usePerformanceMode } from "@/hooks/usePerformanceMode";
 
 export default function CareerPage() {
-  const { weeks, settings } = useOutletContext<StoreContext>();
+  const { weeks, settings, earningsSnapshots } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
   const sym = settings.currencySymbol;
   const stats = computeCareerStats(weeks);
@@ -194,7 +194,7 @@ export default function CareerPage() {
       </section>
 
       {/* Performance Insights */}
-      <ShiftIntelligencePanel weeks={weeks} currencySymbol={sym} mode={performanceMode} />
+      <ShiftIntelligencePanel weeks={weeks} earningsSnapshots={earningsSnapshots} currencySymbol={sym} mode={performanceMode} />
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">

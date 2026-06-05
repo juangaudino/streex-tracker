@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`Beta 0.1.2 - Shift Blocks Mobile Layout Fix`
+`Beta 0.2.0 - Earnings Snapshots + Honest Pattern Intelligence`
 
 Source of truth:
 
@@ -56,6 +56,18 @@ Beta highlights:
 - 0.1.0 public beta versioning baseline
 - 0.1.1 Ask My Data mobile composer stability, voice input, and copy conversation
 - 0.1.2 Entry Shift Blocks mobile layout fix
+- 0.2.0 Earnings Snapshots V1 and honest timing-source labels for Shift Intelligence
+
+## Pattern Intelligence Source Truth
+
+Streex does not currently receive individual ride-level timestamps.
+
+Timing intelligence must label its source clearly:
+
+- Earnings Snapshots: observed from saved earning-update deltas.
+- Estimated Windows: inferred by spreading daily earnings across completed shift duration.
+
+Do not present timing cards as exact ride-level hourly earnings unless a future integration provides ride timestamps.
 
 ## Ask My Data
 

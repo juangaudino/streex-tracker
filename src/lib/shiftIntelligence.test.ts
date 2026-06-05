@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildPatternIntelligence, getDayMiles, getWeekMiles, shiftDurationHours } from "./shiftIntelligence";
-import type { DayEntry, WeekRecord } from "./types";
+import type { DayEntry, EarningsSnapshot, WeekRecord } from "./types";
 import { DAY_NAMES } from "./types";
 
 function day(index: number, total: number, shifts: DayEntry["shifts"] = [], mileage?: number): DayEntry {
@@ -68,5 +68,56 @@ describe("shift intelligence", () => {
     expect(result.summary.milesPerHour).toBeCloseTo(10.67);
     expect(result.strongestHours.length).toBeGreaterThan(0);
     expect(result.bestAppsByHour.length).toBeGreaterThan(0);
+    expect(result.timingSource).toBe("estimated");
+    expect(result.timingCopy).toContain("spreading daily earnings");
+  });
+
+  it("uses earnings snapshots for observed update timing when enough updates exist", () => {
+    const weeks = [
+      week([
+        day(0, 240, [{ id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00", miles: 24 }]),
+        day(1, 180, [{ id: "s2", startTime: "2026-05-05T18:00:00", endTime: "2026-05-05T20:00:00", miles: 18 }]),
+        day(2, 260, [{ id: "s3", startTime: "2026-05-06T08:00:00", endTime: "2026-05-06T10:00:00", miles: 22 }]),
+        day(3, 0),
+        day(4, 0),
+        day(5, 0),
+        day(6, 0),
+      ]),
+    ];
+    const snapshots: EarningsSnapshot[] = [
+      snapshot("snap1", "2026-05-04", "Uber", 50, "2026-05-04T18:05:00"),
+      snapshot("snap2", "2026-05-04", "Uber", 20, "2026-05-04T18:45:00"),
+      snapshot("snap3", "2026-05-05", "Spark Driver", 15, "2026-05-05T17:15:00"),
+    ];
+
+    const result = buildPatternIntelligence(weeks, snapshots);
+
+    expect(result.timingSource).toBe("snapshot");
+    expect(result.timingSourceLabel).toBe("Observed from earnings updates");
+    expect(result.strongestHours[0].hour).toBe(18);
+    expect(result.strongestHours[0].earnings).toBe(70);
+    expect(result.strongestHours[0].observations).toBe(2);
+    expect(result.bestAppsByHour[0].app).toBe("Uber");
   });
 });
+
+function snapshot(
+  id: string,
+  dayDate: string,
+  app: string,
+  delta: number,
+  createdAt: string,
+): EarningsSnapshot {
+  return {
+    id,
+    userId: "u1",
+    weekId: "w1",
+    dayDate,
+    app,
+    previousAmount: 0,
+    newAmount: delta,
+    delta,
+    shiftId: null,
+    createdAt,
+  };
+}

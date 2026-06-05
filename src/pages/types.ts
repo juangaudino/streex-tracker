@@ -1,4 +1,4 @@
-import type { WeekRecord, AppSettings } from "@/lib/types";
+import type { WeekRecord, AppSettings, EarningsSnapshot } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 
 export interface StoreContext {
@@ -6,6 +6,7 @@ export interface StoreContext {
   weeks: WeekRecord[];
   openWeek: WeekRecord | null;
   settings: AppSettings;
+  earningsSnapshots: EarningsSnapshot[];
   loading: boolean;
   hasLocalData: boolean;
   addWeek: (w: WeekRecord) => void;

@@ -51,6 +51,19 @@ export interface WeekRecord {
   updatedAt: string;
 }
 
+export interface EarningsSnapshot {
+  id: string;
+  userId: string;
+  weekId: string;
+  dayDate: string;
+  app: string;
+  previousAmount: number;
+  newAmount: number;
+  delta: number;
+  shiftId?: string | null;
+  createdAt: string;
+}
+
 export interface AppSettings {
   defaultWeeklyGoal: number;
   currencySymbol: string;

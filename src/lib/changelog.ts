@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.1.2";
+export const CURRENT_VERSION = "0.2.0";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,21 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.2.0",
+    date: "2026-06",
+    title: "Earnings Snapshots + Honest Pattern Intelligence",
+    tags: ["new", "feature", "polish"],
+    items: [
+      "Earnings Snapshots V1 added so Streex can record lightweight earning-update deltas when app earnings change",
+      "Shift Intelligence timing cards now distinguish observed earning-update patterns from shift-duration estimates",
+      "Strong Hour language replaced with more honest timing labels such as Observed Update Hour and Estimated Window",
+      "Hourly Heatmap now labels whether it is based on saved earnings updates or estimated from completed shift duration",
+      "Career timing copy now clearly states that current timing insights are not ride-level timestamp analytics",
+      "If the earnings_snapshots backend table is not deployed yet, normal week saving continues and snapshots fail gracefully",
+      "No existing earnings values, exports, Ask My Data logic, auth, XP, achievements, or Supabase project architecture behavior changed",
+    ],
+  },
   {
     version: "0.1.2",
     date: "2026-06",

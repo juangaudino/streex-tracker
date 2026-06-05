@@ -2,11 +2,12 @@ import { Activity, BarChart3, Clock, Gauge, Moon, Route, Sparkles, Sun } from "l
 import { formatCurrency } from "@/lib/store";
 import { buildPatternIntelligence } from "@/lib/shiftIntelligence";
 import type { PerformanceMode } from "@/lib/performanceMode";
-import type { WeekRecord } from "@/lib/types";
+import type { EarningsSnapshot, WeekRecord } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface ShiftIntelligencePanelProps {
   weeks: WeekRecord[];
+  earningsSnapshots?: EarningsSnapshot[];
   currencySymbol: string;
   mode: PerformanceMode;
 }
@@ -51,11 +52,26 @@ function buildEfficiencyInsight(summary: ReturnType<typeof buildPatternIntellige
   return "Complete a few more shifts to sharpen your efficiency read.";
 }
 
-export default function ShiftIntelligencePanel({ weeks, currencySymbol, mode }: ShiftIntelligencePanelProps) {
-  const intelligence = buildPatternIntelligence(weeks);
+function formatTimingMetric(
+  hour: ReturnType<typeof buildPatternIntelligence>["hourlyHeatmap"][number] | undefined,
+  source: ReturnType<typeof buildPatternIntelligence>["timingSource"],
+  currencySymbol: string,
+): string {
+  if (!hour) return "track more shifts";
+  if (source === "snapshot") {
+    const updates = hour.observations ?? 0;
+    return `${formatCurrency(hour.earnings, currencySymbol)} in update${updates === 1 ? "" : "s"}`;
+  }
+  return `${formatCurrency(hour.earningsPerHour, currencySymbol)}/hr est.`;
+}
+
+export default function ShiftIntelligencePanel({ weeks, earningsSnapshots = [], currencySymbol, mode }: ShiftIntelligencePanelProps) {
+  const intelligence = buildPatternIntelligence(weeks, earningsSnapshots);
   const { summary } = intelligence;
   const maxEph = Math.max(1, ...intelligence.hourlyHeatmap.map((bucket) => bucket.earningsPerHour));
   const isAdvanced = mode === "advanced";
+  const strongWindowLabel = intelligence.timingSource === "snapshot" ? "Observed Update Hour" : "Estimated Window";
+  const heatmapTitle = intelligence.timingSource === "snapshot" ? "Update Heatmap" : "Estimated Hourly Heatmap";
 
   return (
     <section className="space-y-3">
@@ -95,16 +111,16 @@ export default function ShiftIntelligencePanel({ weeks, currencySymbol, mode }: 
             />
             <Metric
               icon={<Sparkles className="h-3.5 w-3.5 text-primary" />}
-              label="Best Window"
+              label={strongWindowLabel}
               value={intelligence.strongestHours[0]?.label ?? "—"}
-              sub={intelligence.strongestHours[0] ? `${formatCurrency(intelligence.strongestHours[0].earningsPerHour, currencySymbol)}/hr` : "track more shifts"}
+              sub={formatTimingMetric(intelligence.strongestHours[0], intelligence.timingSource, currencySymbol)}
             />
           </div>
           {!intelligence.hasEnoughShiftData && (
             <div className="rounded-xl border border-border bg-card/70 p-4">
               <p className="text-sm font-semibold">Shift patterns are warming up.</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Simple Mode stays light. Switch to Advanced after more completed shifts for deeper operating context.
+                Simple Mode stays light. Switch to Advanced after more completed shifts and saved earnings updates for deeper operating context.
               </p>
             </div>
           )}
@@ -133,23 +149,27 @@ export default function ShiftIntelligencePanel({ weeks, currencySymbol, mode }: 
             </p>
           </div>
 
-          {!intelligence.hasEnoughShiftData ? (
+          {!intelligence.hasEnoughTimingData ? (
             <div className="rounded-xl border border-border bg-card/70 p-4">
               <p className="text-sm font-semibold">Track more shifts to unlock deeper patterns.</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Advanced metrics above use real saved data now. Hourly heatmaps, app-by-hour, and recovery windows unlock after at least three completed shifts and three tracked hours.
+                Advanced metrics above use real saved data now. Timing patterns unlock after at least three completed shifts or three saved earning updates.
               </p>
             </div>
           ) : (
             <>
+              <p className="rounded-xl border border-border bg-card/70 p-3 text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{intelligence.timingSourceLabel}.</span>{" "}
+                {intelligence.timingCopy}
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {intelligence.strongestHours.map((hour) => (
                   <Metric
                     key={hour.hour}
                     icon={<Sparkles className="h-3.5 w-3.5 text-primary" />}
-                    label="Strong Hour"
+                    label={strongWindowLabel}
                     value={hour.label}
-                    sub={`${formatCurrency(hour.earningsPerHour, currencySymbol)}/hr`}
+                    sub={formatTimingMetric(hour, intelligence.timingSource, currencySymbol)}
                   />
                 ))}
               </div>
@@ -169,7 +189,7 @@ export default function ShiftIntelligencePanel({ weeks, currencySymbol, mode }: 
               <div className="rounded-xl border border-border bg-card p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold">Hourly Heatmap</p>
+                  <p className="text-sm font-semibold">{heatmapTitle}</p>
                 </div>
                 <div className="grid grid-cols-6 sm:grid-cols-12 gap-1">
                   {intelligence.hourlyHeatmap.map((bucket) => {
@@ -179,7 +199,7 @@ export default function ShiftIntelligencePanel({ weeks, currencySymbol, mode }: 
                         <div
                           className={cn("h-8 rounded-md border border-border/60", bucket.hours > 0 ? "bg-primary" : "bg-muted/40")}
                           style={{ opacity: bucket.hours > 0 ? Math.min(0.85, intensity) : 1 }}
-                          title={`${bucket.label}: ${formatCurrency(bucket.earningsPerHour, currencySymbol)}/hr`}
+                          title={`${bucket.label}: ${formatTimingMetric(bucket, intelligence.timingSource, currencySymbol)}`}
                         />
                         <p className="text-[8px] text-muted-foreground text-center">{bucket.hour}</p>
                       </div>

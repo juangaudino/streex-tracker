@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
-import { WeekRecord, AppSettings, DEFAULT_APPS, DayEntry } from "@/lib/types";
+import { WeekRecord, AppSettings, DEFAULT_APPS, DayEntry, EarningsSnapshot } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { getWeeks as getLocalWeeks } from "@/lib/store";
 import { lifecycleDebug } from "@/lib/appLifecycle";
+import { buildEarningsSnapshotRows, dbToEarningsSnapshot } from "@/lib/earningsSnapshots";
 
 const DEFAULT_SETTINGS: AppSettings = {
   defaultWeeklyGoal: 1200,
@@ -14,6 +15,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 interface WeekStoreSnapshot {
   weeks: WeekRecord[];
   settings: AppSettings;
+  earningsSnapshots: EarningsSnapshot[];
   hasLocalData: boolean;
 }
 
@@ -36,6 +38,7 @@ export function useWeekStore(user: User | null) {
   const cachedStore = user ? storeCache.get(user.id) : undefined;
   const [weeks, setWeeks] = useState<WeekRecord[]>(() => cachedStore?.weeks ?? []);
   const [settings, setSettingsState] = useState<AppSettings>(() => cachedStore?.settings ?? DEFAULT_SETTINGS);
+  const [earningsSnapshots, setEarningsSnapshots] = useState<EarningsSnapshot[]>(() => cachedStore?.earningsSnapshots ?? []);
   const [loading, setLoading] = useState(() => !cachedStore);
   const [hasLocalData, setHasLocalData] = useState(() => cachedStore?.hasLocalData ?? false);
 
@@ -45,7 +48,7 @@ export function useWeekStore(user: User | null) {
     const hasCachedStore = storeCache.has(user.id);
     if (!hasCachedStore) setLoading(true);
     try {
-      const [{ data, error }, { data: sData, error: settingsError }] = await Promise.all([
+      const [{ data, error }, { data: sData, error: settingsError }, snapshotsResult] = await Promise.all([
         supabase
           .from("weeks")
           .select("*")
@@ -54,6 +57,10 @@ export function useWeekStore(user: User | null) {
           .from("user_settings")
           .select("*")
           .maybeSingle(),
+        supabase
+          .from("earnings_snapshots")
+          .select("*")
+          .order("created_at", { ascending: true }),
       ]);
       if (error) throw error;
       if (settingsError) throw settingsError;
@@ -66,6 +73,13 @@ export function useWeekStore(user: User | null) {
           ? JSON.parse(sData.active_apps)
           : sData.active_apps) as string[],
       } : storeCache.get(user.id)?.settings ?? DEFAULT_SETTINGS;
+      const nextSnapshots = snapshotsResult.error
+        ? storeCache.get(user.id)?.earningsSnapshots ?? []
+        : snapshotsResult.data?.map(dbToEarningsSnapshot) ?? [];
+
+      if (snapshotsResult.error) {
+        console.warn("[weeks.reload] earnings snapshots unavailable", snapshotsResult.error);
+      }
 
       // Check for local data to import
       const local = getLocalWeeks();
@@ -73,10 +87,12 @@ export function useWeekStore(user: User | null) {
       storeCache.set(user.id, {
         weeks: nextWeeks,
         settings: nextSettings,
+        earningsSnapshots: nextSnapshots,
         hasLocalData: nextHasLocalData,
       });
       setWeeks(nextWeeks);
       setSettingsState(nextSettings);
+      setEarningsSnapshots(nextSnapshots);
       setHasLocalData(nextHasLocalData);
       lifecycleDebug("week store hydrated", {
         userId: user.id,
@@ -121,6 +137,9 @@ export function useWeekStore(user: User | null) {
       return false;
     }
     const now = new Date().toISOString();
+    const previousWeek = storeCache.get(user.id)?.weeks.find((week) => week.id === w.id)
+      ?? weeks.find((week) => week.id === w.id)
+      ?? null;
     try {
       const payload = {
         start_date: w.startDate,
@@ -153,9 +172,32 @@ export function useWeekStore(user: User | null) {
         alert("Could not save this week. Please check your connection and try again.");
         return false;
       }
+      const snapshotRows = buildEarningsSnapshotRows({
+        userId: user.id,
+        previousWeek,
+        nextWeek: w,
+      });
+      let insertedSnapshots: EarningsSnapshot[] = [];
+      if (snapshotRows.length) {
+        const { data: snapshotData, error: snapshotError } = await supabase
+          .from("earnings_snapshots")
+          .insert(snapshotRows)
+          .select("*");
+        if (snapshotError) {
+          console.warn("[weeks.updateWeek] earnings snapshots unavailable", {
+            weekId: w.id,
+            count: snapshotRows.length,
+            error: snapshotError,
+          });
+        } else if (snapshotData?.length) {
+          insertedSnapshots = snapshotData.map(dbToEarningsSnapshot);
+          setEarningsSnapshots((prev) => [...prev, ...insertedSnapshots]);
+        }
+      }
       setWeeks((prev) => {
         const nextWeeks = prev.map((x) => (x.id === w.id ? { ...w, updatedAt: now } : x));
-        storeCache.set(user.id, { weeks: nextWeeks, settings, hasLocalData });
+        const nextSnapshots = insertedSnapshots.length ? [...earningsSnapshots, ...insertedSnapshots] : earningsSnapshots;
+        storeCache.set(user.id, { weeks: nextWeeks, settings, earningsSnapshots: nextSnapshots, hasLocalData });
         return nextWeeks;
       });
       return true;
@@ -168,7 +210,7 @@ export function useWeekStore(user: User | null) {
       alert("Could not save this week. Please check your connection and try again.");
       return false;
     }
-  }, [hasLocalData, settings, user]);
+  }, [earningsSnapshots, hasLocalData, settings, user, weeks]);
 
   const deleteWeek = useCallback(async (id: string) => {
     if (!user) return;
@@ -180,10 +222,12 @@ export function useWeekStore(user: User | null) {
     }
     setWeeks((prev) => {
       const nextWeeks = prev.filter((w) => w.id !== id);
-      storeCache.set(user.id, { weeks: nextWeeks, settings, hasLocalData });
+      const nextSnapshots = earningsSnapshots.filter((snapshot) => snapshot.weekId !== id);
+      storeCache.set(user.id, { weeks: nextWeeks, settings, earningsSnapshots: nextSnapshots, hasLocalData });
+      setEarningsSnapshots(nextSnapshots);
       return nextWeeks;
     });
-  }, [hasLocalData, settings, user]);
+  }, [earningsSnapshots, hasLocalData, settings, user]);
 
   const updateSettings = useCallback(async (s: AppSettings) => {
     if (!user) return;
@@ -199,9 +243,9 @@ export function useWeekStore(user: User | null) {
       alert("Error saving settings: " + error.message);
       return;
     }
-    storeCache.set(user.id, { weeks, settings: s, hasLocalData });
+    storeCache.set(user.id, { weeks, settings: s, earningsSnapshots, hasLocalData });
     setSettingsState(s);
-  }, [hasLocalData, user, weeks]);
+  }, [earningsSnapshots, hasLocalData, user, weeks]);
 
   const importLocalData = useCallback(async () => {
     if (!user) return;
@@ -241,6 +285,7 @@ export function useWeekStore(user: User | null) {
     weeks,
     openWeek,
     settings,
+    earningsSnapshots,
     loading,
     hasLocalData,
     addWeek,

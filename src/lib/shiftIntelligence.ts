@@ -1,5 +1,5 @@
 import { dayTotal } from "./store";
-import type { DayEntry, ShiftSession, WeekRecord } from "./types";
+import type { DayEntry, EarningsSnapshot, ShiftSession, WeekRecord } from "./types";
 
 export interface ShiftSummary {
   totalShifts: number;
@@ -21,6 +21,7 @@ export interface HourBucket {
   earnings: number;
   hours: number;
   earningsPerHour: number;
+  observations?: number;
 }
 
 export interface PatternIntelligence {
@@ -38,6 +39,10 @@ export interface PatternIntelligence {
   productivityWindows: { label: string; earningsPerHour: number; hours: number }[];
   fatigueNote: string | null;
   hasEnoughShiftData: boolean;
+  hasEnoughTimingData: boolean;
+  timingSource: "snapshot" | "estimated";
+  timingSourceLabel: string;
+  timingCopy: string;
 }
 
 function round(value: number): number {
@@ -104,7 +109,29 @@ function overlapHours(startMs: number, endMs: number, hour: number, date: string
   return overlap / 3600000;
 }
 
-export function buildPatternIntelligence(weeks: WeekRecord[]): PatternIntelligence {
+function buildSnapshotHourMap(earningsSnapshots: EarningsSnapshot[]) {
+  const hourMap = new Map<number, { earnings: number; observations: number; appTotals: Record<string, number> }>();
+
+  for (const snapshot of earningsSnapshots) {
+    const delta = Number(snapshot.delta) || 0;
+    if (delta <= 0) continue;
+    const created = new Date(snapshot.createdAt);
+    if (Number.isNaN(created.getTime())) continue;
+    const hour = created.getHours();
+    const current = hourMap.get(hour) ?? { earnings: 0, observations: 0, appTotals: {} };
+    current.earnings += delta;
+    current.observations += 1;
+    current.appTotals[snapshot.app] = (current.appTotals[snapshot.app] || 0) + delta;
+    hourMap.set(hour, current);
+  }
+
+  return hourMap;
+}
+
+export function buildPatternIntelligence(
+  weeks: WeekRecord[],
+  earningsSnapshots: EarningsSnapshot[] = [],
+): PatternIntelligence {
   const hourMap = new Map<number, { earnings: number; hours: number; appTotals: Record<string, number> }>();
   let totalHours = 0;
   let totalMiles = 0;
@@ -160,7 +187,7 @@ export function buildPatternIntelligence(weeks: WeekRecord[]): PatternIntelligen
     }
   }
 
-  const hourlyHeatmap = Array.from({ length: 24 }, (_, hour) => {
+  const estimatedHourlyHeatmap = Array.from({ length: 24 }, (_, hour) => {
     const value = hourMap.get(hour) ?? { earnings: 0, hours: 0, appTotals: {} };
     return {
       hour,
@@ -170,11 +197,32 @@ export function buildPatternIntelligence(weeks: WeekRecord[]): PatternIntelligen
       earningsPerHour: value.hours > 0 ? round(value.earnings / value.hours) : 0,
     };
   });
+  const snapshotHourMap = buildSnapshotHourMap(earningsSnapshots);
+  const snapshotObservationCount = [...snapshotHourMap.values()].reduce((sum, value) => sum + value.observations, 0);
+  const hasSnapshotTimingData = snapshotObservationCount >= 3;
+  const timingSource = hasSnapshotTimingData ? "snapshot" : "estimated";
+  const hourlyHeatmap = hasSnapshotTimingData
+    ? Array.from({ length: 24 }, (_, hour) => {
+        const value = snapshotHourMap.get(hour) ?? { earnings: 0, observations: 0, appTotals: {} };
+        return {
+          hour,
+          label: hourLabel(hour),
+          earnings: round(value.earnings),
+          hours: value.observations,
+          earningsPerHour: round(value.earnings),
+          observations: value.observations,
+        };
+      })
+    : estimatedHourlyHeatmap;
   const workedBuckets = hourlyHeatmap.filter((bucket) => bucket.hours >= 0.5);
   const strongestHours = [...workedBuckets].sort((a, b) => b.earningsPerHour - a.earningsPerHour).slice(0, 3);
   const recoveryWindows = [...workedBuckets].sort((a, b) => a.earningsPerHour - b.earningsPerHour).slice(0, 3);
 
-  const bestAppsByHour = [...hourMap.entries()]
+  const appHourEntries = hasSnapshotTimingData
+    ? [...snapshotHourMap.entries()].map(([hour, value]) => [hour, { ...value, hours: value.observations }] as const)
+    : [...hourMap.entries()];
+
+  const bestAppsByHour = appHourEntries
     .map(([hour, value]) => {
       const best = Object.entries(value.appTotals).sort((a, b) => b[1] - a[1])[0];
       return best ? { hour, label: hourLabel(hour), app: best[0], earnings: round(best[1]) } : null;
@@ -219,12 +267,20 @@ export function buildPatternIntelligence(weeks: WeekRecord[]): PatternIntelligen
       style,
       morningEarningsPerHour: round(morningEph),
       nightEarningsPerHour: round(nightEph),
-      copy: style === "morning"
-        ? "Your logged shifts lean stronger earlier in the day."
+      copy: hasSnapshotTimingData
+        ? style === "morning"
+          ? "Your saved earning updates lean stronger earlier in the day."
+          : style === "night"
+          ? "Your saved earning updates lean stronger later in the day."
+          : style === "balanced"
+          ? "Morning and night earning updates look fairly balanced so far."
+          : "Save a few more earning updates across the day to compare your operating style."
+        : style === "morning"
+        ? "Estimated from shift duration: your shifts lean stronger earlier in the day."
         : style === "night"
-        ? "Your logged shifts lean stronger later in the day."
+        ? "Estimated from shift duration: your shifts lean stronger later in the day."
         : style === "balanced"
-        ? "Morning and night performance look fairly balanced so far."
+        ? "Estimated from shift duration: morning and night performance look fairly balanced so far."
         : "Log a few morning and evening shifts to compare your operating style.",
     },
     productivityWindows: strongestHours.map((bucket) => ({
@@ -238,5 +294,11 @@ export function buildPatternIntelligence(weeks: WeekRecord[]): PatternIntelligen
       ? "Longer work blocks show some softer output later in the session. Treat it as a pacing signal, not a warning."
       : null,
     hasEnoughShiftData: totalShifts >= 3 && totalHours >= 3,
+    hasEnoughTimingData: hasSnapshotTimingData || (totalShifts >= 3 && totalHours >= 3),
+    timingSource,
+    timingSourceLabel: hasSnapshotTimingData ? "Observed from earnings updates" : "Estimated from shift duration",
+    timingCopy: hasSnapshotTimingData
+      ? "Based on saved earnings updates. This is more grounded than shift spreading, but still not ride-level timestamp data."
+      : "Estimated by spreading daily earnings across completed shift time. This is directional, not ride-level hourly truth.",
   };
 }

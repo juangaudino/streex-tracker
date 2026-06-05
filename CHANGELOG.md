@@ -2,6 +2,30 @@
 
 ## Beta Releases
 
+### Beta 0.2.0 — Earnings Snapshots + Honest Pattern Intelligence
+
+### Added
+
+- Added Earnings Snapshots V1 to record lightweight earning-update deltas when app earnings change.
+- Added an `earnings_snapshots` migration with user-scoped RLS policies for future Lovable/Supabase deployment.
+- Added snapshot-aware Shift Intelligence so timing patterns can use saved earning updates when enough update history exists.
+
+### Changed
+
+- Replaced Strong Hour language with more honest timing labels such as Observed Update Hour and Estimated Window.
+- Hourly Heatmap now explains whether it is based on saved earnings updates or estimated from completed shift duration.
+- Morning vs Night copy now distinguishes earning-update observations from shift-duration estimates.
+
+### Known Limitations
+
+- Earnings Snapshots are update-based, not ride-level timestamps.
+- Until the migration is deployed to the live Lovable-connected backend, normal week saving continues but snapshot capture is skipped gracefully.
+- Estimated timing remains directional only because Streex does not yet receive individual ride timestamps.
+
+### Production Behavior
+
+- No existing earning values, exports, Ask My Data logic, auth, XP, achievements, or Supabase project architecture behavior changed.
+
 ### Beta 0.1.2 — Shift Blocks Mobile Layout Fix
 
 ### Fixed

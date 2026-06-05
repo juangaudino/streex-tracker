@@ -6,7 +6,7 @@ import type { DayEntry } from "@/lib/types";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { getDayShiftHours, hasActiveShift, shiftDurationHours } from "@/lib/shiftIntelligence";
+import { getDayRideCount, getDayShiftHours, hasActiveShift, shiftDurationHours } from "@/lib/shiftIntelligence";
 
 interface MobileDayDetailProps {
   day: DayEntry;
@@ -20,6 +20,7 @@ interface MobileDayDetailProps {
   onStartShift?: (dayIdx: number) => void;
   onEndShift?: (dayIdx: number) => void;
   onShiftMilesUpdate?: (dayIdx: number, shiftId: string, val: string) => void;
+  onShiftRideCountUpdate?: (dayIdx: number, shiftId: string, val: string) => void;
   onShiftTimeUpdate?: (dayIdx: number, shiftId: string, field: "startTime" | "endTime", val: string) => void;
   onDeleteShift?: (dayIdx: number, shiftId: string) => void;
   onSave: () => void;
@@ -48,6 +49,7 @@ export default function MobileDayDetail({
   onStartShift,
   onEndShift,
   onShiftMilesUpdate,
+  onShiftRideCountUpdate,
   onShiftTimeUpdate,
   onDeleteShift,
   onSave,
@@ -57,6 +59,7 @@ export default function MobileDayDetail({
   const [mileage, setMileage] = useState(day.mileage?.toString() || "");
   const activeShift = hasActiveShift(day);
   const shiftHours = getDayShiftHours(day);
+  const rideCount = getDayRideCount(day);
 
   return (
     <div className="animate-in slide-in-from-right duration-200 space-y-4 p-4">
@@ -137,7 +140,9 @@ export default function MobileDayDetail({
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium">Shift Blocks</p>
-              <p className="text-xs text-muted-foreground">{shiftHours.toFixed(1)}h logged today</p>
+              <p className="text-xs text-muted-foreground">
+                {shiftHours.toFixed(1)}h logged today{rideCount > 0 ? ` · ${rideCount} rides` : ""}
+              </p>
             </div>
             <Button
               size="sm"
@@ -239,6 +244,20 @@ export default function MobileDayDetail({
                         </Button>
                       )}
                     </div>
+                  </label>
+                )}
+                {onShiftRideCountUpdate && (
+                  <label className="min-w-0 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rides</span>
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      className="h-10 min-w-0 w-full text-right font-mono text-sm"
+                      value={shift.rideCount || ""}
+                      placeholder="0"
+                      onChange={(e) => onShiftRideCountUpdate(dayIdx, shift.id, e.target.value)}
+                    />
                   </label>
                 )}
                 {onDeleteShift && !onShiftMilesUpdate && (

@@ -10,8 +10,13 @@ export interface ShiftSummary {
   totalHours: number;
   averageShiftHours: number | null;
   totalMiles: number;
+  totalRides: number;
   earningsPerHour: number | null;
   earningsPerMile: number | null;
+  earningsPerRide: number | null;
+  ridesPerHour: number | null;
+  milesPerRide: number | null;
+  minutesPerRide: number | null;
   milesPerHour: number | null;
 }
 
@@ -66,6 +71,14 @@ export function getWeekMiles(week: WeekRecord): number {
   return round(week.entries.reduce((sum, day) => sum + getDayMiles(day), 0));
 }
 
+export function getDayRideCount(day: DayEntry): number {
+  return (day.shifts ?? []).reduce((sum, shift) => sum + Math.max(0, Math.trunc(Number(shift.rideCount) || 0)), 0);
+}
+
+export function getWeekRideCount(week: WeekRecord): number {
+  return week.entries.reduce((sum, day) => sum + getDayRideCount(day), 0);
+}
+
 export function getDayShiftHours(day: DayEntry): number {
   return round((day.shifts ?? []).reduce((sum, shift) => sum + shiftDurationHours(shift), 0));
 }
@@ -85,6 +98,68 @@ export function createShift(date: string, now = new Date()): ShiftSession {
 
 export function hasActiveShift(day: DayEntry): boolean {
   return Boolean(day.shifts?.some((shift) => !shift.endTime));
+}
+
+export function getActiveShift(day: DayEntry): ShiftSession | null {
+  return day.shifts?.find((shift) => !shift.endTime) ?? null;
+}
+
+export function activeShiftDurationHours(shift: ShiftSession, now = new Date()): number {
+  const start = Date.parse(shift.startTime);
+  if (Number.isNaN(start)) return 0;
+  return round(Math.max(0, (now.getTime() - start) / 3600000));
+}
+
+export type WeeklyGoalOutcome =
+  | "money-victory"
+  | "discipline-victory"
+  | "complete-victory"
+  | "elite-week"
+  | "building"
+  | "unconfigured";
+
+export interface WeeklyGoalClassification {
+  outcome: WeeklyGoalOutcome;
+  title: string;
+  copy: string;
+}
+
+export function classifyWeeklyGoalOutcome(args: {
+  earnings: number;
+  earningsGoal: number;
+  hours: number;
+  hoursGoal?: number;
+}): WeeklyGoalClassification {
+  const earningsGoal = Number(args.earningsGoal) || 0;
+  const hoursGoal = Number(args.hoursGoal) || 0;
+  if (earningsGoal <= 0 && hoursGoal <= 0) {
+    return { outcome: "unconfigured", title: "Goals not set", copy: "Set weekly targets to read the week as money, discipline, or complete victory." };
+  }
+  const moneyDone = earningsGoal > 0 && args.earnings >= earningsGoal;
+  const hoursDone = hoursGoal > 0 && args.hours >= hoursGoal;
+  const moneyElite = earningsGoal > 0 && args.earnings >= earningsGoal * 1.2;
+  const hoursElite = hoursGoal > 0 && args.hours >= hoursGoal * 1.1;
+
+  if (moneyElite && hoursElite) {
+    return { outcome: "elite-week", title: "Elite Week", copy: "Elite week. You beat both the target and the commitment." };
+  }
+  if (moneyDone && hoursDone) {
+    return { outcome: "complete-victory", title: "Complete Victory", copy: "Complete week. Money and discipline aligned." };
+  }
+  if (moneyDone) {
+    const hoursEarly = hoursGoal > 0 ? Math.max(0, hoursGoal - args.hours) : 0;
+    return {
+      outcome: "money-victory",
+      title: "Money Victory",
+      copy: hoursEarly > 0
+        ? `You reached your earnings goal ${round(hoursEarly)}h before the hours target. Everything from now on is bonus territory.`
+        : "You reached your earnings goal. Everything from now on is bonus territory.",
+    };
+  }
+  if (hoursDone) {
+    return { outcome: "discipline-victory", title: "Discipline Victory", copy: "You showed up. The market did not fully cooperate yet, but your commitment is there." };
+  }
+  return { outcome: "building", title: "Building Week", copy: "The week is still building. Keep the money target and commitment target separate." };
 }
 
 export function endActiveShift(day: DayEntry, now = new Date()): DayEntry {
@@ -151,6 +226,7 @@ export function buildPatternIntelligence(
   const hourMap = new Map<number, { earnings: number; hours: number; appTotals: Record<string, number> }>();
   let totalHours = 0;
   let totalMiles = 0;
+  let totalRides = 0;
   let totalShiftEarnings = 0;
   let totalShifts = 0;
   let completedShifts = 0;
@@ -169,7 +245,9 @@ export function buildPatternIntelligence(
       const workedHours = getDayShiftHours(day);
       const earnings = operationalDayTotal(day);
       const miles = getDayMiles(day);
+      const rides = getDayRideCount(day);
       totalMiles += miles;
+      totalRides += rides;
       totalShifts += shifts.length;
       activeShifts += shifts.filter((shift) => !shift.endTime).length;
       completedShifts += shifts.filter((shift) => Boolean(shift.endTime)).length;
@@ -270,8 +348,13 @@ export function buildPatternIntelligence(
     totalHours: round(totalHours),
     averageShiftHours: completedShifts > 0 ? round(totalHours / completedShifts) : null,
     totalMiles: round(totalMiles),
+    totalRides,
     earningsPerHour: totalHours > 0 ? round(totalShiftEarnings / totalHours) : null,
     earningsPerMile: totalMiles > 0 ? round(totalShiftEarnings / totalMiles) : null,
+    earningsPerRide: totalRides > 0 ? round(totalShiftEarnings / totalRides) : null,
+    ridesPerHour: totalHours > 0 && totalRides > 0 ? round(totalRides / totalHours) : null,
+    milesPerRide: totalRides > 0 ? round(totalMiles / totalRides) : null,
+    minutesPerRide: totalRides > 0 && totalHours > 0 ? round((totalHours * 60) / totalRides) : null,
     milesPerHour: totalHours > 0 ? round(totalMiles / totalHours) : null,
   };
 

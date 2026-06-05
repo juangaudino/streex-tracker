@@ -29,7 +29,7 @@ import { CalendarIcon } from "lucide-react";
 import MobileWeekOverview from "@/components/MobileWeekOverview";
 import MobileDayDetail from "@/components/MobileDayDetail";
 import WeekClosingDialog from "@/components/WeekClosingDialog";
-import { createShift, endActiveShift, getDayMiles, getDayShiftHours, getWeekMiles, getWeekShiftHours, hasActiveShift, shiftDurationHours } from "@/lib/shiftIntelligence";
+import { createShift, endActiveShift, getDayShiftHours, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, shiftDurationHours } from "@/lib/shiftIntelligence";
 import { operationalDayTotal, operationalWeekTotal } from "@/lib/rewardIncome";
 
 function timeInputValue(value?: string): string {
@@ -75,6 +75,9 @@ export default function WeeklyEntryPage() {
   const [goalInput, setGoalInput] = useState(
     openWeek?.weeklyGoal?.toString() || settings.defaultWeeklyGoal.toString()
   );
+  const [hoursGoalInput, setHoursGoalInput] = useState(
+    openWeek?.weeklyHoursGoal?.toString() || settings.defaultWeeklyHoursGoal?.toString() || ""
+  );
   const [startDate, setStartDate] = useState<Date>(
     openWeek ? new Date(openWeek.startDate + "T00:00:00") : getMondayOfWeek()
   );
@@ -91,6 +94,7 @@ export default function WeeklyEntryPage() {
     if (editWeek?.id === target.id) return;
     setEditWeek(target);
     setGoalInput(target.weeklyGoal.toString());
+    setHoursGoalInput(target.weeklyHoursGoal ? target.weeklyHoursGoal.toString() : "");
     setStartDate(new Date(target.startDate + "T00:00:00"));
     setSelectedDayIdx(null);
     setJustClosed(false);
@@ -144,6 +148,7 @@ export default function WeeklyEntryPage() {
       });
       setEditWeek(existing);
       setGoalInput(existing.weeklyGoal.toString());
+      setHoursGoalInput(existing.weeklyHoursGoal ? existing.weeklyHoursGoal.toString() : "");
       if (existing.status === "closed") setSearchParams({ weekId: existing.id });
       return;
     }
@@ -165,7 +170,8 @@ export default function WeeklyEntryPage() {
     const w = createWeek(
       getMondayOfWeek(startDate),
       Number(goalInput) || settings.defaultWeeklyGoal,
-      apps
+      apps,
+      Number(hoursGoalInput) || settings.defaultWeeklyHoursGoal || 0
     );
     addWeek(w);
     setEditWeek(w);
@@ -184,6 +190,7 @@ export default function WeeklyEntryPage() {
       });
       setEditWeek(existing);
       setGoalInput(existing.weeklyGoal.toString());
+      setHoursGoalInput(existing.weeklyHoursGoal ? existing.weeklyHoursGoal.toString() : "");
       if (existing.status === "closed") setSearchParams({ weekId: existing.id });
       return;
     }
@@ -193,6 +200,7 @@ export default function WeeklyEntryPage() {
         getMondayOfWeek(startDate),
         Number(goalInput) || settings.defaultWeeklyGoal,
         apps,
+        Number(hoursGoalInput) || settings.defaultWeeklyHoursGoal || 0,
       ),
       status: "closed" as const,
     };
@@ -216,7 +224,11 @@ export default function WeeklyEntryPage() {
       });
       return false;
     }
-    const saved = await updateWeek({ ...editWeek, weeklyGoal: Number(goalInput) || 0 });
+    const saved = await updateWeek({
+      ...editWeek,
+      weeklyGoal: Number(goalInput) || 0,
+      weeklyHoursGoal: Number(hoursGoalInput) || 0,
+    });
     if (saved) toast({ title: "Week saved." });
     return saved;
   }
@@ -228,7 +240,12 @@ export default function WeeklyEntryPage() {
 
   async function performClose() {
     if (!editWeek) return;
-    const closed = { ...editWeek, status: "closed" as const, weeklyGoal: Number(goalInput) || 0 };
+    const closed = {
+      ...editWeek,
+      status: "closed" as const,
+      weeklyGoal: Number(goalInput) || 0,
+      weeklyHoursGoal: Number(hoursGoalInput) || 0,
+    };
     const saved = await updateWeek(closed);
     if (saved) {
       setEditWeek(closed);
@@ -323,6 +340,19 @@ export default function WeeklyEntryPage() {
     persistShiftState({ ...editWeek, entries });
   }
 
+  function handleShiftRideCountUpdate(dayIdx: number, shiftId: string, val: string) {
+    if (!editWeek) return;
+    const rideCount = Math.max(0, Math.trunc(Number(val) || 0));
+    const entries = editWeek.entries.map((d, i) => {
+      if (i !== dayIdx) return d;
+      return {
+        ...d,
+        shifts: (d.shifts ?? []).map((shift) => shift.id === shiftId ? { ...shift, rideCount } : shift),
+      };
+    });
+    persistShiftState({ ...editWeek, entries });
+  }
+
   function handleShiftTimeUpdate(dayIdx: number, shiftId: string, field: "startTime" | "endTime", val: string) {
     if (!editWeek) return;
     const entries = editWeek.entries.map((d, i) => {
@@ -388,14 +418,26 @@ export default function WeeklyEntryPage() {
               </PopoverContent>
             </Popover>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Goal:</span>
-            <Input
-              type="number"
-              className="w-28 font-mono"
-              value={goalInput}
-              onChange={(e) => setGoalInput(e.target.value)}
-            />
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <span>Money:</span>
+              <Input
+                type="number"
+                className="w-28 font-mono"
+                value={goalInput}
+                onChange={(e) => setGoalInput(e.target.value)}
+              />
+            </label>
+            <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <span>Hours:</span>
+              <Input
+                type="number"
+                className="w-24 font-mono"
+                value={hoursGoalInput}
+                placeholder="0"
+                onChange={(e) => setHoursGoalInput(e.target.value)}
+              />
+            </label>
           </div>
           {duplicateWeek && (
             <div className="flex items-center gap-2 text-warning text-sm">
@@ -405,11 +447,12 @@ export default function WeeklyEntryPage() {
                 size="sm"
                 variant="link"
                 className="text-primary p-0 h-auto"
-                onClick={() => {
-                  setEditWeek(duplicateWeek);
-                  setGoalInput(duplicateWeek.weeklyGoal.toString());
-                  if (duplicateWeek.status === "closed") setSearchParams({ weekId: duplicateWeek.id });
-                }}
+	                onClick={() => {
+	                  setEditWeek(duplicateWeek);
+	                  setGoalInput(duplicateWeek.weeklyGoal.toString());
+	                  setHoursGoalInput(duplicateWeek.weeklyHoursGoal ? duplicateWeek.weeklyHoursGoal.toString() : "");
+	                  if (duplicateWeek.status === "closed") setSearchParams({ weekId: duplicateWeek.id });
+	                }}
               >
                 Open it
               </Button>
@@ -431,6 +474,7 @@ export default function WeeklyEntryPage() {
   const isClosedView = editWeek.status === "closed" && justClosed;
   const weekHours = getWeekShiftHours(editWeek);
   const weekMiles = getWeekMiles(editWeek);
+  const weekRides = getWeekRideCount(editWeek);
   const weekEarningsPerHour = weekHours > 0 ? operationalWt / weekHours : null;
   const weekEarningsPerMile = weekMiles > 0 ? operationalWt / weekMiles : null;
   const currentLocalDate = formatDate(new Date());
@@ -466,6 +510,7 @@ export default function WeeklyEntryPage() {
         onStartShift={handleStartShift}
         onEndShift={handleEndShift}
         onShiftMilesUpdate={handleShiftMilesUpdate}
+        onShiftRideCountUpdate={handleShiftRideCountUpdate}
         onShiftTimeUpdate={handleShiftTimeUpdate}
         onDeleteShift={handleDeleteShift}
         onSave={async () => {
@@ -536,26 +581,39 @@ export default function WeeklyEntryPage() {
                 size="sm"
                 variant="link"
                 className="text-primary p-0 h-auto text-xs"
-                onClick={() => {
-                  setEditWeek(duplicateWeek);
-                  setGoalInput(duplicateWeek.weeklyGoal.toString());
-                  if (duplicateWeek.status === "closed") setSearchParams({ weekId: duplicateWeek.id });
-                  else setSearchParams({});
-                }}
+	                onClick={() => {
+	                  setEditWeek(duplicateWeek);
+	                  setGoalInput(duplicateWeek.weeklyGoal.toString());
+	                  setHoursGoalInput(duplicateWeek.weeklyHoursGoal ? duplicateWeek.weeklyHoursGoal.toString() : "");
+	                  if (duplicateWeek.status === "closed") setSearchParams({ weekId: duplicateWeek.id });
+	                  else setSearchParams({});
+	                }}
               >
                 Switch to it
               </Button>
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Goal:</span>
-          <Input
-            type="number"
-            className="w-24 font-mono text-sm"
-            value={goalInput}
-            onChange={(e) => setGoalInput(e.target.value)}
-          />
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <span>Money:</span>
+            <Input
+              type="number"
+              className="w-24 font-mono text-sm"
+              value={goalInput}
+              onChange={(e) => setGoalInput(e.target.value)}
+            />
+          </label>
+          <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <span>Hours:</span>
+            <Input
+              type="number"
+              className="w-20 font-mono text-sm"
+              value={hoursGoalInput}
+              placeholder="0"
+              onChange={(e) => setHoursGoalInput(e.target.value)}
+            />
+          </label>
         </div>
       </div>
 
@@ -576,7 +634,7 @@ export default function WeeklyEntryPage() {
             {activeShift ? "End Shift" : "Start Shift"}
           </Button>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <div className="rounded-lg bg-background/60 border border-border px-3 py-2">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Hours</p>
             <p className="text-sm font-bold font-mono">{weekHours.toFixed(1)}h</p>
@@ -584,6 +642,10 @@ export default function WeeklyEntryPage() {
           <div className="rounded-lg bg-background/60 border border-border px-3 py-2">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Miles</p>
             <p className="text-sm font-bold font-mono">{weekMiles.toFixed(1)}</p>
+          </div>
+          <div className="rounded-lg bg-background/60 border border-border px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Rides</p>
+            <p className="text-sm font-bold font-mono">{weekRides}</p>
           </div>
           <div className="rounded-lg bg-background/60 border border-border px-3 py-2">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Per Hour</p>
@@ -612,15 +674,26 @@ export default function WeeklyEntryPage() {
                     {activeShiftBlock.day.dayName} · {liveShiftDurationHours(activeShiftBlock.shift).toFixed(1)}h running
                   </p>
                 </div>
-                <Input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  className="h-9 w-24 shrink-0 text-right font-mono text-xs"
-                  value={activeShiftBlock.shift.miles || ""}
-                  placeholder="mi"
-                  onChange={(e) => handleShiftMilesUpdate(activeShiftBlock.dayIdx, activeShiftBlock.shift.id, e.target.value)}
-                />
+                <div className="flex shrink-0 gap-2">
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    className="h-9 w-20 text-right font-mono text-xs"
+                    value={activeShiftBlock.shift.miles || ""}
+                    placeholder="mi"
+                    onChange={(e) => handleShiftMilesUpdate(activeShiftBlock.dayIdx, activeShiftBlock.shift.id, e.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    step="1"
+                    min="0"
+                    className="h-9 w-20 text-right font-mono text-xs"
+                    value={activeShiftBlock.shift.rideCount || ""}
+                    placeholder="rides"
+                    onChange={(e) => handleShiftRideCountUpdate(activeShiftBlock.dayIdx, activeShiftBlock.shift.id, e.target.value)}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -659,13 +732,13 @@ export default function WeeklyEntryPage() {
                       {day.dayName} · {formatShiftTime(shift.startTime)} → {formatShiftTime(shift.endTime)}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {hours.toFixed(1)}h · {rate ? `${formatCurrency(rate, sym)}/hr` : "—/hr"} · {(shift.miles ?? 0).toFixed(1)} mi
+                      {hours.toFixed(1)}h · {rate ? `${formatCurrency(rate, sym)}/hr` : "—/hr"} · {(shift.miles ?? 0).toFixed(1)} mi · {shift.rideCount ?? 0} rides
                     </p>
                   </div>
                 </button>
 
                 {expanded && (
-                  <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 md:grid-cols-[minmax(0,7rem)_minmax(0,7rem)_minmax(0,1fr)_auto] md:items-end">
+                  <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 md:grid-cols-[minmax(0,7rem)_minmax(0,7rem)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
                     <label className="space-y-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Start</span>
                       <Input
@@ -717,6 +790,18 @@ export default function WeeklyEntryPage() {
                         value={shift.miles || ""}
                         placeholder="mi"
                         onChange={(e) => handleShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
+                      />
+                    </label>
+                    <label className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rides</span>
+                      <Input
+                        type="number"
+                        step="1"
+                        min="0"
+                        className="h-10 min-w-0 w-full text-right font-mono text-sm md:h-9 md:text-xs"
+                        value={shift.rideCount || ""}
+                        placeholder="0"
+                        onChange={(e) => handleShiftRideCountUpdate(dayIdx, shift.id, e.target.value)}
                       />
                     </label>
                     <Button

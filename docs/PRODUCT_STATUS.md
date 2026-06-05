@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`Beta 0.2.3 - Operations Scope Clarity`
+`Beta 0.3.0 - Work Hours, Ride Count + Daily Report Intelligence`
 
 Source of truth:
 
@@ -60,6 +60,7 @@ Beta highlights:
 - 0.2.1 Late earnings adjustments improve real totals without contaminating observed timing patterns
 - 0.2.2 Octopus reward income classification for cleaner operational efficiency metrics
 - 0.2.3 Career and weekly operations snapshots now have clear lifetime vs current-week scope labels
+- 0.3.0 Work Hours Intelligence, manual Ride Count foundation, weekly hours goals, Daily Report 2.0, and Ask My Data shift/rides context
 
 ## Pattern Intelligence Source Truth
 
@@ -90,6 +91,15 @@ Operational metrics must clearly state their scope.
 
 Avoid generic snapshot labels when the user cannot immediately tell whether the number is weekly, monthly, or lifetime.
 
+## Work Hours + Ride Count
+
+Ride Count is manual-first and optional.
+
+- Shift blocks can store `rideCount` alongside start time, end time, and miles.
+- Day/week/career ride metrics should only appear when rides have been entered.
+- Weekly hours goals are separate from weekly earnings goals.
+- Missing duration or rides must never produce fake $/hour, $/ride, rides/hour, or minutes/ride values.
+
 ## Ask My Data
 
 Ask My Data is career intelligence, not a recent-dashboard helper.
@@ -100,6 +110,7 @@ Rules:
 - Use deterministic calculations when the requested fact can be derived safely.
 - Do not substitute unsupported questions with vaguely similar answers.
 - Be explicit about unsupported hourly, trip-location, ride-type, health, or biometric data.
+- Shift hours, rides, miles, and efficiency can be answered when those values exist in tracked shift blocks.
 - Use `docs/ASK_MY_DATA_CHALLENGE_SET.md` for manual QA.
 
 After changing `supabase/functions/ask-my-data/index.ts`, deploy the updated `ask-my-data` Edge Function to the live Lovable-connected backend.

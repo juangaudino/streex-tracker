@@ -29,6 +29,7 @@ export default function SettingsPage() {
   const { dashboardExperience, setDashboardExperience } = useDashboardExperience();
   const { profile, setProfile } = useUserProfile(user?.id);
   const [goal, setGoal] = useState(settings.defaultWeeklyGoal.toString());
+  const [hoursGoal, setHoursGoal] = useState(settings.defaultWeeklyHoursGoal?.toString() || "");
   const [currencyCode, setCurrencyCode] = useState(getCurrencyCode(settings.currencySymbol));
   const [apps, setApps] = useState([...settings.activeApps]);
   const [newApp, setNewApp] = useState("");
@@ -45,6 +46,7 @@ export default function SettingsPage() {
   function handleSave() {
     updateSettings({
       defaultWeeklyGoal: Number(goal) || 0,
+      defaultWeeklyHoursGoal: Number(hoursGoal) || 0,
       currencySymbol: currencyCode,
       activeApps: apps,
     });
@@ -287,6 +289,24 @@ export default function SettingsPage() {
             onChange={(e) => setGoal(e.target.value)}
             className="font-mono"
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-muted-foreground">
+            Default Weekly Hours Goal
+          </label>
+          <Input
+            type="number"
+            min="0"
+            step="0.5"
+            value={hoursGoal}
+            placeholder="Optional"
+            onChange={(e) => setHoursGoal(e.target.value)}
+            className="font-mono"
+          />
+          <p className="text-xs text-muted-foreground">
+            Optional. Hours measure commitment; earnings still measure outcome.
+          </p>
         </div>
 
         <div className="space-y-1.5">

@@ -60,6 +60,14 @@ interface DayEntry {
   dayName: string;
   date: string;
   apps: Record<string, number>;
+  shifts?: {
+    id: string;
+    startTime: string;
+    endTime?: string;
+    miles?: number;
+    rideCount?: number;
+  }[];
+  mileage?: number;
 }
 
 interface WeekRow {
@@ -79,8 +87,20 @@ interface NormalizedWeek {
   goal: number;
   total: number;
   daysWorked: number;
+  shiftStats: ShiftStats;
   appTotals: Record<string, number>;
-  dayTotals: { day: string; date: string; total: number }[];
+  dayTotals: { day: string; date: string; total: number; hours: number; rides: number; miles: number; completedShifts: number; activeShifts: number }[];
+}
+
+interface ShiftStats {
+  totalHours: number;
+  completedShifts: number;
+  activeShifts: number;
+  totalRides: number;
+  totalMiles: number;
+  earningsPerHour: number | null;
+  earningsPerRide: number | null;
+  ridesPerHour: number | null;
 }
 
 function json(body: unknown, status = 200) {
@@ -102,6 +122,28 @@ function dayTotal(d: DayEntry): number {
   return Object.values(d.apps || {}).reduce((s, v) => s + (Number(v) || 0), 0);
 }
 
+function shiftDurationHours(shift: NonNullable<DayEntry["shifts"]>[number]): number {
+  if (!shift.endTime) return 0;
+  const start = Date.parse(shift.startTime);
+  const end = Date.parse(shift.endTime);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
+  return (end - start) / 3600000;
+}
+
+function dayShiftStats(day: DayEntry) {
+  const shifts = day.shifts ?? [];
+  const totalHours = shifts.reduce((sum, shift) => sum + shiftDurationHours(shift), 0);
+  const totalRides = shifts.reduce((sum, shift) => sum + Math.max(0, Math.trunc(Number(shift.rideCount) || 0)), 0);
+  const shiftMiles = shifts.reduce((sum, shift) => sum + (Number(shift.miles) || 0), 0);
+  return {
+    hours: round(totalHours),
+    rides: totalRides,
+    miles: round(shiftMiles || Number(day.mileage) || 0),
+    completedShifts: shifts.filter((shift) => Boolean(shift.endTime)).length,
+    activeShifts: shifts.filter((shift) => !shift.endTime).length,
+  };
+}
+
 function parseEntries(e: DayEntry[] | string): DayEntry[] {
   if (Array.isArray(e)) return e;
   try {
@@ -118,7 +160,15 @@ function normalizeWeek(w: WeekRow): NormalizedWeek {
     day: d.dayName,
     date: d.date,
     total: round(dayTotal(d)),
+    ...dayShiftStats(d),
   }));
+  const shiftStatsBase = dayTotals.reduce((acc, day) => ({
+    totalHours: acc.totalHours + day.hours,
+    completedShifts: acc.completedShifts + day.completedShifts,
+    activeShifts: acc.activeShifts + day.activeShifts,
+    totalRides: acc.totalRides + day.rides,
+    totalMiles: acc.totalMiles + day.miles,
+  }), { totalHours: 0, completedShifts: 0, activeShifts: 0, totalRides: 0, totalMiles: 0 });
   const appTotals: Record<string, number> = {};
   for (const d of entries) {
     for (const [app, v] of Object.entries(d.apps || {})) {
@@ -134,6 +184,14 @@ function normalizeWeek(w: WeekRow): NormalizedWeek {
     goal: Number(w.weekly_goal),
     total: round(total),
     daysWorked: dayTotals.filter((d) => d.total > 0).length,
+    shiftStats: {
+      ...shiftStatsBase,
+      totalHours: round(shiftStatsBase.totalHours),
+      totalMiles: round(shiftStatsBase.totalMiles),
+      earningsPerHour: shiftStatsBase.totalHours > 0 ? round(total / shiftStatsBase.totalHours) : null,
+      earningsPerRide: shiftStatsBase.totalRides > 0 ? round(total / shiftStatsBase.totalRides) : null,
+      ridesPerHour: shiftStatsBase.totalHours > 0 && shiftStatsBase.totalRides > 0 ? round(shiftStatsBase.totalRides / shiftStatsBase.totalHours) : null,
+    },
     appTotals: Object.fromEntries(
       Object.entries(appTotals).map(([k, v]) => [k, round(v)]),
     ),
@@ -680,6 +738,7 @@ function currentWeekSnapshot(weeks: NormalizedWeek[]) {
       goal: latest.goal,
       total: latest.total,
       daysWorked: latest.daysWorked,
+      shiftStats: latest.shiftStats,
     },
     focusDay,
     goalLeft: round(goalLeft),
@@ -694,6 +753,27 @@ function currentWeekSnapshot(weeks: NormalizedWeek[]) {
         gapToBestSameWeekday: bestSameWeekday ? round(bestSameWeekday.total - focusDay.total) : null,
       }
       : null,
+  };
+}
+
+function aggregateShiftStats(weeks: NormalizedWeek[]): ShiftStats {
+  const totals = weeks.reduce((acc, week) => ({
+    totalHours: acc.totalHours + week.shiftStats.totalHours,
+    completedShifts: acc.completedShifts + week.shiftStats.completedShifts,
+    activeShifts: acc.activeShifts + week.shiftStats.activeShifts,
+    totalRides: acc.totalRides + week.shiftStats.totalRides,
+    totalMiles: acc.totalMiles + week.shiftStats.totalMiles,
+    totalEarnings: acc.totalEarnings + week.total,
+  }), { totalHours: 0, completedShifts: 0, activeShifts: 0, totalRides: 0, totalMiles: 0, totalEarnings: 0 });
+  return {
+    totalHours: round(totals.totalHours),
+    completedShifts: totals.completedShifts,
+    activeShifts: totals.activeShifts,
+    totalRides: totals.totalRides,
+    totalMiles: round(totals.totalMiles),
+    earningsPerHour: totals.totalHours > 0 ? round(totals.totalEarnings / totals.totalHours) : null,
+    earningsPerRide: totals.totalRides > 0 ? round(totals.totalEarnings / totals.totalRides) : null,
+    ridesPerHour: totals.totalHours > 0 && totals.totalRides > 0 ? round(totals.totalRides / totals.totalHours) : null,
   };
 }
 
@@ -818,6 +898,7 @@ function isHistoricalQuestion(prompt: string): boolean {
 
 export function detectIntent(prompt: string, knownApps: string[] = []): AskIntent {
   const q = prompt.toLowerCase();
+  if (/\b(ride count|rides|trips|per ride|rides per hour)\b/.test(q)) return "HOUR";
   if (/\b(hour|hours|hourly|earning hour|best hour)\b/.test(q)) return "HOUR";
   if (/\b(streak|streaks|racha|racha de ganancias)\b/.test(q)) return "STREAK";
   if (/\b(month|months|monthly|mes|meses)\b/.test(q)) return "MONTH";
@@ -982,7 +1063,7 @@ function buildContext(args: {
     if (intent === "STREAK") {
       analysis.earningStreak = highestEarningStreakAnalysis(weeks);
     }
-    if (intent === "GOAL" || intent === "RANKING") {
+    if (intent === "GOAL" || intent === "RANKING" || intent === "HOUR") {
       analysis.currentWeek = currentWeekSnapshot(weeks);
     }
     if ((intent === "PATTERN" || intent === "INSIGHT" || intent === "COACHING") && /\bweekend|weekends|saturday|sunday|sábado|sabado|domingo\b/i.test(prompt)) {
@@ -993,6 +1074,7 @@ function buildContext(args: {
 
   if (scope === "ALL_TIME") {
     const lifetimeTotal = weeks.reduce((sum, w) => sum + w.total, 0);
+    const lifetimeShiftStats = aggregateShiftStats(weeks);
     return {
       ...base,
       ...analysisBlock,
@@ -1024,6 +1106,11 @@ function buildContext(args: {
         weekdayStats: weekdayStats(weeks),
         streaks: streakStats(weeks),
         evolution: trendBuckets(weeks),
+        operations: lifetimeShiftStats,
+        bestWeekByHours: [...weeks].sort((a, b) => b.shiftStats.totalHours - a.shiftStats.totalHours)[0] ?? null,
+        bestWeekByEfficiency: [...weeks]
+          .filter((w) => w.shiftStats.earningsPerHour !== null)
+          .sort((a, b) => (b.shiftStats.earningsPerHour ?? 0) - (a.shiftStats.earningsPerHour ?? 0))[0] ?? null,
       },
       recentAchievements: achievements.slice(0, 10),
     };
@@ -1047,6 +1134,7 @@ function buildContext(args: {
         olderWeeks: older.length,
         olderAverage: older.length ? round(olderTotal / older.length) : 0,
       },
+      operations: aggregateShiftStats(weeks),
       bestClosedWeek: bestClosedWeek
         ? { startDate: bestClosedWeek.startDate, total: bestClosedWeek.total }
         : null,
@@ -1078,9 +1166,11 @@ function buildContext(args: {
         goal: w.goal,
         total: w.total,
         daysWorked: w.daysWorked,
+        shiftStats: w.shiftStats,
         dayTotals: w.dayTotals,
         appTotals: w.appTotals,
       })),
+      operations: aggregateShiftStats(recent),
     },
     recentAchievements: achievements.slice(0, 10),
   };
@@ -1207,6 +1297,12 @@ function directIntentAnswer(context: unknown, currency: string, prompt: string):
       appTotals?: Record<string, number>;
       weekdayStats?: Record<string, { average: number; count: number; best: number; bestDate: string | null }>;
       evolution?: { from: string; to: string; weeks: number; averageWeek: number }[];
+      operations?: ShiftStats;
+      bestWeekByHours?: NormalizedWeek | null;
+      bestWeekByEfficiency?: NormalizedWeek | null;
+    };
+    recent?: {
+      operations?: ShiftStats;
     };
     analysis?: {
       intent?: AskIntent;
@@ -1221,9 +1317,38 @@ function directIntentAnswer(context: unknown, currency: string, prompt: string):
   const spanish = usesSpanish(prompt);
 
   if (intent === "HOUR") {
+    const current = c.analysis?.currentWeek;
+    const asksBestEarningHour = /\b(best|strongest|highest|top).*(earning )?hour\b|\b(best|strongest|highest|top) hour\b/.test(q);
+    if (!asksBestEarningHour) {
+      if (/\b(this week|current week|week)\b/.test(q) && current?.week.shiftStats) {
+        const stats = current.week.shiftStats;
+        return [
+          `This week you've logged **${stats.totalHours.toFixed(1)}h** across ${stats.completedShifts} completed shift${stats.completedShifts === 1 ? "" : "s"}.`,
+          stats.earningsPerHour !== null ? `Weekly efficiency: ${formatCurrencyForAssistant(stats.earningsPerHour, currency)}/hr.` : "I need completed shift duration before calculating weekly $/hr.",
+          stats.totalRides > 0 ? `Rides tracked: ${stats.totalRides}.` : "Ride count is optional, so it only appears when you enter it.",
+        ].join("\n");
+      }
+      if (/\b(lifetime|career|all time|all-time|history|historical|average per hour)\b/.test(q) && c.lifetime?.operations) {
+        const stats = c.lifetime.operations;
+        return [
+          `Your lifetime tracked shift time is **${stats.totalHours.toFixed(1)}h** across ${stats.completedShifts} completed shift${stats.completedShifts === 1 ? "" : "s"}.`,
+          stats.earningsPerHour !== null ? `Lifetime average: ${formatCurrencyForAssistant(stats.earningsPerHour, currency)}/hr.` : "I need completed shift duration before calculating lifetime $/hr.",
+          stats.totalRides > 0 ? `Lifetime rides tracked: ${stats.totalRides}.` : "Ride count is optional and only appears where you have entered it.",
+        ].join("\n");
+      }
+      const bestEfficiencyWeek = c.lifetime?.bestWeekByEfficiency;
+      if (
+        /\b(best hourly week|best.*hourly|best.*efficiency|highest.*per hour)\b/.test(q) &&
+        bestEfficiencyWeek?.shiftStats.earningsPerHour !== null &&
+        bestEfficiencyWeek?.shiftStats.earningsPerHour !== undefined
+      ) {
+        const week = bestEfficiencyWeek;
+        return `Your best efficiency week was ${week.startDate} to ${week.endDate}: ${formatCurrencyForAssistant(week.shiftStats.earningsPerHour!, currency)}/hr across ${week.shiftStats.totalHours.toFixed(1)}h.`;
+      }
+    }
     return spanish
-      ? "Todavía no puedo calcular tu mejor hora de ganancias porque Streex no guarda ganancias por hora. Puedo analizar días, semanas, meses y shifts cuando estén registrados, pero no horas individuales todavía."
-      : "I can't calculate your best earning hour yet because Streex does not store earnings by hour. I can analyze days, weeks, months, and tracked shifts, but not individual hourly earnings yet.";
+      ? "Todavía no puedo calcular tu mejor hora real de ganancias porque Streex no guarda cada ride con timestamp. Sí puedo analizar horas trabajadas, shifts, rides capturados y $/hr cuando los turnos están registrados."
+      : "I can't calculate your real best earning hour yet because Streex does not store each ride with a timestamp. I can analyze worked hours, tracked shifts, ride counts, and $/hr when shifts are logged.";
   }
 
   if (intent === "RIVAL") {

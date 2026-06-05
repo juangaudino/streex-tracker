@@ -25,6 +25,7 @@ export interface ShiftSession {
   startTime: string;
   endTime?: string;
   miles?: number;
+  rideCount?: number;
   note?: string;
 }
 
@@ -45,6 +46,7 @@ export interface WeekRecord {
   startDate: string;
   endDate: string;
   weeklyGoal: number;
+  weeklyHoursGoal?: number;
   status: "open" | "closed";
   entries: DayEntry[];
   createdAt: string;
@@ -66,6 +68,7 @@ export interface EarningsSnapshot {
 
 export interface AppSettings {
   defaultWeeklyGoal: number;
+  defaultWeeklyHoursGoal?: number;
   currencySymbol: string;
   activeApps: string[];
 }

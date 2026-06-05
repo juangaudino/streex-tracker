@@ -37,7 +37,7 @@ import DriverIdentityCard from "@/components/DriverIdentityCard";
 import { useDriverIdentity } from "@/hooks/useDriverIdentity";
 import DailyCommandCenter from "@/components/DailyCommandCenter";
 import { useDashboardExperience } from "@/hooks/useDashboardExperience";
-import { createShift, hasActiveShift } from "@/lib/shiftIntelligence";
+import { classifyWeeklyGoalOutcome, createShift, getWeekShiftHours, hasActiveShift } from "@/lib/shiftIntelligence";
 import { cn } from "@/lib/utils";
 import DailyStartHub from "@/components/DailyStartHub";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -246,6 +246,15 @@ export default function DashboardPage() {
   const goal = openWeek.weeklyGoal;
   const pct = goal > 0 ? (total / goal) * 100 : 0;
   const remaining = Math.max(0, goal - total);
+  const weeklyHoursGoal = openWeek.weeklyHoursGoal ?? 0;
+  const weeklyHours = getWeekShiftHours(openWeek);
+  const hoursPct = weeklyHoursGoal > 0 ? (weeklyHours / weeklyHoursGoal) * 100 : 0;
+  const goalOutcome = classifyWeeklyGoalOutcome({
+    earnings: total,
+    earningsGoal: goal,
+    hours: weeklyHours,
+    hoursGoal: weeklyHoursGoal,
+  });
   const bd = bestDay(openWeek);
   const ba = bestApp(openWeek);
   const prev = getPreviousWeek(weeks, openWeek);
@@ -385,13 +394,13 @@ export default function DashboardPage() {
               sub={dayVsAvgPct === null ? "more history needed" : `${dayVsAvgPct.toFixed(0)}% of normal ${todayName}`}
               tone={dayVsAvg !== null && dayVsAvg >= 0 ? "success" : dayVsAvg !== null ? "warning" : "default"}
             />
-            <FocusMetric
-              icon={<Target className="h-3.5 w-3.5" />}
-              label="Goal"
-              value={`${pct.toFixed(0)}%`}
-              sub={`${formatCurrency(remaining, sym)} left`}
-              tone={pct >= 100 ? "success" : "primary"}
-            />
+	            <FocusMetric
+	              icon={<Target className="h-3.5 w-3.5" />}
+	              label="Goal"
+	              value={`${pct.toFixed(0)}%`}
+	              sub={weeklyHoursGoal > 0 ? `${weeklyHours.toFixed(1)}h / ${weeklyHoursGoal}h` : `${formatCurrency(remaining, sym)} left`}
+	              tone={pct >= 100 ? "success" : "primary"}
+	            />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -412,17 +421,34 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-1.5">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Weekly goal progress</span>
-              <span className="font-mono font-bold">{pct.toFixed(1)}%</span>
-            </div>
+	            <div className="flex justify-between text-xs">
+	              <span className="text-muted-foreground">Weekly earnings goal</span>
+	              <span className="font-mono font-bold">{pct.toFixed(1)}%</span>
+	            </div>
             <div className="h-2.5 bg-muted rounded-full overflow-hidden">
               <div
                 className={cn("h-full rounded-full transition-all duration-500", barColor)}
                 style={{ width: `${Math.min(pct, 100)}%` }}
-              />
-            </div>
-          </div>
+	              />
+	            </div>
+	            {weeklyHoursGoal > 0 && (
+	              <>
+	                <div className="flex justify-between text-xs pt-1">
+	                  <span className="text-muted-foreground">Weekly hours goal</span>
+	                  <span className="font-mono font-bold">{hoursPct.toFixed(1)}%</span>
+	                </div>
+	                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+	                  <div
+	                    className={cn("h-full rounded-full transition-all duration-500", hoursPct >= 100 ? "bg-success" : "bg-primary")}
+	                    style={{ width: `${Math.min(hoursPct, 100)}%` }}
+	                  />
+	                </div>
+	                <p className="text-[11px] text-muted-foreground">
+	                  <span className="font-semibold text-foreground">{goalOutcome.title}.</span> {goalOutcome.copy}
+	                </p>
+	              </>
+	            )}
+	          </div>
         </section>
 
         <QuickEntryWidget

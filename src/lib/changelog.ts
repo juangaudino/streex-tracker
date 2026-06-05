@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.2.3";
+export const CURRENT_VERSION = "0.3.0";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,23 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.3.0",
+    date: "2026-06",
+    title: "Work Hours, Ride Count + Daily Report Intelligence",
+    tags: ["new", "feature"],
+    items: [
+      "Ride Count foundation added to shift blocks so rides can be captured alongside start time, end time, and miles",
+      "Weekly hours goal support added as an optional commitment target separate from the weekly earnings goal",
+      "Goal outcome classification added for Money Victory, Discipline Victory, Complete Victory, Elite Week, and Building Week",
+      "Work Hours Intelligence expanded with hours, rides, earnings per ride, rides per hour, minutes per ride, and operational efficiency context",
+      "End Day now opens a richer Daily Report with summary, performance context, weekly impact, shift intelligence, narrative insights, and export/share actions",
+      "Daily Report image export uses a dedicated branded report layout instead of capturing app controls",
+      "Ask My Data context now includes tracked shift hours, rides, miles, and efficiency summaries for supported hours/rides questions",
+      "Added an additive migration for weekly hours goal fields; ride count is stored inside existing shift blocks, with no separate shifts table created",
+      "Ride Count remains manual-first and real best earning hour remains unsupported until Streex receives individual ride timestamps",
+    ],
+  },
   {
     version: "0.2.3",
     date: "2026-06",

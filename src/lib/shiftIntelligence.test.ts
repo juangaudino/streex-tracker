@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPatternIntelligence, getDayMiles, getWeekMiles, shiftDurationHours } from "./shiftIntelligence";
+import { buildPatternIntelligence, classifyWeeklyGoalOutcome, getDayRideCount, getDayMiles, getWeekMiles, getWeekRideCount, shiftDurationHours } from "./shiftIntelligence";
 import type { DayEntry, EarningsSnapshot, WeekRecord } from "./types";
 import { DAY_NAMES } from "./types";
 
@@ -34,20 +34,23 @@ describe("shift intelligence", () => {
       startTime: "2026-05-04T08:00:00",
       endTime: "2026-05-04T11:30:00",
       miles: 42,
+      rideCount: 9,
     };
     const d = day(0, 220, [shift], 10);
 
     expect(shiftDurationHours(shift)).toBe(3.5);
     expect(getDayMiles(d)).toBe(42);
     expect(getWeekMiles(week([d]))).toBe(42);
+    expect(getDayRideCount(d)).toBe(9);
+    expect(getWeekRideCount(week([d]))).toBe(9);
   });
 
   it("builds pattern intelligence from completed shifts", () => {
     const weeks = [
       week([
         day(0, 240, [{ id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00", miles: 24 }]),
-        day(1, 180, [{ id: "s2", startTime: "2026-05-05T18:00:00", endTime: "2026-05-05T20:00:00", miles: 18 }]),
-        day(2, 260, [{ id: "s3", startTime: "2026-05-06T08:00:00", endTime: "2026-05-06T10:00:00", miles: 22 }]),
+        day(1, 180, [{ id: "s2", startTime: "2026-05-05T18:00:00", endTime: "2026-05-05T20:00:00", miles: 18, rideCount: 6 }]),
+        day(2, 260, [{ id: "s3", startTime: "2026-05-06T08:00:00", endTime: "2026-05-06T10:00:00", miles: 22, rideCount: 8 }]),
         day(3, 0),
         day(4, 0),
         day(5, 0),
@@ -64,12 +67,22 @@ describe("shift intelligence", () => {
     expect(result.summary.workDays).toBe(3);
     expect(result.summary.averageShiftHours).toBe(2);
     expect(result.summary.totalMiles).toBe(64);
+    expect(result.summary.totalRides).toBe(14);
     expect(result.summary.earningsPerHour).toBeCloseTo(113.33);
+    expect(result.summary.earningsPerRide).toBeCloseTo(48.57);
+    expect(result.summary.ridesPerHour).toBeCloseTo(2.33);
     expect(result.summary.milesPerHour).toBeCloseTo(10.67);
     expect(result.strongestHours.length).toBeGreaterThan(0);
     expect(result.bestAppsByHour.length).toBeGreaterThan(0);
     expect(result.timingSource).toBe("estimated");
     expect(result.timingCopy).toContain("spreading operational earnings");
+  });
+
+  it("classifies money, discipline, complete, and elite weeks separately", () => {
+    expect(classifyWeeklyGoalOutcome({ earnings: 1000, earningsGoal: 1000, hours: 32, hoursGoal: 50 }).outcome).toBe("money-victory");
+    expect(classifyWeeklyGoalOutcome({ earnings: 850, earningsGoal: 1000, hours: 50, hoursGoal: 50 }).outcome).toBe("discipline-victory");
+    expect(classifyWeeklyGoalOutcome({ earnings: 1000, earningsGoal: 1000, hours: 50, hoursGoal: 50 }).outcome).toBe("complete-victory");
+    expect(classifyWeeklyGoalOutcome({ earnings: 1250, earningsGoal: 1000, hours: 56, hoursGoal: 50 }).outcome).toBe("elite-week");
   });
 
   it("uses earnings snapshots for observed update timing when enough updates exist", () => {

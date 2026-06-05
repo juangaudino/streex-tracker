@@ -103,9 +103,10 @@ export default function ShiftIntelligencePanel({
         <Metric icon={<Gauge className="h-3.5 w-3.5" />} label="Earnings/Mi" value={formatNullableCurrency(summary.earningsPerMile, currencySymbol)} sub={formatNullableNumber(summary.milesPerHour, " mi/hr")} tone="primary" />
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <Metric icon={<BarChart3 className="h-3.5 w-3.5" />} label="Rides" value={`${summary.totalRides}`} sub={summary.earningsPerRide ? `${formatCurrency(summary.earningsPerRide, currencySymbol)}/ride` : "track rides"} />
         <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Active" value={`${summary.activeShifts}`} sub="open shift" />
         <Metric icon={<Clock className="h-3.5 w-3.5" />} label="Avg Shift" value={formatNullableNumber(summary.averageShiftHours, "h")} sub="completed only" />
-        <Metric icon={<BarChart3 className="h-3.5 w-3.5" />} label="Work Blocks" value={`${summary.totalShifts}`} sub={`${summary.multiShiftDays} split day${summary.multiShiftDays === 1 ? "" : "s"}`} />
+        <Metric icon={<BarChart3 className="h-3.5 w-3.5" />} label="Blocks" value={`${summary.totalShifts}`} sub={`${summary.multiShiftDays} split day${summary.multiShiftDays === 1 ? "" : "s"}`} />
         <Metric icon={<Route className="h-3.5 w-3.5" />} label="Miles/Hr" value={formatNullableNumber(summary.milesPerHour)} sub="movement pace" />
       </div>
       <p className="rounded-lg border border-border/70 bg-card/70 p-3 text-xs text-muted-foreground">
@@ -151,6 +152,12 @@ export default function ShiftIntelligencePanel({
               label="Per Hour"
               value={formatNullableCurrency(summary.earningsPerHour, currencySymbol)}
               sub="completed shifts"
+            />
+            <Metric
+              icon={<BarChart3 className="h-3.5 w-3.5" />}
+              label="Rides"
+              value={`${summary.totalRides}`}
+              sub={summary.earningsPerRide ? `${formatCurrency(summary.earningsPerRide, currencySymbol)}/ride` : "optional"}
             />
             <Metric
               icon={<Sparkles className="h-3.5 w-3.5 text-primary" />}

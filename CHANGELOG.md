@@ -2,6 +2,36 @@
 
 ## Beta Releases
 
+### Beta 0.3.0 — Work Hours, Ride Count + Daily Report Intelligence
+
+### Added
+
+- Added Ride Count foundation to shift blocks so rides can be captured alongside start time, end time, and miles.
+- Added weekly hours goal support as a separate optional commitment target from the existing weekly earnings goal.
+- Added goal-outcome classification for Money Victory, Discipline Victory, Complete Victory, Elite Week, and Building Week.
+- Added richer Work Hours Intelligence metrics for hours, rides, earnings per ride, rides per hour, minutes per ride, and related operational efficiency.
+- Added Daily Report 2.0 to the End Day flow with daily summary, performance context, weekly impact, shift intelligence, narrative insights, and export/share actions.
+- Added a dedicated branded daily report image layout for download/share rather than capturing app controls.
+
+### Changed
+
+- Entry now separates Money and Hours goals and shows rides in the weekly Shift + Mileage summary.
+- Shift Intelligence snapshots now include ride-count context when the user has entered rides.
+- Dashboard Full Focus shows optional weekly hours goal progress when configured.
+- Ask My Data context now includes tracked shift hours, rides, miles, and efficiency summaries for supported hours/rides questions.
+
+### Backend / Migration
+
+- Added a small additive migration for `weekly_hours_goal` on `weeks` and `default_weekly_hours_goal` on `user_settings`.
+- Ride Count is stored inside existing shift blocks in `weeks.entries`; no separate shifts table was created.
+
+### Known Limitations
+
+- Ride Count is manual-first and only appears where the user enters it.
+- Streex still does not receive individual ride timestamps, so real best earning hour remains unsupported.
+- Daily Report XP feed remains hidden until XP events are reliably associated with the closed day.
+- Report sharing depends on browser Web Share support; unsupported browsers fall back to download.
+
 ### Beta 0.2.3 — Operations Scope Clarity
 
 ### Changed

@@ -8,6 +8,7 @@ import { buildEarningsSnapshotRows, dbToEarningsSnapshot } from "@/lib/earningsS
 
 const DEFAULT_SETTINGS: AppSettings = {
   defaultWeeklyGoal: 1200,
+  defaultWeeklyHoursGoal: 0,
   currencySymbol: "$",
   activeApps: [...DEFAULT_APPS],
 };
@@ -27,6 +28,7 @@ function dbToWeek(row: any): WeekRecord {
     startDate: row.start_date,
     endDate: row.end_date,
     weeklyGoal: Number(row.weekly_goal),
+    weeklyHoursGoal: Number(row.weekly_hours_goal ?? 0),
     status: row.status as "open" | "closed",
     entries: (typeof row.entries === "string" ? JSON.parse(row.entries) : row.entries) as DayEntry[],
     createdAt: row.created_at,
@@ -68,6 +70,7 @@ export function useWeekStore(user: User | null) {
       const nextWeeks = data?.map(dbToWeek) ?? [];
       const nextSettings = sData ? {
         defaultWeeklyGoal: Number(sData.default_weekly_goal),
+        defaultWeeklyHoursGoal: Number(sData.default_weekly_hours_goal ?? 0),
         currencySymbol: sData.currency_symbol,
         activeApps: (typeof sData.active_apps === "string"
           ? JSON.parse(sData.active_apps)
@@ -120,6 +123,7 @@ export function useWeekStore(user: User | null) {
       start_date: w.startDate,
       end_date: w.endDate,
       weekly_goal: w.weeklyGoal,
+      weekly_hours_goal: w.weeklyHoursGoal ?? 0,
       status: w.status,
       entries: w.entries as any,
     }).select().single();
@@ -145,6 +149,7 @@ export function useWeekStore(user: User | null) {
         start_date: w.startDate,
         end_date: w.endDate,
         weekly_goal: w.weeklyGoal,
+        weekly_hours_goal: w.weeklyHoursGoal ?? 0,
         status: w.status,
         entries: w.entries as any,
         updated_at: now,
@@ -234,6 +239,7 @@ export function useWeekStore(user: User | null) {
     const { error } = await supabase.from("user_settings").upsert({
       user_id: user.id,
       default_weekly_goal: s.defaultWeeklyGoal,
+      default_weekly_hours_goal: s.defaultWeeklyHoursGoal ?? 0,
       currency_symbol: s.currencySymbol,
       active_apps: s.activeApps as any,
       updated_at: new Date().toISOString(),
@@ -263,6 +269,7 @@ export function useWeekStore(user: User | null) {
       start_date: w.startDate,
       end_date: w.endDate,
       weekly_goal: w.weeklyGoal,
+      weekly_hours_goal: w.weeklyHoursGoal ?? 0,
       status: w.status,
       entries: w.entries as any,
     }));

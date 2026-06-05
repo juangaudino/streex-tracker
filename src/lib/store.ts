@@ -9,6 +9,7 @@ export function getSettings(): AppSettings {
   if (raw) return JSON.parse(raw);
   return {
     defaultWeeklyGoal: 1200,
+    defaultWeeklyHoursGoal: 0,
     currencySymbol: "$",
     activeApps: [...DEFAULT_APPS],
   };
@@ -44,7 +45,8 @@ export function formatDate(d: Date): string {
 export function createWeek(
   startDate: Date,
   goal: number,
-  apps: string[]
+  apps: string[],
+  hoursGoal = 0
 ): WeekRecord {
   const entries: DayEntry[] = DAY_NAMES.map((dayName, i) => {
     const d = new Date(startDate);
@@ -61,6 +63,7 @@ export function createWeek(
     startDate: formatDate(startDate),
     endDate: formatDate(end),
     weeklyGoal: goal,
+    weeklyHoursGoal: hoursGoal,
     status: "open",
     entries,
     createdAt: now,

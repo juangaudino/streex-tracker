@@ -38,6 +38,10 @@ function timeInputValue(value?: string): string {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
+function isValidTimeInput(value: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
 function applyTimeToShiftDate(dayDate: string, value: string): string {
   return `${dayDate}T${value || "00:00"}:00`;
 }
@@ -663,20 +667,42 @@ export default function WeeklyEntryPage() {
                     <label className="space-y-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Start</span>
                       <Input
-                        type="time"
-                        className="h-10 min-w-0 w-full font-mono text-sm sm:h-9 sm:text-xs"
-                        value={timeInputValue(shift.startTime)}
-                        onChange={(e) => handleShiftTimeUpdate(dayIdx, shift.id, "startTime", e.target.value)}
+                        key={`${shift.id}-start-${shift.startTime}`}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={5}
+                        placeholder="HH:mm"
+                        className="h-10 min-w-0 w-full appearance-none rounded-lg text-center font-mono text-sm sm:h-9 sm:text-xs"
+                        defaultValue={timeInputValue(shift.startTime)}
+                        onBlur={(e) => {
+                          const value = e.currentTarget.value.trim();
+                          if (!isValidTimeInput(value)) {
+                            e.currentTarget.value = timeInputValue(shift.startTime);
+                            return;
+                          }
+                          handleShiftTimeUpdate(dayIdx, shift.id, "startTime", value);
+                        }}
                       />
                     </label>
                     <label className="space-y-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">End</span>
                       <Input
-                        type="time"
-                        className="h-10 min-w-0 w-full font-mono text-sm sm:h-9 sm:text-xs"
-                        value={timeInputValue(shift.endTime)}
+                        key={`${shift.id}-end-${shift.endTime ?? "active"}`}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={5}
+                        placeholder="HH:mm"
+                        className="h-10 min-w-0 w-full appearance-none rounded-lg text-center font-mono text-sm sm:h-9 sm:text-xs"
+                        defaultValue={timeInputValue(shift.endTime)}
                         disabled={!shift.endTime}
-                        onChange={(e) => handleShiftTimeUpdate(dayIdx, shift.id, "endTime", e.target.value)}
+                        onBlur={(e) => {
+                          const value = e.currentTarget.value.trim();
+                          if (!isValidTimeInput(value)) {
+                            e.currentTarget.value = timeInputValue(shift.endTime);
+                            return;
+                          }
+                          handleShiftTimeUpdate(dayIdx, shift.id, "endTime", value);
+                        }}
                       />
                     </label>
                     <label className="col-span-2 space-y-1 sm:col-span-1">

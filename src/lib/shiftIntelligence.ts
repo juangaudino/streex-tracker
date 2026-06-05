@@ -224,7 +224,8 @@ export function buildPatternIntelligence(
 
   const bestAppsByHour = appHourEntries
     .map(([hour, value]) => {
-      const best = Object.entries(value.appTotals).sort((a, b) => b[1] - a[1])[0];
+      const appTotals = value.appTotals as Record<string, number>;
+      const best = Object.entries(appTotals).sort((a, b) => b[1] - a[1])[0];
       return best ? { hour, label: hourLabel(hour), app: best[0], earnings: round(best[1]) } : null;
     })
     .filter((item): item is { hour: number; label: string; app: string; earnings: number } => Boolean(item))

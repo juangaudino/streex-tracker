@@ -1,0 +1,2 @@
+ALTER TABLE public.weeks ADD COLUMN IF NOT EXISTS weekly_hours_goal NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE public.user_settings ADD COLUMN IF NOT EXISTS default_weekly_hours_goal NUMERIC NOT NULL DEFAULT 0;

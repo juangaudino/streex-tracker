@@ -420,6 +420,7 @@ export type Database = {
           created_at: string
           currency_symbol: string
           default_weekly_goal: number
+          default_weekly_hours_goal: number
           id: string
           updated_at: string
           user_id: string
@@ -429,6 +430,7 @@ export type Database = {
           created_at?: string
           currency_symbol?: string
           default_weekly_goal?: number
+          default_weekly_hours_goal?: number
           id?: string
           updated_at?: string
           user_id: string
@@ -438,6 +440,7 @@ export type Database = {
           created_at?: string
           currency_symbol?: string
           default_weekly_goal?: number
+          default_weekly_hours_goal?: number
           id?: string
           updated_at?: string
           user_id?: string
@@ -455,6 +458,7 @@ export type Database = {
           updated_at: string
           user_id: string
           weekly_goal: number
+          weekly_hours_goal: number
         }
         Insert: {
           created_at?: string
@@ -466,6 +470,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           weekly_goal?: number
+          weekly_hours_goal?: number
         }
         Update: {
           created_at?: string
@@ -477,6 +482,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           weekly_goal?: number
+          weekly_hours_goal?: number
         }
         Relationships: []
       }

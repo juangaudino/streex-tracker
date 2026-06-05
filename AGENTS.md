@@ -52,7 +52,18 @@ For meaningful user-facing or architectural changes, update both:
 - `CHANGELOG.md`
 - `src/lib/changelog.ts`
 
+## Versioning
+
+Streex is in public beta versioning.
+
+- Current beta baseline: `0.1.0`.
+- Preserve older `V3.x` through `V5.x` entries as Alpha Archive history.
+- Use `0.1.x` for small bug fixes, QA fixes, and polish.
+- Use `0.2.0`, `0.3.0`, etc. for meaningful beta feature releases.
+- Reserve `1.0.0` for the first stable public release.
+- Before implementing a new prompt, bug fix, polish session, roadmap feature, or update request, classify the request and propose the version number for user approval.
+- Do not continue the old Alpha `V5.x` sequence for new beta releases.
+
 ## Validation
 
 Run the narrowest useful tests first, then broaden based on risk. At minimum, use TypeScript checks for code changes and report any validation that could not run.
-

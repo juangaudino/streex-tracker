@@ -4,12 +4,23 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`V5.7.9 - Branded PWA App Icons`
+`Beta 0.1.0 - Stabilization Baseline`
 
 Source of truth:
 
 - `src/lib/changelog.ts`
 - `CHANGELOG.md`
+
+## Versioning Policy
+
+Streex is now in public beta versioning.
+
+- Current public beta baseline: `0.1.0`
+- Use `0.1.x` for small beta bug fixes and polish.
+- Use `0.2.0`, `0.3.0`, etc. for meaningful beta feature releases.
+- Reserve `1.0.0` for the first stable public release.
+- Preserve older `V3.x` through `V5.x` entries as Alpha Archive history.
+- Before implementing a new prompt, bug fix, polish session, or roadmap feature, Codex should classify the request and propose the version number for user approval.
 
 ## Current Product Direction
 
@@ -24,6 +35,8 @@ Current emphasis:
 - trustworthy personal analytics
 
 ## Recent Major Layers
+
+Alpha Archive highlights:
 
 - V5.5 Dashboard Utility Expansion
 - Daily Command Center with live OpenWeather and TomTom data

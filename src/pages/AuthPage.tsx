@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LogIn, UserPlus, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ChangelogDialog from "@/components/ChangelogDialog";
-import { CURRENT_VERSION, CHANGELOG } from "@/lib/changelog";
+import { CURRENT_VERSION, CHANGELOG, formatVersionLabel } from "@/lib/changelog";
 import streexLogo from "@/assets/streex-logo.png";
 
 interface AuthPageProps {
@@ -151,7 +151,7 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
             onClick={() => setChangelogOpen(true)}
             className="text-[11px] font-mono text-muted-foreground/60 hover:text-primary transition-colors"
           >
-            Streex v{CURRENT_VERSION} · view changelog
+            Streex {formatVersionLabel(CURRENT_VERSION)} · view changelog
           </button>
           <div className="text-[10px] text-muted-foreground/40 space-y-0.5">
             {CHANGELOG[0].items.slice(0, 4).map((it, i) => (

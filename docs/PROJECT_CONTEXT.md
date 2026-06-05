@@ -15,6 +15,14 @@ Core philosophy:
 - Data belongs to the user.
 - Utility should support the driver's real day without creating dashboard clutter.
 
+## Versioning
+
+Streex is currently in public beta versioning:
+
+`Beta 0.1.0`
+
+Older `V3.x` through `V5.x` labels are Alpha Archive history. Keep them for continuity, but do not use the old Alpha sequence for new beta work.
+
 ## Repository
 
 Repository name:
@@ -121,4 +129,3 @@ Output:
 ```text
 dist
 ```
-

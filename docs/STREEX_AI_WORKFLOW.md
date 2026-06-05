@@ -149,9 +149,34 @@ Sofi classifies it as:
 
 Sofi then decides whether roadmap or status documentation needs updating.
 
+## Versioning Rule
+
+Streex is in public beta versioning.
+
+Current baseline:
+
+```text
+Beta 0.1.0
+```
+
+Older `V3.x` through `V5.x` entries are preserved as Alpha Archive history.
+
+Before implementing any prompt, bug fix, polish session, roadmap feature, or update request, Codex should:
+
+1. classify the request
+2. propose the version number
+3. ask the user for approval if the version classification is not already explicit
+
+Use:
+
+- `0.1.x` for small bug fixes, QA fixes, and polish
+- `0.2.0`, `0.3.0`, etc. for meaningful beta feature releases
+- `1.0.0` only for the first stable public release
+
+Do not continue the old Alpha `V5.x` sequence for new beta releases.
+
 ## Simple User Rule
 
 ```text
 New Streex idea -> Sofi first.
 ```
-

@@ -1,6 +1,8 @@
 # Ask My Data Challenge Set
 
-Version: V5.7.8
+Version: Beta 0.1.0
+
+Origin: Alpha V5.7.8 Ask My Data audit work, preserved as ongoing beta QA context.
 
 Purpose: manual QA certification prompts for Ask My Data. This file tracks question intent, expected behavior, and current status so Ask My Data improves through repeatable audits instead of one-off screenshots.
 

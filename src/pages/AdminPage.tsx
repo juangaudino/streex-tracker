@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CURRENT_VERSION } from "@/lib/changelog";
+import { CURRENT_VERSION, formatVersionLabel } from "@/lib/changelog";
 import {
   callAdminEmail,
   callAdminOps,
@@ -386,7 +386,7 @@ export default function AdminPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Client v{CURRENT_VERSION} · Forced logout after {formatDateTime(config?.forced_logout_after)}
+              Client {formatVersionLabel(CURRENT_VERSION)} · Forced logout after {formatDateTime(config?.forced_logout_after)}
             </p>
           </div>
 

@@ -1,5 +1,33 @@
 # Changelog
 
+## Beta Releases
+
+### Beta 0.1.0 — Baseline
+
+### Changed
+
+- Reset Streex public versioning for beta using `0.x` semantic versions.
+- Preserved the previous `V5.x` release history as the Alpha Archive instead of deleting it.
+- Updated app version comparison so stale Alpha `V5.x` settings do not incorrectly block the Beta app as a newer update.
+- Established the working rule that future prompts, bug fixes, polish sessions, and roadmap additions should be classified before assigning a version number.
+
+### Current Beta Baseline Includes
+
+- Full Focus operational dashboard.
+- Shift + Mileage tracking foundation.
+- Ask My Data intent routing and challenge-set QA foundation.
+- Admin Ops, feedback inbox, app version control, and re-engagement email foundation.
+- Daily Command Center with OpenWeather and TomTom.
+- Branded iOS, Android, and browser PWA icons.
+
+### Production Behavior
+
+- No dashboard, auth, earnings, shifts, analytics, XP, exports, navigation, Supabase schema, or backend architecture behavior changed.
+
+## Alpha Archive
+
+The entries below are preserved as internal Alpha development history. They remain valuable for product memory, QA context, and changelog continuity, but public beta versioning now starts at `0.1.0`.
+
 ## V5.7.9 — Branded PWA App Icons
 
 ### Fixed

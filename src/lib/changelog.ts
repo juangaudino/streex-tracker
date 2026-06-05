@@ -6,9 +6,30 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "5.7.9";
+export const CURRENT_VERSION = "0.1.0";
+
+export function formatVersionLabel(version: string): string {
+  const normalized = version.trim().replace(/^v/i, "");
+  const major = Number.parseInt(normalized.split(".")[0] ?? "", 10);
+  if (major === 0) return `Beta ${normalized}`;
+  if (major >= 3 && major <= 5) return `Alpha v${normalized}`;
+  return `v${normalized}`;
+}
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.1.0",
+    date: "2026-06",
+    title: "Beta Baseline",
+    tags: ["polish"],
+    items: [
+      "Streex versioning reset for beta using public 0.x semantic versions",
+      "Alpha V5.x history preserved as internal development archive instead of being discarded",
+      "Current beta baseline includes Full Focus, Shift + Mileage, Ask My Data, Admin Ops, Daily Command Center, and branded PWA icon setup",
+      "App version comparison now treats archived V5.x builds as Alpha history so stale Alpha version settings do not block the Beta app",
+      "No dashboard, auth, earnings, shifts, analytics, XP, exports, navigation, backend schema, or Supabase architecture behavior changed",
+    ],
+  },
   {
     version: "5.7.9",
     date: "2026-06",

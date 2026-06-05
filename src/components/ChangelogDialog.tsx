@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CHANGELOG, CURRENT_VERSION } from "@/lib/changelog";
+import { CHANGELOG, CURRENT_VERSION, formatVersionLabel } from "@/lib/changelog";
 import { Sparkles } from "lucide-react";
 
 interface Props {
@@ -35,7 +35,7 @@ export default function ChangelogDialog({ open, onOpenChange }: Props) {
                 <div key={entry.version} className="relative pl-4 border-l border-border/60">
                   <div className={`absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full ${isLatest ? "bg-primary ring-4 ring-primary/20" : "bg-muted-foreground/40"}`} />
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-sm font-bold">v{entry.version}</span>
+                    <span className="font-mono text-sm font-bold">{formatVersionLabel(entry.version)}</span>
                     <span className="text-[10px] text-muted-foreground">{entry.date}</span>
                     {isLatest && (
                       <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-success/15 text-success border border-success/30">

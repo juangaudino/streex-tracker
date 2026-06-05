@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { lifecycleDebug } from "@/lib/appLifecycle";
+import { formatVersionLabel } from "@/lib/changelog";
 
 interface AppUpdateNoticeProps {
   latestVersion: string;
@@ -33,7 +34,7 @@ export default function AppUpdateNotice({
             </p>
           )}
           <p className="text-xs text-muted-foreground">
-            Latest version: v{latestVersion}
+            Latest version: {formatVersionLabel(latestVersion)}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">

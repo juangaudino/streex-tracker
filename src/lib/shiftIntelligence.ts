@@ -1,4 +1,5 @@
 import { isRewardApp, operationalDayTotal } from "./rewardIncome";
+import { earningsSnapshotTransitionKey } from "./earningsSnapshots";
 import type { DayEntry, EarningsSnapshot, ShiftSession, WeekRecord } from "./types";
 
 export interface ShiftSummary {
@@ -200,11 +201,15 @@ function isSameDayEarningUpdate(snapshot: EarningsSnapshot): boolean {
 
 function buildSnapshotHourMap(earningsSnapshots: EarningsSnapshot[]) {
   const hourMap = new Map<number, { earnings: number; observations: number; appTotals: Record<string, number> }>();
+  const seenTransitions = new Set<string>();
 
   for (const snapshot of earningsSnapshots) {
     const delta = Number(snapshot.delta) || 0;
     if (delta <= 0) continue;
     if (isRewardApp(snapshot.app)) continue;
+    const transitionKey = earningsSnapshotTransitionKey(snapshot);
+    if (seenTransitions.has(transitionKey)) continue;
+    seenTransitions.add(transitionKey);
     const created = new Date(snapshot.createdAt);
     if (Number.isNaN(created.getTime())) continue;
     if (!isSameDayEarningUpdate(snapshot)) continue;

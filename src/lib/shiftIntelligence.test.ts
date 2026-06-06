@@ -113,6 +113,33 @@ describe("shift intelligence", () => {
     expect(result.bestAppsByHour[0].app).toBe("Uber");
   });
 
+  it("deduplicates repeated earning snapshot transitions in observed timing", () => {
+    const weeks = [
+      week([
+        day(0, 240, [{ id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00", miles: 24 }]),
+        day(1, 180, [{ id: "s2", startTime: "2026-05-05T18:00:00", endTime: "2026-05-05T20:00:00", miles: 18 }]),
+        day(2, 260, [{ id: "s3", startTime: "2026-05-06T08:00:00", endTime: "2026-05-06T10:00:00", miles: 22 }]),
+        day(3, 0),
+        day(4, 0),
+        day(5, 0),
+        day(6, 0),
+      ]),
+    ];
+    const snapshots: EarningsSnapshot[] = [
+      { ...snapshot("snap1", "2026-05-04", "Uber", 29.93, "2026-05-04T18:05:00"), previousAmount: 0, newAmount: 29.93, shiftId: "shift1" },
+      { ...snapshot("snap2", "2026-05-04", "Uber", 29.93, "2026-05-04T18:05:01"), previousAmount: 0, newAmount: 29.93, shiftId: "shift1" },
+      snapshot("snap3", "2026-05-04", "Uber", 20, "2026-05-04T18:45:00"),
+      snapshot("snap4", "2026-05-05", "Spark Driver", 15, "2026-05-05T17:15:00"),
+    ];
+
+    const result = buildPatternIntelligence(weeks, snapshots);
+
+    expect(result.timingSource).toBe("snapshot");
+    expect(result.strongestHours[0].hour).toBe(18);
+    expect(result.strongestHours[0].earnings).toBeCloseTo(49.93);
+    expect(result.strongestHours[0].observations).toBe(2);
+  });
+
   it("excludes late earning adjustments from observed update timing", () => {
     const weeks = [
       week([
@@ -156,9 +183,9 @@ describe("shift intelligence", () => {
     ];
     const snapshots: EarningsSnapshot[] = [
       snapshot("snap1", "2026-05-04", "Octopus", 25, "2026-05-04T18:05:00"),
-      snapshot("snap2", "2026-05-04", "Uber", 40, "2026-05-04T18:15:00"),
-      snapshot("snap3", "2026-05-04", "Uber", 30, "2026-05-04T18:45:00"),
-      snapshot("snap4", "2026-05-04", "Uber", 30, "2026-05-04T19:00:00"),
+      { ...snapshot("snap2", "2026-05-04", "Uber", 40, "2026-05-04T18:15:00"), previousAmount: 0, newAmount: 40 },
+      { ...snapshot("snap3", "2026-05-04", "Uber", 30, "2026-05-04T18:45:00"), previousAmount: 40, newAmount: 70 },
+      { ...snapshot("snap4", "2026-05-04", "Uber", 30, "2026-05-04T19:00:00"), previousAmount: 70, newAmount: 100 },
     ];
 
     const result = buildPatternIntelligence(weeks, snapshots);

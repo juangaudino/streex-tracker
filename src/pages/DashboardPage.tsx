@@ -28,20 +28,22 @@ import {
   formatDate,
 } from "@/lib/store";
 import type { StoreContext } from "./types";
-import { Activity, CalendarPlus, Clock, Download, Target, Zap } from "lucide-react";
+import { Activity, CalendarPlus, CloudSun, Download, Gauge, Target, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import EndDayDialog from "@/components/EndDayDialog";
 import MonthlyRecapBanner from "@/components/MonthlyRecapBanner";
 import DriverIdentityCard from "@/components/DriverIdentityCard";
 import { useDriverIdentity } from "@/hooks/useDriverIdentity";
-import DailyCommandCenter from "@/components/DailyCommandCenter";
+import { DailyCommandCenterView } from "@/components/DailyCommandCenter";
 import { useDashboardExperience } from "@/hooks/useDashboardExperience";
 import { classifyWeeklyGoalOutcome, createShift, getWeekShiftHours, hasActiveShift } from "@/lib/shiftIntelligence";
 import { cn } from "@/lib/utils";
 import DailyStartHub from "@/components/DailyStartHub";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import ShiftIntelligencePanel from "@/components/ShiftIntelligencePanel";
+import { getWeekdayHistoricalRank } from "@/lib/career";
+import { useDriverUtility } from "@/hooks/useDriverUtility";
 
 type PulseState = "calm" | "steady" | "strong" | "record" | "streak";
 
@@ -102,6 +104,7 @@ export default function DashboardPage() {
   const { pulseMode } = useTheme();
   const { isFullFocus } = useDashboardExperience();
   const { profile } = useUserProfile(user?.id);
+  const driverUtility = useDriverUtility();
   const todayStr = formatDate(new Date());
   const dailyStartHubKey = `streex_daily_start_hub_dismissed_${todayStr}`;
   const [dailyStartHubDismissed, setDailyStartHubDismissed] = useState(() => {
@@ -187,7 +190,7 @@ export default function DashboardPage() {
           <MonthlyRecapBanner weeks={weeks} currencySymbol={sym} />
         </div>
         <div className="w-full max-w-2xl text-left">
-          <DailyCommandCenter />
+          <DailyCommandCenterView utility={driverUtility} />
         </div>
         {hasHistory && (
           <div className="w-full max-w-2xl text-left">
@@ -309,14 +312,38 @@ export default function DashboardPage() {
 
   const dayVsAvg = dayRec.avg > 0 ? todayTotal - dayRec.avg : null;
   const dayVsAvgPct = dayRec.avg > 0 ? (todayTotal / dayRec.avg) * 100 : null;
-  const hasOpenShift = openWeek.entries.some(hasActiveShift);
-  const shiftLabel = hasOpenShift ? "Active" : isDayClosed ? "Closed" : "Ready";
-  const shiftSub = hasOpenShift ? "shift in progress" : isDayClosed ? "day finalized" : "tap Entry to start";
-  const focusMomentumLabel = mood.momentumLabel === "Building Momentum" ? "Building" : mood.momentumLabel;
   const showStandardMomentumChip = mood.momentumLabel !== smartHeader;
   const todayHasShift = Boolean(todayEntry?.shifts?.length);
   const showDailyStartHub = Boolean(todayEntry && !todayEntry.dayClosed && !todayHasShift && !dailyStartHubDismissed);
   const currentWeekSnapshots = earningsSnapshots.filter((snapshot) => snapshot.weekId === openWeek.id);
+  const historicalRank = todayEntry
+    ? getWeekdayHistoricalRank(weeks, todayEntry.dayName, todayEntry.date, todayTotal)
+    : { rank: 0, total: 0 };
+  const rankValue = historicalRank.total >= 3
+    ? historicalRank.rank <= 10
+      ? `Top ${historicalRank.rank} ${todayName}`
+      : `#${historicalRank.rank} of ${historicalRank.total}`
+    : "Building";
+  const rankSub = historicalRank.total >= 3 ? "same weekday" : "more history needed";
+  const weather = driverUtility.data?.weather;
+  const traffic = driverUtility.data?.traffic;
+  const weatherLive = weather?.status === "live";
+  const trafficLive = traffic?.status === "live";
+  const conditionsValue = weatherLive || trafficLive
+    ? [
+        weatherLive ? `${weather.temperature}°` : null,
+        trafficLive ? `${traffic.level || "flow"} flow` : null,
+      ].filter(Boolean).join(" / ")
+    : driverUtility.state === "idle" || driverUtility.state === "denied"
+      ? "Enable"
+      : "Pending";
+  const conditionsSub = weatherLive && trafficLive
+    ? "weather + traffic"
+    : weatherLive
+      ? weather.condition || "weather live"
+      : trafficLive
+        ? "traffic live"
+        : "live utility";
 
   async function handleDailyStartShift() {
     if (!todayEntry || openWeek.entries.some(hasActiveShift) || todayHasShift) {
@@ -405,18 +432,18 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-2 gap-2">
             <FocusMetric
-              icon={<Clock className="h-3.5 w-3.5" />}
-              label="Shift"
-              value={shiftLabel}
-              sub={shiftSub}
-              tone={hasOpenShift ? "success" : "default"}
+              icon={<Trophy className="h-3.5 w-3.5" />}
+              label="Rank"
+              value={rankValue}
+              sub={rankSub}
+              tone={historicalRank.rank > 0 && historicalRank.rank <= 10 ? "success" : "default"}
             />
             <FocusMetric
-              icon={<Zap className="h-3.5 w-3.5" />}
-              label="Momentum"
-              value={focusMomentumLabel}
-              sub={activeDays.length > 0 ? `${activeDays.length} active day${activeDays.length === 1 ? "" : "s"}` : "fresh start"}
-              tone={mood.momentumState === "high" ? "success" : mood.momentumState === "medium" ? "primary" : "default"}
+              icon={trafficLive ? <Gauge className="h-3.5 w-3.5" /> : <CloudSun className="h-3.5 w-3.5" />}
+              label="Conditions"
+              value={conditionsValue}
+              sub={conditionsSub}
+              tone={traffic?.level === "light" || weatherLive ? "primary" : "default"}
             />
           </div>
 
@@ -472,7 +499,7 @@ export default function DashboardPage() {
           showModeBadge={false}
         />
 
-        <DailyCommandCenter compact />
+        <DailyCommandCenterView compact utility={driverUtility} />
 
         {(() => {
           const insight = !isDayClosed ? (dailyChase ?? weeklyChase) : null;
@@ -577,7 +604,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <DailyCommandCenter />
+      <DailyCommandCenterView utility={driverUtility} />
 
       {/* Smart Insight — single actionable contextual message */}
       {(() => {

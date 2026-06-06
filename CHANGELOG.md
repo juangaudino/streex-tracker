@@ -2,6 +2,40 @@
 
 ## Beta Releases
 
+### Beta 0.3.2 — Full Focus Rank + Conditions Polish
+
+### Changed
+
+- Replaced the redundant Full Focus `Shift / Active` mini-card with same-weekday historical ranking.
+- Replaced the Full Focus `Momentum` mini-card with compact live `Conditions` context from weather and traffic.
+- Shared the Dashboard utility controller with Daily Command Center so the mini-card and utility section stay in sync without duplicate provider calls.
+
+### Production Behavior
+
+- Dashboard ordering, Standard Dashboard layout, Quick Add, earnings calculations, snapshots, Ask My Data, auth, and Supabase architecture behavior were not changed.
+
+### Beta 0.3.1 — Quick Earnings Update
+
+### Added
+
+- Added a focused Quick Add flow that opens with large Uber/Lyft update choices instead of immediately showing every app.
+- Added optional quick fields for current miles and ride count when updating the active work session.
+- Added a `More Apps` path that keeps the full existing entry form available for all apps and manual controls.
+
+### Changed
+
+- Quick updates now treat the entered app amount as the current accumulated total for today, not an amount to add.
+- The full `Mark as logged`, shift block list, and `Save Today` controls now stay inside the full entry mode so quick updates remain compact.
+- Earnings snapshot writes now guard against duplicate same-transition inserts caused by rapid repeated saves.
+- Shift Intelligence timing now deduplicates identical snapshot transitions so existing duplicate rows do not inflate observed timing.
+
+### Production Behavior
+
+- No stored earnings are converted, duplicated, or reinterpreted.
+- Existing earning snapshot logic continues to record the real difference between the previous and new app total.
+- Ride count remains optional and is only saved when the user enters it for an active shift.
+- Existing duplicate snapshot rows are not deleted; they are ignored in timing calculations when they represent the same transition.
+
 ### Beta 0.3.0 — Work Hours, Ride Count + Daily Report Intelligence
 
 ### Added

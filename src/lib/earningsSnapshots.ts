@@ -21,6 +21,32 @@ function activeShiftId(day: DayEntry): string | null {
   return day.shifts?.find((shift) => !shift.endTime)?.id ?? null;
 }
 
+export function earningsSnapshotTransitionKey(snapshot: {
+  user_id?: string;
+  userId?: string;
+  week_id?: string;
+  weekId?: string;
+  day_date?: string;
+  dayDate?: string;
+  app: string;
+  previous_amount?: number;
+  previousAmount?: number;
+  new_amount?: number;
+  newAmount?: number;
+  delta: number;
+  shift_id?: string | null;
+  shiftId?: string | null;
+}): string {
+  const userId = snapshot.user_id ?? snapshot.userId ?? "";
+  const weekId = snapshot.week_id ?? snapshot.weekId ?? "";
+  const dayDate = snapshot.day_date ?? snapshot.dayDate ?? "";
+  const previousAmount = money(snapshot.previous_amount ?? snapshot.previousAmount);
+  const newAmount = money(snapshot.new_amount ?? snapshot.newAmount);
+  const delta = money(snapshot.delta);
+  const shiftId = snapshot.shift_id ?? snapshot.shiftId ?? "";
+  return [userId, weekId, dayDate, snapshot.app, previousAmount, newAmount, delta, shiftId].join("|");
+}
+
 export function dbToEarningsSnapshot(row: {
   id: string;
   user_id: string;

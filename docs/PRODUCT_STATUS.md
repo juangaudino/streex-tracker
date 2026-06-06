@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`Beta 0.3.0 - Work Hours, Ride Count + Daily Report Intelligence`
+`Beta 0.3.2 - Full Focus Rank + Conditions Polish`
 
 Source of truth:
 
@@ -61,6 +61,8 @@ Beta highlights:
 - 0.2.2 Octopus reward income classification for cleaner operational efficiency metrics
 - 0.2.3 Career and weekly operations snapshots now have clear lifetime vs current-week scope labels
 - 0.3.0 Work Hours Intelligence, manual Ride Count foundation, weekly hours goals, Daily Report 2.0, and Ask My Data shift/rides context
+- 0.3.1 Quick Add now supports focused accumulated-total updates for primary apps, with optional miles/rides capture and full-entry fallback
+- 0.3.2 Full Focus mini-cards now use same-weekday historical rank and compact live conditions instead of redundant shift/momentum status
 
 ## Pattern Intelligence Source Truth
 

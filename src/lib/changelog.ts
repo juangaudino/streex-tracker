@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.3.0";
+export const CURRENT_VERSION = "0.3.2";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,34 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.3.2",
+    date: "2026-06",
+    title: "Full Focus Rank + Conditions Polish",
+    tags: ["polish"],
+    items: [
+      "Full Focus main summary now replaces the redundant Shift status mini-card with same-weekday historical rank",
+      "Momentum mini-card replaced with compact Conditions context using the existing live weather and traffic utility data",
+      "Daily Command Center now shares the Dashboard utility controller so Full Focus conditions and utility cards stay in sync without duplicate provider calls",
+      "Dashboard ordering, Standard Dashboard layout, Quick Add, earnings calculations, snapshots, Ask My Data, auth, and Supabase architecture behavior were not changed",
+    ],
+  },
+  {
+    version: "0.3.1",
+    date: "2026-06",
+    title: "Quick Earnings Update",
+    tags: ["new", "polish"],
+    items: [
+      "Quick Add now opens a focused quick-update flow instead of immediately showing the full app entry form",
+      "Uber and Lyft are prioritized as large one-tap update targets, with fallback support for the next available apps if needed",
+      "Quick updates use current accumulated app totals, not additive deltas, so earning snapshots continue to measure real changes safely",
+      "Optional miles and ride count can be updated from the quick flow when an active shift exists, without forcing ride capture",
+      "More Apps preserves access to the full entry form for all apps, mileage, shift blocks, and manual logged-state controls",
+      "Earnings snapshot writes now guard against duplicate same-transition inserts from rapid repeated saves",
+      "Shift Intelligence timing now deduplicates identical snapshot transitions so existing duplicate rows do not inflate observed timing",
+      "No stored earnings are converted, duplicated, or reinterpreted; this is a capture workflow improvement only",
+    ],
+  },
   {
     version: "0.3.0",
     date: "2026-06",

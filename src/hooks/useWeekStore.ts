@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { getWeeks as getLocalWeeks } from "@/lib/store";
 import { lifecycleDebug } from "@/lib/appLifecycle";
-import { buildEarningsSnapshotRows, dbToEarningsSnapshot } from "@/lib/earningsSnapshots";
+import { buildEarningsSnapshotRows, dbToEarningsSnapshot, earningsSnapshotTransitionKey } from "@/lib/earningsSnapshots";
 
 const DEFAULT_SETTINGS: AppSettings = {
   defaultWeeklyGoal: 1200,
@@ -21,6 +21,7 @@ interface WeekStoreSnapshot {
 }
 
 const storeCache = new Map<string, WeekStoreSnapshot>();
+const pendingSnapshotKeys = new Set<string>();
 
 function dbToWeek(row: any): WeekRecord {
   return {
@@ -177,26 +178,38 @@ export function useWeekStore(user: User | null) {
         alert("Could not save this week. Please check your connection and try again.");
         return false;
       }
+      const existingSnapshotKeys = new Set(
+        earningsSnapshots.map((snapshot) => earningsSnapshotTransitionKey(snapshot)),
+      );
       const snapshotRows = buildEarningsSnapshotRows({
         userId: user.id,
         previousWeek,
         nextWeek: w,
+      }).filter((row) => {
+        const key = earningsSnapshotTransitionKey(row);
+        if (existingSnapshotKeys.has(key) || pendingSnapshotKeys.has(key)) return false;
+        pendingSnapshotKeys.add(key);
+        return true;
       });
       let insertedSnapshots: EarningsSnapshot[] = [];
       if (snapshotRows.length) {
-        const { data: snapshotData, error: snapshotError } = await supabase
-          .from("earnings_snapshots")
-          .insert(snapshotRows)
-          .select("*");
-        if (snapshotError) {
-          console.warn("[weeks.updateWeek] earnings snapshots unavailable", {
-            weekId: w.id,
-            count: snapshotRows.length,
-            error: snapshotError,
-          });
-        } else if (snapshotData?.length) {
-          insertedSnapshots = snapshotData.map(dbToEarningsSnapshot);
-          setEarningsSnapshots((prev) => [...prev, ...insertedSnapshots]);
+        try {
+          const { data: snapshotData, error: snapshotError } = await supabase
+            .from("earnings_snapshots")
+            .insert(snapshotRows)
+            .select("*");
+          if (snapshotError) {
+            console.warn("[weeks.updateWeek] earnings snapshots unavailable", {
+              weekId: w.id,
+              count: snapshotRows.length,
+              error: snapshotError,
+            });
+          } else if (snapshotData?.length) {
+            insertedSnapshots = snapshotData.map(dbToEarningsSnapshot);
+            setEarningsSnapshots((prev) => [...prev, ...insertedSnapshots]);
+          }
+        } finally {
+          snapshotRows.forEach((row) => pendingSnapshotKeys.delete(earningsSnapshotTransitionKey(row)));
         }
       }
       setWeeks((prev) => {

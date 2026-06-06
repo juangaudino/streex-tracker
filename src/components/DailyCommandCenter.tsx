@@ -106,8 +106,16 @@ function TrafficPanel({ data }: { data: DriverUtilityData | null }) {
   );
 }
 
-export default function DailyCommandCenter({ compact = false }: { compact?: boolean }) {
-  const { state, data, error, enable, refresh } = useDriverUtility();
+export type DriverUtilityController = ReturnType<typeof useDriverUtility>;
+
+export function DailyCommandCenterView({
+  compact = false,
+  utility,
+}: {
+  compact?: boolean;
+  utility: DriverUtilityController;
+}) {
+  const { state, data, error, enable, refresh } = utility;
   const loading = state === "requesting-location" || state === "loading";
   const needsLocation = state === "idle" || state === "denied" || state === "unsupported" || state === "error";
 
@@ -203,4 +211,9 @@ export default function DailyCommandCenter({ compact = false }: { compact?: bool
       </div>
     </section>
   );
+}
+
+export default function DailyCommandCenter({ compact = false }: { compact?: boolean }) {
+  const utility = useDriverUtility();
+  return <DailyCommandCenterView compact={compact} utility={utility} />;
 }

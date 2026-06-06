@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`Beta 0.3.2 - Full Focus Rank + Conditions Polish`
+`Beta 0.3.3 - Daily Report Export Polish`
 
 Source of truth:
 
@@ -63,6 +63,7 @@ Beta highlights:
 - 0.3.0 Work Hours Intelligence, manual Ride Count foundation, weekly hours goals, Daily Report 2.0, and Ask My Data shift/rides context
 - 0.3.1 Quick Add now supports focused accumulated-total updates for primary apps, with optional miles/rides capture and full-entry fallback
 - 0.3.2 Full Focus mini-cards now use same-weekday historical rank and compact live conditions instead of redundant shift/momentum status
+- 0.3.3 End Day report export now better matches the visible Daily Report and uses cleaner next-milestone copy
 
 ## Pattern Intelligence Source Truth
 

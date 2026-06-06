@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { bestDay, dayTotal, formatCurrency, weekTotal } from "@/lib/store";
 import type { WeekRecord, DayEntry } from "@/lib/types";
 import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
-import { getNearAchievementHints, getWeeklyMomentumPreview } from "@/lib/career";
+import { getWeeklyMomentumPreview } from "@/lib/career";
 import { getDayMiles, getDayRideCount, getDayShiftHours } from "@/lib/shiftIntelligence";
 import { operationalDayTotal } from "@/lib/rewardIncome";
 import { exportNodeAsPng, shareNodeAsPng } from "@/lib/shareExport";
@@ -58,7 +58,7 @@ export default function EndDayDialog({
   })();
 
   const weeklyPreview = getWeeklyMomentumPreview(weeks, openWeek.id, sym);
-  const nearAchievements = getNearAchievementHints(weeks, todayT, sym);
+  const nextDayMilestone = getNextDayMilestone(todayT, sym);
   const insights = useMemo(() => {
     const items: string[] = [];
     if (recordBroken) items.push(`New ${dayName} record. Your history just moved.`);
@@ -68,9 +68,9 @@ export default function EndDayDialog({
     if (todayContribution !== null && todayContribution >= 20) items.push(`Today carried ${todayContribution.toFixed(0)}% of this week's total.`);
     if (isBestDayOfWeek) items.push("This is currently your best day of the week.");
     if (hours > 0 && earningsPerHour !== null) items.push(`You worked ${hours.toFixed(1)}h at ${formatCurrency(earningsPerHour, sym)}/hr.`);
-    if (nearAchievements[0]) items.push(`${nearAchievements[0].label} is still within reach.`);
+    if (nextDayMilestone && nextDayMilestone.remaining <= 50) items.push(`${nextDayMilestone.label} is within ${formatCurrency(nextDayMilestone.remaining, sym)}.`);
     return items.slice(0, 4);
-  }, [dayName, earningsPerHour, hours, isBestDayOfWeek, nearAchievements, recordBroken, sym, todayContribution, todayT, vsAvg]);
+  }, [dayName, earningsPerHour, hours, isBestDayOfWeek, nextDayMilestone, recordBroken, sym, todayContribution, todayT, vsAvg]);
 
   async function handleDownloadReport() {
     if (!reportRef.current) return;
@@ -211,19 +211,17 @@ export default function EndDayDialog({
             </div>
           )}
 
-          {/* Near achievements */}
-          {nearAchievements.length > 0 && (
+          {/* Near milestone */}
+          {nextDayMilestone && (
             <div className="space-y-2">
               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                 <Sparkles className="h-3 w-3" /> Within Reach
               </p>
-              <div className="space-y-1.5">
-                {nearAchievements.map((a, i) => (
-                  <div key={i} className="flex items-center justify-between bg-card/50 border border-border rounded-lg px-3 py-2">
-                    <span className="text-sm font-medium">{a.label}</span>
-                    <span className="text-xs font-mono text-muted-foreground">{a.detail}</span>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between bg-card/50 border border-border rounded-lg px-3 py-2">
+                <span className="text-sm font-medium">{nextDayMilestone.label}</span>
+                <span className="text-xs font-mono text-muted-foreground">
+                  {formatCurrency(nextDayMilestone.remaining, sym)} away
+                </span>
               </div>
             </div>
           )}
@@ -251,17 +249,24 @@ export default function EndDayDialog({
             The journey continues tomorrow.
           </p>
         </div>
-        <div className="fixed -left-[9999px] top-0">
+        <div className="fixed left-0 top-0 pointer-events-none" style={{ transform: "translateX(-200vw)" }}>
           <DailyReportCard
             refEl={reportRef}
             dayName={dayName}
             date={todayEntry.date}
             total={formatCurrency(todayT, sym)}
             weekTotalText={formatCurrency(wt, sym)}
+            appsUsed={appsUsed.length}
             hours={hours}
             miles={miles}
             rides={rides}
             earningsPerHour={earningsPerHour === null ? null : `${formatCurrency(earningsPerHour, sym)}/hr`}
+            earningsPerRide={earningsPerRide === null ? null : formatCurrency(earningsPerRide, sym)}
+            vsAverage={vsAvg === null ? null : `${todayT - dayRec.avg >= 0 ? "+" : ""}${formatCurrency(todayT - dayRec.avg, sym)}`}
+            weekPace={`${goalPct.toFixed(0)}%`}
+            weekShare={todayContribution === null ? null : `${todayContribution.toFixed(0)}%`}
+            shifts={completedShifts}
+            milestone={nextDayMilestone ? `${nextDayMilestone.label} · ${formatCurrency(nextDayMilestone.remaining, sym)} away` : null}
             insights={insights}
           />
         </div>
@@ -276,10 +281,17 @@ function DailyReportCard({
   date,
   total,
   weekTotalText,
+  appsUsed,
   hours,
   miles,
   rides,
   earningsPerHour,
+  earningsPerRide,
+  vsAverage,
+  weekPace,
+  weekShare,
+  shifts,
+  milestone,
   insights,
 }: {
   refEl: React.RefObject<HTMLDivElement>;
@@ -287,46 +299,98 @@ function DailyReportCard({
   date: string;
   total: string;
   weekTotalText: string;
+  appsUsed: number;
   hours: number;
   miles: number;
   rides: number;
   earningsPerHour: string | null;
+  earningsPerRide: string | null;
+  vsAverage: string | null;
+  weekPace: string;
+  weekShare: string | null;
+  shifts: NonNullable<DayEntry["shifts"]>;
+  milestone: string | null;
   insights: string[];
 }) {
   return (
-    <div ref={refEl} className="w-[420px] min-h-[720px] bg-white text-slate-950 p-8 font-sans">
-      <div className="flex items-center justify-between">
-        <div className="rounded-md border-2 border-slate-950 px-3 py-1 text-sm font-black tracking-wider">STREEX</div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600">Daily Report</p>
+    <div ref={refEl} className="w-[560px] bg-white text-slate-950 p-8 font-sans">
+      <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-white to-slate-50 p-7 shadow-sm">
+      <div className="flex items-center justify-between gap-6">
+        <div className="rounded-lg border-2 border-slate-950 px-4 py-1.5 text-base font-black tracking-wider">STREEX</div>
+        <p className="text-[11px] font-black uppercase tracking-[0.28em] text-blue-600">Daily Report</p>
       </div>
-      <div className="mt-10">
-        <p className="text-sm font-semibold text-slate-500">{dayName} · {date}</p>
-        <p className="mt-2 text-6xl font-black tracking-tight text-blue-600">{total}</p>
-        <p className="mt-2 text-sm text-slate-500">Week total {weekTotalText}</p>
+      <div className="mt-8 rounded-2xl border border-slate-200 bg-white/80 p-5">
+        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Today Earned</p>
+        <p className="mt-2 text-6xl font-black tracking-tight text-blue-600 leading-none">{total}</p>
+        <p className="mt-3 text-sm font-semibold text-slate-500">{dayName} · {date} · Week total {weekTotalText}</p>
       </div>
-      <div className="mt-8 grid grid-cols-2 gap-3">
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        {appsUsed > 0 && <ReportCardMetric label="Apps Used" value={`${appsUsed}`} accent="primary" />}
         {hours > 0 && <ReportCardMetric label="Hours" value={`${hours.toFixed(1)}h`} />}
-        {earningsPerHour && <ReportCardMetric label="Per Hour" value={earningsPerHour} />}
+        {earningsPerHour && <ReportCardMetric label="Per Hour" value={earningsPerHour} accent="success" />}
         {miles > 0 && <ReportCardMetric label="Miles" value={`${miles.toFixed(1)}`} />}
         {rides > 0 && <ReportCardMetric label="Rides" value={`${rides}`} />}
+        {earningsPerRide && <ReportCardMetric label="Per Ride" value={earningsPerRide} accent="success" />}
+        {vsAverage && <ReportCardMetric label={`vs avg ${dayName}`} value={vsAverage} accent={vsAverage.startsWith("+") ? "success" : "warning"} />}
+        <ReportCardMetric label="Week Pace" value={weekPace} accent="primary" />
+        {weekShare && <ReportCardMetric label="Week Share" value={weekShare} accent="primary" />}
       </div>
-      <div className="mt-8 space-y-3">
-        {insights.slice(0, 3).map((insight) => (
-          <p key={insight} className="rounded-2xl bg-slate-100 p-4 text-base font-semibold leading-snug">{insight}</p>
+      {shifts.length > 0 && (
+        <div className="mt-5">
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Shift Intelligence</p>
+          <div className="mt-2 space-y-2">
+            {shifts.slice(0, 2).map((shift) => (
+              <p key={shift.id} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+                {new Date(shift.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                {" -> "}
+                {new Date(shift.endTime!).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                {shift.miles ? ` · ${Number(shift.miles).toFixed(1)} mi` : ""}
+                {shift.rideCount ? ` · ${shift.rideCount} rides` : ""}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-3">
+        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Narrative Insight</p>
+        {insights.slice(0, 4).map((insight) => (
+          <p key={insight} className="text-base font-semibold leading-snug">{insight}</p>
         ))}
       </div>
-      <p className="mt-10 text-xs font-bold uppercase tracking-[0.22em] text-slate-400">Built with Streex</p>
+      {milestone && (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3">
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Within Reach</p>
+          <p className="mt-1 text-sm font-semibold">{milestone}</p>
+        </div>
+      )}
+      <p className="mt-6 text-xs font-black uppercase tracking-[0.28em] text-slate-400">Built with Streex</p>
+      </div>
     </div>
   );
 }
 
-function ReportCardMetric({ label, value }: { label: string; value: string }) {
+function ReportCardMetric({ label, value, accent = "default" }: { label: string; value: string; accent?: "default" | "primary" | "success" | "warning" }) {
+  const accentClass = accent === "success" ? "text-emerald-600 border-emerald-200"
+    : accent === "warning" ? "text-amber-600 border-amber-200"
+    : accent === "primary" ? "text-blue-600 border-blue-200"
+    : "text-slate-950 border-slate-200";
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+    <div className={`rounded-2xl border bg-white p-4 ${accentClass}`}>
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-black">{value}</p>
+      <p className="mt-1 text-2xl font-black text-slate-950">{value}</p>
     </div>
   );
+}
+
+function getNextDayMilestone(todayTotal: number, sym: string): { label: string; remaining: number } | null {
+  if (todayTotal <= 0) return null;
+  const milestones = [300, 400, 500, 750, 1000, 1500, 2000];
+  const next = milestones.find((value) => todayTotal < value);
+  if (!next) return null;
+  return {
+    label: `${sym}${next} Day`,
+    remaining: next - todayTotal,
+  };
 }
 
 function Chip({ icon, label, value, accent }: {

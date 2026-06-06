@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.3.2";
+export const CURRENT_VERSION = "0.3.3";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.3.3",
+    date: "2026-06",
+    title: "Daily Report Export Polish",
+    tags: ["fix", "polish"],
+    items: [
+      "End Day Within Reach copy now points to the next daily earning milestone instead of suggesting a first milestone that may already be completed",
+      "Daily Report image export now uses a richer branded report layout that mirrors the visible close-day report structure more closely",
+      "Report image generation now includes daily summary, operational metrics, shift intelligence, narrative insights, and within-reach context when available",
+      "No earnings calculations, shift persistence, snapshots, Ask My Data, auth, or Supabase architecture behavior changed",
+    ],
+  },
   {
     version: "0.3.2",
     date: "2026-06",

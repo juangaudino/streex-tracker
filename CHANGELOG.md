@@ -2,6 +2,21 @@
 
 ## Beta Releases
 
+### Beta 0.3.3 — Daily Report Export Polish
+
+### Fixed
+
+- End Day `Within Reach` no longer says `First` for a daily milestone that may already be completed.
+- Daily Report image export no longer uses the thin simplified layout that lost the visible report formatting.
+
+### Changed
+
+- Report image export now follows the visible close-day report structure more closely, including summary, operational metrics, shift intelligence, narrative insights, and within-reach context when available.
+
+### Production Behavior
+
+- No earnings calculations, shift persistence, snapshots, Ask My Data, auth, or Supabase architecture behavior changed.
+
 ### Beta 0.3.2 — Full Focus Rank + Conditions Polish
 
 ### Changed

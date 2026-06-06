@@ -2,6 +2,22 @@
 
 ## Beta Releases
 
+### Beta 0.3.4 — Premium Auth + Splash Visual Refresh
+
+### Changed
+
+- Splash loading screens now use a premium dark Streex treatment with the official logo, yellow motion streaks, and subtle brand glow.
+- Login, sign up, and password reset screens now share the same dark cinematic Streex visual language.
+- Auth inputs, buttons, links, and changelog copy were restyled for the new dark brand surface.
+
+### Accessibility
+
+- Reduced-motion users receive a static premium splash and auth background without moving streak animations.
+
+### Production Behavior
+
+- No auth logic, Supabase session behavior, routing, protected routes, dashboard logic, earnings data, or backend architecture changed.
+
 ### Beta 0.3.3 — Daily Report Export Polish
 
 ### Fixed

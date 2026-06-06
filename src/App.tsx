@@ -27,6 +27,7 @@ import AppUpdateNotice from "./components/AppUpdateNotice";
 import { Button } from "./components/ui/button";
 import { useAppLifecycle } from "./hooks/useAppLifecycle";
 import { lifecycleDebug } from "./lib/appLifecycle";
+import { AnimatedStreexLogo, StreexMotionBackground } from "./components/StreexMotionBrand";
 
 const App = () => {
   useAppLifecycle();
@@ -37,14 +38,10 @@ const App = () => {
   if (authLoading) {
     lifecycleDebug("splash shown", { reason: "auth session restoration" });
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6 px-6">
-        <img
-          src={streexLogo}
-          alt="Streex"
-          className="w-44 sm:w-52 h-auto object-contain select-none animate-in fade-in duration-700"
-          draggable={false}
-        />
-        <p className="text-xs sm:text-sm uppercase tracking-[0.3em] text-muted-foreground/70 font-medium">
+      <div className="streex-premium-shell min-h-screen flex flex-col items-center justify-center gap-7 px-6 text-center">
+        <StreexMotionBackground density="splash" />
+        <AnimatedStreexLogo variant="splash" />
+        <p className="relative z-10 text-[11px] sm:text-xs uppercase tracking-[0.34em] text-white/55 font-semibold">
           Gig Earnings Tracker
         </p>
       </div>
@@ -69,14 +66,10 @@ const App = () => {
   if (access.loading) {
     lifecycleDebug("splash shown", { reason: "initial account access validation", userId: user.id });
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6 px-6">
-        <img
-          src={streexLogo}
-          alt="Streex"
-          className="w-44 sm:w-52 h-auto object-contain select-none animate-in fade-in duration-700"
-          draggable={false}
-        />
-        <p className="text-xs sm:text-sm uppercase tracking-[0.3em] text-muted-foreground/70 font-medium">
+      <div className="streex-premium-shell min-h-screen flex flex-col items-center justify-center gap-7 px-6 text-center">
+        <StreexMotionBackground density="splash" />
+        <AnimatedStreexLogo variant="splash" />
+        <p className="relative z-10 text-[11px] sm:text-xs uppercase tracking-[0.34em] text-white/55 font-semibold">
           Preparing Streex
         </p>
       </div>

@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.3.3";
+export const CURRENT_VERSION = "0.3.4";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.3.4",
+    date: "2026-06",
+    title: "Premium Auth + Splash Visual Refresh",
+    tags: ["polish"],
+    items: [
+      "Splash loading screens now use a premium dark Streex treatment with the official logo, yellow motion streaks, and subtle brand glow",
+      "Login, sign up, and password reset screens now share the same dark cinematic Streex visual language",
+      "Auth form behavior, Supabase session handling, protected routes, dashboard logic, earnings data, and backend architecture were not changed",
+      "Reduced-motion users receive a static premium splash and auth background without moving streak animations",
+    ],
+  },
   {
     version: "0.3.3",
     date: "2026-06",

@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, UserPlus, KeyRound } from "lucide-react";
+import { KeyRound, Lock, LogIn, Mail, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ChangelogDialog from "@/components/ChangelogDialog";
 import { CURRENT_VERSION, CHANGELOG, formatVersionLabel } from "@/lib/changelog";
-import streexLogo from "@/assets/streex-logo.png";
+import { AnimatedStreexLogo, StreexMotionBackground } from "@/components/StreexMotionBrand";
 
 interface AuthPageProps {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -60,23 +60,19 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
   }
 
   return (
-    <div className={`min-h-screen flex items-center justify-center px-4 ${isAdminRoute ? "bg-muted/30" : "bg-background"}`}>
-      <div className={`w-full max-w-sm space-y-6 ${isAdminRoute ? "rounded-2xl border border-border bg-card p-6 shadow-xl" : ""}`}>
-        <div className="text-center space-y-2">
+    <div className="streex-premium-shell min-h-screen flex items-center justify-center overflow-hidden px-5 py-8 sm:px-6">
+      <StreexMotionBackground density="auth" />
+      <div className="relative z-10 w-full max-w-sm space-y-6 rounded-[1.35rem] border border-white/10 bg-black/20 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-md sm:p-6">
+        <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <img
-              src={streexLogo}
-              alt="Streex"
-              className="w-32 sm:w-36 h-auto object-contain select-none"
-              draggable={false}
-            />
+            <AnimatedStreexLogo variant="auth" />
           </div>
           {isAdminRoute && (
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#E6CE20]">
               Admin Ops
             </p>
           )}
-          <p className="text-muted-foreground text-sm">
+          <p className="text-white/64 text-sm">
             {isForgot
               ? "Reset your password"
               : isAdminRoute
@@ -89,28 +85,40 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-            {!isForgot && (
+            <label className="relative block">
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/48" />
               <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
-                minLength={6}
-                autoComplete={isSignUp ? "new-password" : "current-password"}
+                autoComplete="email"
+                className="h-12 rounded-xl border-white/10 bg-white/[0.055] pl-10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] placeholder:text-white/38 focus-visible:ring-[#E6CE20]/45"
               />
+            </label>
+            {!isForgot && (
+              <label className="relative block">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/48" />
+                <Input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  autoComplete={isSignUp ? "new-password" : "current-password"}
+                  className="h-12 rounded-xl border-white/10 bg-white/[0.055] pl-10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] placeholder:text-white/38 focus-visible:ring-[#E6CE20]/45"
+                />
+              </label>
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button
+            type="submit"
+            className="h-12 w-full rounded-xl bg-[#E6CE20] font-bold text-black shadow-[0_14px_38px_rgba(230,206,32,0.24)] hover:bg-[#f3dc27] focus-visible:ring-[#E6CE20]/45"
+            disabled={loading}
+          >
             {isForgot ? (
               <><KeyRound className="h-4 w-4 mr-2" /> Send Reset Link</>
             ) : isSignUp ? (
@@ -121,14 +129,14 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
           </Button>
         </form>
 
-        <div className="space-y-2 text-center text-sm text-muted-foreground">
+        <div className="space-y-2 text-center text-sm text-white/56">
           {!isForgot && !isAdminRoute && (
             <p>
               {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
               <button
                 type="button"
                 onClick={() => setIsSignUp(!isSignUp)}
-                className="text-primary hover:underline font-medium"
+                className="font-semibold text-[#E6CE20] transition-colors hover:text-[#fff05a]"
               >
                 {isSignUp ? "Sign in" : "Sign up"}
               </button>
@@ -138,22 +146,22 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
             <button
               type="button"
               onClick={() => { setIsForgot(!isForgot); setIsSignUp(false); }}
-              className="text-primary hover:underline font-medium"
+              className="font-semibold text-[#E6CE20] transition-colors hover:text-[#fff05a]"
             >
               {isForgot ? "Back to sign in" : "Forgot password?"}
             </button>
           </p>
         </div>
 
-        <div className="text-center space-y-2 pt-4 border-t border-border/50">
+        <div className="text-center space-y-3 border-t border-white/10 pt-4">
           <button
             type="button"
             onClick={() => setChangelogOpen(true)}
-            className="text-[11px] font-mono text-muted-foreground/60 hover:text-primary transition-colors"
+            className="font-mono text-[11px] text-white/42 transition-colors hover:text-[#E6CE20]"
           >
             Streex {formatVersionLabel(CURRENT_VERSION)} · view changelog
           </button>
-          <div className="text-[10px] text-muted-foreground/40 space-y-0.5">
+          <div className="space-y-1 text-[10px] leading-relaxed text-white/32">
             {CHANGELOG[0].items.slice(0, 4).map((it, i) => (
               <p key={i}>• {it}</p>
             ))}

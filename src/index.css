@@ -195,6 +195,217 @@
   }
 }
 
+/* STREEX premium auth + splash motion */
+.streex-premium-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 100svh;
+  padding-top: max(env(safe-area-inset-top), 0px);
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  background:
+    radial-gradient(circle at 50% 36%, rgb(230 206 32 / 0.11), transparent 24rem),
+    radial-gradient(circle at 50% 100%, rgb(230 206 32 / 0.06), transparent 26rem),
+    linear-gradient(180deg, #030403 0%, #050605 46%, #000 100%);
+}
+
+.streex-motion-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.streex-motion-vignette {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(ellipse at center, transparent 0%, transparent 34%, rgb(0 0 0 / 0.54) 72%, rgb(0 0 0 / 0.9) 100%),
+    linear-gradient(90deg, rgb(0 0 0 / 0.9), transparent 30%, transparent 70%, rgb(0 0 0 / 0.9));
+}
+
+.streex-speed-field {
+  position: absolute;
+  left: -12%;
+  right: -12%;
+  top: 31%;
+  height: 42%;
+  transform: skewY(-1deg);
+}
+
+.streex-motion-background-auth .streex-speed-field {
+  top: 18%;
+  height: 38%;
+  opacity: 0.72;
+}
+
+.streex-speed-line {
+  position: absolute;
+  left: -30%;
+  width: 68%;
+  height: 1px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, transparent 0%, rgb(230 206 32 / 0.1) 18%, rgb(255 232 44 / 0.9) 55%, rgb(230 206 32 / 0.18) 78%, transparent 100%);
+  box-shadow:
+    0 0 12px rgb(230 206 32 / 0.34),
+    0 0 2px rgb(255 244 104 / 0.8);
+  opacity: 0.58;
+  animation: streex-line-rush 3.8s cubic-bezier(0.42, 0, 0.2, 1) infinite;
+}
+
+.streex-speed-line:nth-child(1) { top: 3%; height: 1px; animation-delay: -0.4s; animation-duration: 4.2s; }
+.streex-speed-line:nth-child(2) { top: 9%; width: 42%; animation-delay: -2.1s; animation-duration: 3.5s; opacity: 0.38; }
+.streex-speed-line:nth-child(3) { top: 15%; left: 22%; width: 50%; animation-delay: -1.3s; animation-direction: reverse; }
+.streex-speed-line:nth-child(4) { top: 21%; height: 2px; animation-delay: -2.6s; opacity: 0.72; }
+.streex-speed-line:nth-child(5) { top: 28%; left: 10%; width: 38%; animation-delay: -0.9s; animation-duration: 4.7s; }
+.streex-speed-line:nth-child(6) { top: 35%; animation-delay: -3.4s; animation-direction: reverse; opacity: 0.48; }
+.streex-speed-line:nth-child(7) { top: 43%; width: 58%; height: 2px; animation-delay: -1.8s; }
+.streex-speed-line:nth-child(8) { top: 49%; left: 28%; width: 44%; animation-delay: -2.9s; animation-duration: 3.1s; opacity: 0.42; }
+.streex-speed-line:nth-child(9) { top: 56%; animation-delay: -0.2s; animation-direction: reverse; }
+.streex-speed-line:nth-child(10) { top: 63%; width: 35%; animation-delay: -1.1s; opacity: 0.52; }
+.streex-speed-line:nth-child(11) { top: 70%; height: 2px; animation-delay: -3.1s; animation-duration: 4.4s; }
+.streex-speed-line:nth-child(12) { top: 78%; left: 18%; width: 52%; animation-delay: -2.3s; animation-direction: reverse; opacity: 0.44; }
+.streex-speed-line:nth-child(13) { top: 84%; width: 48%; animation-delay: -0.7s; }
+.streex-speed-line:nth-child(14) { top: 90%; left: 30%; width: 45%; animation-delay: -2.8s; opacity: 0.38; }
+.streex-speed-line:nth-child(15) { top: 96%; animation-delay: -1.7s; animation-direction: reverse; }
+.streex-speed-line:nth-child(16) { top: 33%; left: 44%; width: 24%; height: 2px; animation-delay: -0.1s; opacity: 0.9; }
+.streex-speed-line:nth-child(17) { top: 52%; left: 56%; width: 20%; height: 2px; animation-delay: -2.2s; opacity: 0.82; }
+.streex-speed-line:nth-child(18) { top: 73%; left: 48%; width: 28%; animation-delay: -1.4s; opacity: 0.7; }
+
+.streex-motion-logo-wrap {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: streex-logo-enter 820ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.streex-motion-logo-splash {
+  width: min(72vw, 24rem);
+}
+
+.streex-motion-logo-auth {
+  width: min(52vw, 13rem);
+}
+
+.streex-motion-logo-crop {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  aspect-ratio: 2.35 / 1;
+  overflow: hidden;
+  border-radius: 0.9rem;
+  background: #06110d;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.16),
+    inset 0 0 0 1px rgb(230 206 32 / 0.08),
+    0 18px 34px rgb(0 0 0 / 0.58);
+}
+
+.streex-motion-logo-splash .streex-motion-logo-crop {
+  border-radius: 1.25rem;
+}
+
+.streex-logo-glow {
+  position: absolute;
+  inset: 20% -18% 5%;
+  border-radius: 999px;
+  background: radial-gradient(ellipse at center, rgb(230 206 32 / 0.24), transparent 68%);
+  filter: blur(22px);
+  opacity: 0.82;
+  animation: streex-logo-pulse 4.6s ease-in-out infinite;
+}
+
+.streex-motion-logo-img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 138%;
+  max-width: none;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+  transform: translate(-50%, -51%);
+  filter:
+    drop-shadow(0 16px 26px rgb(0 0 0 / 0.68))
+    drop-shadow(0 0 18px rgb(230 206 32 / 0.12));
+}
+
+.streex-logo-underline {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 62%;
+  height: 4px;
+  margin-top: 0.65rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d8bd13, #ffec2e 42%, #e6ce20);
+  box-shadow:
+    0 0 12px rgb(230 206 32 / 0.72),
+    0 0 30px rgb(230 206 32 / 0.34);
+}
+
+.streex-motion-logo-splash .streex-logo-underline {
+  height: 6px;
+  margin-top: 0.85rem;
+}
+
+@keyframes streex-line-rush {
+  0% {
+    transform: translate3d(-18%, 0, 0) scaleX(0.45);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  74% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(178%, 0, 0) scaleX(1.1);
+    opacity: 0;
+  }
+}
+
+@keyframes streex-logo-enter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes streex-logo-pulse {
+  0%, 100% {
+    opacity: 0.58;
+    transform: scale(0.96);
+  }
+  45% {
+    opacity: 0.92;
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streex-speed-line,
+  .streex-motion-logo-wrap,
+  .streex-logo-glow {
+    animation: none !important;
+  }
+
+  .streex-speed-line {
+    opacity: 0.2;
+  }
+}
+
 /* ══════════════════════════════════════════════════════════════
    RPG MODE — Futuristic Tactical HUD
    ══════════════════════════════════════════════════════════════ */

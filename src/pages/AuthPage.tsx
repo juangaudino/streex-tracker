@@ -72,7 +72,7 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
               Admin Ops
             </p>
           )}
-          <p className="text-white/64 text-sm">
+          <p className="text-sm text-white/70">
             {isForgot
               ? "Reset your password"
               : isAdminRoute
@@ -86,7 +86,7 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label className="relative block">
-              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/48" />
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
               <Input
                 type="email"
                 placeholder="Email"
@@ -94,12 +94,12 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="h-12 rounded-xl border-white/10 bg-white/[0.055] pl-10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] placeholder:text-white/38 focus-visible:ring-[#E6CE20]/45"
+                className="h-12 rounded-xl border-white/10 bg-white/[0.055] pl-10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] placeholder:text-white/40 focus-visible:ring-[#E6CE20]/50"
               />
             </label>
             {!isForgot && (
               <label className="relative block">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/48" />
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
                 <Input
                   type="password"
                   placeholder="Password"
@@ -108,7 +108,7 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
                   required
                   minLength={6}
                   autoComplete={isSignUp ? "new-password" : "current-password"}
-                  className="h-12 rounded-xl border-white/10 bg-white/[0.055] pl-10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] placeholder:text-white/38 focus-visible:ring-[#E6CE20]/45"
+                  className="h-12 rounded-xl border-white/10 bg-white/[0.055] pl-10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] placeholder:text-white/40 focus-visible:ring-[#E6CE20]/50"
                 />
               </label>
             )}
@@ -116,7 +116,7 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
 
           <Button
             type="submit"
-            className="h-12 w-full rounded-xl bg-[#E6CE20] font-bold text-black shadow-[0_14px_38px_rgba(230,206,32,0.24)] hover:bg-[#f3dc27] focus-visible:ring-[#E6CE20]/45"
+            className="h-12 w-full rounded-xl bg-[#E6CE20] font-bold text-black shadow-[0_14px_38px_rgba(230,206,32,0.24)] hover:bg-[#f3dc27] focus-visible:ring-[#E6CE20]/50"
             disabled={loading}
           >
             {isForgot ? (
@@ -129,7 +129,7 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
           </Button>
         </form>
 
-        <div className="space-y-2 text-center text-sm text-white/56">
+        <div className="space-y-2 text-center text-sm text-white/70">
           {!isForgot && !isAdminRoute && (
             <p>
               {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
@@ -157,11 +157,11 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
           <button
             type="button"
             onClick={() => setChangelogOpen(true)}
-            className="font-mono text-[11px] text-white/42 transition-colors hover:text-[#E6CE20]"
+            className="font-mono text-[11px] text-white/50 transition-colors hover:text-[#E6CE20]"
           >
             Streex {formatVersionLabel(CURRENT_VERSION)} · view changelog
           </button>
-          <div className="space-y-1 text-[10px] leading-relaxed text-white/32">
+          <div className="space-y-1 text-[10px] leading-relaxed text-white/40">
             {CHANGELOG[0].items.slice(0, 4).map((it, i) => (
               <p key={i}>• {it}</p>
             ))}

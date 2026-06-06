@@ -41,7 +41,7 @@ const App = () => {
       <div className="streex-premium-shell min-h-screen flex flex-col items-center justify-center gap-7 px-6 text-center">
         <StreexMotionBackground density="splash" />
         <AnimatedStreexLogo variant="splash" />
-        <p className="relative z-10 text-[11px] sm:text-xs uppercase tracking-[0.34em] text-white/55 font-semibold">
+        <p className="relative z-10 text-[11px] sm:text-xs uppercase tracking-[0.34em] text-white/50 font-semibold">
           Gig Earnings Tracker
         </p>
       </div>
@@ -69,7 +69,7 @@ const App = () => {
       <div className="streex-premium-shell min-h-screen flex flex-col items-center justify-center gap-7 px-6 text-center">
         <StreexMotionBackground density="splash" />
         <AnimatedStreexLogo variant="splash" />
-        <p className="relative z-10 text-[11px] sm:text-xs uppercase tracking-[0.34em] text-white/55 font-semibold">
+        <p className="relative z-10 text-[11px] sm:text-xs uppercase tracking-[0.34em] text-white/50 font-semibold">
           Preparing Streex
         </p>
       </div>

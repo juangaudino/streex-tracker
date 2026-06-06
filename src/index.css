@@ -336,25 +336,6 @@
     drop-shadow(0 0 18px rgb(230 206 32 / 0.12));
 }
 
-.streex-logo-underline {
-  position: relative;
-  z-index: 2;
-  display: block;
-  width: 62%;
-  height: 4px;
-  margin-top: 0.65rem;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #d8bd13, #ffec2e 42%, #e6ce20);
-  box-shadow:
-    0 0 12px rgb(230 206 32 / 0.72),
-    0 0 30px rgb(230 206 32 / 0.34);
-}
-
-.streex-motion-logo-splash .streex-logo-underline {
-  height: 6px;
-  margin-top: 0.85rem;
-}
-
 @keyframes streex-line-rush {
   0% {
     transform: translate3d(-18%, 0, 0) scaleX(0.45);

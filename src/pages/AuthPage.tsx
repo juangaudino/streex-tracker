@@ -153,15 +153,15 @@ export default function AuthPage({ signIn, signUp }: AuthPageProps) {
           </p>
         </div>
 
-        <div className="text-center space-y-3 border-t border-white/10 pt-4">
+        <div className="space-y-3 rounded-2xl border border-white/10 bg-black/35 px-4 py-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
           <button
             type="button"
             onClick={() => setChangelogOpen(true)}
-            className="font-mono text-[11px] text-white/50 transition-colors hover:text-[#E6CE20]"
+            className="font-mono text-[11px] text-white/70 transition-colors hover:text-[#E6CE20]"
           >
             Streex {formatVersionLabel(CURRENT_VERSION)} · view changelog
           </button>
-          <div className="space-y-1 text-[10px] leading-relaxed text-white/40">
+          <div className="space-y-1.5 text-[10px] leading-relaxed text-white/55">
             {CHANGELOG[0].items.slice(0, 4).map((it, i) => (
               <p key={i}>• {it}</p>
             ))}

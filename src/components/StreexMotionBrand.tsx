@@ -39,7 +39,6 @@ export function AnimatedStreexLogo({ variant = "auth", className }: AnimatedStre
           draggable={false}
         />
       </span>
-      <span className="streex-logo-underline" aria-hidden="true" />
     </div>
   );
 }

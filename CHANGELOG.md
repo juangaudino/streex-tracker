@@ -2,6 +2,23 @@
 
 ## Beta Releases
 
+### Beta 0.4.1 — Velocity: Motorsport-Inspired Performance Theme
+
+### Added
+
+- New `Velocity` theme in Settings → Theme: yellow-first, high-contrast performance experience inspired by Formula 1 and Porsche Motorsport.
+- Black + yellow performance cards with leading-edge accent rails and a subtle racing pinstripe ambience.
+- Bold telemetry-style metrics, race-control primary buttons, and amplified streak/momentum highlights.
+- Achievements and records glow brighter under Velocity for a stronger celebration layer.
+
+### Accessibility
+
+- Reduced-motion users receive a fully static Velocity treatment without streak or hover animations.
+
+### Production Behavior
+
+- Visual layer only. Auth, earnings entry, shifts, achievements, XP, exports, Ask My Data, admin, and backend behavior are unchanged.
+
 ### Beta 0.4.0 — Signature: Flagship STREEX Theme
 
 ### Added

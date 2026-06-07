@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.3.4";
+export const CURRENT_VERSION = "0.4.0";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,20 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.4.0",
+    date: "2026-06",
+    title: "Signature — Flagship STREEX Theme",
+    tags: ["new", "feature"],
+    items: [
+      "New Signature theme: the official STREEX flagship visual identity",
+      "Premium dark surfaces with layered depth, glass-like cards, and a refined yellow accent system",
+      "Cinematic header and bottom nav with quiet hairline glows and mission-control polish",
+      "Subtle breathing horizon glow aligned with the animated splash and auth streak language",
+      "Reduced-motion users receive a static premium treatment without breathing animations",
+      "Visual layer only — auth, earnings, shifts, achievements, XP, exports, Ask My Data, and backend behavior unchanged",
+    ],
+  },
   {
     version: "0.3.4",
     date: "2026-06",

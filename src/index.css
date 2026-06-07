@@ -227,45 +227,47 @@
 
   /* Velocity — high-energy performance theme: yellow-first, motorsport-inspired */
   .velocity {
-    --background: 0 0% 4%;
+    --background: 48 12% 3%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 8%;
+    --card: 48 10% 6%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 8%;
+    --popover: 48 10% 6%;
     --popover-foreground: 0 0% 98%;
-    --primary: 51 80% 52%;
+    --primary: 51 96% 54%;
     --primary-foreground: 0 0% 4%;
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 51 70% 90%;
-    --muted: 0 0% 10%;
-    --muted-foreground: 51 12% 68%;
-    --accent: 51 80% 52%;
+    --secondary: 50 16% 10%;
+    --secondary-foreground: 48 28% 88%;
+    --muted: 48 10% 9%;
+    --muted-foreground: 48 10% 64%;
+    --accent: 51 92% 54%;
     --accent-foreground: 0 0% 4%;
     --destructive: 0 78% 52%;
     --destructive-foreground: 0 0% 100%;
-    --border: 51 30% 18%;
-    --input: 0 0% 14%;
-    --ring: 51 92% 56%;
+    --border: 49 28% 18%;
+    --input: 48 10% 12%;
+    --ring: 51 96% 54%;
     --sidebar-background: 0 0% 5%;
-    --sidebar-foreground: 51 30% 88%;
-    --sidebar-primary: 51 92% 56%;
+    --sidebar-foreground: 48 24% 86%;
+    --sidebar-primary: 51 96% 54%;
     --sidebar-primary-foreground: 0 0% 4%;
-    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent: 48 16% 10%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 51 30% 18%;
-    --sidebar-ring: 51 92% 56%;
+    --sidebar-border: 49 28% 18%;
+    --sidebar-ring: 51 96% 54%;
     --success: 142 70% 48%;
     --success-foreground: 0 0% 4%;
     --warning: 38 95% 56%;
     --warning-foreground: 0 0% 4%;
-    --gold: 51 92% 56%;
+    --gold: 51 96% 54%;
     --gold-foreground: 0 0% 6%;
     --purple: 270 70% 62%;
     --purple-foreground: 0 0% 100%;
-    --surface: 0 0% 9%;
-    --velocity-yellow: 51 92% 56%;
-    --velocity-yellow-hot: 48 100% 60%;
-    --velocity-ink: 0 0% 4%;
+    --surface: 48 11% 8%;
+    --velocity-yellow: 51 96% 54%;
+    --velocity-yellow-hot: 47 100% 62%;
+    --velocity-carbon: 48 14% 5%;
+    --velocity-track: 51 46% 18%;
+    --velocity-ink: 0 0% 3%;
   }
 }
 
@@ -1393,13 +1395,14 @@
 .velocity body,
 .velocity {
   background:
-    radial-gradient(ellipse 90% 60% at 50% -10%, hsl(var(--velocity-yellow) / 0.10) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 40% at 100% 100%, hsl(var(--velocity-yellow) / 0.05) 0%, transparent 60%),
-    linear-gradient(180deg, hsl(0 0% 5%) 0%, hsl(0 0% 3%) 100%);
+    linear-gradient(116deg, transparent 0 42%, hsl(var(--velocity-yellow) / 0.045) 42% 44%, transparent 44% 100%),
+    radial-gradient(ellipse 86% 38% at 72% -6%, hsl(var(--velocity-yellow) / 0.16) 0%, transparent 58%),
+    radial-gradient(ellipse 62% 42% at 0% 78%, hsl(var(--velocity-yellow) / 0.07) 0%, transparent 62%),
+    linear-gradient(180deg, hsl(var(--velocity-carbon)) 0%, hsl(0 0% 2%) 100%);
   background-attachment: fixed;
 }
 
-/* Racing pinstripe overlay: ultra-subtle diagonal speed lines */
+/* Racing instrumentation overlay: track grid + speed lanes, intentionally sharper than Signature */
 .velocity #root {
   position: relative;
   z-index: 0;
@@ -1410,64 +1413,117 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.04;
-  background-image: repeating-linear-gradient(
-    115deg,
-    transparent 0,
-    transparent 22px,
-    hsl(var(--velocity-yellow) / 0.5) 22px,
-    hsl(var(--velocity-yellow) / 0.5) 23px
-  );
+  opacity: 0.26;
+  background:
+    repeating-linear-gradient(116deg, transparent 0 34px, hsl(var(--velocity-yellow) / 0.10) 34px 35px, transparent 35px 74px),
+    repeating-linear-gradient(0deg, transparent 0 47px, hsl(0 0% 100% / 0.025) 47px 48px),
+    linear-gradient(90deg, hsl(0 0% 0% / 0.62), transparent 22%, transparent 78%, hsl(0 0% 0% / 0.72));
+  mask-image: linear-gradient(180deg, hsl(0 0% 0%) 0%, hsl(0 0% 0% / 0.58) 46%, transparent 100%);
+}
+.velocity #root::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3px;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, hsl(var(--velocity-yellow-hot) / 0.95) 18%, hsl(var(--velocity-yellow) / 0.55) 52%, transparent 100%);
+  box-shadow: 0 0 18px hsl(var(--velocity-yellow) / 0.34);
 }
 .velocity #root > * { position: relative; z-index: 1; }
 
-/* Performance cards: black slabs with a yellow leading edge */
+/* Performance cards: hard-edged carbon slabs with telemetry rails */
 .velocity .bg-card {
   background:
-    linear-gradient(160deg, hsl(0 0% 9%) 0%, hsl(0 0% 6%) 100%);
-  border-color: hsl(0 0% 100% / 0.06);
+    linear-gradient(135deg, hsl(var(--velocity-yellow) / 0.055) 0 14%, transparent 14% 100%),
+    repeating-linear-gradient(116deg, transparent 0 18px, hsl(0 0% 100% / 0.018) 18px 19px),
+    linear-gradient(160deg, hsl(48 11% 8%) 0%, hsl(0 0% 4%) 100%);
+  border-color: hsl(var(--velocity-track) / 0.72);
+  border-radius: 0.55rem;
   box-shadow:
-    inset 3px 0 0 0 hsl(var(--velocity-yellow) / 0.85),
-    0 1px 0 hsl(0 0% 100% / 0.03) inset,
-    0 12px 28px -16px hsl(0 0% 0% / 0.7);
+    inset 5px 0 0 0 hsl(var(--velocity-yellow) / 0.92),
+    inset 0 1px 0 hsl(0 0% 100% / 0.06),
+    0 14px 32px -18px hsl(0 0% 0% / 0.82),
+    0 0 0 1px hsl(var(--velocity-yellow) / 0.055);
   position: relative;
   overflow: hidden;
 }
 
-/* Subtle moving streak on hover for interactive surfaces */
 .velocity .bg-card::after {
   content: "";
   position: absolute;
-  top: 0;
-  left: -40%;
-  width: 30%;
-  height: 100%;
+  top: -18%;
+  left: -55%;
+  width: 48%;
+  height: 136%;
   background: linear-gradient(
     90deg,
     transparent,
-    hsl(var(--velocity-yellow) / 0.06),
+    hsl(var(--velocity-yellow-hot) / 0.16),
     transparent
   );
-  transform: skewX(-20deg);
-  transition: left 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
+  transform: skewX(-26deg);
+  transition: left 0.52s cubic-bezier(0.2, 0.8, 0.2, 1);
   pointer-events: none;
 }
-.velocity .bg-card:hover::after { left: 130%; }
+.velocity .bg-card:hover::after { left: 124%; }
+
+.velocity .rounded-xl.border,
+.velocity .rounded-2xl.border {
+  border-radius: 0.55rem;
+}
+
+.velocity header,
+.velocity nav.fixed {
+  background:
+    linear-gradient(90deg, hsl(0 0% 0% / 0.92), hsl(48 18% 6% / 0.92) 52%, hsl(0 0% 0% / 0.96));
+  border-color: hsl(var(--velocity-yellow) / 0.24);
+  box-shadow: 0 1px 0 hsl(var(--velocity-yellow) / 0.16), 0 14px 24px -22px hsl(var(--velocity-yellow) / 0.3);
+  backdrop-filter: blur(14px) saturate(1.15);
+}
+
+.velocity header::after,
+.velocity nav.fixed::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, hsl(var(--velocity-yellow) / 0.7), transparent);
+}
+
+.velocity header { position: sticky; top: 0; z-index: 20; }
+.velocity header::after { bottom: -1px; }
+.velocity nav.fixed::before { top: -1px; }
 
 /* Bold metric typography */
 .velocity .font-mono {
-  letter-spacing: -0.01em;
+  letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
+}
+
+.velocity .uppercase.tracking-wider,
+.velocity .uppercase.tracking-\[0\.25em\] {
+  letter-spacing: 0.24em;
+  color: hsl(48 18% 74%);
 }
 
 /* Primary buttons: high-contrast race-control feel */
 .velocity .bg-primary {
-  background: linear-gradient(180deg, hsl(var(--velocity-yellow-hot)) 0%, hsl(var(--velocity-yellow)) 100%);
+  background:
+    repeating-linear-gradient(116deg, hsl(0 0% 100% / 0.16) 0 8px, transparent 8px 18px),
+    linear-gradient(180deg, hsl(var(--velocity-yellow-hot)) 0%, hsl(var(--velocity-yellow)) 100%);
   color: hsl(var(--velocity-ink));
+  border-color: hsl(var(--velocity-yellow-hot) / 0.82);
+  border-radius: 0.5rem;
   box-shadow:
     0 1px 0 hsl(0 0% 100% / 0.35) inset,
     0 -1px 0 hsl(0 0% 0% / 0.25) inset,
-    0 8px 20px -10px hsl(var(--velocity-yellow) / 0.55);
+    0 0 0 1px hsl(var(--velocity-yellow) / 0.22),
+    0 12px 26px -12px hsl(var(--velocity-yellow) / 0.72);
 }
 .velocity .bg-primary:hover {
   filter: brightness(1.05);
@@ -1475,28 +1531,37 @@
 
 /* Stat card variant accents amped up */
 .velocity .border-gold\/30,
-.velocity .border-primary\/30 {
-  border-color: hsl(var(--velocity-yellow) / 0.5);
+.velocity .border-gold\/40,
+.velocity .border-primary\/30,
+.velocity .border-primary\/25 {
+  border-color: hsl(var(--velocity-yellow) / 0.62);
   box-shadow:
+    inset 5px 0 0 hsl(var(--velocity-yellow) / 0.88),
     inset 0 0 0 1px hsl(var(--velocity-yellow) / 0.08),
-    0 0 24px -10px hsl(var(--velocity-yellow) / 0.35);
+    0 0 28px -12px hsl(var(--velocity-yellow) / 0.48);
 }
 
 .velocity .text-gold,
 .velocity .text-primary {
   color: hsl(var(--velocity-yellow));
-  text-shadow: 0 0 18px hsl(var(--velocity-yellow) / 0.18);
+  text-shadow: 0 0 14px hsl(var(--velocity-yellow) / 0.26);
+}
+
+.velocity .text-muted-foreground {
+  color: hsl(var(--muted-foreground));
 }
 
 /* Achievements / records celebration layer */
 .velocity .achievement-legendary,
 .velocity .achievement-mythic {
-  border-color: hsl(var(--velocity-yellow) / 0.6);
+  border-color: hsl(var(--velocity-yellow) / 0.78);
   background:
-    linear-gradient(140deg, hsl(0 0% 10%) 0%, hsl(51 25% 10%) 100%);
+    repeating-linear-gradient(116deg, transparent 0 18px, hsl(var(--velocity-yellow) / 0.055) 18px 19px),
+    linear-gradient(140deg, hsl(0 0% 10%) 0%, hsl(51 30% 10%) 100%);
   box-shadow:
-    0 0 28px -8px hsl(var(--velocity-yellow) / 0.45),
-    inset 0 0 30px hsl(var(--velocity-yellow) / 0.06);
+    0 0 34px -8px hsl(var(--velocity-yellow) / 0.58),
+    inset 5px 0 0 hsl(var(--velocity-yellow) / 0.92),
+    inset 0 0 34px hsl(var(--velocity-yellow) / 0.08);
 }
 .velocity .achievement-epic {
   border-color: hsl(var(--velocity-yellow) / 0.35);
@@ -1509,16 +1574,26 @@
   background-image: linear-gradient(
     90deg,
     hsl(var(--velocity-yellow)) 0%,
-    hsl(var(--velocity-yellow-hot)) 100%
+    hsl(var(--velocity-yellow-hot)) 46%,
+    hsl(var(--velocity-yellow)) 100%
   );
+  box-shadow: 0 0 16px hsl(var(--velocity-yellow) / 0.28);
+}
+
+.velocity [role="progressbar"],
+.velocity .bg-muted.rounded-full {
+  background:
+    repeating-linear-gradient(90deg, hsl(0 0% 100% / 0.04) 0 9px, transparent 9px 18px),
+    hsl(0 0% 100% / 0.07);
+  border: 1px solid hsl(var(--velocity-yellow) / 0.08);
 }
 
 /* Inputs */
 .velocity input,
 .velocity select,
 .velocity textarea {
-  background: hsl(0 0% 7%);
-  border-color: hsl(0 0% 100% / 0.08);
+  background: hsl(48 10% 7%);
+  border-color: hsl(var(--velocity-track) / 0.65);
 }
 .velocity input:focus,
 .velocity select:focus,

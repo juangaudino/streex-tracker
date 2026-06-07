@@ -194,22 +194,22 @@ export default function SettingsPage() {
             onClick={() => setMode("velocity")}
             className={`relative w-full overflow-hidden rounded-xl border px-4 py-3 text-left transition ${
               mode === "velocity"
-                ? "border-[hsl(51_92%_56%/0.7)] bg-gradient-to-br from-[#0B0B0B] via-[#161310] to-[#0B0B0B] shadow-[inset_3px_0_0_0_hsl(51_92%_56%/0.9),0_18px_40px_-14px_hsl(51_92%_56%/0.35)]"
-                : "border-border bg-card hover:border-[hsl(51_92%_56%/0.5)]"
+                ? "border-[hsl(var(--primary)/0.78)] bg-[linear-gradient(116deg,hsl(var(--primary)/0.18)_0_16%,transparent_16%_100%),linear-gradient(135deg,hsl(var(--card)),hsl(var(--background)))] shadow-[inset_5px_0_0_0_hsl(var(--primary)/0.95),0_18px_40px_-14px_hsl(var(--primary)/0.45)]"
+                : "border-border bg-card hover:border-primary/50"
             }`}
           >
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-y-0 -left-1/3 w-2/3 bg-gradient-to-r from-transparent via-[hsl(51_92%_56%/0.10)] to-transparent"
+              className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(116deg,transparent_0_14px,hsl(var(--primary)/0.16)_14px_15px,transparent_15px_30px)] opacity-35"
             />
             <div className="relative flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <Gauge className="h-4 w-4 text-[hsl(51_92%_56%)]" />
+                  <Gauge className="h-4 w-4 text-primary" />
                   <span className="text-sm font-semibold tracking-wide text-foreground">
                     Velocity
                   </span>
-                  <span className="rounded-full border border-[hsl(51_92%_56%/0.5)] bg-[hsl(51_92%_56%/0.1)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[hsl(51_92%_60%)]">
+                  <span className="rounded-full border border-primary/55 bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
                     Performance
                   </span>
                 </div>

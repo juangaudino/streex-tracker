@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import type { StoreContext } from "./types";
 import { useToast } from "@/hooks/use-toast";
-import { Activity, Download, FileJson, Gamepad2, Monitor, Moon, Palette, Phone, Plus, Route, Save, Sparkles, Sun, Table, User, X } from "lucide-react";
+import { Activity, Download, FileJson, Gamepad2, Gauge, Monitor, Moon, Palette, Phone, Plus, Route, Save, Sparkles, Sun, Table, User, X } from "lucide-react";
 import { useTheme, ClassicVariant } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { buildJsonBackup, downloadEarningsCsv, downloadJsonBackup } from "@/lib/dataExport";
@@ -185,6 +185,36 @@ export default function SettingsPage() {
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
                   The official STREEX experience.
+                </p>
+              </div>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("velocity")}
+            className={`relative w-full overflow-hidden rounded-xl border px-4 py-3 text-left transition ${
+              mode === "velocity"
+                ? "border-[hsl(51_92%_56%/0.7)] bg-gradient-to-br from-[#0B0B0B] via-[#161310] to-[#0B0B0B] shadow-[inset_3px_0_0_0_hsl(51_92%_56%/0.9),0_18px_40px_-14px_hsl(51_92%_56%/0.35)]"
+                : "border-border bg-card hover:border-[hsl(51_92%_56%/0.5)]"
+            }`}
+          >
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 -left-1/3 w-2/3 bg-gradient-to-r from-transparent via-[hsl(51_92%_56%/0.10)] to-transparent"
+            />
+            <div className="relative flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <Gauge className="h-4 w-4 text-[hsl(51_92%_56%)]" />
+                  <span className="text-sm font-semibold tracking-wide text-foreground">
+                    Velocity
+                  </span>
+                  <span className="rounded-full border border-[hsl(51_92%_56%/0.5)] bg-[hsl(51_92%_56%/0.1)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[hsl(51_92%_60%)]">
+                    Performance
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Momentum in motion.
                 </p>
               </div>
             </div>

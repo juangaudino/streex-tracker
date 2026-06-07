@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.4.0";
+export const CURRENT_VERSION = "0.4.1";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,20 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.4.1",
+    date: "2026-06",
+    title: "Velocity — Motorsport-Inspired Performance Theme",
+    tags: ["new", "feature"],
+    items: [
+      "New Velocity theme: yellow-first, high-contrast performance experience inspired by F1 and Porsche Motorsport",
+      "Black + yellow performance cards with leading-edge accent rails and racing pinstripe ambience",
+      "Bold telemetry-style metrics, race-control primary buttons, and amplified streak/momentum highlights",
+      "Achievements and records glow brighter under Velocity for a stronger celebration layer",
+      "Reduced-motion users get a fully static Velocity treatment",
+      "Visual layer only — all business logic, data, and backend behavior unchanged",
+    ],
+  },
   {
     version: "0.4.0",
     date: "2026-06",

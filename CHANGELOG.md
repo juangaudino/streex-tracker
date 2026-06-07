@@ -2,6 +2,23 @@
 
 ## Beta Releases
 
+### Beta 0.4.0 — Signature: Flagship STREEX Theme
+
+### Added
+
+- New `Signature` theme: the official flagship STREEX visual identity, available in Settings → Theme.
+- Premium dark surfaces with layered depth, glass-like cards, refined hairline borders, and a subtle yellow accent system.
+- Cinematic header and bottom navigation with quiet brand glow and mission-control polish.
+- Gentle breathing horizon glow that visually aligns with the animated splash and login streak language.
+
+### Accessibility
+
+- Reduced-motion users receive the Signature look without the breathing horizon or pulse animations.
+
+### Production Behavior
+
+- Visual layer only. Auth, earnings entry, shifts, achievements, XP, exports, Ask My Data, admin, and backend architecture are unchanged.
+
 ### Beta 0.3.4 — Premium Auth + Splash Visual Refresh
 
 ### Changed

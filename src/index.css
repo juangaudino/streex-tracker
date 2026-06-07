@@ -182,6 +182,48 @@
     --drive-dashboard: 174 78% 45%;
     --drive-tail: 3 70% 50%;
   }
+
+  /* Signature — flagship STREEX experience: brand black, refined yellow, quiet confidence */
+  .signature {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 51 80% 52%;
+    --primary-foreground: 0 0% 6%;
+    --secondary: 0 0% 11%;
+    --secondary-foreground: 0 0% 92%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 70% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 16%;
+    --input: 0 0% 14%;
+    --ring: 51 80% 52%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 51 80% 52%;
+    --sidebar-primary-foreground: 0 0% 6%;
+    --sidebar-accent: 0 0% 11%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 16%;
+    --sidebar-ring: 51 80% 52%;
+    --success: 152 62% 48%;
+    --success-foreground: 0 0% 6%;
+    --warning: 38 92% 56%;
+    --warning-foreground: 0 0% 6%;
+    --gold: 51 88% 56%;
+    --gold-foreground: 0 0% 8%;
+    --purple: 262 60% 66%;
+    --purple-foreground: 0 0% 100%;
+    --surface: 0 0% 9%;
+    --signature-accent: 51 88% 56%;
+    --signature-edge: 0 0% 100%;
+  }
 }
 
 @layer base {
@@ -1032,3 +1074,271 @@
 .animate-celebration-particle:nth-child(3n) { --drift: 40px; }
 .animate-celebration-particle:nth-child(4n) { --drift: -15px; }
 .animate-celebration-particle:nth-child(5n) { --drift: 25px; }
+
+/* ══════════════════════════════════════════════════════════════
+   SIGNATURE — Flagship STREEX experience
+   Quiet confidence: premium dark surfaces, subtle yellow glow,
+   cinematic depth without flash.
+   ══════════════════════════════════════════════════════════════ */
+
+.signature body,
+.signature {
+  background:
+    radial-gradient(ellipse 120% 70% at 50% -10%, hsl(var(--signature-accent) / 0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 60% at 50% 110%, hsl(var(--signature-accent) / 0.035) 0%, transparent 55%),
+    linear-gradient(180deg, #0B0B0B 0%, #0A0A0A 50%, #070707 100%);
+  background-attachment: fixed;
+}
+
+.signature #root {
+  position: relative;
+  z-index: 0;
+}
+
+/* Ambient micro-grain for cinematic depth */
+.signature #root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+}
+
+/* Soft horizon glow at the bottom — signature yellow streak language */
+.signature #root::after {
+  content: "";
+  position: fixed;
+  left: 50%;
+  bottom: -28vh;
+  width: min(880px, 130vw);
+  height: 56vh;
+  z-index: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  opacity: 0.55;
+  background:
+    radial-gradient(ellipse at center, hsl(var(--signature-accent) / 0.10) 0%, hsl(var(--signature-accent) / 0.04) 35%, transparent 70%);
+  filter: blur(8px);
+  animation: signature-horizon-breathe 7.5s ease-in-out infinite;
+}
+
+.signature #root > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Glass-like premium cards ─── */
+.signature .bg-card {
+  background:
+    linear-gradient(
+      155deg,
+      hsl(0 0% 9% / 0.92) 0%,
+      hsl(0 0% 7% / 0.95) 55%,
+      hsl(0 0% 6% / 0.97) 100%
+    );
+  border-color: hsl(0 0% 100% / 0.06);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.04) inset,
+    0 0 0 1px hsl(0 0% 100% / 0.015),
+    0 20px 44px -20px hsl(0 0% 0% / 0.7),
+    0 8px 18px -10px hsl(0 0% 0% / 0.55);
+  backdrop-filter: blur(10px);
+}
+
+/* Refined hairline across the top of bordered cards */
+.signature .rounded-xl.border,
+.signature .rounded-2xl.border {
+  position: relative;
+}
+.signature .rounded-xl.border::before,
+.signature .rounded-2xl.border::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(0 0% 100% / 0.10) 30%,
+    hsl(var(--signature-accent) / 0.28) 50%,
+    hsl(0 0% 100% / 0.10) 70%,
+    transparent 100%
+  );
+  border-radius: 1px;
+  z-index: 1;
+  opacity: 0.7;
+}
+
+/* ─── Header & bottom nav: mission-control bars ─── */
+.signature header {
+  background:
+    linear-gradient(180deg, hsl(0 0% 5% / 0.92) 0%, hsl(0 0% 4% / 0.86) 100%);
+  border-color: hsl(0 0% 100% / 0.06);
+  box-shadow:
+    0 1px 0 hsl(var(--signature-accent) / 0.12),
+    0 8px 24px -12px hsl(0 0% 0% / 0.6);
+  backdrop-filter: blur(14px);
+}
+
+.signature nav.fixed {
+  background:
+    linear-gradient(0deg, hsl(0 0% 4% / 0.95) 0%, hsl(0 0% 6% / 0.88) 100%);
+  border-color: hsl(0 0% 100% / 0.06);
+  box-shadow:
+    0 -1px 0 hsl(var(--signature-accent) / 0.08),
+    0 -8px 24px -10px hsl(0 0% 0% / 0.55);
+  backdrop-filter: blur(14px);
+}
+
+/* ─── Typography: stronger hierarchy ─── */
+.signature h1,
+.signature h2,
+.signature .text-2xl.font-bold,
+.signature .text-3xl.font-bold {
+  letter-spacing: -0.022em;
+}
+
+.signature .uppercase.tracking-wider {
+  letter-spacing: 0.14em;
+  font-size: 0.65rem;
+  color: hsl(0 0% 62%);
+}
+
+.signature .text-muted-foreground {
+  color: hsl(0 0% 58%);
+}
+
+/* Brand accent text */
+.signature .text-primary,
+.signature .text-gold {
+  color: hsl(var(--signature-accent));
+  text-shadow: 0 0 14px hsl(var(--signature-accent) / 0.18);
+}
+
+.signature header .text-primary {
+  letter-spacing: 0.03em;
+  text-shadow:
+    0 0 10px hsl(var(--signature-accent) / 0.28),
+    0 0 26px hsl(var(--signature-accent) / 0.10);
+}
+
+/* Active nav icon gets a refined glow */
+.signature .text-primary svg {
+  filter: drop-shadow(0 0 6px hsl(var(--signature-accent) / 0.45));
+}
+
+/* ─── Buttons: luxury-performance feel ─── */
+.signature button.bg-primary {
+  background: linear-gradient(180deg, hsl(var(--signature-accent)) 0%, hsl(51 78% 46%) 100%);
+  color: hsl(0 0% 6%);
+  border: 1px solid hsl(var(--signature-accent) / 0.45);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.18) inset,
+    0 0 0 1px hsl(var(--signature-accent) / 0.18),
+    0 10px 22px -10px hsl(var(--signature-accent) / 0.45);
+  transition: box-shadow 220ms ease, transform 220ms ease;
+}
+.signature button.bg-primary:hover {
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.22) inset,
+    0 0 0 1px hsl(var(--signature-accent) / 0.32),
+    0 14px 30px -10px hsl(var(--signature-accent) / 0.55);
+}
+
+/* ─── Inputs ─── */
+.signature input,
+.signature select,
+.signature textarea {
+  background-color: hsl(0 0% 8% / 0.9);
+  border-color: hsl(0 0% 100% / 0.08);
+}
+.signature input:focus,
+.signature select:focus,
+.signature textarea:focus {
+  border-color: hsl(var(--signature-accent) / 0.45);
+  box-shadow:
+    0 0 0 1px hsl(var(--signature-accent) / 0.25),
+    0 0 18px hsl(var(--signature-accent) / 0.10);
+}
+
+/* ─── Progress / accent surfaces ─── */
+.signature .bg-primary:not(button):not(a) {
+  box-shadow:
+    0 0 6px hsl(var(--signature-accent) / 0.35),
+    0 0 18px hsl(var(--signature-accent) / 0.12);
+}
+.signature .bg-gold:not(button):not(a) {
+  box-shadow:
+    0 0 6px hsl(var(--signature-accent) / 0.4),
+    0 0 18px hsl(var(--signature-accent) / 0.14);
+}
+
+/* ─── Accent borders ─── */
+.signature .border-gold\/30,
+.signature .border-gold\/40,
+.signature .border-primary\/30 {
+  border-color: hsl(var(--signature-accent) / 0.28);
+  box-shadow:
+    0 0 14px hsl(var(--signature-accent) / 0.08),
+    inset 0 0 18px hsl(var(--signature-accent) / 0.03);
+}
+
+/* ─── Achievement rarity (refined for Signature) ─── */
+.signature .achievement-common { border-color: hsl(0 0% 100% / 0.10); }
+.signature .achievement-rare {
+  border-color: hsl(200 60% 60% / 0.30);
+  box-shadow: 0 0 12px hsl(200 60% 60% / 0.08);
+}
+.signature .achievement-epic {
+  border-color: hsl(var(--purple) / 0.32);
+  box-shadow: 0 0 14px hsl(var(--purple) / 0.10);
+}
+.signature .achievement-legendary {
+  border-color: hsl(var(--signature-accent) / 0.42);
+  box-shadow:
+    0 0 18px hsl(var(--signature-accent) / 0.12),
+    inset 0 0 22px hsl(var(--signature-accent) / 0.05);
+}
+.signature .achievement-mythic {
+  border-color: hsl(330 60% 60% / 0.40);
+  box-shadow: 0 0 20px hsl(330 60% 60% / 0.10);
+  background: linear-gradient(145deg, hsl(0 0% 7%) 0%, hsl(320 18% 9%) 100%);
+}
+
+/* ─── Scrollbar ─── */
+.signature ::-webkit-scrollbar { width: 4px; }
+.signature ::-webkit-scrollbar-track { background: transparent; }
+.signature ::-webkit-scrollbar-thumb {
+  background: hsl(0 0% 100% / 0.08);
+  border-radius: 4px;
+}
+.signature ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--signature-accent) / 0.28);
+}
+
+/* ─── Signature motion: gentle breathing accents ─── */
+@keyframes signature-horizon-breathe {
+  0%, 100% { opacity: 0.42; transform: translateX(-50%) scale(0.98); }
+  50%      { opacity: 0.62; transform: translateX(-50%) scale(1.02); }
+}
+
+@keyframes signature-soft-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--signature-accent) / 0.0); }
+  50%      { box-shadow: 0 0 22px 2px hsl(var(--signature-accent) / 0.14); }
+}
+
+.signature .signature-pulse {
+  animation: signature-soft-pulse 4.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signature #root::after,
+  .signature .signature-pulse {
+    animation: none !important;
+  }
+}

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import type { StoreContext } from "./types";
 import { useToast } from "@/hooks/use-toast";
-import { Activity, Download, FileJson, Gamepad2, Monitor, Moon, Palette, Phone, Plus, Route, Save, Sun, Table, User, X } from "lucide-react";
+import { Activity, Download, FileJson, Gamepad2, Monitor, Moon, Palette, Phone, Plus, Route, Save, Sparkles, Sun, Table, User, X } from "lucide-react";
 import { useTheme, ClassicVariant } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { buildJsonBackup, downloadEarningsCsv, downloadJsonBackup } from "@/lib/dataExport";
@@ -159,6 +159,36 @@ export default function SettingsPage() {
             <Palette className="h-4 w-4" />
             Theme
           </label>
+          <button
+            type="button"
+            onClick={() => setMode("signature")}
+            className={`relative w-full overflow-hidden rounded-xl border px-4 py-3 text-left transition ${
+              mode === "signature"
+                ? "border-[hsl(50_92%_52%/0.6)] bg-gradient-to-br from-[#0B0B0B] via-[#101010] to-[#0B0B0B] shadow-[0_0_0_1px_hsl(50_92%_52%/0.25),0_18px_40px_-12px_hsl(50_92%_52%/0.25)]"
+                : "border-border bg-card hover:border-[hsl(50_92%_52%/0.4)]"
+            }`}
+          >
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 -left-1/3 w-2/3 bg-gradient-to-r from-transparent via-[hsl(50_92%_52%/0.08)] to-transparent"
+            />
+            <div className="relative flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-[hsl(50_92%_55%)]" />
+                  <span className="text-sm font-semibold tracking-wide text-foreground">
+                    Signature
+                  </span>
+                  <span className="rounded-full border border-[hsl(50_92%_52%/0.4)] bg-[hsl(50_92%_52%/0.08)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[hsl(50_92%_60%)]">
+                    Flagship
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  The official STREEX experience.
+                </p>
+              </div>
+            </div>
+          </button>
           <div className="grid grid-cols-3 gap-2">
             <Button
               variant={mode === "classic" ? "default" : "outline"}

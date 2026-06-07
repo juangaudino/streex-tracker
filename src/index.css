@@ -224,6 +224,49 @@
     --signature-accent: 51 88% 56%;
     --signature-edge: 0 0% 100%;
   }
+
+  /* Velocity — high-energy performance theme: yellow-first, motorsport-inspired */
+  .velocity {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 51 80% 52%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 51 70% 90%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 51 12% 68%;
+    --accent: 51 80% 52%;
+    --accent-foreground: 0 0% 4%;
+    --destructive: 0 78% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 51 30% 18%;
+    --input: 0 0% 14%;
+    --ring: 51 92% 56%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 51 30% 88%;
+    --sidebar-primary: 51 92% 56%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 51 30% 18%;
+    --sidebar-ring: 51 92% 56%;
+    --success: 142 70% 48%;
+    --success-foreground: 0 0% 4%;
+    --warning: 38 95% 56%;
+    --warning-foreground: 0 0% 4%;
+    --gold: 51 92% 56%;
+    --gold-foreground: 0 0% 6%;
+    --purple: 270 70% 62%;
+    --purple-foreground: 0 0% 100%;
+    --surface: 0 0% 9%;
+    --velocity-yellow: 51 92% 56%;
+    --velocity-yellow-hot: 48 100% 60%;
+    --velocity-ink: 0 0% 4%;
+  }
 }
 
 @layer base {
@@ -1340,5 +1383,188 @@
   .signature #root::after,
   .signature .signature-pulse {
     animation: none !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   VELOCITY — Momentum in motion (motorsport-inspired)
+   ══════════════════════════════════════════════════════════════ */
+
+.velocity body,
+.velocity {
+  background:
+    radial-gradient(ellipse 90% 60% at 50% -10%, hsl(var(--velocity-yellow) / 0.10) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, hsl(var(--velocity-yellow) / 0.05) 0%, transparent 60%),
+    linear-gradient(180deg, hsl(0 0% 5%) 0%, hsl(0 0% 3%) 100%);
+  background-attachment: fixed;
+}
+
+/* Racing pinstripe overlay: ultra-subtle diagonal speed lines */
+.velocity #root {
+  position: relative;
+  z-index: 0;
+}
+.velocity #root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: repeating-linear-gradient(
+    115deg,
+    transparent 0,
+    transparent 22px,
+    hsl(var(--velocity-yellow) / 0.5) 22px,
+    hsl(var(--velocity-yellow) / 0.5) 23px
+  );
+}
+.velocity #root > * { position: relative; z-index: 1; }
+
+/* Performance cards: black slabs with a yellow leading edge */
+.velocity .bg-card {
+  background:
+    linear-gradient(160deg, hsl(0 0% 9%) 0%, hsl(0 0% 6%) 100%);
+  border-color: hsl(0 0% 100% / 0.06);
+  box-shadow:
+    inset 3px 0 0 0 hsl(var(--velocity-yellow) / 0.85),
+    0 1px 0 hsl(0 0% 100% / 0.03) inset,
+    0 12px 28px -16px hsl(0 0% 0% / 0.7);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle moving streak on hover for interactive surfaces */
+.velocity .bg-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -40%;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--velocity-yellow) / 0.06),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
+  pointer-events: none;
+}
+.velocity .bg-card:hover::after { left: 130%; }
+
+/* Bold metric typography */
+.velocity .font-mono {
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Primary buttons: high-contrast race-control feel */
+.velocity .bg-primary {
+  background: linear-gradient(180deg, hsl(var(--velocity-yellow-hot)) 0%, hsl(var(--velocity-yellow)) 100%);
+  color: hsl(var(--velocity-ink));
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.35) inset,
+    0 -1px 0 hsl(0 0% 0% / 0.25) inset,
+    0 8px 20px -10px hsl(var(--velocity-yellow) / 0.55);
+}
+.velocity .bg-primary:hover {
+  filter: brightness(1.05);
+}
+
+/* Stat card variant accents amped up */
+.velocity .border-gold\/30,
+.velocity .border-primary\/30 {
+  border-color: hsl(var(--velocity-yellow) / 0.5);
+  box-shadow:
+    inset 0 0 0 1px hsl(var(--velocity-yellow) / 0.08),
+    0 0 24px -10px hsl(var(--velocity-yellow) / 0.35);
+}
+
+.velocity .text-gold,
+.velocity .text-primary {
+  color: hsl(var(--velocity-yellow));
+  text-shadow: 0 0 18px hsl(var(--velocity-yellow) / 0.18);
+}
+
+/* Achievements / records celebration layer */
+.velocity .achievement-legendary,
+.velocity .achievement-mythic {
+  border-color: hsl(var(--velocity-yellow) / 0.6);
+  background:
+    linear-gradient(140deg, hsl(0 0% 10%) 0%, hsl(51 25% 10%) 100%);
+  box-shadow:
+    0 0 28px -8px hsl(var(--velocity-yellow) / 0.45),
+    inset 0 0 30px hsl(var(--velocity-yellow) / 0.06);
+}
+.velocity .achievement-epic {
+  border-color: hsl(var(--velocity-yellow) / 0.35);
+}
+
+/* Progress bars: race telemetry */
+.velocity [role="progressbar"] > div,
+.velocity .bg-primary\/20,
+.velocity .bg-gradient-to-r {
+  background-image: linear-gradient(
+    90deg,
+    hsl(var(--velocity-yellow)) 0%,
+    hsl(var(--velocity-yellow-hot)) 100%
+  );
+}
+
+/* Inputs */
+.velocity input,
+.velocity select,
+.velocity textarea {
+  background: hsl(0 0% 7%);
+  border-color: hsl(0 0% 100% / 0.08);
+}
+.velocity input:focus,
+.velocity select:focus,
+.velocity textarea:focus {
+  border-color: hsl(var(--velocity-yellow) / 0.55);
+  box-shadow: 0 0 0 1px hsl(var(--velocity-yellow) / 0.35);
+}
+
+/* Scrollbar */
+.velocity ::-webkit-scrollbar { width: 6px; height: 6px; }
+.velocity ::-webkit-scrollbar-track { background: transparent; }
+.velocity ::-webkit-scrollbar-thumb {
+  background: hsl(var(--velocity-yellow) / 0.35);
+  border-radius: 999px;
+}
+.velocity ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--velocity-yellow) / 0.55);
+}
+
+/* Streak / momentum pulse */
+@keyframes velocity-streak {
+  0% { transform: translateX(-120%) skewX(-20deg); opacity: 0; }
+  40% { opacity: 0.9; }
+  100% { transform: translateX(220%) skewX(-20deg); opacity: 0; }
+}
+.velocity .velocity-streak {
+  position: relative;
+  overflow: hidden;
+}
+.velocity .velocity-streak::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--velocity-yellow) / 0.25),
+    transparent
+  );
+  animation: velocity-streak 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .velocity .bg-card::after,
+  .velocity .velocity-streak::before {
+    animation: none !important;
+    transition: none !important;
   }
 }

@@ -224,6 +224,49 @@
     --signature-accent: 51 88% 56%;
     --signature-edge: 0 0% 100%;
   }
+
+  /* Velocity — high-energy performance theme: yellow-first, motorsport-inspired */
+  .velocity {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 51 80% 52%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 51 70% 90%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 51 12% 68%;
+    --accent: 51 80% 52%;
+    --accent-foreground: 0 0% 4%;
+    --destructive: 0 78% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 51 30% 18%;
+    --input: 0 0% 14%;
+    --ring: 51 92% 56%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 51 30% 88%;
+    --sidebar-primary: 51 92% 56%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 51 30% 18%;
+    --sidebar-ring: 51 92% 56%;
+    --success: 142 70% 48%;
+    --success-foreground: 0 0% 4%;
+    --warning: 38 95% 56%;
+    --warning-foreground: 0 0% 4%;
+    --gold: 51 92% 56%;
+    --gold-foreground: 0 0% 6%;
+    --purple: 270 70% 62%;
+    --purple-foreground: 0 0% 100%;
+    --surface: 0 0% 9%;
+    --velocity-yellow: 51 92% 56%;
+    --velocity-yellow-hot: 48 100% 60%;
+    --velocity-ink: 0 0% 4%;
+  }
 }
 
 @layer base {

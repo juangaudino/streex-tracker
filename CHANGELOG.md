@@ -2,6 +2,23 @@
 
 ## Beta Releases
 
+### Beta 0.4.2 — iOS Safe-Area Theme Background Fix
+
+### Fixed
+
+- iOS Safari and installed PWA safe-area backgrounds now inherit the active Streex theme background instead of exposing a white strip.
+- The document root, body, and app root now share a theme-aware app background token.
+- Live `theme-color` metadata now updates from the active theme background when users switch themes.
+
+### Changed
+
+- PWA viewport metadata now uses `viewport-fit=cover` so Streex can render behind iOS safe areas.
+- Manifest launch colors now use the dark Streex brand background as a safer default before the live theme takes over.
+
+### Production Behavior
+
+- No auth logic, Supabase behavior, routing, dashboard calculations, earnings data, or backend architecture changed.
+
 ### Beta 0.4.1 — Velocity: Motorsport-Inspired Performance Theme
 
 ### Added

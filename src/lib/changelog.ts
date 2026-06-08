@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.4.1";
+export const CURRENT_VERSION = "0.4.2";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.4.2",
+    date: "2026-06",
+    title: "iOS Safe-Area Theme Background Fix",
+    tags: ["fix", "polish"],
+    items: [
+      "iOS Safari and installed PWA safe-area backgrounds now inherit the active Streex theme background instead of exposing a white strip",
+      "Document root, body, and app root now share a theme-aware app background token",
+      "Live theme-color metadata now updates from the active theme background when users switch themes",
+      "Viewport and PWA metadata now support full safe-area coverage without changing auth, routing, dashboard, earnings, or backend behavior",
+    ],
+  },
   {
     version: "0.4.1",
     date: "2026-06",

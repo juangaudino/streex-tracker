@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`Beta 0.3.4 - Premium Auth + Splash Visual Refresh`
+`Beta 0.4.2 - iOS Safe-Area Theme Background Fix`
 
 Source of truth:
 
@@ -65,6 +65,9 @@ Beta highlights:
 - 0.3.2 Full Focus mini-cards now use same-weekday historical rank and compact live conditions instead of redundant shift/momentum status
 - 0.3.3 End Day report export now better matches the visible Daily Report and uses cleaner next-milestone copy
 - 0.3.4 Splash and auth screens now use a premium dark Streex visual treatment with motion streaks and reduced-motion support
+- 0.4.0 Signature theme added as the flagship STREEX visual identity
+- 0.4.1 Velocity theme added as a motorsport-inspired performance theme
+- 0.4.2 iOS Safari/PWA safe areas now inherit the active theme background instead of exposing a white strip
 
 ## Pattern Intelligence Source Truth
 

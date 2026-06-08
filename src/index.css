@@ -7,6 +7,7 @@
 @layer base {
   :root {
     --radius: 0.75rem;
+    --app-bg: #050605;
   }
 
   /* Classic Light */
@@ -269,6 +270,15 @@
     --velocity-track: 51 46% 18%;
     --velocity-ink: 0 0% 3%;
   }
+
+  .light,
+  .dark,
+  .rpg,
+  .night-drive,
+  .signature,
+  .velocity {
+    --app-bg: hsl(var(--background));
+  }
 }
 
 @layer base {
@@ -276,9 +286,28 @@
     @apply border-border;
   }
 
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    margin: 0;
+    background: var(--app-bg);
+  }
+
+  html {
+    min-height: 100%;
+    background-color: var(--app-bg);
+  }
+
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply text-foreground font-sans antialiased;
+    background-color: var(--app-bg);
     transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  #root {
+    min-height: 100svh;
+    background-color: var(--app-bg);
   }
 }
 

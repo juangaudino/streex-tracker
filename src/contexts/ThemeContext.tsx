@@ -31,6 +31,49 @@ function getSystemDark() {
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
+function hslToHex(hslValue: string) {
+  const parts = hslValue.trim().split(/\s+/).map((part) => Number.parseFloat(part));
+  if (parts.length < 3 || parts.some((part) => Number.isNaN(part))) return "#050605";
+
+  const [h, sRaw, lRaw] = parts;
+  const s = sRaw / 100;
+  const l = lRaw / 100;
+  const chroma = (1 - Math.abs(2 * l - 1)) * s;
+  const hue = ((h % 360) + 360) % 360;
+  const x = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const m = l - chroma / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  if (hue < 60) [r, g, b] = [chroma, x, 0];
+  else if (hue < 120) [r, g, b] = [x, chroma, 0];
+  else if (hue < 180) [r, g, b] = [0, chroma, x];
+  else if (hue < 240) [r, g, b] = [0, x, chroma];
+  else if (hue < 300) [r, g, b] = [x, 0, chroma];
+  else [r, g, b] = [chroma, 0, x];
+
+  return [r, g, b]
+    .map((channel) => Math.round((channel + m) * 255).toString(16).padStart(2, "0"))
+    .join("")
+    .replace(/^/, "#");
+}
+
+function updateThemeColorMeta() {
+  const root = document.documentElement;
+  const background = getComputedStyle(root).getPropertyValue("--background");
+  const color = hslToHex(background);
+  let themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+
+  if (!themeColor) {
+    themeColor = document.createElement("meta");
+    themeColor.name = "theme-color";
+    document.head.appendChild(themeColor);
+  }
+
+  themeColor.content = color;
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>(() => {
     return (localStorage.getItem("streex_theme_mode") as ThemeMode) || "classic";
@@ -72,6 +115,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       root.classList.add(isDark ? "dark" : "light");
     }
+    requestAnimationFrame(updateThemeColorMeta);
   }, [mode, isDark]);
 
   function setMode(m: ThemeMode) {

@@ -1524,7 +1524,6 @@
   background: linear-gradient(90deg, transparent, hsl(var(--velocity-yellow) / 0.7), transparent);
 }
 
-.velocity header { position: sticky; top: 0; z-index: 50; }
 .velocity header::after { bottom: -1px; }
 .velocity nav.fixed::before { top: -1px; }
 

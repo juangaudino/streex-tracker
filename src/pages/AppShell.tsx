@@ -81,13 +81,10 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
     <div className="min-h-screen flex flex-col">
       <AchievementToastContainer />
       <CelebrationContainer />
-      <header
-        className="sticky top-0 z-50 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 flex items-center gap-3 transition-all"
-        style={{
-          paddingTop: `calc(env(safe-area-inset-top, 0px) + ${fullFocusShell ? "0.25rem" : "0.375rem"})`,
-          paddingBottom: fullFocusShell ? "0.25rem" : "0.375rem",
-        }}
-      >
+      <header className={cn(
+        "border-b border-border px-4 flex items-center gap-3 transition-all",
+        fullFocusShell ? "py-1" : "py-1.5",
+      )}>
         <img
           src={streexLogo}
           alt="Streex"

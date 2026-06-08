@@ -141,7 +141,7 @@ function getWeekdayRankWindow(weeks: WeekRecord[], dayName: string, date: string
         : `${formatCurrency(Math.abs(difference), currencySymbol)} behind you`;
 
     return {
-      label: `#${rank} · ${formatDate(day.date)}`,
+      label: `#${rank} · ${day.date}`,
       value: formatCurrency(day.total, currencySymbol),
       helper,
     };

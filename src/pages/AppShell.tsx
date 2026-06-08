@@ -78,7 +78,7 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-[100dvh] flex flex-col overflow-hidden">
       <AchievementToastContainer />
       <CelebrationContainer />
       <header className={cn(

@@ -189,36 +189,7 @@ export default function SettingsPage() {
               </div>
             </div>
           </button>
-          <button
-            type="button"
-            onClick={() => setMode("velocity")}
-            className={`relative w-full overflow-hidden rounded-xl border px-4 py-3 text-left transition ${
-              mode === "velocity"
-                ? "border-[hsl(var(--primary)/0.78)] bg-[linear-gradient(116deg,hsl(var(--primary)/0.18)_0_16%,transparent_16%_100%),linear-gradient(135deg,hsl(var(--card)),hsl(var(--background)))] shadow-[inset_5px_0_0_0_hsl(var(--primary)/0.95),0_18px_40px_-14px_hsl(var(--primary)/0.45)]"
-                : "border-border bg-card hover:border-primary/50"
-            }`}
-          >
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(116deg,transparent_0_14px,hsl(var(--primary)/0.16)_14px_15px,transparent_15px_30px)] opacity-35"
-            />
-            <div className="relative flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <Gauge className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold tracking-wide text-foreground">
-                    Velocity
-                  </span>
-                  <span className="rounded-full border border-primary/55 bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
-                    Performance
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Momentum in motion.
-                </p>
-              </div>
-            </div>
-          </button>
+          {/* Velocity theme intentionally hidden — kept in code (ThemeContext + index.css) for future reactivation. */}
           <div className="grid grid-cols-3 gap-2">
             <Button
               variant={mode === "classic" ? "default" : "outline"}

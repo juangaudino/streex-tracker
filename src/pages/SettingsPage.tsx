@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import type { StoreContext } from "./types";
 import { useToast } from "@/hooks/use-toast";
-import { Activity, Download, FileJson, Gamepad2, Gauge, Monitor, Moon, Palette, Phone, Plus, Route, Save, Sparkles, Sun, Table, User, X } from "lucide-react";
+import { Activity, Download, FileJson, Gamepad2, Monitor, Moon, Palette, Phone, Plus, Route, Save, Sparkles, Sun, Table, User, X } from "lucide-react";
 import { useTheme, ClassicVariant } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { buildJsonBackup, downloadEarningsCsv, downloadJsonBackup } from "@/lib/dataExport";

@@ -45,6 +45,7 @@ import ShiftIntelligencePanel from "@/components/ShiftIntelligencePanel";
 import { getWeekdayHistoricalRank } from "@/lib/career";
 import { useDriverUtility } from "@/hooks/useDriverUtility";
 import MetricDrillDownSheet, { type MetricDrillDownDetail } from "@/components/MetricDrillDownSheet";
+import type { WeekRecord } from "@/lib/types";
 
 type PulseState = "calm" | "steady" | "strong" | "record" | "streak";
 
@@ -114,6 +115,37 @@ function FocusMetric({
       {content}
     </div>
   );
+}
+
+function getWeekdayRankWindow(weeks: WeekRecord[], dayName: string, date: string, currentTotal: number, currencySymbol: string) {
+  const ranked = weeks
+    .flatMap((week) => week.entries)
+    .filter((day) => day.dayName === dayName && dayTotal(day) > 0)
+    .map((day) => ({
+      date: day.date,
+      total: day.date === date ? currentTotal : dayTotal(day),
+    }))
+    .sort((a, b) => b.total - a.total || a.date.localeCompare(b.date));
+
+  const currentIndex = ranked.findIndex((day) => day.date === date);
+  if (currentIndex < 0) return [];
+
+  return ranked.slice(Math.max(0, currentIndex - 3), currentIndex + 4).map((day, index) => {
+    const absoluteIndex = Math.max(0, currentIndex - 3) + index;
+    const rank = absoluteIndex + 1;
+    const difference = day.total - currentTotal;
+    const helper = day.date === date
+      ? "Today"
+      : difference > 0
+        ? `${formatCurrency(difference, currencySymbol)} ahead`
+        : `${formatCurrency(Math.abs(difference), currencySymbol)} behind you`;
+
+    return {
+      label: `#${rank} · ${formatDate(day.date)}`,
+      value: formatCurrency(day.total, currencySymbol),
+      helper,
+    };
+  });
 }
 
 export default function DashboardPage() {
@@ -350,6 +382,9 @@ export default function DashboardPage() {
       : `#${historicalRank.rank} of ${historicalRank.total}`
     : "Building";
   const rankSub = historicalRank.total >= 3 ? "same weekday" : "more history needed";
+  const rankWindow = todayEntry
+    ? getWeekdayRankWindow(weeks, todayEntry.dayName, todayEntry.date, todayTotal, sym)
+    : [];
   const weather = driverUtility.data?.weather;
   const traffic = driverUtility.data?.traffic;
   const weatherLive = weather?.status === "live";
@@ -373,21 +408,18 @@ export default function DashboardPage() {
     eyebrow: "Goal Progress",
     title: "How your weekly goal is tracking",
     summary: weeklyHoursGoal > 0
-      ? "This card shows your commitment goal because you have an hours target set for this week."
-      : "This card shows how much of your weekly earnings target is already covered.",
-    stats: weeklyHoursGoal > 0
-      ? [
-          { label: "Hours worked", value: `${weeklyHours.toFixed(1)}h`, helper: "Tracked shift time this week" },
-          { label: "Hours target", value: `${weeklyHoursGoal}h`, helper: "Your weekly commitment goal" },
-          { label: "Progress", value: `${hoursPct.toFixed(1)}%`, helper: "Worked hours compared with target hours" },
-          { label: "Remaining", value: `${Math.max(0, weeklyHoursGoal - weeklyHours).toFixed(1)}h`, helper: "Time left to reach the hours goal" },
-        ]
-      : [
-          { label: "Week total", value: formatCurrency(total, sym), helper: "Current earnings this week" },
-          { label: "Target", value: formatCurrency(goal, sym), helper: "Your weekly earnings goal" },
-          { label: "Progress", value: `${pct.toFixed(1)}%`, helper: "Week total compared with target" },
-          { label: "Remaining", value: formatCurrency(remaining, sym), helper: "Money left to reach the goal" },
-        ],
+      ? "This explains your money target and your commitment target side by side."
+      : "This explains your weekly earnings target. Hours are shown as tracked time, but no hours goal is set yet.",
+    stats: [
+      { label: "Week total", value: formatCurrency(total, sym), helper: "Current earnings this week" },
+      { label: "Earnings target", value: formatCurrency(goal, sym), helper: "Your weekly money goal" },
+      { label: "Money progress", value: `${pct.toFixed(1)}%`, helper: "Week total compared with target" },
+      { label: "Money left", value: formatCurrency(remaining, sym), helper: pct >= 100 ? "Money goal reached" : "Left to reach the money goal" },
+      { label: "Hours worked", value: `${weeklyHours.toFixed(1)}h`, helper: "Tracked shift time this week" },
+      { label: "Hours target", value: weeklyHoursGoal > 0 ? `${weeklyHoursGoal}h` : "Not set", helper: "Your weekly commitment goal" },
+      { label: "Hours progress", value: weeklyHoursGoal > 0 ? `${hoursPct.toFixed(1)}%` : "—", helper: weeklyHoursGoal > 0 ? "Worked hours compared with target hours" : "Set a target to track commitment progress" },
+      { label: "Hours left", value: weeklyHoursGoal > 0 ? `${Math.max(0, weeklyHoursGoal - weeklyHours).toFixed(1)}h` : "—", helper: weeklyHoursGoal > 0 && hoursPct >= 100 ? "Hours goal reached" : "Time left to reach the hours goal" },
+    ],
     notes: [
       weeklyHoursGoal > 0
         ? "Money and commitment are tracked separately, so reaching one early is still a meaningful win."
@@ -423,6 +455,14 @@ export default function DashboardPage() {
       { label: "Best same day", value: dayRec.record > 0 ? formatCurrency(dayRec.record, sym) : "Building", helper: `Your top ${todayName}` },
       { label: "Today's total", value: formatCurrency(todayTotal, sym), helper: "Current day value" },
     ],
+    sections: rankWindow.length > 0
+      ? [
+          {
+            title: "Nearby positions",
+            rows: rankWindow,
+          },
+        ]
+      : undefined,
     notes: [
       "This compares the same weekday only, so Sunday is measured against Sundays, Friday against Fridays, and so on.",
       dayRec.record > todayTotal

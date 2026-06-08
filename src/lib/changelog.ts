@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.4.3";
+export const CURRENT_VERSION = "0.4.4";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.4.4",
+    date: "2026-06",
+    title: "Drill-Down Context Refinement",
+    tags: ["polish"],
+    items: [
+      "Full Focus Goal drill-down now explains weekly earnings progress and weekly hours progress together",
+      "Historical Rank drill-down now shows nearby same-weekday positions around the current rank when available",
+      "Rank context now shows how much separates today from nearby same-weekday entries without changing the underlying ranking calculation",
+      "Standard Dashboard, Supabase data, auth, routing, Ask My Data, and backend behavior were not changed",
+    ],
+  },
   {
     version: "0.4.3",
     date: "2026-06",

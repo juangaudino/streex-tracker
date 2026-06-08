@@ -2,6 +2,18 @@
 
 ## Beta Releases
 
+### Beta 0.4.4 — Drill-Down Context Refinement
+
+### Changed
+
+- Full Focus `Goal` drill-down now explains both weekly earnings progress and weekly hours progress together.
+- Historical Rank drill-down now shows nearby same-weekday positions around the current rank, including the three closest better and lower positions when available.
+- Rank context now shows how much separates today from nearby same-weekday entries without changing the underlying ranking calculation.
+
+### Production Behavior
+
+- No dashboard calculations, Standard Dashboard behavior, Supabase data, auth, routing, Ask My Data, or backend architecture changed.
+
 ### Beta 0.4.3 — Full Focus Metric Drill-Down Layer
 
 ### Added

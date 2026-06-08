@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`Beta 0.4.3 - Full Focus Metric Drill-Down Layer`
+`Beta 0.4.4 - Drill-Down Context Refinement`
 
 Source of truth:
 

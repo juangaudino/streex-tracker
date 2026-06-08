@@ -12,6 +12,10 @@ export interface MetricDrillDownDetail {
   title: string;
   summary: string;
   stats: MetricDrillDownStat[];
+  sections?: {
+    title: string;
+    rows: MetricDrillDownStat[];
+  }[];
   notes?: string[];
 }
 
@@ -48,13 +52,30 @@ export default function MetricDrillDownSheet({ detail, onClose }: MetricDrillDow
 
           <div className="grid grid-cols-2 gap-2">
             {detail.stats.map((stat) => (
-                <div key={`${stat.label}-${stat.value}`} className="rounded-xl border border-border bg-background/60 p-3">
+              <div key={`${stat.label}-${stat.value}`} className="rounded-xl border border-border bg-background/60 p-3">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{stat.label}</p>
                 <p className="mt-1 text-base font-bold font-mono">{stat.value}</p>
                 {stat.helper && <p className="mt-1 text-[11px] text-muted-foreground">{stat.helper}</p>}
               </div>
             ))}
           </div>
+
+          {detail.sections?.map((section) => (
+            <div key={section.title} className="rounded-xl border border-border bg-background/60 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{section.title}</p>
+              <div className="mt-2 space-y-2">
+                {section.rows.map((row) => (
+                  <div key={`${row.label}-${row.value}`} className="flex items-start justify-between gap-3 border-t border-border/70 pt-2 first:border-t-0 first:pt-0">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">{row.label}</p>
+                      {row.helper && <p className="text-xs text-muted-foreground">{row.helper}</p>}
+                    </div>
+                    <p className="shrink-0 text-sm font-bold font-mono">{row.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
 
           {detail.notes && detail.notes.length > 0 && (
             <div className="rounded-xl border border-border bg-muted/40 p-3 space-y-2">

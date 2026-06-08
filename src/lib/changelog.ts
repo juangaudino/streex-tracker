@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.4.4";
+export const CURRENT_VERSION = "0.4.5";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,20 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.4.5",
+    date: "2026-06",
+    title: "Shift Pause + Work Blocks Foundation",
+    tags: ["new", "feature"],
+    items: [
+      "Shifts can now be paused and resumed without creating a separate shift for one workday",
+      "New shifts store internal work blocks, so breaks are represented as time between blocks instead of paid work time",
+      "Global header, Quick Add, Entry, and mobile day detail now expose Pause / Resume while preserving End Shift",
+      "Shift hours and estimated timing analytics now sum active work blocks and exclude pause time when block data exists",
+      "Existing historical shifts without work blocks continue to behave as single-block shifts",
+      "No Supabase schema migration was added — work blocks are stored inside the existing week shift data model",
+    ],
+  },
   {
     version: "0.4.4",
     date: "2026-06",

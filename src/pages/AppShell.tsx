@@ -19,6 +19,7 @@ import {
   FlaskConical,
   Gauge,
   Play,
+  Pause,
   Square,
   MessageSquare,
 } from "lucide-react";
@@ -30,7 +31,7 @@ import ChangelogDialog from "@/components/ChangelogDialog";
 import streexLogo from "@/assets/streex-logo.png";
 import { useDashboardExperience } from "@/hooks/useDashboardExperience";
 import { cn } from "@/lib/utils";
-import { createShift, endActiveShift, hasActiveShift } from "@/lib/shiftIntelligence";
+import { createShift, endActiveShift, getActiveShift, hasActiveShift, isShiftPaused, pauseActiveShift, resumePausedShift } from "@/lib/shiftIntelligence";
 import { formatDate } from "@/lib/store";
 import FeedbackDialog from "@/components/FeedbackDialog";
 
@@ -59,6 +60,8 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
   const openWeek = store.openWeek;
   const activeShiftDayIdx = openWeek?.entries.findIndex(hasActiveShift) ?? -1;
   const hasActiveGlobalShift = activeShiftDayIdx >= 0;
+  const activeShift = hasActiveGlobalShift && openWeek ? getActiveShift(openWeek.entries[activeShiftDayIdx]) : null;
+  const activeShiftPaused = activeShift ? isShiftPaused(activeShift) : false;
   const currentLocalDate = formatDate(new Date());
   const currentDayIdx = openWeek?.entries.findIndex((day) => day.date === currentLocalDate) ?? -1;
   const canStartShift = Boolean(openWeek && currentDayIdx >= 0 && !hasActiveGlobalShift);
@@ -70,10 +73,15 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
     if (targetIdx < 0) return;
     const entries = openWeek.entries.map((day, idx) => {
       if (idx !== targetIdx) return day;
-      return hasActiveGlobalShift
-        ? endActiveShift(day)
-        : { ...day, shifts: [...(day.shifts ?? []), createShift(day.date)] };
+      if (!hasActiveGlobalShift) return { ...day, shifts: [...(day.shifts ?? []), createShift(day.date)] };
+      return activeShiftPaused ? resumePausedShift(day) : pauseActiveShift(day);
     });
+    await store.updateWeek({ ...openWeek, entries });
+  }
+
+  async function handleEndShift() {
+    if (!openWeek || !hasActiveGlobalShift || activeShiftDayIdx < 0) return;
+    const entries = openWeek.entries.map((day, idx) => idx === activeShiftDayIdx ? endActiveShift(day) : day);
     await store.updateWeek({ ...openWeek, entries });
   }
 
@@ -131,13 +139,25 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
                 ? "border-success/35 bg-success/10 text-success shadow-sm"
                 : "border-primary/25 bg-primary/5 text-primary hover:bg-primary/10",
             )}
-            aria-label={hasActiveGlobalShift ? "End active shift" : "Start shift"}
+            aria-label={hasActiveGlobalShift ? (activeShiftPaused ? "Resume active shift" : "Pause active shift") : "Start shift"}
             title={!openWeek ? "Start a week before starting a shift" : currentDayIdx < 0 && !hasActiveGlobalShift ? "Today is outside the open week" : undefined}
           >
-            {hasActiveGlobalShift ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-            <span className="hidden min-[420px]:inline">{hasActiveGlobalShift ? "End Shift" : "Start Shift"}</span>
-            <span className="min-[420px]:hidden">{hasActiveGlobalShift ? "End" : "Start"}</span>
+            {hasActiveGlobalShift ? activeShiftPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+            <span className="hidden min-[420px]:inline">{hasActiveGlobalShift ? activeShiftPaused ? "Resume Shift" : "Pause Shift" : "Start Shift"}</span>
+            <span className="min-[420px]:hidden">{hasActiveGlobalShift ? activeShiftPaused ? "Resume" : "Pause" : "Start"}</span>
           </button>
+          {hasActiveGlobalShift && (
+            <button
+              type="button"
+              onClick={handleEndShift}
+              className="inline-flex items-center gap-1.5 rounded-full border border-success/35 bg-success/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-success shadow-sm transition-colors hover:bg-success/15"
+              aria-label="End active shift"
+            >
+              <Square className="h-3.5 w-3.5" />
+              <span className="hidden min-[520px]:inline">End Shift</span>
+              <span className="min-[520px]:hidden">End</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setDashboardExperience(isFullFocus ? "standard" : "full-focus")}

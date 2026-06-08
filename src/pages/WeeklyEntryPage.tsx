@@ -29,7 +29,7 @@ import { CalendarIcon } from "lucide-react";
 import MobileWeekOverview from "@/components/MobileWeekOverview";
 import MobileDayDetail from "@/components/MobileDayDetail";
 import WeekClosingDialog from "@/components/WeekClosingDialog";
-import { createShift, endActiveShift, getDayShiftHours, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, shiftDurationHours } from "@/lib/shiftIntelligence";
+import { activeShiftDurationHours, createShift, endActiveShift, getDayShiftHours, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resumePausedShift, shiftBreakHours, shiftDurationHours } from "@/lib/shiftIntelligence";
 import { operationalDayTotal, operationalWeekTotal } from "@/lib/rewardIncome";
 
 function timeInputValue(value?: string): string {
@@ -48,9 +48,7 @@ function applyTimeToShiftDate(dayDate: string, value: string): string {
 }
 
 function liveShiftDurationHours(shift: ShiftSession): number {
-  const start = Date.parse(shift.startTime);
-  if (Number.isNaN(start)) return 0;
-  return Math.max(0, (Date.now() - start) / 3600000);
+  return activeShiftDurationHours(shift);
 }
 
 function formatShiftTime(value?: string): string {
@@ -327,6 +325,17 @@ export default function WeeklyEntryPage() {
     persistShiftState({ ...editWeek, entries });
   }
 
+  function handlePauseResumeShift(dayIdx: number) {
+    if (!editWeek) return;
+    const openShift = editWeek.entries[dayIdx]?.shifts?.find((shift) => !shift.endTime);
+    if (!openShift) return;
+    const entries = editWeek.entries.map((d, i) => {
+      if (i !== dayIdx) return d;
+      return isShiftPaused(openShift) ? resumePausedShift(d) : pauseActiveShift(d);
+    });
+    persistShiftState({ ...editWeek, entries });
+  }
+
   function handleShiftMilesUpdate(dayIdx: number, shiftId: string, val: string) {
     if (!editWeek) return;
     const miles = parseFloat(val) || 0;
@@ -486,6 +495,7 @@ export default function WeeklyEntryPage() {
     (day.shifts ?? []).map((shift) => ({ day, dayIdx, shift })),
   );
   const activeShiftBlock = allShifts.find(({ shift }) => !shift.endTime) ?? null;
+  const activeShiftPaused = activeShiftBlock ? isShiftPaused(activeShiftBlock.shift) : false;
   const historicalShifts = allShifts.filter(({ shift }) => shift.endTime);
   const shiftRate = (day: DayEntry, shift: ShiftSession) => {
     const completedShiftsForDay = (day.shifts ?? []).filter((item) => item.endTime).length;
@@ -509,6 +519,7 @@ export default function WeeklyEntryPage() {
         onMileageUpdate={handleMileageUpdate}
         onStartShift={handleStartShift}
         onEndShift={handleEndShift}
+        onPauseResumeShift={handlePauseResumeShift}
         onShiftMilesUpdate={handleShiftMilesUpdate}
         onShiftRideCountUpdate={handleShiftRideCountUpdate}
         onShiftTimeUpdate={handleShiftTimeUpdate}
@@ -625,14 +636,21 @@ export default function WeeklyEntryPage() {
               {shiftControlDay ? `${shiftControlDay.dayName} · ${shiftControlDay.date}` : `Today · ${currentLocalDate}`}
             </p>
           </div>
-          <Button
-            size="sm"
-            variant={activeShift ? "secondary" : "default"}
-            disabled={!shiftControlDay}
-            onClick={() => activeShift ? handleEndShift(shiftControlIndex) : handleStartShift(shiftControlIndex)}
-          >
-            {activeShift ? "End Shift" : "Start Shift"}
-          </Button>
+          <div className="flex shrink-0 gap-2">
+            <Button
+              size="sm"
+              variant={activeShift ? "secondary" : "default"}
+              disabled={!shiftControlDay}
+              onClick={() => activeShift ? handlePauseResumeShift(shiftControlIndex) : handleStartShift(shiftControlIndex)}
+            >
+              {activeShift ? activeShiftPaused ? "Resume Shift" : "Pause Shift" : "Start Shift"}
+            </Button>
+            {activeShift && (
+              <Button size="sm" variant="outline" disabled={!shiftControlDay} onClick={() => handleEndShift(shiftControlIndex)}>
+                End
+              </Button>
+            )}
+          </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <div className="rounded-lg bg-background/60 border border-border px-3 py-2">
@@ -668,10 +686,10 @@ export default function WeeklyEntryPage() {
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-success">Active Shift</p>
                   <p className="mt-1 text-sm font-semibold">
-                    Started: {formatShiftTime(activeShiftBlock.shift.startTime)}
+                    {activeShiftPaused ? "Paused" : "Started"}: {formatShiftTime(activeShiftBlock.shift.startTime)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {activeShiftBlock.day.dayName} · {liveShiftDurationHours(activeShiftBlock.shift).toFixed(1)}h running
+                    {activeShiftBlock.day.dayName} · {liveShiftDurationHours(activeShiftBlock.shift).toFixed(1)}h active work{activeShiftPaused ? " · break in progress" : " running"}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">
@@ -733,6 +751,7 @@ export default function WeeklyEntryPage() {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {hours.toFixed(1)}h · {rate ? `${formatCurrency(rate, sym)}/hr` : "—/hr"} · {(shift.miles ?? 0).toFixed(1)} mi · {shift.rideCount ?? 0} rides
+                      {shiftBreakHours(shift) > 0 ? ` · ${shiftBreakHours(shift).toFixed(1)}h break` : ""}
                     </p>
                   </div>
                 </button>

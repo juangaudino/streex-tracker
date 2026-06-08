@@ -6,7 +6,7 @@ import type { DayEntry } from "@/lib/types";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { getDayRideCount, getDayShiftHours, hasActiveShift, shiftDurationHours } from "@/lib/shiftIntelligence";
+import { getActiveShift, getDayRideCount, getDayShiftHours, hasActiveShift, isShiftPaused, shiftBreakHours, shiftDurationHours } from "@/lib/shiftIntelligence";
 
 interface MobileDayDetailProps {
   day: DayEntry;
@@ -19,6 +19,7 @@ interface MobileDayDetailProps {
   onMileageUpdate?: (dayIdx: number, val: number) => void;
   onStartShift?: (dayIdx: number) => void;
   onEndShift?: (dayIdx: number) => void;
+  onPauseResumeShift?: (dayIdx: number) => void;
   onShiftMilesUpdate?: (dayIdx: number, shiftId: string, val: string) => void;
   onShiftRideCountUpdate?: (dayIdx: number, shiftId: string, val: string) => void;
   onShiftTimeUpdate?: (dayIdx: number, shiftId: string, field: "startTime" | "endTime", val: string) => void;
@@ -48,6 +49,7 @@ export default function MobileDayDetail({
   onMileageUpdate,
   onStartShift,
   onEndShift,
+  onPauseResumeShift,
   onShiftMilesUpdate,
   onShiftRideCountUpdate,
   onShiftTimeUpdate,
@@ -58,6 +60,8 @@ export default function MobileDayDetail({
   const isLogged = day.logged !== undefined ? day.logged : dt > 0;
   const [mileage, setMileage] = useState(day.mileage?.toString() || "");
   const activeShift = hasActiveShift(day);
+  const openShift = getActiveShift(day);
+  const activeShiftPaused = openShift ? isShiftPaused(openShift) : false;
   const shiftHours = getDayShiftHours(day);
   const rideCount = getDayRideCount(day);
 
@@ -147,11 +151,16 @@ export default function MobileDayDetail({
             <Button
               size="sm"
               variant={activeShift ? "secondary" : "default"}
-              onClick={() => activeShift ? onEndShift(dayIdx) : onStartShift(dayIdx)}
+              onClick={() => activeShift ? onPauseResumeShift?.(dayIdx) : onStartShift(dayIdx)}
             >
-              {activeShift ? "End" : "Start"}
+              {activeShift ? activeShiftPaused ? "Resume" : "Pause" : "Start"}
             </Button>
           </div>
+          {activeShift && (
+            <Button size="sm" variant="outline" className="w-full" onClick={() => onEndShift(dayIdx)}>
+              End Shift
+            </Button>
+          )}
           {(day.shifts ?? []).map((shift) => (
             <div
               key={shift.id}
@@ -170,6 +179,7 @@ export default function MobileDayDetail({
                 </p>
                 <p className="text-[11px] text-muted-foreground">
                   {shift.endTime ? `${shiftDurationHours(shift).toFixed(1)}h` : "running"}
+                  {shift.endTime && shiftBreakHours(shift) > 0 ? ` · ${shiftBreakHours(shift).toFixed(1)}h break` : ""}
                 </p>
               </div>
               <div className="grid min-w-0 grid-cols-1 gap-2">

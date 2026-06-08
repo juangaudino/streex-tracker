@@ -1,6 +1,6 @@
 import { isRewardApp, operationalDayTotal } from "./rewardIncome";
 import { earningsSnapshotTransitionKey } from "./earningsSnapshots";
-import type { DayEntry, EarningsSnapshot, ShiftSession, WeekRecord } from "./types";
+import type { DayEntry, EarningsSnapshot, ShiftSession, ShiftWorkBlock, WeekRecord } from "./types";
 
 export interface ShiftSummary {
   totalShifts: number;
@@ -55,12 +55,63 @@ function round(value: number): number {
   return +value.toFixed(2);
 }
 
-export function shiftDurationHours(shift: ShiftSession): number {
-  if (!shift.endTime) return 0;
-  const start = Date.parse(shift.startTime);
-  const end = Date.parse(shift.endTime);
+function shiftTimestamp(date: string, now = new Date()): string {
+  return `${date}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:00`;
+}
+
+function createWorkBlock(shiftId: string, startTime: string, index = 0): ShiftWorkBlock {
+  return {
+    id: `${shiftId}_block_${index + 1}_${Math.random().toString(36).slice(2, 6)}`,
+    startTime,
+  };
+}
+
+function durationHours(startTime?: string, endTime?: string): number {
+  if (!startTime || !endTime) return 0;
+  const start = Date.parse(startTime);
+  const end = Date.parse(endTime);
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
   return round((end - start) / 3600000);
+}
+
+export function getShiftBlocks(shift: ShiftSession): ShiftWorkBlock[] {
+  if (shift.blocks?.length) return shift.blocks;
+  return [{ id: `${shift.id}_block_1`, startTime: shift.startTime, endTime: shift.endTime }];
+}
+
+export function shiftDurationHours(shift: ShiftSession): number {
+  return round(getShiftBlocks(shift).reduce((sum, block) => sum + durationHours(block.startTime, block.endTime), 0));
+}
+
+export function activeShiftDurationHours(shift: ShiftSession, now = new Date()): number {
+  const nowLocal = `${localDateKey(now)}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:00`;
+  return round(getShiftBlocks(shift).reduce((sum, block) => {
+    const endTime = block.endTime ?? (!shift.endTime ? nowLocal : undefined);
+    return sum + durationHours(block.startTime, endTime);
+  }, 0));
+}
+
+export function shiftBreakHours(shift: ShiftSession): number {
+  const blocks = getShiftBlocks(shift)
+    .filter((block) => block.startTime)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+  return round(blocks.reduce((sum, block, index) => {
+    if (index === 0) return sum;
+    const previous = blocks[index - 1];
+    return sum + durationHours(previous.endTime, block.startTime);
+  }, 0));
+}
+
+export function isShiftPaused(shift: ShiftSession): boolean {
+  if (shift.endTime) return false;
+  const blocks = getShiftBlocks(shift);
+  return blocks.length > 0 && blocks.every((block) => Boolean(block.endTime));
+}
+
+export function isShiftRunning(shift: ShiftSession): boolean {
+  if (shift.endTime) return false;
+  return getShiftBlocks(shift).some((block) => !block.endTime);
 }
 
 export function getDayMiles(day: DayEntry): number {
@@ -81,7 +132,9 @@ export function getWeekRideCount(week: WeekRecord): number {
 }
 
 export function getDayShiftHours(day: DayEntry): number {
-  return round((day.shifts ?? []).reduce((sum, shift) => sum + shiftDurationHours(shift), 0));
+  return round((day.shifts ?? []).reduce((sum, shift) => {
+    return sum + (shift.endTime ? shiftDurationHours(shift) : activeShiftDurationHours(shift));
+  }, 0));
 }
 
 export function getWeekShiftHours(week: WeekRecord): number {
@@ -91,9 +144,12 @@ export function getWeekShiftHours(week: WeekRecord): number {
 export function createShift(date: string, now = new Date()): ShiftSession {
   const current = new Date(now);
   const datePrefix = date || current.toISOString().slice(0, 10);
+  const id = `shift_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const startTime = `${datePrefix}T${String(current.getHours()).padStart(2, "0")}:${String(current.getMinutes()).padStart(2, "0")}:00`;
   return {
-    id: `shift_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    startTime: `${datePrefix}T${String(current.getHours()).padStart(2, "0")}:${String(current.getMinutes()).padStart(2, "0")}:00`,
+    id,
+    startTime,
+    blocks: [createWorkBlock(id, startTime)],
   };
 }
 
@@ -103,12 +159,6 @@ export function hasActiveShift(day: DayEntry): boolean {
 
 export function getActiveShift(day: DayEntry): ShiftSession | null {
   return day.shifts?.find((shift) => !shift.endTime) ?? null;
-}
-
-export function activeShiftDurationHours(shift: ShiftSession, now = new Date()): number {
-  const start = Date.parse(shift.startTime);
-  if (Number.isNaN(start)) return 0;
-  return round(Math.max(0, (now.getTime() - start) / 3600000));
 }
 
 export type WeeklyGoalOutcome =
@@ -166,8 +216,29 @@ export function classifyWeeklyGoalOutcome(args: {
 export function endActiveShift(day: DayEntry, now = new Date()): DayEntry {
   const shifts = (day.shifts ?? []).map((shift) => {
     if (shift.endTime) return shift;
-    const end = `${day.date}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:00`;
-    return { ...shift, endTime: end };
+    const end = shiftTimestamp(day.date, now);
+    const blocks = getShiftBlocks(shift).map((block) => block.endTime ? block : { ...block, endTime: end });
+    return { ...shift, endTime: end, blocks };
+  });
+  return { ...day, shifts };
+}
+
+export function pauseActiveShift(day: DayEntry, now = new Date()): DayEntry {
+  const pauseTime = shiftTimestamp(day.date, now);
+  const shifts = (day.shifts ?? []).map((shift) => {
+    if (shift.endTime || isShiftPaused(shift)) return shift;
+    const blocks = getShiftBlocks(shift).map((block) => block.endTime ? block : { ...block, endTime: pauseTime });
+    return { ...shift, blocks };
+  });
+  return { ...day, shifts };
+}
+
+export function resumePausedShift(day: DayEntry, now = new Date()): DayEntry {
+  const resumeTime = shiftTimestamp(day.date, now);
+  const shifts = (day.shifts ?? []).map((shift) => {
+    if (shift.endTime || !isShiftPaused(shift)) return shift;
+    const blocks = getShiftBlocks(shift);
+    return { ...shift, blocks: [...blocks, createWorkBlock(shift.id, resumeTime, blocks.length)] };
   });
   return { ...day, shifts };
 }
@@ -269,19 +340,22 @@ export function buildPatternIntelligence(
         if (index < sortedShifts.length / 2) firstHalf.push(shiftEarnings / duration);
         else secondHalf.push(shiftEarnings / duration);
 
-        const startMs = Date.parse(shift.startTime);
-        const endMs = Date.parse(shift.endTime);
-        for (let hour = 0; hour < 24; hour++) {
-          const hours = overlapHours(startMs, endMs, hour, day.date);
-          if (hours <= 0) continue;
-          const current = hourMap.get(hour) ?? { earnings: 0, hours: 0, appTotals: {} };
-          current.hours += hours;
-          current.earnings += shiftEarnings * (hours / duration);
-          for (const [app, value] of Object.entries(day.apps || {})) {
-            if (isRewardApp(app)) continue;
-            current.appTotals[app] = (current.appTotals[app] || 0) + (Number(value) || 0) * shiftShare * (hours / duration);
+        for (const block of getShiftBlocks(shift)) {
+          if (!block.endTime) continue;
+          const startMs = Date.parse(block.startTime);
+          const endMs = Date.parse(block.endTime);
+          for (let hour = 0; hour < 24; hour++) {
+            const hours = overlapHours(startMs, endMs, hour, day.date);
+            if (hours <= 0) continue;
+            const current = hourMap.get(hour) ?? { earnings: 0, hours: 0, appTotals: {} };
+            current.hours += hours;
+            current.earnings += shiftEarnings * (hours / duration);
+            for (const [app, value] of Object.entries(day.apps || {})) {
+              if (isRewardApp(app)) continue;
+              current.appTotals[app] = (current.appTotals[app] || 0) + (Number(value) || 0) * shiftShare * (hours / duration);
+            }
+            hourMap.set(hour, current);
           }
-          hourMap.set(hour, current);
         }
       });
     }

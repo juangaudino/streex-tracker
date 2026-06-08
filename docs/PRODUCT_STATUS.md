@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`Beta 0.4.4 - Drill-Down Context Refinement`
+`Beta 0.4.5 - Shift Pause + Work Blocks Foundation`
 
 Source of truth:
 

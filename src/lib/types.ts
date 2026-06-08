@@ -20,10 +20,17 @@ export const DAY_NAMES = [
 
 export type DayName = (typeof DAY_NAMES)[number];
 
+export interface ShiftWorkBlock {
+  id: string;
+  startTime: string;
+  endTime?: string;
+}
+
 export interface ShiftSession {
   id: string;
   startTime: string;
   endTime?: string;
+  blocks?: ShiftWorkBlock[];
   miles?: number;
   rideCount?: number;
   note?: string;

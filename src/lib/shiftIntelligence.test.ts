@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPatternIntelligence, classifyWeeklyGoalOutcome, getDayRideCount, getDayMiles, getWeekMiles, getWeekRideCount, shiftDurationHours } from "./shiftIntelligence";
+import { buildPatternIntelligence, classifyWeeklyGoalOutcome, getDayRideCount, getDayMiles, getWeekMiles, getWeekRideCount, isShiftPaused, pauseActiveShift, resumePausedShift, shiftBreakHours, shiftDurationHours } from "./shiftIntelligence";
 import type { DayEntry, EarningsSnapshot, WeekRecord } from "./types";
 import { DAY_NAMES } from "./types";
 
@@ -43,6 +43,37 @@ describe("shift intelligence", () => {
     expect(getWeekMiles(week([d]))).toBe(42);
     expect(getDayRideCount(d)).toBe(9);
     expect(getWeekRideCount(week([d]))).toBe(9);
+  });
+
+  it("calculates active work time from work blocks and excludes pauses", () => {
+    const shift = {
+      id: "s1",
+      startTime: "2026-05-04T08:00:00",
+      endTime: "2026-05-04T18:00:00",
+      blocks: [
+        { id: "b1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T12:00:00" },
+        { id: "b2", startTime: "2026-05-04T12:45:00", endTime: "2026-05-04T18:00:00" },
+      ],
+    };
+
+    expect(shiftDurationHours(shift)).toBe(9.25);
+    expect(shiftBreakHours(shift)).toBe(0.75);
+  });
+
+  it("pauses and resumes a shift as multiple work blocks", () => {
+    const d = day(0, 100, [{ id: "s1", startTime: "2026-05-04T08:00:00", blocks: [{ id: "b1", startTime: "2026-05-04T08:00:00" }] }]);
+    const paused = pauseActiveShift(d, new Date("2026-05-04T12:00:00"));
+    const pausedShift = paused.shifts![0];
+
+    expect(isShiftPaused(pausedShift)).toBe(true);
+    expect(pausedShift.blocks?.[0].endTime).toBe("2026-05-04T12:00:00");
+
+    const resumed = resumePausedShift(paused, new Date("2026-05-04T12:45:00"));
+    const resumedShift = resumed.shifts![0];
+
+    expect(isShiftPaused(resumedShift)).toBe(false);
+    expect(resumedShift.blocks).toHaveLength(2);
+    expect(resumedShift.blocks?.[1].startTime).toBe("2026-05-04T12:45:00");
   });
 
   it("builds pattern intelligence from completed shifts", () => {

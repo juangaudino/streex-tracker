@@ -2,6 +2,24 @@
 
 ## Beta Releases
 
+### Beta 0.4.5 — Shift Pause + Work Blocks Foundation
+
+### Added
+
+- Shifts can now be paused and resumed without creating a separate shift for the same workday.
+- New shifts store internal work blocks, so breaks are represented as time between blocks instead of paid work time.
+- Global header, Quick Add, Entry, and mobile day detail now expose Pause / Resume while preserving End Shift.
+
+### Changed
+
+- Shift hours and estimated timing analytics now sum active work blocks and exclude pause time when block data exists.
+- Existing historical shifts without work blocks continue to behave as single-block shifts.
+
+### Production Behavior
+
+- No Supabase schema migration was added. Work blocks are stored inside the existing shift data model used by weeks.
+- Auth, earnings values, Ask My Data, exports, XP, achievements, routes, and backend architecture were not changed.
+
 ### Beta 0.4.4 — Drill-Down Context Refinement
 
 ### Changed

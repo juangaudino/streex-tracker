@@ -15,7 +15,7 @@ import type { WeekRecord, DayEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
 import { triggerCelebration } from "@/components/RecordCelebration";
-import { createShift, endActiveShift, getActiveShift, getDayShiftHours, hasActiveShift, shiftDurationHours } from "@/lib/shiftIntelligence";
+import { createShift, endActiveShift, getActiveShift, getDayShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resumePausedShift, shiftDurationHours } from "@/lib/shiftIntelligence";
 
 interface QuickEntryWidgetProps {  
   openWeek: WeekRecord;
@@ -167,6 +167,19 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     await persistQuickWeek({ ...openWeek, entries });
   }
 
+  async function handlePauseResumeShift() {
+    const targetIdx = resolvedIdx >= 0 ? resolvedIdx : todayIdx;
+    if (targetIdx < 0) return;
+    const targetDay = openWeek.entries[targetIdx];
+    const openShift = getActiveShift(targetDay);
+    if (!openShift) return;
+    const entries = openWeek.entries.map((d, i) => {
+      if (i !== targetIdx) return d;
+      return isShiftPaused(openShift) ? resumePausedShift(d) : pauseActiveShift(d);
+    });
+    await persistQuickWeek({ ...openWeek, entries });
+  }
+
   if (!today || todayIdx < 0) return null;
 
   const todayTotal = dayTotal(today);
@@ -182,6 +195,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     ...apps.filter((app) => !preferredApps.includes(app)),
   ].slice(0, 2);
   const activeShift = getActiveShift(today);
+  const activeShiftPaused = activeShift ? isShiftPaused(activeShift) : false;
 
   return (
     <div className="bg-card rounded-xl border border-primary/20 p-4 space-y-3">
@@ -359,21 +373,26 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                   size="sm"
                   variant={todayHasActiveShift ? "secondary" : "default"}
                   disabled={!todayHasActiveShift && weekHasActiveShift}
-                  onClick={todayHasActiveShift ? handleEndShift : handleStartShift}
+                  onClick={todayHasActiveShift ? handlePauseResumeShift : handleStartShift}
                 >
-                  {todayHasActiveShift ? "End" : "Start"}
+                  {todayHasActiveShift ? activeShiftPaused ? "Resume" : "Pause" : "Start"}
                 </Button>
               </div>
+              {todayHasActiveShift && (
+                <Button type="button" size="sm" variant="outline" className="w-full" onClick={handleEndShift}>
+                  End Shift
+                </Button>
+              )}
               {(today.shifts ?? []).map((shift) => (
                 <div key={shift.id} className="rounded-lg border border-border bg-background/60 px-3 py-2">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-xs font-semibold truncate">
                         {new Date(shift.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
-                        {shift.endTime ? ` → ${new Date(shift.endTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : " → active"}
+                        {shift.endTime ? ` → ${new Date(shift.endTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : isShiftPaused(shift) ? " → paused" : " → active"}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
-                        {shift.endTime ? `${shiftDurationHours(shift).toFixed(1)}h` : "running"}
+                        {shift.endTime ? `${shiftDurationHours(shift).toFixed(1)}h` : isShiftPaused(shift) ? "break in progress" : "running"}
                       </p>
                     </div>
                     <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">

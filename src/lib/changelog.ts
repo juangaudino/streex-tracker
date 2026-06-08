@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.4.2";
+export const CURRENT_VERSION = "0.4.3";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.4.3",
+    date: "2026-06",
+    title: "Full Focus Metric Drill-Down Layer",
+    tags: ["new", "polish"],
+    items: [
+      "Full Focus mini-cards now open a lightweight bottom-sheet explanation layer when tapped",
+      "Day vs Avg, Goal, Historical Rank, and Conditions now explain what they mean, what they compare against, and why they matter",
+      "Drill-down details reuse existing Dashboard values and live utility data without adding new calculations or permanent dashboard cards",
+      "Standard Dashboard, earnings calculations, Ask My Data, auth, routing, and backend behavior were not changed",
+    ],
+  },
   {
     version: "0.4.2",
     date: "2026-06",

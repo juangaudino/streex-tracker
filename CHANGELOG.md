@@ -2,6 +2,18 @@
 
 ## Beta Releases
 
+### Beta 0.4.3 — Full Focus Metric Drill-Down Layer
+
+### Added
+
+- Full Focus mini-cards now open a lightweight bottom-sheet explanation layer when tapped.
+- `Day vs Avg`, `Goal`, `Rank`, and `Conditions` now explain what they mean, what they compare against, and why they matter.
+- The drill-down layer is reusable so future Full Focus metrics can opt in without redesigning the dashboard.
+
+### Production Behavior
+
+- No Standard Dashboard behavior, earnings calculations, Ask My Data logic, auth, routing, Supabase data, or backend architecture changed.
+
 ### Beta 0.4.2 — iOS Safe-Area Theme Background Fix
 
 ### Fixed

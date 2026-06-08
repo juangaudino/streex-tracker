@@ -44,6 +44,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import ShiftIntelligencePanel from "@/components/ShiftIntelligencePanel";
 import { getWeekdayHistoricalRank } from "@/lib/career";
 import { useDriverUtility } from "@/hooks/useDriverUtility";
+import MetricDrillDownSheet, { type MetricDrillDownDetail } from "@/components/MetricDrillDownSheet";
 
 type PulseState = "calm" | "steady" | "strong" | "record" | "streak";
 
@@ -67,12 +68,14 @@ function FocusMetric({
   value,
   sub,
   tone = "default",
+  onOpen,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   sub?: string;
   tone?: "default" | "primary" | "success" | "warning";
+  onOpen?: () => void;
 }) {
   const toneClass =
     tone === "primary" ? "border-primary/25 bg-primary/5"
@@ -80,14 +83,35 @@ function FocusMetric({
     : tone === "warning" ? "border-warning/25 bg-warning/5"
     : "border-border bg-card";
 
-  return (
-    <div className={cn("rounded-xl border p-3 min-w-0", toneClass)}>
+  const content = (
+    <>
       <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         {icon}
         <span className="truncate">{label}</span>
       </div>
       <p className="mt-1 text-lg font-bold font-mono truncate">{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground truncate">{sub}</p>}
+    </>
+  );
+
+  if (onOpen) {
+    return (
+      <button
+        type="button"
+        onClick={onOpen}
+        className={cn(
+          "rounded-xl border p-3 min-w-0 text-left transition-colors hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/30",
+          toneClass,
+        )}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className={cn("rounded-xl border p-3 min-w-0", toneClass)}>
+      {content}
     </div>
   );
 }
@@ -98,6 +122,7 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [importing, setImporting] = useState(false);
   const [endDayOpen, setEndDayOpen] = useState(false);
+  const [drillDownDetail, setDrillDownDetail] = useState<MetricDrillDownDetail | null>(null);
   const { achievements } = useAchievements(user, weeks);
   const { summary: driverIdentity, loading: identityLoading } = useDriverIdentity(user, weeks, openWeek);
   const sym = settings.currencySymbol;
@@ -344,6 +369,106 @@ export default function DashboardPage() {
       : trafficLive
         ? "traffic live"
         : "live utility";
+  const goalProgressDetail: MetricDrillDownDetail = {
+    eyebrow: "Goal Progress",
+    title: "How your weekly goal is tracking",
+    summary: weeklyHoursGoal > 0
+      ? "This card shows your commitment goal because you have an hours target set for this week."
+      : "This card shows how much of your weekly earnings target is already covered.",
+    stats: weeklyHoursGoal > 0
+      ? [
+          { label: "Hours worked", value: `${weeklyHours.toFixed(1)}h`, helper: "Tracked shift time this week" },
+          { label: "Hours target", value: `${weeklyHoursGoal}h`, helper: "Your weekly commitment goal" },
+          { label: "Progress", value: `${hoursPct.toFixed(1)}%`, helper: "Worked hours compared with target hours" },
+          { label: "Remaining", value: `${Math.max(0, weeklyHoursGoal - weeklyHours).toFixed(1)}h`, helper: "Time left to reach the hours goal" },
+        ]
+      : [
+          { label: "Week total", value: formatCurrency(total, sym), helper: "Current earnings this week" },
+          { label: "Target", value: formatCurrency(goal, sym), helper: "Your weekly earnings goal" },
+          { label: "Progress", value: `${pct.toFixed(1)}%`, helper: "Week total compared with target" },
+          { label: "Remaining", value: formatCurrency(remaining, sym), helper: "Money left to reach the goal" },
+        ],
+    notes: [
+      weeklyHoursGoal > 0
+        ? "Money and commitment are tracked separately, so reaching one early is still a meaningful win."
+        : "This is based on the weekly earnings goal set for the open week.",
+    ],
+  };
+  const dayVsAverageDetail: MetricDrillDownDetail = {
+    eyebrow: "Day vs Average",
+    title: `Today against your normal ${todayName}`,
+    summary: dayVsAvg === null
+      ? `Streex needs more ${todayName} history before this comparison becomes reliable.`
+      : `This compares today's earnings with your usual ${todayName} earnings from your own history.`,
+    stats: [
+      { label: "Today", value: formatCurrency(todayTotal, sym), helper: "Current earnings for today" },
+      { label: `Avg ${todayName}`, value: dayRec.avg > 0 ? formatCurrency(dayRec.avg, sym) : "Building", helper: "Your same-weekday benchmark" },
+      { label: "Difference", value: dayVsAvg === null ? "—" : `${dayVsAvg >= 0 ? "+" : ""}${formatCurrency(dayVsAvg, sym)}`, helper: "Today compared with normal" },
+      { label: "Pace", value: dayVsAvgPct === null ? "—" : `${dayVsAvgPct.toFixed(0)}%`, helper: `Percent of normal ${todayName}` },
+    ],
+    notes: [
+      "The benchmark is your own history, not a market average.",
+      "Days off and lower days are part of the record; Streex uses them without shame scoring.",
+    ],
+  };
+  const rankDetail: MetricDrillDownDetail = {
+    eyebrow: "Historical Rank",
+    title: `${todayName} history`,
+    summary: historicalRank.total >= 3
+      ? `This ranks today against your other tracked ${todayName}s.`
+      : `Streex needs more tracked ${todayName}s before this rank becomes useful.`,
+    stats: [
+      { label: "Current rank", value: historicalRank.total >= 3 ? `#${historicalRank.rank}` : "Building", helper: "Today's position" },
+      { label: "Compared days", value: historicalRank.total >= 3 ? `${historicalRank.total}` : `${historicalRank.total}`, helper: `Tracked ${todayName}s` },
+      { label: "Best same day", value: dayRec.record > 0 ? formatCurrency(dayRec.record, sym) : "Building", helper: `Your top ${todayName}` },
+      { label: "Today's total", value: formatCurrency(todayTotal, sym), helper: "Current day value" },
+    ],
+    notes: [
+      "This compares the same weekday only, so Sunday is measured against Sundays, Friday against Fridays, and so on.",
+      dayRec.record > todayTotal
+        ? `${formatCurrency(Math.max(0, dayRec.record - todayTotal), sym)} separates today from your best ${todayName}.`
+        : `Today is at or above your previous best ${todayName}.`,
+    ],
+  };
+  const conditionsDetail: MetricDrillDownDetail = {
+    eyebrow: "Conditions",
+    title: "Weather and traffic context",
+    summary: weatherLive || trafficLive
+      ? "This combines live weather and traffic around your current location for this request."
+      : "Live conditions appear here when location and providers are available.",
+    stats: [
+      {
+        label: "Weather",
+        value: weatherLive ? `${weather.temperature}°F` : "Unavailable",
+        helper: weatherLive ? weather.condition || "Live weather" : weather?.copy || "No live weather loaded",
+      },
+      {
+        label: "Rain risk",
+        value: weatherLive ? `${weather.precipitationChance ?? 0}%` : "—",
+        helper: "Precipitation chance when available",
+      },
+      {
+        label: "Traffic",
+        value: trafficLive ? `${traffic.level || "Unknown"}` : "Unavailable",
+        helper: trafficLive && traffic.currentSpeed && traffic.freeFlowSpeed
+          ? `${traffic.currentSpeed}/${traffic.freeFlowSpeed} mph flow`
+          : traffic?.copy || "No live traffic loaded",
+      },
+      {
+        label: "Road status",
+        value: trafficLive ? (traffic.roadClosure ? "Closure" : "Open") : "—",
+        helper: "Nearby road-flow signal when available",
+      },
+    ],
+    notes: [
+      weatherLive && weather.nextHours && weather.nextHours.length > 0
+        ? `Next look: ${weather.nextHours.slice(0, 2).map((hour) => `${new Date(hour.time).toLocaleTimeString([], { hour: "numeric" })} ${hour.temperature}°`).join(" · ")}.`
+        : "Hourly outlook appears when the weather provider returns it.",
+      trafficLive
+        ? "Traffic context supports timing decisions; Streex does not route or navigate."
+        : "Traffic details will appear once live traffic is available.",
+    ],
+  };
 
   async function handleDailyStartShift() {
     if (!todayEntry || openWeek.entries.some(hasActiveShift) || todayHasShift) {
@@ -420,6 +545,7 @@ export default function DashboardPage() {
               value={dayVsAvg === null ? "—" : `${dayVsAvg >= 0 ? "+" : ""}${formatCurrency(dayVsAvg, sym)}`}
               sub={dayVsAvgPct === null ? "more history needed" : `${dayVsAvgPct.toFixed(0)}% of normal ${todayName}`}
               tone={dayVsAvg !== null && dayVsAvg >= 0 ? "success" : dayVsAvg !== null ? "warning" : "default"}
+              onOpen={() => setDrillDownDetail(dayVsAverageDetail)}
             />
 	            <FocusMetric
 	              icon={<Target className="h-3.5 w-3.5" />}
@@ -427,6 +553,7 @@ export default function DashboardPage() {
 	              value={`${pct.toFixed(0)}%`}
 	              sub={weeklyHoursGoal > 0 ? `${weeklyHours.toFixed(1)}h / ${weeklyHoursGoal}h` : `${formatCurrency(remaining, sym)} left`}
 	              tone={pct >= 100 ? "success" : "primary"}
+	              onOpen={() => setDrillDownDetail(goalProgressDetail)}
 	            />
           </div>
 
@@ -437,6 +564,7 @@ export default function DashboardPage() {
               value={rankValue}
               sub={rankSub}
               tone={historicalRank.rank > 0 && historicalRank.rank <= 10 ? "success" : "default"}
+              onOpen={() => setDrillDownDetail(rankDetail)}
             />
             <FocusMetric
               icon={trafficLive ? <Gauge className="h-3.5 w-3.5" /> : <CloudSun className="h-3.5 w-3.5" />}
@@ -444,6 +572,7 @@ export default function DashboardPage() {
               value={conditionsValue}
               sub={conditionsSub}
               tone={traffic?.level === "light" || weatherLive ? "primary" : "default"}
+              onOpen={() => setDrillDownDetail(conditionsDetail)}
             />
           </div>
 
@@ -548,6 +677,8 @@ export default function DashboardPage() {
             }}
           />
         )}
+
+        <MetricDrillDownSheet detail={drillDownDetail} onClose={() => setDrillDownDetail(null)} />
 
         {hasLocalData && (
           <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 flex items-center gap-3 flex-wrap">

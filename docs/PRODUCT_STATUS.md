@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`Beta 0.4.2 - iOS Safe-Area Theme Background Fix`
+`Beta 0.4.3 - Full Focus Metric Drill-Down Layer`
 
 Source of truth:
 
@@ -68,6 +68,7 @@ Beta highlights:
 - 0.4.0 Signature theme added as the flagship STREEX visual identity
 - 0.4.1 Velocity theme added as a motorsport-inspired performance theme
 - 0.4.2 iOS Safari/PWA safe areas now inherit the active theme background instead of exposing a white strip
+- 0.4.3 Full Focus mini-cards now include on-demand metric explanations without adding permanent dashboard text
 
 ## Pattern Intelligence Source Truth
 

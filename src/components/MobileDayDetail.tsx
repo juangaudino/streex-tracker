@@ -22,6 +22,7 @@ interface MobileDayDetailProps {
   onPauseResumeShift?: (dayIdx: number) => void;
   onShiftMilesUpdate?: (dayIdx: number, shiftId: string, val: string) => void;
   onShiftRideCountUpdate?: (dayIdx: number, shiftId: string, val: string) => void;
+  onShiftEarningsUpdate?: (dayIdx: number, shiftId: string, val: string) => void;
   onShiftTimeUpdate?: (dayIdx: number, shiftId: string, field: "startTime" | "endTime", val: string) => void;
   onDeleteShift?: (dayIdx: number, shiftId: string) => void;
   onSave: () => void;
@@ -52,6 +53,7 @@ export default function MobileDayDetail({
   onPauseResumeShift,
   onShiftMilesUpdate,
   onShiftRideCountUpdate,
+  onShiftEarningsUpdate,
   onShiftTimeUpdate,
   onDeleteShift,
   onSave,
@@ -254,6 +256,20 @@ export default function MobileDayDetail({
                         </Button>
                       )}
                     </div>
+                  </label>
+                )}
+                {onShiftEarningsUpdate && (
+                  <label className="min-w-0 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Earnings</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="h-10 min-w-0 w-full text-right font-mono text-sm"
+                      value={shift.earnings || ""}
+                      placeholder={currencySymbol}
+                      onChange={(e) => onShiftEarningsUpdate(dayIdx, shift.id, e.target.value)}
+                    />
                   </label>
                 )}
                 {onShiftRideCountUpdate && (

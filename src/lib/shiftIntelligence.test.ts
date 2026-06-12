@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPatternIntelligence, classifyWeeklyGoalOutcome, getDayRideCount, getDayMiles, getWeekMiles, getWeekRideCount, isShiftPaused, pauseActiveShift, resumePausedShift, shiftBreakHours, shiftDurationHours } from "./shiftIntelligence";
+import { buildPatternIntelligence, classifyWeeklyGoalOutcome, getDayRideCount, getDayMiles, getWeekMiles, getWeekRideCount, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours } from "./shiftIntelligence";
 import type { DayEntry, EarningsSnapshot, WeekRecord } from "./types";
 import { DAY_NAMES } from "./types";
 
@@ -74,6 +74,45 @@ describe("shift intelligence", () => {
     expect(isShiftPaused(resumedShift)).toBe(false);
     expect(resumedShift.blocks).toHaveLength(2);
     expect(resumedShift.blocks?.[1].startTime).toBe("2026-05-04T12:45:00");
+  });
+
+  it("resolves shift rates from manual earnings on multi-shift days", () => {
+    const firstShift = { id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00", earnings: 80 };
+    const secondShift = { id: "s2", startTime: "2026-05-04T12:00:00", endTime: "2026-05-04T14:00:00", earnings: 120 };
+    const d = day(0, 200, [firstShift, secondShift]);
+
+    expect(resolveShiftRate(d, firstShift).rate).toBe(40);
+    expect(resolveShiftRate(d, secondShift).rate).toBe(60);
+  });
+
+  it("resolves shift rates from same-shift earnings snapshots", () => {
+    const firstShift = { id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00" };
+    const secondShift = { id: "s2", startTime: "2026-05-04T12:00:00", endTime: "2026-05-04T14:00:00" };
+    const d = day(0, 200, [firstShift, secondShift]);
+    const snapshots: EarningsSnapshot[] = [
+      { ...snapshot("snap1", "2026-05-04", "Uber", 50, "2026-05-04T08:30:00"), shiftId: "s1" },
+      { ...snapshot("snap2", "2026-05-04", "Uber", 30, "2026-05-04T09:15:00"), shiftId: "s1" },
+      { ...snapshot("snap3", "2026-05-04", "Uber", 120, "2026-05-04T12:30:00"), shiftId: "s2" },
+    ];
+
+    expect(resolveShiftRate(d, firstShift, snapshots)).toMatchObject({ rate: 40, earnings: 80, source: "snapshot" });
+    expect(resolveShiftRate(d, secondShift, snapshots)).toMatchObject({ rate: 60, earnings: 120, source: "snapshot" });
+  });
+
+  it("keeps multi-shift rates unavailable when no shift earnings can be assigned", () => {
+    const firstShift = { id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00" };
+    const secondShift = { id: "s2", startTime: "2026-05-04T12:00:00", endTime: "2026-05-04T14:00:00" };
+    const d = day(0, 200, [firstShift, secondShift]);
+
+    expect(resolveShiftRate(d, firstShift).rate).toBeNull();
+    expect(resolveShiftRate(d, secondShift).rate).toBeNull();
+  });
+
+  it("falls back to day operational earnings for a single completed shift", () => {
+    const shift = { id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00" };
+    const d = { ...day(0, 0, [shift]), apps: { Uber: 100, Octopus: 25 } };
+
+    expect(resolveShiftRate(d, shift)).toMatchObject({ rate: 50, earnings: 100, source: "single-shift-day" });
   });
 
   it("builds pattern intelligence from completed shifts", () => {

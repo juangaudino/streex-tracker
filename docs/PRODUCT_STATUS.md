@@ -4,7 +4,7 @@ This is a living status document. Update it after roadmap releases, major archit
 
 ## Current Release
 
-`Beta 0.4.5 - Shift Pause + Work Blocks Foundation`
+`Beta 0.4.6 - Shift Earnings Recovery`
 
 Source of truth:
 

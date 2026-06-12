@@ -2,6 +2,25 @@
 
 ## Beta Releases
 
+### Beta 0.4.6 — Shift Earnings Recovery
+
+### Added
+
+- Shift blocks now support optional manual earnings so historical multi-shift days can recover accurate per-shift efficiency.
+- Entry shift rows can calculate `$/hr` from manual shift earnings or from same-shift earnings snapshots when available.
+- Mobile and desktop shift editors now expose an optional Earnings field alongside miles and rides.
+
+### Changed
+
+- Multi-shift days no longer have to show `—/hr` when Streex can safely assign earnings to a specific shift.
+- Single-shift day fallback remains unchanged and still uses operational day earnings for efficiency.
+
+### Production Behavior
+
+- Daily app totals remain the official earnings source. Shift earnings are used for shift-level efficiency only.
+- No Supabase schema migration was added. Optional shift earnings are stored inside the existing week shift data model.
+- Auth, routing, Ask My Data, exports, XP, achievements, and backend architecture were not changed.
+
 ### Beta 0.4.5 — Shift Pause + Work Blocks Foundation
 
 ### Added

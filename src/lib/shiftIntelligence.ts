@@ -51,8 +51,22 @@ export interface PatternIntelligence {
   timingCopy: string;
 }
 
+export type ShiftEarningsSource = "manual" | "snapshot" | "single-shift-day" | "unavailable";
+
+export interface ShiftEarningsResolution {
+  earnings: number | null;
+  source: ShiftEarningsSource;
+  snapshotCount?: number;
+}
+
 function round(value: number): number {
   return +value.toFixed(2);
+}
+
+function money(value: unknown): number | null {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
+  return +parsed.toFixed(2);
 }
 
 function shiftTimestamp(date: string, now = new Date()): string {
@@ -159,6 +173,72 @@ export function hasActiveShift(day: DayEntry): boolean {
 
 export function getActiveShift(day: DayEntry): ShiftSession | null {
   return day.shifts?.find((shift) => !shift.endTime) ?? null;
+}
+
+function isSnapshotInsideShift(snapshot: EarningsSnapshot, shift: ShiftSession): boolean {
+  if (snapshot.dayDate !== shift.startTime.slice(0, 10)) return false;
+  const created = Date.parse(snapshot.createdAt);
+  const start = Date.parse(shift.startTime);
+  const end = shift.endTime ? Date.parse(shift.endTime) : Date.now();
+  if (!Number.isFinite(created) || !Number.isFinite(start) || !Number.isFinite(end)) return false;
+  return created >= start && created <= end;
+}
+
+function snapshotShiftEarnings(shift: ShiftSession, snapshots: EarningsSnapshot[] = []): ShiftEarningsResolution {
+  const seen = new Set<string>();
+  let total = 0;
+  let count = 0;
+
+  const relevant = snapshots.filter((snapshot) => {
+    if (isRewardApp(snapshot.app)) return false;
+    if (snapshot.dayDate !== shift.startTime.slice(0, 10)) return false;
+    if (snapshot.shiftId) return snapshot.shiftId === shift.id;
+    return isSnapshotInsideShift(snapshot, shift);
+  });
+
+  for (const snapshot of relevant) {
+    const delta = Number(snapshot.delta) || 0;
+    if (delta <= 0) continue;
+    const transitionKey = earningsSnapshotTransitionKey(snapshot);
+    if (seen.has(transitionKey)) continue;
+    seen.add(transitionKey);
+    total += delta;
+    count += 1;
+  }
+
+  if (count <= 0 || total <= 0) return { earnings: null, source: "unavailable", snapshotCount: count };
+  return { earnings: round(total), source: "snapshot", snapshotCount: count };
+}
+
+export function resolveShiftEarnings(
+  day: DayEntry,
+  shift: ShiftSession,
+  snapshots: EarningsSnapshot[] = [],
+): ShiftEarningsResolution {
+  const manual = money(shift.earnings);
+  if (manual !== null) return { earnings: manual, source: "manual" };
+
+  const fromSnapshots = snapshotShiftEarnings(shift, snapshots);
+  if (fromSnapshots.earnings !== null) return fromSnapshots;
+
+  const completedShiftsForDay = (day.shifts ?? []).filter((item) => item.endTime).length;
+  if (completedShiftsForDay === 1) {
+    return { earnings: round(operationalDayTotal(day)), source: "single-shift-day" };
+  }
+
+  return { earnings: null, source: "unavailable" };
+}
+
+export function resolveShiftRate(
+  day: DayEntry,
+  shift: ShiftSession,
+  snapshots: EarningsSnapshot[] = [],
+): { rate: number | null; earnings: number | null; source: ShiftEarningsSource } {
+  const hours = shift.endTime ? shiftDurationHours(shift) : activeShiftDurationHours(shift);
+  if (hours <= 0) return { rate: null, earnings: null, source: "unavailable" };
+  const resolved = resolveShiftEarnings(day, shift, snapshots);
+  if (resolved.earnings === null) return { rate: null, earnings: null, source: resolved.source };
+  return { rate: round(resolved.earnings / hours), earnings: resolved.earnings, source: resolved.source };
 }
 
 export type WeeklyGoalOutcome =

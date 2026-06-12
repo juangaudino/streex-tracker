@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.4.5";
+export const CURRENT_VERSION = "0.4.6";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.4.6",
+    date: "2026-06",
+    title: "Shift Earnings Recovery",
+    tags: ["new", "polish"],
+    items: [
+      "Shift blocks now support optional manual earnings so historical multi-shift days can recover accurate per-shift efficiency",
+      "Entry shift rows can calculate dollars per hour from manual shift earnings or same-shift earnings snapshots when available",
+      "Mobile and desktop shift editors now expose an optional Earnings field alongside miles and rides",
+      "Daily app totals remain the official earnings source; shift earnings are used for shift-level efficiency only",
+      "No Supabase schema migration was added — optional shift earnings are stored inside the existing week shift data model",
+    ],
+  },
   {
     version: "0.4.5",
     date: "2026-06",

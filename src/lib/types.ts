@@ -31,6 +31,7 @@ export interface ShiftSession {
   startTime: string;
   endTime?: string;
   blocks?: ShiftWorkBlock[];
+  earnings?: number;
   miles?: number;
   rideCount?: number;
   note?: string;

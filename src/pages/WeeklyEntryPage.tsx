@@ -29,8 +29,8 @@ import { CalendarIcon } from "lucide-react";
 import MobileWeekOverview from "@/components/MobileWeekOverview";
 import MobileDayDetail from "@/components/MobileDayDetail";
 import WeekClosingDialog from "@/components/WeekClosingDialog";
-import { activeShiftDurationHours, createShift, endActiveShift, getDayShiftHours, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resumePausedShift, shiftBreakHours, shiftDurationHours } from "@/lib/shiftIntelligence";
-import { operationalDayTotal, operationalWeekTotal } from "@/lib/rewardIncome";
+import { activeShiftDurationHours, createShift, endActiveShift, getDayShiftHours, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours } from "@/lib/shiftIntelligence";
+import { operationalWeekTotal } from "@/lib/rewardIncome";
 
 function timeInputValue(value?: string): string {
   if (!value) return "";
@@ -59,7 +59,7 @@ function formatShiftTime(value?: string): string {
 }
 
 export default function WeeklyEntryPage() {
-  const { openWeek, weeks, settings, addWeek, updateWeek } =
+  const { openWeek, weeks, settings, earningsSnapshots, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -362,6 +362,20 @@ export default function WeeklyEntryPage() {
     persistShiftState({ ...editWeek, entries });
   }
 
+  function handleShiftEarningsUpdate(dayIdx: number, shiftId: string, val: string) {
+    if (!editWeek) return;
+    const trimmed = val.trim();
+    const earnings = trimmed === "" ? undefined : Math.max(0, Number.parseFloat(trimmed) || 0);
+    const entries = editWeek.entries.map((d, i) => {
+      if (i !== dayIdx) return d;
+      return {
+        ...d,
+        shifts: (d.shifts ?? []).map((shift) => shift.id === shiftId ? { ...shift, earnings } : shift),
+      };
+    });
+    persistShiftState({ ...editWeek, entries });
+  }
+
   function handleShiftTimeUpdate(dayIdx: number, shiftId: string, field: "startTime" | "endTime", val: string) {
     if (!editWeek) return;
     const entries = editWeek.entries.map((d, i) => {
@@ -498,11 +512,7 @@ export default function WeeklyEntryPage() {
   const activeShiftPaused = activeShiftBlock ? isShiftPaused(activeShiftBlock.shift) : false;
   const historicalShifts = allShifts.filter(({ shift }) => shift.endTime);
   const shiftRate = (day: DayEntry, shift: ShiftSession) => {
-    const completedShiftsForDay = (day.shifts ?? []).filter((item) => item.endTime).length;
-    if (completedShiftsForDay !== 1) return null;
-    const hours = shiftDurationHours(shift);
-    if (hours <= 0) return null;
-    return operationalDayTotal(day) / hours;
+    return resolveShiftRate(day, shift, earningsSnapshots).rate;
   };
 
   // Mobile day detail view
@@ -522,6 +532,7 @@ export default function WeeklyEntryPage() {
         onPauseResumeShift={handlePauseResumeShift}
         onShiftMilesUpdate={handleShiftMilesUpdate}
         onShiftRideCountUpdate={handleShiftRideCountUpdate}
+        onShiftEarningsUpdate={handleShiftEarningsUpdate}
         onShiftTimeUpdate={handleShiftTimeUpdate}
         onDeleteShift={handleDeleteShift}
         onSave={async () => {
@@ -757,7 +768,7 @@ export default function WeeklyEntryPage() {
                 </button>
 
                 {expanded && (
-                  <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 md:grid-cols-[minmax(0,7rem)_minmax(0,7rem)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
+                  <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 md:grid-cols-[minmax(0,7rem)_minmax(0,7rem)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
                     <label className="space-y-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Start</span>
                       <Input
@@ -809,6 +820,18 @@ export default function WeeklyEntryPage() {
                         value={shift.miles || ""}
                         placeholder="mi"
                         onChange={(e) => handleShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
+                      />
+                    </label>
+                    <label className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Earnings</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="h-10 min-w-0 w-full text-right font-mono text-sm md:h-9 md:text-xs"
+                        value={shift.earnings || ""}
+                        placeholder={sym}
+                        onChange={(e) => handleShiftEarningsUpdate(dayIdx, shift.id, e.target.value)}
                       />
                     </label>
                     <label className="space-y-1">

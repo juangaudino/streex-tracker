@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Local migration workspaces contain real user data. Never commit them.
+.migration-output/
+streex-migration/
+*-migration-output/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

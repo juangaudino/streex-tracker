@@ -2,6 +2,18 @@
 
 ## Beta Releases
 
+### Beta 0.4.7 — Account Security Settings
+
+### Added
+
+- Settings now includes an Account Security section for changing password while signed in.
+- Password updates use the current Supabase session, so logged-in users do not need a recovery email just to choose a stronger password.
+- New password fields support iOS-generated strong passwords through `new-password` autocomplete hints.
+
+### Production Behavior
+
+- Auth routing, login behavior, Supabase schema, dashboard data, exports, Ask My Data, and backend architecture were not changed.
+
 ### Beta 0.4.6 — Shift Earnings Recovery
 
 ### Added

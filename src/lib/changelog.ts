@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.4.6";
+export const CURRENT_VERSION = "0.4.7";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.4.7",
+    date: "2026-06",
+    title: "Account Security Settings",
+    tags: ["new", "polish"],
+    items: [
+      "Settings now includes an Account Security section for changing password while signed in",
+      "Password updates use the current Supabase session and no longer require a recovery email when the user is already logged in",
+      "The new password fields support iOS-generated strong passwords with new-password autocomplete hints",
+      "Auth routing, login behavior, Supabase schema, dashboard data, and backend architecture were not changed",
+    ],
+  },
   {
     version: "0.4.6",
     date: "2026-06",

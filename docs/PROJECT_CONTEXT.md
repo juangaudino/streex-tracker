@@ -129,3 +129,11 @@ Output:
 ```text
 dist
 ```
+
+## Infrastructure Migration Planning
+
+Cloudflare is active for `getstreex.com`, with the Streex Gig Earnings subdomain planned at `gig.getstreex.com`.
+
+Migration away from Lovable-managed infrastructure is being evaluated, but production has not been migrated yet.
+
+Use `docs/MIGRATION_READINESS_CHECKLIST.md` before any Supabase or Vercel cutover work.

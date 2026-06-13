@@ -506,7 +506,6 @@ export default function DashboardPage() {
         ]
       : undefined,
     notes: [
-      "This compares the same weekday only, so Sunday is measured against Sundays, Friday against Fridays, and so on.",
       dayRec.record > todayTotal
         ? `${formatCurrency(Math.max(0, dayRec.record - todayTotal), sym)} separates today from your best ${todayName}.`
         : `Today is at or above your previous best ${todayName}.`,
@@ -536,7 +535,6 @@ export default function DashboardPage() {
               ]
             : undefined,
           notes: [
-            "This compares the same weekday only, so Sunday is measured against Sundays, Friday against Fridays, and so on.",
             dayRec.record > todayTotal
               ? `${formatCurrency(Math.max(0, dayRec.record - todayTotal), sym)} separates today from your best ${todayName}.`
               : `Today is at or above your previous best ${todayName}.`,
@@ -567,7 +565,6 @@ export default function DashboardPage() {
               ]
             : undefined,
           notes: [
-            "Week rank compares total earnings by week. The current open week is included so you can see where it stands right now.",
             weekGapToBest > 0
               ? `${formatCurrency(weekGapToBest, sym)} separates this week from your best week.`
               : "This week is at or above your previous best week.",

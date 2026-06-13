@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.5.0";
+export const CURRENT_VERSION = "0.5.1";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.1",
+    date: "2026-06",
+    title: "Daily Report Export Match",
+    tags: ["fix", "polish"],
+    items: [
+      "Daily Report download and share now capture the same visible report card instead of a separate export-only template",
+      "Exported report images preserve the in-app report colors, typography, spacing, KPI cards, insight blocks, and theme treatment more closely",
+      "The CSS font import order was corrected to remove the Vite CSS import warning",
+      "Close Day, Keep Going, Share Report, dashboard data, auth, Supabase, and backend behavior were not changed",
+    ],
+  },
   {
     version: "0.5.0",
     date: "2026-06",

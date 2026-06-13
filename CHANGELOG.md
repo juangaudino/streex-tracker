@@ -2,6 +2,18 @@
 
 ## Beta Releases
 
+### Beta 0.5.1 — Daily Report Export Match
+
+### Fixed
+
+- Daily Report download and share now capture the same visible report card instead of a separate export-only template.
+- Exported report images preserve the in-app report colors, typography, spacing, KPI cards, insight blocks, and theme treatment more closely.
+- The CSS font import order was corrected to remove the Vite CSS import warning.
+
+### Production Behavior
+
+- Close Day, Keep Going, Share Report, dashboard data, auth, Supabase, Ask My Data, and backend architecture were not changed.
+
 ### Beta 0.5.0 — Bonus Category
 
 ### Added

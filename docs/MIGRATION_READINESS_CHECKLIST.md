@@ -1,6 +1,20 @@
 # Streex Gig Earnings Migration Readiness Checklist
 
-Status: planning only. No production migration has been performed.
+Status: completed for the owner-controlled production path.
+
+Current production app:
+
+```text
+https://gig.getstreex.com
+```
+
+Current production Supabase project:
+
+```text
+ywbrovislvqkfzsyqpiv
+```
+
+This document is now historical migration context. Use `docs/PRODUCT_STATUS.md` for current infrastructure status.
 
 This document tracks the safe path for moving Streex Gig Earnings away from Lovable-managed hosting/backend dependencies. It is based on the local repo plus the `streex-migration.zip` package generated from the current Lovable-connected Supabase project.
 
@@ -15,9 +29,9 @@ Migration scope is owner-first:
 - Other beta/test users can be retired or re-created later.
 - This reduces Auth migration complexity and makes a controlled staging migration realistic.
 
-## Current Architecture Snapshot
+## Original Architecture Snapshot
 
-Current production backend:
+Previous production backend:
 
 ```text
 Lovable-connected Supabase project

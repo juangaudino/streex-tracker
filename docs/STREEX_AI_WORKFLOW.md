@@ -49,7 +49,6 @@ Owns:
 - visual building
 - fast UI iteration
 - project previews
-- Lovable-connected backend deployment
 - frontend experience polish
 
 Use Lovable when visual iteration or live backend deployment is the main need.
@@ -125,8 +124,10 @@ Sofi / ChatGPT
 
 ## Permanent Architecture Rules
 
-- One backend only.
-- Use the live Lovable-connected Supabase backend.
+- One active production backend only.
+- Use the owner-controlled Supabase backend for active production work.
+- Current production Supabase project ref: `ywbrovislvqkfzsyqpiv`.
+- Legacy Lovable Supabase project ref: `mnwymfyvvdhekzvipjmp`.
 - Do not create a separate Supabase project.
 - Do not expose secrets in frontend code.
 - Keep production behavior stable.
@@ -153,10 +154,10 @@ Sofi then decides whether roadmap or status documentation needs updating.
 
 Streex is in public beta versioning.
 
-Current baseline:
+Current public beta sequence:
 
 ```text
-Beta 0.1.0
+Current release is tracked in docs/PRODUCT_STATUS.md and src/lib/changelog.ts.
 ```
 
 Older `V3.x` through `V5.x` entries are preserved as Alpha Archive history.

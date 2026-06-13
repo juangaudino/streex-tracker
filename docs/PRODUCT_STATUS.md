@@ -1,26 +1,122 @@
-# Streex Product Status
+# Streex App Status Master
 
-This is a living status document. Update it after roadmap releases, major architecture changes, or important known limitations.
+Last updated: 2026-06-12
+
+This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
+
+Use this with:
+
+- `README.md`
+- `AGENTS.md`
+- `docs/PROJECT_CONTEXT.md`
+- `docs/STREEX_AI_WORKFLOW.md`
+- `CHANGELOG.md`
+- `src/lib/changelog.ts`
+
+Do not place secrets, private keys, service-role keys, passwords, or production credentials in this file.
 
 ## Current Release
 
-`Beta 0.4.6 - Shift Earnings Recovery`
+Current public app version:
+
+```text
+Beta 0.5.1 - Daily Report Export Match
+```
 
 Source of truth:
 
 - `src/lib/changelog.ts`
 - `CHANGELOG.md`
 
-## Versioning Policy
+## Current Infrastructure
 
-Streex is now in public beta versioning.
+Streex Gig Earnings now runs outside Lovable production infrastructure for the live app.
 
-- Current public beta baseline: `0.1.0`
-- Use `0.1.x` for small beta bug fixes and polish.
-- Use `0.2.0`, `0.3.0`, etc. for meaningful beta feature releases.
-- Reserve `1.0.0` for the first stable public release.
-- Preserve older `V3.x` through `V5.x` entries as Alpha Archive history.
-- Before implementing a new prompt, bug fix, polish session, or roadmap feature, Codex should classify the request and propose the version number for user approval.
+Production web app:
+
+```text
+https://gig.getstreex.com
+```
+
+Domain and DNS:
+
+```text
+getstreex.com
+Cloudflare DNS active
+Cloudflare email routing active
+```
+
+Frontend hosting:
+
+```text
+Vercel
+```
+
+Current Supabase backend:
+
+```text
+Project URL: https://ywbrovislvqkfzsyqpiv.supabase.co
+Project ref: ywbrovislvqkfzsyqpiv
+```
+
+Legacy Lovable-managed Supabase project:
+
+```text
+mnwymfyvvdhekzvipjmp
+```
+
+The legacy Lovable Supabase project should be treated as historical/legacy context unless the user explicitly says otherwise. Do not deploy new migrations or Edge Functions there by default.
+
+## Backend Rules
+
+Streex still uses one active production backend.
+
+Current rule:
+
+```text
+Vercel app at gig.getstreex.com
+-> owner-controlled Supabase project ywbrovislvqkfzsyqpiv
+-> all active Streex data and persistence
+```
+
+Do not create or assume another Supabase project.
+
+Before applying migrations, deploying Edge Functions, or changing auth settings:
+
+1. Confirm the target project is `ywbrovislvqkfzsyqpiv`.
+2. Confirm the change is intended for the active production backend.
+3. Never expose service-role keys or secrets in frontend code or documentation.
+
+## Deployment Notes
+
+Vercel environment variables required:
+
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
+VITE_SUPABASE_PROJECT_ID
+```
+
+Vercel build:
+
+```text
+npm run build
+```
+
+Output directory:
+
+```text
+dist
+```
+
+Supabase Auth must allow:
+
+```text
+https://gig.getstreex.com
+https://gig.getstreex.com/**
+Vercel preview URLs as needed
+localhost:8080 for local testing when needed
+```
 
 ## Current Product Direction
 
@@ -29,112 +125,251 @@ Streex is moving from an earnings tracker toward a professional performance inte
 Current emphasis:
 
 - operational clarity
-- performance understanding
+- mobile-first speed
 - driver identity
 - calm utility
+- honest metrics
 - trustworthy personal analytics
+- no-shame progress language
 
-## Recent Major Layers
+## Current Core Systems
 
-Alpha Archive highlights:
+### Dashboard + Full Focus
 
-- V5.5 Dashboard Utility Expansion
-- Daily Command Center with live OpenWeather and TomTom data
-- International display formatting and milestone share cards
-- V5.6 Shift + Hours, Pattern Intelligence, and Mileage Foundation
-- V5.7 Full Focus operational dashboard
-- Daily Start Hub
-- Navigation cleanup and Ask AI visibility
-- Admin Ops, feedback inbox, app version control, and re-engagement email foundation
-- V5.7.6 dashboard, Ask My Data mobile, and shift tracking consolidation
-- V5.7.7 Ask My Data intent routing and capability awareness
-- V5.7.8 iOS/Safari/PWA app resume and lifecycle persistence hardening
-- V5.7.9 branded iOS, Android, and browser PWA icon configuration
+Dashboard has two experiences:
 
-Beta highlights:
+- Standard Dashboard: fuller dashboard, progression, identity, records, and utility context.
+- Full Focus: operational dashboard, built for live work sessions and quick understanding.
 
-- 0.1.0 public beta versioning baseline
-- 0.1.1 Ask My Data mobile composer stability, voice input, and copy conversation
-- 0.1.2 Entry Shift Blocks mobile layout fix
-- 0.2.0 Earnings Snapshots V1 and honest timing-source labels for Shift Intelligence
-- 0.2.1 Late earnings adjustments improve real totals without contaminating observed timing patterns
-- 0.2.2 Octopus reward income classification for cleaner operational efficiency metrics
-- 0.2.3 Career and weekly operations snapshots now have clear lifetime vs current-week scope labels
-- 0.3.0 Work Hours Intelligence, manual Ride Count foundation, weekly hours goals, Daily Report 2.0, and Ask My Data shift/rides context
-- 0.3.1 Quick Add now supports focused accumulated-total updates for primary apps, with optional miles/rides capture and full-entry fallback
-- 0.3.2 Full Focus mini-cards now use same-weekday historical rank and compact live conditions instead of redundant shift/momentum status
-- 0.3.3 End Day report export now better matches the visible Daily Report and uses cleaner next-milestone copy
-- 0.3.4 Splash and auth screens now use a premium dark Streex visual treatment with motion streaks and reduced-motion support
-- 0.4.0 Signature theme added as the flagship STREEX visual identity
-- 0.4.1 Velocity theme added as a motorsport-inspired performance theme
-- 0.4.2 iOS Safari/PWA safe areas now inherit the active theme background instead of exposing a white strip
-- 0.4.3 Full Focus mini-cards now include on-demand metric explanations without adding permanent dashboard text
+Full Focus currently includes:
 
-## Pattern Intelligence Source Truth
+- Today total
+- Day vs average
+- Goal progress
+- Historical rank
+- Conditions
+- weekly earnings and hours progress
+- Quick Add
+- End Day
+- current-week operations snapshot
+- metric drill-down sheets for explanation
 
-Streex does not currently receive individual ride-level timestamps.
+### Entry + Quick Add
 
-Timing intelligence must label its source clearly:
+Entry supports:
 
-- Earnings Snapshots: observed from saved earning-update deltas.
-- Estimated Windows: inferred by spreading daily earnings across completed shift duration.
-- Late earning adjustments: improve real totals and efficiency stats, but are excluded from observed timing if saved after the original work day.
+- normal app earnings
+- Quick Add focused updates for primary apps
+- optional miles and rides
+- manual ride count
+- shift blocks
+- start/end shift
+- pause/resume shift
+- manual shift earnings recovery
+- bonus income entry
 
-Do not present timing cards as exact ride-level hourly earnings unless a future integration provides ride timestamps.
+Quick Add is designed around accumulated totals, not incremental add-only values. The user enters the current total visible in the driver app, and Streex computes changes/snapshots safely.
 
-## Reward Income Rule
+### Shift Intelligence
 
-Octopus is treated as reward income by app name.
+Shift Intelligence includes:
 
-- Real money totals include Octopus: day totals, week totals, records, Best Day, exports, and general earnings history.
-- Operational performance excludes Octopus: shift efficiency, earnings per hour, earnings per mile, hourly timing, and app-by-hour patterns.
-- Historical Octopus entries are reinterpreted automatically by calculation rules; stored amounts are not changed.
+- shift start/end
+- active shift state
+- pause/resume via work blocks
+- total active work time
+- miles
+- rides
+- earnings/hour
+- earnings/mile
+- earnings/ride when ride count exists
+- current-week and lifetime operations snapshots
 
-## Operations Snapshot Scope
+Important metric rule:
 
-Operational metrics must clearly state their scope.
+Do not calculate fake efficiency. If duration, rides, miles, or safely attributable earnings are missing, hide the metric or show an honest fallback.
 
-- Career tab: lifetime/career-wide operations context.
-- Dashboard: current-week operations context.
+### Earnings Snapshots
 
-Avoid generic snapshot labels when the user cannot immediately tell whether the number is weekly, monthly, or lifetime.
+Earnings Snapshots V1 records earnings update deltas when the user saves updated app totals.
 
-## Work Hours + Ride Count
+Use snapshots for:
 
-Ride Count is manual-first and optional.
+- observed earnings update timing
+- more honest timing analysis when data exists
+- reconstructing some shift-level earnings when a same-shift snapshot exists
 
-- Shift blocks can store `rideCount` alongside start time, end time, and miles.
-- Day/week/career ride metrics should only appear when rides have been entered.
-- Weekly hours goals are separate from weekly earnings goals.
-- Missing duration or rides must never produce fake $/hour, $/ride, rides/hour, or minutes/ride values.
+Do not claim exact ride-level hourly performance unless future ride timestamps or provider integrations exist.
 
-## Ask My Data
+### Bonus Income
 
-Ask My Data is career intelligence, not a recent-dashboard helper.
+Bonus income represents surprise platform payouts or extra one-time payouts.
 
-Rules:
+Bonus rules:
 
-- Default to full history when no timeframe is specified.
-- Use deterministic calculations when the requested fact can be derived safely.
-- Do not substitute unsupported questions with vaguely similar answers.
-- Be explicit about unsupported hourly, trip-location, ride-type, health, or biometric data.
-- Shift hours, rides, miles, and efficiency can be answered when those values exist in tracked shift blocks.
-- Use `docs/ASK_MY_DATA_CHALLENGE_SET.md` for manual QA.
+- Counts toward daily, weekly, monthly, lifetime totals.
+- Counts toward records, Journey, Career totals, XP, Achievements, and app breakdown.
+- Excluded from $/hour, $/shift, shift efficiency, timing metrics, and operational performance.
+- Octopus is treated as bonus/reward income automatically by app name.
+- Existing Octopus entries remain stored as-is but are interpreted by calculation rules.
 
-After changing `supabase/functions/ask-my-data/index.ts`, deploy the updated `ask-my-data` Edge Function to the live Lovable-connected backend.
+Rule of thumb:
+
+```text
+Real money story includes bonus.
+Operational efficiency excludes bonus.
+```
+
+### Daily Report / End Day
+
+End Day has evolved into a richer Daily Report:
+
+- today earned
+- app count
+- hours
+- per-hour when valid
+- miles
+- rides
+- per-ride when valid
+- vs average
+- week pace
+- week total
+- week share
+- shift intelligence
+- narrative insight
+- milestone context
+- image download/share
+
+Current export behavior:
+
+The exported Daily Report image captures the visible report card instead of a separate export-only template. This keeps the downloaded/shared card aligned with the in-app design.
+
+### Ask My Data
+
+Ask My Data is the AI analytics layer.
+
+Current state:
+
+- Works against the active Supabase Edge Function when configured.
+- Defaults to full historical scope when the user does not specify a timeframe.
+- Has intent routing and challenge-set documentation.
+- Supports deterministic answers for many earnings, weekday, week, shift, rides, and pattern questions when data exists.
+- Should not substitute unsupported questions with vaguely similar answers.
+
+Important limitation:
+
+Ask My Data should be treated as beta. Do not overclaim exact hourly, location, trip-type, or health insights unless the underlying data exists.
+
+### Admin Ops
+
+Admin Ops foundation exists:
+
+- protected admin route
+- admin role validation via backend
+- user management foundation
+- block/unblock
+- feedback inbox
+- app version/update controls
+- re-engagement email foundation
+
+Email delivery quality is still pending production sender/domain refinement.
+
+### Themes
+
+Current major visual themes include:
+
+- Classic Light
+- Classic Dark
+- RPG
+- Night
+- Signature
+- Velocity
+
+Recent visual layers:
+
+- premium dark auth/login/splash
+- iOS safe-area theme background handling
+- Full Focus drill-down layer
+- Daily Report export polish
+
+## Current Versioning Policy
+
+Streex is in public beta versioning.
+
+- Use `0.x.y` during beta.
+- Use patch versions for bug fixes and polish.
+- Use minor versions for meaningful feature releases.
+- Reserve `1.0.0` for the first stable public release.
+- Preserve older `V3.x` through `V5.x` labels as Alpha Archive history.
+
+Before implementing a new prompt, Codex should:
+
+1. classify the request
+2. propose a version number when the change is meaningful
+3. ask for user approval if versioning is ambiguous
+
+## Recent Beta Highlights
+
+- `0.5.1`: Daily Report export now matches the visible report card; CSS import warning fixed.
+- `0.5.0`: Bonus Category added; bonuses count toward earnings story but not operational efficiency.
+- `0.4.9`: Historical Rank drill-down added Day and Week views.
+- `0.4.8`: iOS header safe-area fix.
+- `0.4.7`: Account Security / Change Password in Settings.
+- `0.4.6`: Shift Earnings Recovery.
+- `0.4.5`: Shift Pause + Work Blocks foundation.
+- `0.4.4`: Full Focus drill-down refinement.
+- `0.4.3`: Full Focus metric drill-down layer.
+- `0.4.2`: iOS/PWA safe-area theme background fix.
+- `0.4.1`: Velocity theme.
+- `0.4.0`: Signature theme.
+- `0.3.4`: Premium auth and splash visual refresh.
+- `0.3.0`: Work Hours Intelligence, Ride Count, weekly hours goals, and Daily Report 2.0 foundation.
+
+See `CHANGELOG.md` for full details.
 
 ## Known Operational Notes
 
-- OpenWeather and TomTom secrets live in the Lovable-connected backend, not frontend code.
-- Re-engagement email delivery quality will improve later with the owner's domain and sender email.
-- The web roadmap should be completed and stabilized before beginning the professional SwiftUI iOS app.
-- Bug-fix and QA periods should avoid adding unrelated roadmap scope.
+- Local `.env` files may be stale or machine-specific. Vercel Production variables are the deployment source of truth.
+- `supabase/config.toml` should point to the active Supabase project ref for future function deployments.
+- Ask My Data and utility Edge Functions depend on Supabase function secrets. Do not assume secrets are present in a new environment.
+- OpenWeather and TomTom are backend/Edge Function concerns; do not place provider keys in frontend code.
+- Supabase default auth emails can hit quota; production email sender configuration should be improved separately.
+- The web app should continue to stabilize before starting a professional native SwiftUI iOS app.
+
+## Current Follow-Up Backlog
+
+High priority:
+
+- Improve Supabase Auth email delivery with proper custom SMTP/domain sender.
+- Keep monitoring login/session behavior after the migration.
+- Validate Daily Report export on iOS PWA after next deploy.
+- Continue bug-fix stabilization before adding large roadmap systems.
+
+Medium priority:
+
+- Replace or evolve Ask My Data away from any remaining Lovable AI dependency if needed.
+- Continue improving shift-level attribution from earnings snapshots.
+- Add more robust admin email sender configuration.
+- Keep `docs/ASK_MY_DATA_CHALLENGE_SET.md` updated after Ask My Data fixes.
+
+Do not implement these automatically. Treat them as product backlog.
+
+## How Claude / ChatGPT Should Use This
+
+When asked about Streex:
+
+1. Read this file first.
+2. Then read `README.md`, `docs/PROJECT_CONTEXT.md`, and `CHANGELOG.md`.
+3. Use repo files as the current source of truth.
+4. If chat history disagrees with repo docs, ask the user which source is newer.
+5. Do not assume Lovable is still production infrastructure unless the user explicitly says so.
 
 ## Update This Document When
 
 - a roadmap version ships
 - the current release changes
+- infrastructure changes
+- Supabase project target changes
 - a major system is added or removed
-- backend architecture changes
 - a known limitation is resolved
-- the product direction materially changes
+- product direction materially changes

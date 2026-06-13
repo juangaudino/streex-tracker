@@ -12,7 +12,7 @@ This repository is the source of truth for the Streex Gig Earnings App.
 
 ## Core Rules
 
-- Use only the existing Lovable-connected Supabase backend.
+- Use only the active owner-controlled Supabase backend unless the user explicitly asks for legacy inspection.
 - Confirm the backend before applying migrations or deploying Edge Functions.
 - Never create or assume a separate Supabase project.
 - Never expose API keys, service-role keys, or secrets in frontend code or documentation.
@@ -39,7 +39,15 @@ Do not break:
 
 ## Backend
 
-Live Lovable-connected Supabase project:
+Active production Supabase project:
+
+`ywbrovislvqkfzsyqpiv`
+
+Production app:
+
+`https://gig.getstreex.com`
+
+Legacy Lovable-managed Supabase project:
 
 `mnwymfyvvdhekzvipjmp`
 

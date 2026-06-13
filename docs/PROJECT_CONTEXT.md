@@ -17,9 +17,11 @@ Core philosophy:
 
 ## Versioning
 
-Streex is currently in public beta versioning:
+Streex is currently in public beta versioning.
 
-`Beta 0.1.0`
+Current release:
+
+`Beta 0.5.1`
 
 Older `V3.x` through `V5.x` labels are Alpha Archive history. Keep them for continuity, but do not use the old Alpha sequence for new beta work.
 
@@ -35,25 +37,38 @@ Do not store owner-specific absolute filesystem paths in tracked documentation. 
 
 ## Architecture
 
-Streex uses one backend only:
+Streex uses one active production backend only:
 
 ```text
-Lovable app
--> live Lovable-connected Supabase backend
+Vercel app at gig.getstreex.com
+-> owner-controlled Supabase backend
 -> all Streex data and persistence
 ```
 
-Live Supabase project:
+Production app:
+
+`https://gig.getstreex.com`
+
+Active Supabase project:
+
+`ywbrovislvqkfzsyqpiv`
+
+Active Supabase URL:
+
+`https://ywbrovislvqkfzsyqpiv.supabase.co`
+
+Legacy Lovable-managed Supabase project:
 
 `mnwymfyvvdhekzvipjmp`
 
 Rules:
 
 - Do not create or assume another Supabase project.
-- Apply migrations only to the confirmed live Lovable-connected backend.
+- Apply migrations only to the confirmed active Supabase backend.
+- Treat `mnwymfyvvdhekzvipjmp` as legacy context unless the user explicitly asks to inspect or compare it.
 - No external backend unless explicitly approved.
 - Never expose secrets in frontend code.
-- Edge Functions and migrations may require Lovable to deploy them to the live backend.
+- Edge Functions and migrations should target `ywbrovislvqkfzsyqpiv` unless the user explicitly says otherwise.
 
 ## Technology
 
@@ -65,9 +80,15 @@ Rules:
 - Supabase Auth
 - Supabase Postgres
 - Supabase Edge Functions
-- Lovable AI Gateway
 - OpenWeather
 - TomTom Traffic
+- Vercel
+- Cloudflare
+
+Historical/optional tooling:
+
+- Lovable-assisted visual iteration
+- Lovable AI Gateway, if still configured for Ask My Data until replaced
 
 ## Data Rules
 
@@ -102,21 +123,30 @@ Rules:
 
 ## Development Workflow
 
-Lovable may modify production code directly. Before Codex makes changes:
+Lovable may still modify code through GitHub or connected project tooling. Before Codex makes changes:
 
 1. Check the current repo state.
 2. Review latest changes when relevant.
 3. Work with existing patterns.
 4. Avoid reverting user or Lovable changes.
 5. Validate before reporting completion.
-6. Tell the user when an Edge Function or migration still needs live deployment.
+6. Tell the user when an Edge Function or migration still needs deployment to the active Supabase project.
 
 ## Deployment
 
-Vercel previews use:
+Production hosting:
+
+`Vercel`
+
+Production domain:
+
+`https://gig.getstreex.com`
+
+Vercel uses:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_SUPABASE_PROJECT_ID`
 
 Build:
 
@@ -130,10 +160,12 @@ Output:
 dist
 ```
 
-## Infrastructure Migration Planning
+## Infrastructure Status
 
-Cloudflare is active for `getstreex.com`, with the Streex Gig Earnings subdomain planned at `gig.getstreex.com`.
+Cloudflare is active for `getstreex.com`.
 
-Migration away from Lovable-managed infrastructure is being evaluated, but production has not been migrated yet.
+`gig.getstreex.com` points to Vercel Production.
 
-Use `docs/MIGRATION_READINESS_CHECKLIST.md` before any Supabase or Vercel cutover work.
+The active app now uses the owner-controlled Supabase project `ywbrovislvqkfzsyqpiv`.
+
+Use `docs/MIGRATION_READINESS_CHECKLIST.md` as historical migration context, not as the current production state.

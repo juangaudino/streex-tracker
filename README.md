@@ -18,6 +18,20 @@ New contributors and new Codex chats should begin with:
 - `docs/PROJECT_CONTEXT.md`
 - `docs/STREEX_AI_WORKFLOW.md`
 - `docs/PRODUCT_STATUS.md`
+- `CHANGELOG.md`
+
+`docs/PRODUCT_STATUS.md` is the master living status document for Claude, ChatGPT, Codex, and Lovable. If an external AI has repo access, ask it to read that file first.
+
+## Current Production Status
+
+- Current release: **Beta 0.5.1**
+- Production app: `https://gig.getstreex.com`
+- Hosting: **Vercel**
+- DNS/domain: **Cloudflare** for `getstreex.com`
+- Active Supabase project ref: `ywbrovislvqkfzsyqpiv`
+- Legacy Lovable Supabase project ref: `mnwymfyvvdhekzvipjmp`
+
+The active production app is no longer dependent on Lovable hosting. Lovable can still be used for visual iteration or assistance, but production code should flow through GitHub/Vercel and the active owner-controlled Supabase project.
 
 ---
 
@@ -239,24 +253,16 @@ Exports support:
 
 ## 🎨 Themes
 
-Streex currently includes four visual modes:
+Streex includes multiple visual modes:
 
-### ☀️ Light
+- Classic Light
+- Classic Dark
+- RPG
+- Night
+- Signature
+- Velocity
 
-Clean, bright, and practical.
-
-### 🌙 Dark
-
-Quiet, focused, and low-friction.
-
-### 🎮 RPG
-
-Futuristic tactical HUD with neon accents and achievement energy.
-
-### 🛣️ Night Drive
-
-Cockpit-inspired surfaces, streetlight amber, dashboard teal, asphalt depth,
-and subtle road-lane atmosphere.
+Theme work is visual only unless a specific task says otherwise. Auth, earnings, shifts, exports, Ask My Data, and backend behavior should not change during theme-only work.
 
 ---
 
@@ -271,19 +277,32 @@ and subtle road-lane atmosphere.
 - 🗄️ **Supabase Postgres**
 - 🧠 **Supabase Edge Functions**
 - 🤖 **Lovable AI Gateway**
-- 🚀 **Vercel previews**
+- 🚀 **Vercel production + previews**
+- 🌐 **Cloudflare DNS**
 - 🛠️ **Lovable-assisted development**
 
 ---
 
 ## 🔐 Backend Rule
 
-Streex uses **one backend only**:
+Streex uses **one active production backend only**:
 
 ```text
-Lovable app
-→ live Lovable-connected Supabase backend
+Vercel app at gig.getstreex.com
+→ owner-controlled Supabase backend
 → all Streex data and persistence
+```
+
+Active Supabase project:
+
+```text
+ywbrovislvqkfzsyqpiv
+```
+
+Legacy Lovable-managed Supabase project:
+
+```text
+mnwymfyvvdhekzvipjmp
 ```
 
 The live source of truth includes:
@@ -297,13 +316,13 @@ The live source of truth includes:
 - future analytics
 - future identity and career systems
 
-No separate Supabase project should be assumed or created unless explicitly requested.
+No separate Supabase project should be assumed or created unless explicitly requested. Treat the legacy Lovable project as historical context unless the user explicitly asks to inspect or compare it.
 
 ---
 
 ## 🚀 Local / Preview Setup
 
-This repo is configured for Vercel preview deployments.
+This repo is configured for Vercel production and preview deployments.
 
 ### Vercel Settings
 
@@ -316,6 +335,7 @@ This repo is configured for Vercel preview deployments.
 ```bash
 VITE_SUPABASE_URL=
 VITE_SUPABASE_PUBLISHABLE_KEY=
+VITE_SUPABASE_PROJECT_ID=
 ```
 
 The `vercel.json` file keeps nested app routes working when opened directly.
@@ -329,7 +349,7 @@ Streex development follows these rules:
 - keep production behavior stable
 - additive-first architecture
 - preserve existing dashboard, auth, earnings, exports, achievements, records, and Ask My Data behavior
-- apply database migrations only to the confirmed live Lovable-connected backend
+- apply database migrations only to the confirmed active Supabase backend
 - never expose auth tokens, API keys, Supabase secrets, or internal credentials
 - keep user-owned data scoped by RLS
 - avoid full raw data dumps into AI prompts
@@ -339,149 +359,13 @@ Streex development follows these rules:
 
 ## 📜 Changelog
 
-### V5.4.2 — Pulse Mode + Career Titles
+Use these files for release history:
 
-- Pulse Mode added as an optional momentum-reactive visual layer
-- Dashboard can now subtly shift visual intensity for calm, steady, streak, strong, and record-chase states
-- Career Title Generator added to Driver Identity
-- Career titles combine driver level, behavior, goals, records, and archetype signals
-- Pulse Mode is stored locally and can be turned on or off from Settings
+- `CHANGELOG.md`
+- `src/lib/changelog.ts`
+- `docs/PRODUCT_STATUS.md`
 
-### V5.4.1 — Night Drive Theme
-
-- Night Drive added as a fourth visual theme
-- Cockpit-style surfaces with streetlight and dashboard accents
-- Subtle road-lane atmosphere across the app shell
-- Theme selector updated in Settings without changing production data behavior
-
-### V5.4 — XP + Identity System
-
-- Dual XP System with Consistency XP and Performance XP
-- Driver Levels from Rookie to Streex Legend
-- Automatic Driver Archetypes based on real behavior
-- Historical day ranking and healthy rival snippets
-- Ideal Week comparison built from your own best weekdays
-- Day Off V1 keeps quiet days neutral and non-punitive
-- Adaptive Calendar Pace and Worked-Day Pace
-- XP ledger with idempotent event keys to avoid duplicate awards
-
-### V5.3B.3 — Ask My Data
-
-- Ask My Data added as a beta assistant
-- Scope-aware answers for recent, all-time, and seasonal questions
-- Streaming assistant responses
-- AI usage logging for tokens, latency, scope, and estimated cost
-- Server-side record answers for best-week questions
-
-### V5.3B.2 — Dashboard Clarity & Data Export
-
-- Dashboard semantics cleanup
-- Adaptive Active Days logic
-- Human-readable Active Days labels
-- Export My Data added to Settings
-- JSON backup export
-- CSV earnings export
-
-### V5.3B — Social Layer & Share Center
-
-- Share Center added inside Journey
-- Premium share cards for weekly highlights, milestones, and career moments
-- Monthly flex cards generated from recap data
-- Weekly letter excerpts as quote-style share cards
-- Story, Square, and Wide export formats
-- Copy, Save, and Share support
-- Legendary moments get a quiet gold treatment
-
-### V5.3A.1 — Letters Library & Share Export
-
-- Letters Library added
-- Every closed week archived as a chapter
-- Letters tagged by emotional theme and anchored to weekly total
-- Letters persist permanently
-- Share cards can be saved as images or shared natively
-- Letters surfaced inside Progress Hub
-
-### V5.3A — Narrative Core
-
-- Weekly Letter generated from real week data
-- Expanded Journey Feed with narrative events
-- Three strong days, streak protection, and goal-defended moments
-- First $200/$300 weekday milestones
-- Share card foundation for future export and social moments
-
-### V5.2.1 — Branding, Navigation & Heatmap Polish
-
-- Improved Streex branding on splash and header
-- Cleaner 4-item bottom navigation
-- New Progress Hub for Journey, Recap, and Achievements
-- Improved monthly heatmap contrast and hierarchy
-- Enhanced legendary day visuals with shimmer and glow
-
-### V5.2 — Monthly Recap System
-
-- Monthly Recap System added
-- Monthly Heatmap with all-time best day glow
-- Emotional month summaries and closing lines
-- Strongest week spotlight inside each month
-- Monthly narrative flow integrated into Journey
-
-### V5.1.5 — Cohesion & Momentum Refinement
-
-- Milestones grid uses equal heights and contextual cards
-- Removed early-day negative pacing
-- New early/mid/high state vocabulary
-- Active Momentum keeps building anticipation
-- Fresh Chapter screen echoes last week's wins
-- Smarter time-of-day aware motivational logic
-
-### V5.1 — Narrative Evolution
-
-- Weekly Closing Experience
-- Journey Feed
-- Full Changelog history with version timeline
-- Near-momentum items
-- Smarter pacing
-- 2-column mobile trophy grid
-- Expanded performance insights
-- Post-week state
-
-### V5.0.2 — UX, Emotional Logic & Monthly Progression
-
-- Unified mood engine
-- Pre-run states for $0 mornings
-- End Day moved inside Quick Add
-- Closed-day badge prevents accidental edits
-- Monthly Progression replaces punishing growth percentage
-
-### V5.0.1 — Navigation Cleanup
-
-- Settings moved to user menu
-- Less crowded mobile bottom navigation
-- Improved dashboard hierarchy
-
-### V5.0 — Career Journey & End Day
-
-- Career page with archetype and lifetime stats
-- End Day flow with rich daily recap
-- Daily record progression psychology
-
-### V4.5 — Emotional Reward & Stability
-
-- Record Celebration system
-- Advanced rotating commentary
-- Layout stability fixes for long emotional headers
-
-### V4.0 — Smart Momentum Layer
-
-- Active Momentum streak section
-- Smart dashboard headers
-- Daily and weekly record chases
-
-### V3.0 — Achievements & Rarity
-
-- Achievements system with rarity tiers
-- RPG mode polish
-- Mobile day detail view
+Older `V3.x` through `V5.x` labels are preserved as Alpha Archive history. Current work uses public beta versioning.
 
 ---
 

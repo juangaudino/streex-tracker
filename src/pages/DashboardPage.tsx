@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
 import DailyStartHub from "@/components/DailyStartHub";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import ShiftIntelligencePanel from "@/components/ShiftIntelligencePanel";
-import { getWeekdayHistoricalRank } from "@/lib/career";
+import { getWeekRanking, getWeekdayHistoricalRank } from "@/lib/career";
 import { useDriverUtility } from "@/hooks/useDriverUtility";
 import MetricDrillDownSheet, { type MetricDrillDownDetail } from "@/components/MetricDrillDownSheet";
 import type { WeekRecord } from "@/lib/types";
@@ -143,6 +143,39 @@ function getWeekdayRankWindow(weeks: WeekRecord[], dayName: string, date: string
     return {
       label: `#${rank} · ${day.date}`,
       value: formatCurrency(day.total, currencySymbol),
+      helper,
+    };
+  });
+}
+
+function getWeekRankWindow(weeks: WeekRecord[], weekId: string, currencySymbol: string) {
+  const ranked = weeks
+    .filter((week) => week.status === "closed" || week.id === weekId)
+    .map((week) => ({
+      id: week.id,
+      startDate: week.startDate,
+      endDate: week.endDate,
+      total: weekTotal(week),
+    }))
+    .sort((a, b) => b.total - a.total || b.endDate.localeCompare(a.endDate));
+
+  const current = ranked.find((week) => week.id === weekId);
+  const currentIndex = ranked.findIndex((week) => week.id === weekId);
+  if (!current || currentIndex < 0) return [];
+
+  return ranked.slice(Math.max(0, currentIndex - 3), currentIndex + 4).map((week, index) => {
+    const absoluteIndex = Math.max(0, currentIndex - 3) + index;
+    const rank = absoluteIndex + 1;
+    const difference = week.total - current.total;
+    const helper = week.id === weekId
+      ? "Current week"
+      : difference > 0
+        ? `${formatCurrency(difference, currencySymbol)} ahead`
+        : `${formatCurrency(Math.abs(difference), currencySymbol)} behind you`;
+
+    return {
+      label: `#${rank} · ${week.startDate}`,
+      value: formatCurrency(week.total, currencySymbol),
       helper,
     };
   });
@@ -385,6 +418,15 @@ export default function DashboardPage() {
   const rankWindow = todayEntry
     ? getWeekdayRankWindow(weeks, todayEntry.dayName, todayEntry.date, todayTotal, sym)
     : [];
+  const weekRanking = getWeekRanking(weeks, openWeek.id);
+  const weekRankWindow = getWeekRankWindow(weeks, openWeek.id, sym);
+  const rankedWeeks = weeks.filter((week) => week.status === "closed" || week.id === openWeek.id);
+  const bestHistoricalWeek = rankedWeeks.reduce<WeekRecord | null>((best, week) => {
+    if (!best) return week;
+    return weekTotal(week) > weekTotal(best) ? week : best;
+  }, null);
+  const bestHistoricalWeekTotal = bestHistoricalWeek ? weekTotal(bestHistoricalWeek) : 0;
+  const weekGapToBest = Math.max(0, bestHistoricalWeekTotal - total);
   const weather = driverUtility.data?.weather;
   const traffic = driverUtility.data?.traffic;
   const weatherLive = weather?.status === "live";
@@ -468,6 +510,70 @@ export default function DashboardPage() {
       dayRec.record > todayTotal
         ? `${formatCurrency(Math.max(0, dayRec.record - todayTotal), sym)} separates today from your best ${todayName}.`
         : `Today is at or above your previous best ${todayName}.`,
+    ],
+    pages: [
+      {
+        id: "day",
+        label: "Day",
+        detail: {
+          eyebrow: "Historical Day Rank",
+          title: `${todayName} history`,
+          summary: historicalRank.total >= 3
+            ? `This ranks today against your other tracked ${todayName}s.`
+            : `Streex needs more tracked ${todayName}s before this rank becomes useful.`,
+          stats: [
+            { label: "Current rank", value: historicalRank.total >= 3 ? `#${historicalRank.rank}` : "Building", helper: "Today's position" },
+            { label: "Compared days", value: historicalRank.total >= 3 ? `${historicalRank.total}` : `${historicalRank.total}`, helper: `Tracked ${todayName}s` },
+            { label: "Best same day", value: dayRec.record > 0 ? formatCurrency(dayRec.record, sym) : "Building", helper: `Your top ${todayName}` },
+            { label: "Today's total", value: formatCurrency(todayTotal, sym), helper: "Current day value" },
+          ],
+          sections: rankWindow.length > 0
+            ? [
+                {
+                  title: "Nearby day positions",
+                  rows: rankWindow,
+                },
+              ]
+            : undefined,
+          notes: [
+            "This compares the same weekday only, so Sunday is measured against Sundays, Friday against Fridays, and so on.",
+            dayRec.record > todayTotal
+              ? `${formatCurrency(Math.max(0, dayRec.record - todayTotal), sym)} separates today from your best ${todayName}.`
+              : `Today is at or above your previous best ${todayName}.`,
+          ],
+        },
+      },
+      {
+        id: "week",
+        label: "Week",
+        detail: {
+          eyebrow: "Historical Week Rank",
+          title: "Current week history",
+          summary: weekRanking.total >= 3
+            ? "This ranks the current week against your tracked weekly history."
+            : "Streex needs more tracked weeks before weekly rank becomes useful.",
+          stats: [
+            { label: "Current rank", value: weekRanking.total >= 3 && weekRanking.rank > 0 ? `#${weekRanking.rank}` : "Building", helper: "This week's position" },
+            { label: "Compared weeks", value: `${weekRanking.total}`, helper: "Tracked weeks in ranking" },
+            { label: "Best week", value: bestHistoricalWeekTotal > 0 ? formatCurrency(bestHistoricalWeekTotal, sym) : "Building", helper: bestHistoricalWeek ? `${bestHistoricalWeek.startDate} → ${bestHistoricalWeek.endDate}` : "Your top week" },
+            { label: "This week", value: formatCurrency(total, sym), helper: "Current week total" },
+          ],
+          sections: weekRankWindow.length > 0
+            ? [
+                {
+                  title: "Nearby week positions",
+                  rows: weekRankWindow,
+                },
+              ]
+            : undefined,
+          notes: [
+            "Week rank compares total earnings by week. The current open week is included so you can see where it stands right now.",
+            weekGapToBest > 0
+              ? `${formatCurrency(weekGapToBest, sym)} separates this week from your best week.`
+              : "This week is at or above your previous best week.",
+          ],
+        },
+      },
     ],
   };
   const conditionsDetail: MetricDrillDownDetail = {

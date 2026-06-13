@@ -86,7 +86,7 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
   }
 
   return (
-    <div className="h-[100dvh] flex flex-col overflow-hidden">
+    <div className="streex-app-shell flex flex-col overflow-hidden">
       <AchievementToastContainer />
       <CelebrationContainer />
       <header className={cn(

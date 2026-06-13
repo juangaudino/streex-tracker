@@ -311,6 +311,12 @@
   }
 }
 
+.streex-app-shell {
+  height: 100dvh;
+  padding-top: max(env(safe-area-inset-top), 0px);
+  background-color: var(--app-bg);
+}
+
 /* STREEX premium auth + splash motion */
 .streex-premium-shell {
   position: relative;

@@ -2,6 +2,29 @@
 
 ## Beta Releases
 
+### Beta 0.4.9 — Historical Rank Drill-Down Expansion
+
+### Added
+
+- Full Focus Historical Rank drill-down now includes `Day` and `Week` views inside the same lightweight detail sheet.
+- Day view preserves same-weekday ranking context with nearby positions.
+- Week view shows the current week rank among tracked weeks, best week context, and nearby weekly positions.
+
+### Production Behavior
+
+- The main Full Focus dashboard cards, ranking calculations, Supabase data, auth, exports, Ask My Data, and backend architecture were not changed.
+
+### Beta 0.4.8 — iOS Header Safe-Area Fix
+
+### Fixed
+
+- The authenticated app shell now reserves the iOS top safe area so the global header no longer sits under the Dynamic Island or status bar.
+- The safe-area background continues to use the active Streex theme background instead of a hardcoded color.
+
+### Production Behavior
+
+- Dashboard order, calculations, auth behavior, Supabase data, exports, Ask My Data, and backend architecture were not changed.
+
 ### Beta 0.4.7 — Account Security Settings
 
 ### Added

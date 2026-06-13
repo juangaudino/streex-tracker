@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.4.7";
+export const CURRENT_VERSION = "0.4.9";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,29 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.4.9",
+    date: "2026-06",
+    title: "Historical Rank Drill-Down Expansion",
+    tags: ["new", "polish"],
+    items: [
+      "Full Focus Historical Rank drill-down now includes Day and Week views inside the same lightweight detail sheet",
+      "Day view preserves same-weekday ranking context with nearby positions",
+      "Week view shows the current week rank among tracked weeks, best week context, and nearby weekly positions",
+      "The main Full Focus dashboard cards, ranking calculations, Supabase data, auth, and backend behavior were not changed",
+    ],
+  },
+  {
+    version: "0.4.8",
+    date: "2026-06",
+    title: "iOS Header Safe-Area Fix",
+    tags: ["fix", "polish"],
+    items: [
+      "The authenticated app shell now reserves the iOS top safe area so the global header no longer sits under the Dynamic Island or status bar",
+      "The safe-area background continues to use the active Streex theme background instead of a hardcoded color",
+      "Dashboard order, calculations, auth behavior, Supabase data, and backend architecture were not changed",
+    ],
+  },
   {
     version: "0.4.7",
     date: "2026-06",

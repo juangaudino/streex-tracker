@@ -60,6 +60,12 @@ interface DayEntry {
   dayName: string;
   date: string;
   apps: Record<string, number>;
+  bonuses?: {
+    id?: string;
+    app: string;
+    amount: number;
+    source?: string;
+  }[];
   shifts?: {
     id: string;
     startTime: string;
@@ -89,7 +95,7 @@ interface NormalizedWeek {
   daysWorked: number;
   shiftStats: ShiftStats;
   appTotals: Record<string, number>;
-  dayTotals: { day: string; date: string; total: number; hours: number; rides: number; miles: number; completedShifts: number; activeShifts: number }[];
+  dayTotals: { day: string; date: string; total: number; operationalTotal: number; hours: number; rides: number; miles: number; completedShifts: number; activeShifts: number }[];
 }
 
 interface ShiftStats {
@@ -98,6 +104,7 @@ interface ShiftStats {
   activeShifts: number;
   totalRides: number;
   totalMiles: number;
+  operationalEarnings: number;
   earningsPerHour: number | null;
   earningsPerRide: number | null;
   ridesPerHour: number | null;
@@ -118,8 +125,36 @@ function roundCost(value: number): number {
   return +value.toFixed(8);
 }
 
+const BONUS_APP_NAMES = new Set(["octopus"]);
+
+function isBonusApp(app: string): boolean {
+  return BONUS_APP_NAMES.has(app.trim().toLowerCase());
+}
+
+function bonusDayTotal(d: DayEntry): number {
+  const manualBonuses = (d.bonuses ?? []).reduce((sum, bonus) => sum + Math.max(0, Number(bonus.amount) || 0), 0);
+  const legacyBonusApps = Object.entries(d.apps || {}).reduce((sum, [app, value]) => {
+    return isBonusApp(app) ? sum + Math.max(0, Number(value) || 0) : sum;
+  }, 0);
+  return manualBonuses + legacyBonusApps;
+}
+
+function appBonusTotal(d: DayEntry, app: string): number {
+  const target = app.trim().toLowerCase();
+  return (d.bonuses ?? []).reduce((sum, bonus) => {
+    return bonus.app.trim().toLowerCase() === target ? sum + Math.max(0, Number(bonus.amount) || 0) : sum;
+  }, 0);
+}
+
+function operationalDayTotal(d: DayEntry): number {
+  return Object.entries(d.apps || {}).reduce((s, [app, v]) => {
+    if (isBonusApp(app)) return s;
+    return s + Math.max(0, Number(v) || 0);
+  }, 0);
+}
+
 function dayTotal(d: DayEntry): number {
-  return Object.values(d.apps || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+  return operationalDayTotal(d) + bonusDayTotal(d);
 }
 
 function shiftDurationHours(shift: NonNullable<DayEntry["shifts"]>[number]): number {
@@ -160,6 +195,7 @@ function normalizeWeek(w: WeekRow): NormalizedWeek {
     day: d.dayName,
     date: d.date,
     total: round(dayTotal(d)),
+    operationalTotal: round(operationalDayTotal(d)),
     ...dayShiftStats(d),
   }));
   const shiftStatsBase = dayTotals.reduce((acc, day) => ({
@@ -172,10 +208,15 @@ function normalizeWeek(w: WeekRow): NormalizedWeek {
   const appTotals: Record<string, number> = {};
   for (const d of entries) {
     for (const [app, v] of Object.entries(d.apps || {})) {
-      appTotals[app] = (appTotals[app] || 0) + (Number(v) || 0);
+      appTotals[app] = (appTotals[app] || 0) + (Number(v) || 0) + appBonusTotal(d, app);
+    }
+    for (const bonus of d.bonuses ?? []) {
+      if (Object.prototype.hasOwnProperty.call(d.apps ?? {}, bonus.app)) continue;
+      appTotals[bonus.app] = (appTotals[bonus.app] || 0) + (Number(bonus.amount) || 0);
     }
   }
   const total = dayTotals.reduce((sum, d) => sum + d.total, 0);
+  const operationalTotal = dayTotals.reduce((sum, d) => sum + d.operationalTotal, 0);
   return {
     id: w.id,
     startDate: w.start_date,
@@ -188,8 +229,9 @@ function normalizeWeek(w: WeekRow): NormalizedWeek {
       ...shiftStatsBase,
       totalHours: round(shiftStatsBase.totalHours),
       totalMiles: round(shiftStatsBase.totalMiles),
-      earningsPerHour: shiftStatsBase.totalHours > 0 ? round(total / shiftStatsBase.totalHours) : null,
-      earningsPerRide: shiftStatsBase.totalRides > 0 ? round(total / shiftStatsBase.totalRides) : null,
+      operationalEarnings: round(operationalTotal),
+      earningsPerHour: shiftStatsBase.totalHours > 0 ? round(operationalTotal / shiftStatsBase.totalHours) : null,
+      earningsPerRide: shiftStatsBase.totalRides > 0 ? round(operationalTotal / shiftStatsBase.totalRides) : null,
       ridesPerHour: shiftStatsBase.totalHours > 0 && shiftStatsBase.totalRides > 0 ? round(shiftStatsBase.totalRides / shiftStatsBase.totalHours) : null,
     },
     appTotals: Object.fromEntries(

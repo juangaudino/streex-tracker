@@ -2,6 +2,19 @@
 
 ## Beta Releases
 
+### Beta 0.5.0 — Bonus Category
+
+### Added
+
+- Streex now supports tracking surprise bonuses separately from regular ride and delivery earnings.
+- Entry now keeps Bonus quiet and separate from the normal earnings flow.
+
+### Changed
+
+- Bonuses count toward daily, weekly, monthly, lifetime, records, app totals, XP, achievements, and the overall money story.
+- Bonuses are excluded from `$/hr`, `$/shift`, shift efficiency, and operational timing metrics so hourly stats stay honest.
+- Existing Octopus earnings are treated as bonus income without changing historical day totals.
+
 ### Beta 0.4.9 — Historical Rank Drill-Down Expansion
 
 ### Added

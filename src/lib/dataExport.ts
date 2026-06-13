@@ -3,6 +3,7 @@ import { CURRENT_VERSION } from "@/lib/changelog";
 import { buildJourneyEvents } from "@/lib/journey";
 import { listMonthsWithData, getMonthSummary } from "@/lib/monthly";
 import { dayTotal, weekTotal } from "@/lib/store";
+import { appBonusTotal } from "@/lib/rewardIncome";
 import { syncStoredLetters } from "@/lib/letterStore";
 import type { AppSettings, DayEntry, WeekRecord } from "@/lib/types";
 
@@ -52,7 +53,7 @@ function downloadTextFile(filename: string, contents: string, mimeType: string) 
 }
 
 function appValue(day: DayEntry, labels: string[]): number {
-  return labels.reduce((sum, label) => sum + safeNumber(day.apps?.[label]), 0);
+  return labels.reduce((sum, label) => sum + safeNumber(day.apps?.[label]) + appBonusTotal(day, label), 0);
 }
 
 function buildRecords(weeks: WeekRecord[]) {
@@ -85,10 +86,16 @@ function buildRecords(weeks: WeekRecord[]) {
   for (const week of weeks) {
     for (const day of week.entries) {
       for (const [app, amount] of Object.entries(day.apps || {})) {
-        const total = safeNumber(amount);
+        const total = safeNumber(amount) + appBonusTotal(day, app);
         const current = appRecords.get(app);
         if (!current || total > current.total) {
           appRecords.set(app, { date: day.date, weekId: week.id, total });
+        }
+      }
+      for (const bonus of day.bonuses ?? []) {
+        const current = appRecords.get(bonus.app);
+        if (!current || bonus.amount > current.total) {
+          appRecords.set(bonus.app, { date: day.date, weekId: week.id, total: bonus.amount });
         }
       }
     }
@@ -186,7 +193,10 @@ export function buildEarningsCsv(weeks: WeekRecord[]): string {
   const customApps = Array.from(
     new Set(
       weeks.flatMap((week) =>
-        week.entries.flatMap((day) => Object.keys(day.apps || {})),
+        week.entries.flatMap((day) => [
+          ...Object.keys(day.apps || {}),
+          ...(day.bonuses ?? []).map((bonus) => bonus.app),
+        ]),
       ),
     ),
   )
@@ -216,7 +226,7 @@ export function buildEarningsCsv(weeks: WeekRecord[]): string {
           day.dayName,
           decimal(dayTotal(day)),
           ...appColumns.map((column) => decimal(appValue(day, column.labels))),
-          ...customApps.map((app) => decimal(safeNumber(day.apps?.[app]))),
+          ...customApps.map((app) => decimal(safeNumber(day.apps?.[app]) + appBonusTotal(day, app))),
           decimal(safeNumber(day.mileage)),
           Boolean(day.dayClosed),
           notes,

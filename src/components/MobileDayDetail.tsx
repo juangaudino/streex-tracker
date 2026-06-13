@@ -2,8 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { dayTotal, formatCurrency } from "@/lib/store";
+import { bonusDayTotal, isRewardApp, standardDayEarnings } from "@/lib/rewardIncome";
 import type { DayEntry } from "@/lib/types";
-import { ArrowLeft, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { getActiveShift, getDayRideCount, getDayShiftHours, hasActiveShift, isShiftPaused, shiftBreakHours, shiftDurationHours } from "@/lib/shiftIntelligence";
@@ -25,6 +26,8 @@ interface MobileDayDetailProps {
   onShiftEarningsUpdate?: (dayIdx: number, shiftId: string, val: string) => void;
   onShiftTimeUpdate?: (dayIdx: number, shiftId: string, field: "startTime" | "endTime", val: string) => void;
   onDeleteShift?: (dayIdx: number, shiftId: string) => void;
+  onAddBonus?: (dayIdx: number, app: string, amount: number) => void;
+  onDeleteBonus?: (dayIdx: number, bonusId: string) => void;
   onSave: () => void;
 }
 
@@ -56,16 +59,24 @@ export default function MobileDayDetail({
   onShiftEarningsUpdate,
   onShiftTimeUpdate,
   onDeleteShift,
+  onAddBonus,
+  onDeleteBonus,
   onSave,
 }: MobileDayDetailProps) {
   const dt = dayTotal(day);
+  const standardTotal = standardDayEarnings(day);
+  const bonusTotal = bonusDayTotal(day);
   const isLogged = day.logged !== undefined ? day.logged : dt > 0;
   const [mileage, setMileage] = useState(day.mileage?.toString() || "");
+  const [bonusOpen, setBonusOpen] = useState(false);
+  const [bonusApp, setBonusApp] = useState(apps[0] ?? "Uber");
+  const [bonusAmount, setBonusAmount] = useState("");
   const activeShift = hasActiveShift(day);
   const openShift = getActiveShift(day);
   const activeShiftPaused = openShift ? isShiftPaused(openShift) : false;
   const shiftHours = getDayShiftHours(day);
   const rideCount = getDayRideCount(day);
+  const standardApps = apps.filter((app) => !isRewardApp(app));
 
   return (
     <div className="animate-in slide-in-from-right duration-200 space-y-4 p-4">
@@ -95,7 +106,7 @@ export default function MobileDayDetail({
 
       {/* App inputs */}
       <div className="space-y-3">
-        {apps.map((app) => (
+        {standardApps.map((app) => (
           <div
             key={app}
             className="flex items-center justify-between bg-card rounded-xl border border-border p-4 gap-4"
@@ -118,6 +129,97 @@ export default function MobileDayDetail({
           </div>
         ))}
       </div>
+
+      {onAddBonus && (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Bonus</p>
+              <p className="text-xs text-muted-foreground">Counts toward totals, not hourly stats.</p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setBonusOpen((open) => !open)}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              Add
+            </Button>
+          </div>
+
+          {bonusTotal > 0 && (
+            <div className="rounded-lg border border-border/70 bg-background/50 p-3 text-sm">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>Ride earnings</span>
+                <span className="font-mono">{formatCurrency(standardTotal, currencySymbol)}</span>
+              </div>
+              {(day.bonuses ?? []).filter((bonus) => bonus.amount > 0).map((bonus) => (
+                <div key={bonus.id} className="mt-2 flex items-center justify-between gap-2">
+                  <span className="min-w-0 truncate">Bonus ({bonus.app})</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">{formatCurrency(bonus.amount, currencySymbol)}</span>
+                    {onDeleteBonus && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => onDeleteBonus(dayIdx, bonus.id)}
+                        aria-label="Delete bonus"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2 font-semibold">
+                <span>Total</span>
+                <span className="font-mono">{formatCurrency(dt, currencySymbol)}</span>
+              </div>
+            </div>
+          )}
+
+          {bonusOpen && (
+            <div className="grid grid-cols-[1fr_7rem] gap-2">
+              <select
+                className="h-10 rounded-lg border border-input bg-background px-3 text-sm"
+                value={bonusApp}
+                onChange={(e) => setBonusApp(e.target.value)}
+              >
+                {apps.map((app) => (
+                  <option key={app} value={app}>{app}</option>
+                ))}
+              </select>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                className="h-10 text-right font-mono text-sm"
+                value={bonusAmount}
+                placeholder="0.00"
+                onChange={(e) => setBonusAmount(e.target.value)}
+              />
+              <Button
+                type="button"
+                className="col-span-2"
+                variant="secondary"
+                disabled={!bonusApp || (Number.parseFloat(bonusAmount) || 0) <= 0}
+                onClick={() => {
+                  const amount = Math.max(0, Number.parseFloat(bonusAmount) || 0);
+                  if (amount <= 0) return;
+                  onAddBonus(dayIdx, bonusApp, amount);
+                  setBonusAmount("");
+                  setBonusOpen(false);
+                }}
+              >
+                Add Bonus
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Mileage */}
       {onMileageUpdate && (

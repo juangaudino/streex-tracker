@@ -1,6 +1,7 @@
 import type { DayEntry, DayName, WeekRecord } from "./types";
 import { DAY_NAMES } from "./types";
 import { dayTotal, weekTotal } from "./store";
+import { appBonusTotal } from "./rewardIncome";
 
 export type XpCategory = "consistency" | "performance";
 
@@ -318,7 +319,11 @@ function appTotals(weeks: WeekRecord[]) {
   for (const week of weeks) {
     for (const day of week.entries) {
       for (const [app, value] of Object.entries(day.apps || {})) {
-        totals.set(app, (totals.get(app) || 0) + (Number(value) || 0));
+        totals.set(app, (totals.get(app) || 0) + (Number(value) || 0) + appBonusTotal(day, app));
+      }
+      for (const bonus of day.bonuses ?? []) {
+        if (Object.prototype.hasOwnProperty.call(day.apps ?? {}, bonus.app)) continue;
+        totals.set(bonus.app, (totals.get(bonus.app) || 0) + (Number(bonus.amount) || 0));
       }
     }
   }

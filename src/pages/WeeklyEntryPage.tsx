@@ -13,7 +13,7 @@ import {
   weekTotal,
   appTotal,
 } from "@/lib/store";
-import { DAY_NAMES, type DayEntry, type ShiftSession, type WeekRecord } from "@/lib/types";
+import { DAY_NAMES, type BonusEntry, type DayEntry, type ShiftSession, type WeekRecord } from "@/lib/types";
 import type { StoreContext } from "./types";
 import { CalendarPlus, Save, Lock, Trash2, AlertTriangle, CheckCircle2, History, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -30,7 +30,7 @@ import MobileWeekOverview from "@/components/MobileWeekOverview";
 import MobileDayDetail from "@/components/MobileDayDetail";
 import WeekClosingDialog from "@/components/WeekClosingDialog";
 import { activeShiftDurationHours, createShift, endActiveShift, getDayShiftHours, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours } from "@/lib/shiftIntelligence";
-import { operationalWeekTotal } from "@/lib/rewardIncome";
+import { isRewardApp, operationalWeekTotal } from "@/lib/rewardIncome";
 
 function timeInputValue(value?: string): string {
   if (!value) return "";
@@ -100,6 +100,7 @@ export default function WeeklyEntryPage() {
 
   const sym = settings.currencySymbol;
   const apps = settings.activeApps;
+  const standardApps = apps.filter((app) => !isRewardApp(app));
   const isHistoricalEdit = Boolean(requestedWeekId && editWeek?.id === requestedWeekId && editWeek.status === "closed");
 
   // Check for duplicate week
@@ -262,6 +263,7 @@ export default function WeeklyEntryPage() {
       entries: editWeek.entries.map((d) => ({
         ...d,
         apps: Object.fromEntries(Object.keys(d.apps).map((a) => [a, 0])),
+        bonuses: [],
       })),
     };
     setEditWeek(cleared);
@@ -275,7 +277,7 @@ export default function WeeklyEntryPage() {
     const entries = editWeek.entries.map((d, i) => {
       if (i !== dayIdx) return d;
       const newApps = { ...d.apps, [app]: numVal };
-      const newDayTotal = Object.values(newApps).reduce((s, v) => s + (v || 0), 0);
+      const newDayTotal = dayTotal({ ...d, apps: newApps });
       // Auto-set logged if any earnings > 0
       return { ...d, apps: newApps, logged: newDayTotal > 0 ? true : d.logged };
     });
@@ -298,6 +300,34 @@ export default function WeeklyEntryPage() {
     const entries = editWeek.entries.map((d, i) => {
       if (i !== dayIdx) return d;
       return { ...d, mileage: val };
+    });
+    setEditWeek({ ...editWeek, entries });
+  }
+
+  function handleAddBonus(dayIdx: number, app: string, amount: number) {
+    if (!editWeek) return;
+    const cleanAmount = Math.max(0, Number(amount) || 0);
+    if (!app || cleanAmount <= 0) return;
+    const bonus: BonusEntry = {
+      id: `bonus_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      app,
+      amount: cleanAmount,
+      createdAt: new Date().toISOString(),
+      source: "manual",
+    };
+    const entries = editWeek.entries.map((d, i) => {
+      if (i !== dayIdx) return d;
+      return { ...d, bonuses: [...(d.bonuses ?? []), bonus], logged: true };
+    });
+    setEditWeek({ ...editWeek, entries });
+  }
+
+  function handleDeleteBonus(dayIdx: number, bonusId: string) {
+    if (!editWeek) return;
+    const entries = editWeek.entries.map((d, i) => {
+      if (i !== dayIdx) return d;
+      const bonuses = (d.bonuses ?? []).filter((bonus) => bonus.id !== bonusId);
+      return { ...d, bonuses };
     });
     setEditWeek({ ...editWeek, entries });
   }
@@ -535,6 +565,8 @@ export default function WeeklyEntryPage() {
         onShiftEarningsUpdate={handleShiftEarningsUpdate}
         onShiftTimeUpdate={handleShiftTimeUpdate}
         onDeleteShift={handleDeleteShift}
+        onAddBonus={handleAddBonus}
+        onDeleteBonus={handleDeleteBonus}
         onSave={async () => {
           const saved = await handleSave();
           if (saved) setSelectedDayIdx(null);
@@ -883,7 +915,7 @@ export default function WeeklyEntryPage() {
                 <th className="px-3 py-3 font-semibold text-muted-foreground text-center min-w-[50px]">
                   Log
                 </th>
-                {apps.map((app) => (
+                {standardApps.map((app) => (
                   <th
                     key={app}
                     className="text-right px-3 py-3 font-semibold text-muted-foreground whitespace-nowrap min-w-[90px]"
@@ -930,7 +962,7 @@ export default function WeeklyEntryPage() {
                         className="mx-auto"
                       />
                     </td>
-                    {apps.map((app) => (
+                    {standardApps.map((app) => (
                       <td key={app} className="px-2 py-2">
                         <Input
                           type="number"
@@ -961,7 +993,7 @@ export default function WeeklyEntryPage() {
                   Total
                 </td>
                 <td></td>
-                {apps.map((app) => (
+                {standardApps.map((app) => (
                   <td key={app} className="px-3 py-3 text-right font-mono font-semibold">
                     {formatCurrency(appTotal(editWeek, app), sym)}
                   </td>

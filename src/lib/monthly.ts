@@ -1,5 +1,6 @@
 import type { WeekRecord, DayEntry } from "./types";
 import { dayTotal } from "./store";
+import { appBonusTotal } from "./rewardIncome";
 
 export interface MonthDayCell {
   date: string;
@@ -205,7 +206,11 @@ export function getMonthSummary(
   const appTotals = new Map<string, number>();
   for (const d of monthDays) {
     for (const [a, v] of Object.entries(d.apps || {})) {
-      appTotals.set(a, (appTotals.get(a) || 0) + (v || 0));
+      appTotals.set(a, (appTotals.get(a) || 0) + (v || 0) + appBonusTotal(d, a));
+    }
+    for (const bonus of d.bonuses ?? []) {
+      if (Object.prototype.hasOwnProperty.call(d.apps ?? {}, bonus.app)) continue;
+      appTotals.set(bonus.app, (appTotals.get(bonus.app) || 0) + bonus.amount);
     }
   }
   // Previous month for app growth
@@ -214,7 +219,11 @@ export function getMonthSummary(
   const prevAppTotals = new Map<string, number>();
   for (const d of prevMonthDays) {
     for (const [a, v] of Object.entries(d.apps || {})) {
-      prevAppTotals.set(a, (prevAppTotals.get(a) || 0) + (v || 0));
+      prevAppTotals.set(a, (prevAppTotals.get(a) || 0) + (v || 0) + appBonusTotal(d, a));
+    }
+    for (const bonus of d.bonuses ?? []) {
+      if (Object.prototype.hasOwnProperty.call(d.apps ?? {}, bonus.app)) continue;
+      prevAppTotals.set(bonus.app, (prevAppTotals.get(bonus.app) || 0) + bonus.amount);
     }
   }
 
@@ -260,8 +269,13 @@ export function getMonthSummary(
   for (const d of workedDays) {
     if (dayTotal(d) < top20Cutoff) continue;
     let leader = { app: "", total: 0 };
-    for (const [a, v] of Object.entries(d.apps || {})) {
-      if ((v || 0) > leader.total) leader = { app: a, total: v || 0 };
+    const appNames = new Set([
+      ...Object.keys(d.apps || {}),
+      ...(d.bonuses ?? []).map((bonus) => bonus.app),
+    ]);
+    for (const a of appNames) {
+      const total = (d.apps?.[a] || 0) + appBonusTotal(d, a);
+      if (total > leader.total) leader = { app: a, total };
     }
     if (leader.app) appTopDays.set(leader.app, (appTopDays.get(leader.app) || 0) + 1);
   }

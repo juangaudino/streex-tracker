@@ -37,10 +37,19 @@ export interface ShiftSession {
   note?: string;
 }
 
+export interface BonusEntry {
+  id: string;
+  app: string;
+  amount: number;
+  createdAt?: string;
+  source?: "manual" | "legacy_octopus";
+}
+
 export interface DayEntry {
   dayName: DayName;
   date: string;
   apps: Record<string, number>;
+  bonuses?: BonusEntry[];
   logged?: boolean;
   /** Day finalized via "End Day". Distinct from `logged` (which auto-flags on any earnings entry). */
   dayClosed?: boolean;

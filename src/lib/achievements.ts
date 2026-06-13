@@ -1,5 +1,6 @@
-import { WeekRecord } from "./types";
+import type { DayEntry, WeekRecord } from "./types";
 import { weekTotal, dayTotal, appTotal } from "./store";
+import { appBonusTotal } from "./rewardIncome";
 
 export interface AchievementDef {
   id: string;
@@ -112,10 +113,21 @@ function getLoggedDaysCount(w: WeekRecord): number {
   return w.entries.filter(d => d.logged !== undefined ? d.logged : dayTotal(d) > 0).length;
 }
 
+function weekAppNames(w: WeekRecord): string[] {
+  return Array.from(new Set(w.entries.flatMap((d) => [
+    ...Object.keys(d.apps || {}),
+    ...(d.bonuses ?? []).map((bonus) => bonus.app),
+  ])));
+}
+
+function dayAppEarnings(day: DayEntry, app: string): number {
+  return (day.apps?.[app] || 0) + appBonusTotal(day, app);
+}
+
 function weeksWithAppsUsed(weeks: WeekRecord[], minApps: number): number {
   let count = 0;
   for (const w of weeks) {
-    const usedApps = Object.keys(w.entries[0]?.apps || {}).filter(a => w.entries.some(d => (d.apps[a] || 0) > 0)).length;
+    const usedApps = weekAppNames(w).filter(a => w.entries.some(d => dayAppEarnings(d, a) > 0)).length;
     if (usedApps >= minApps) count++;
   }
   return count;
@@ -236,15 +248,15 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: "hot_streak", title: "Hot Streak", description: "3 days earning $150+ in one week", category: "special", icon: "🔥", rarity: "epic", repeatable: true,
     check: (ws) => { const best = Math.max(0, ...ws.map(w => w.entries.filter(e => dayTotal(e) >= 150).length)); const count = ws.filter(w => w.entries.filter(e => dayTotal(e) >= 150).length >= 3).length; return { unlocked: best >= 3, progress: Math.min(best, 3), max: 3, count }; } },
   { id: "app_master", title: "App Master", description: "One app accounts for 60%+ of weekly total", category: "special", icon: "🎮", rarity: "common", repeatable: true,
-    check: (ws) => { let count = 0; for (const w of ws) { const total = weekTotal(w); if (total <= 0) continue; const apps = Object.keys(w.entries[0]?.apps || {}); if (apps.some(a => w.entries.reduce((s, e) => s + (e.apps[a] || 0), 0) / total >= 0.6)) count++; } return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count }; } },
+    check: (ws) => { let count = 0; for (const w of ws) { const total = weekTotal(w); if (total <= 0) continue; const apps = weekAppNames(w); if (apps.some(a => appTotal(w, a) / total >= 0.6)) count++; } return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count }; } },
   { id: "app_collector", title: "App Collector", description: "Use 3+ apps in one day", category: "special", icon: "📱", rarity: "common", repeatable: true,
-    check: (ws) => { let count = 0; for (const w of ws) for (const d of w.entries) { if (Object.values(d.apps).filter(v => (v || 0) > 0).length >= 3) count++; } return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count }; } },
+    check: (ws) => { let count = 0; for (const w of ws) for (const d of w.entries) { const apps = new Set([...Object.keys(d.apps || {}), ...(d.bonuses ?? []).map((bonus) => bonus.app)]); if ([...apps].filter((app) => dayAppEarnings(d, app) > 0).length >= 3) count++; } return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count }; } },
   { id: "multi_app_strat", title: "Multi-App Strategist", description: "Use 5+ apps in a week", category: "special", icon: "🧠", rarity: "rare", repeatable: true,
     check: (ws) => { const count = weeksWithAppsUsed(ws, 5); return { unlocked: count > 0, progress: Math.min(count, 1), max: 1, count }; } },
   { id: "one_app_carry", title: "One App Carry", description: "One app generates 80%+ of weekly total", category: "special", icon: "💪", rarity: "rare", repeatable: true,
-    check: (ws) => { let count = 0; for (const w of ws) { const total = weekTotal(w); if (total <= 0) continue; const apps = Object.keys(w.entries[0]?.apps || {}); if (apps.some(a => w.entries.reduce((s, e) => s + (e.apps[a] || 0), 0) / total >= 0.8)) count++; } return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count }; } },
+    check: (ws) => { let count = 0; for (const w of ws) { const total = weekTotal(w); if (total <= 0) continue; const apps = weekAppNames(w); if (apps.some(a => appTotal(w, a) / total >= 0.8)) count++; } return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count }; } },
   { id: "balanced_week", title: "Balanced Week", description: "3+ apps contribute at least 20% each", category: "special", icon: "⚖️", rarity: "epic", repeatable: true,
-    check: (ws) => { let count = 0; for (const w of ws) { const total = weekTotal(w); if (total <= 0) continue; const apps = Object.keys(w.entries[0]?.apps || {}); const q = apps.filter(a => w.entries.reduce((s, e) => s + (e.apps[a] || 0), 0) / total >= 0.2).length; if (q >= 3) count++; } return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count }; } },
+    check: (ws) => { let count = 0; for (const w of ws) { const total = weekTotal(w); if (total <= 0) continue; const apps = weekAppNames(w); const q = apps.filter(a => appTotal(w, a) / total >= 0.2).length; if (q >= 3) count++; } return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count }; } },
   { id: "comeback_king", title: "Comeback King", description: "Finish above previous week after starting below it", category: "special", icon: "🦁", rarity: "legendary",
     check: (ws) => { const sorted = [...ws].sort((a, b) => a.startDate.localeCompare(b.startDate)); let count = 0; for (let i = 1; i < sorted.length; i++) { const cur = sorted[i], prev = sorted[i - 1]; const curMid = cur.entries.slice(0, 3).reduce((s, e) => s + dayTotal(e), 0); const prevMid = prev.entries.slice(0, 3).reduce((s, e) => s + dayTotal(e), 0); if (curMid < prevMid && weekTotal(cur) > weekTotal(prev)) count++; } return { unlocked: count > 0, progress: count > 0 ? 1 : 0, max: 1, count }; } },
 

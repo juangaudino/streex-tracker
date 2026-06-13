@@ -1,5 +1,6 @@
 import { WeekRecord, AppSettings, DEFAULT_APPS, DAY_NAMES, DayEntry } from "./types";
 import { formatCurrencyAmount } from "./currency";
+import { appBonusTotal, rewardDayTotal, standardDayEarnings } from "./rewardIncome";
 
 const WEEKS_KEY = "streex_weeks";
 const SETTINGS_KEY = "streex_settings";
@@ -72,19 +73,15 @@ export function createWeek(
 }
 
 export function weekTotal(w: WeekRecord): number {
-  return w.entries.reduce(
-    (sum, day) =>
-      sum + Object.values(day.apps).reduce((s, v) => s + (v || 0), 0),
-    0
-  );
+  return w.entries.reduce((sum, day) => sum + dayTotal(day), 0);
 }
 
 export function dayTotal(day: DayEntry): number {
-  return Object.values(day.apps).reduce((s, v) => s + (v || 0), 0);
+  return standardDayEarnings(day) + rewardDayTotal(day);
 }
 
 export function appTotal(w: WeekRecord, app: string): number {
-  return w.entries.reduce((s, d) => s + (d.apps[app] || 0), 0);
+  return w.entries.reduce((s, d) => s + (d.apps[app] || 0) + appBonusTotal(d, app), 0);
 }
 
 export function bestDay(w: WeekRecord): { dayName: string; total: number } {
@@ -137,7 +134,7 @@ export function samePointAppTotal(
   dayIndices: number[]
 ): number {
   return dayIndices.reduce((s, i) => {
-    if (w.entries[i]) return s + (w.entries[i].apps[app] || 0);
+    if (w.entries[i]) return s + (w.entries[i].apps[app] || 0) + appBonusTotal(w.entries[i], app);
     return s;
   }, 0);
 }

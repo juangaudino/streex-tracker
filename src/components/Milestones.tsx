@@ -1,7 +1,15 @@
 import { WeekRecord, DayEntry } from "@/lib/types";
 import { weekTotal, dayTotal, appTotal, formatCurrency } from "@/lib/store";
+import { appBonusTotal } from "@/lib/rewardIncome";
 import { Trophy, Flame, Zap, Target, TrendingUp, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+function weekAppNames(week: WeekRecord): string[] {
+  return Array.from(new Set(week.entries.flatMap((day) => [
+    ...Object.keys(day.apps || {}),
+    ...(day.bonuses ?? []).map((bonus) => bonus.app),
+  ])));
+}
 
 interface MilestonesProps {
   weeks: WeekRecord[];
@@ -113,7 +121,7 @@ export default function Milestones({ weeks, openWeek, currencySymbol }: Mileston
   // 3. Best App Week
   let bestAppWeek = { app: "", total: 0, weekStart: "" };
   for (const w of allWeeks) {
-    const apps = Object.keys(w.entries[0]?.apps || {});
+    const apps = weekAppNames(w);
     for (const a of apps) {
       const t = appTotal(w, a);
       if (t > bestAppWeek.total) {
@@ -126,9 +134,14 @@ export default function Milestones({ weeks, openWeek, currencySymbol }: Mileston
   let bestAppDay = { app: "", total: 0, date: "" };
   for (const w of allWeeks) {
     for (const d of w.entries) {
-      for (const [app, val] of Object.entries(d.apps)) {
-        if ((val || 0) > bestAppDay.total) {
-          bestAppDay = { app, total: val || 0, date: d.date };
+      const appNames = new Set([
+        ...Object.keys(d.apps || {}),
+        ...(d.bonuses ?? []).map((bonus) => bonus.app),
+      ]);
+      for (const app of appNames) {
+        const val = (d.apps?.[app] || 0) + appBonusTotal(d, app);
+        if (val > bestAppDay.total) {
+          bestAppDay = { app, total: val, date: d.date };
         }
       }
     }
@@ -151,7 +164,7 @@ export default function Milestones({ weeks, openWeek, currencySymbol }: Mileston
   // 10. Hot App of the Week
   let hotApp = { app: "—", total: 0 };
   if (openWeek) {
-    const apps = Object.keys(openWeek.entries[0]?.apps || {});
+    const apps = weekAppNames(openWeek);
     for (const a of apps) {
       const t = appTotal(openWeek, a);
       if (t > hotApp.total) hotApp = { app: a, total: t };

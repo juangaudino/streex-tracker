@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.4.9";
+export const CURRENT_VERSION = "0.5.0";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.0",
+    date: "2026-06",
+    title: "Bonus Category",
+    tags: ["new", "feature"],
+    items: [
+      "Streex now supports tracking surprise bonuses separately from regular ride and delivery earnings",
+      "Bonuses count toward daily, weekly, monthly, lifetime, records, app totals, XP, achievements, and the overall money story",
+      "Bonuses are excluded from dollars per hour, dollars per shift, shift efficiency, and operational timing metrics so hourly stats stay honest",
+      "Existing Octopus earnings are treated as bonus income without changing historical day totals",
+      "Entry now keeps Bonus quiet and separate from the normal earnings flow",
+    ],
+  },
   {
     version: "0.4.9",
     date: "2026-06",

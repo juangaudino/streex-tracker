@@ -2,6 +2,15 @@ import { WeekRecord } from "./types";
 import { weekTotal, dayTotal, appTotal } from "./store";
 import { DAY_NAMES } from "./types";
 
+function weekAppNames(weeks: WeekRecord[]): string[] {
+  return Array.from(new Set(weeks.flatMap((week) =>
+    week.entries.flatMap((day) => [
+      ...Object.keys(day.apps || {}),
+      ...(day.bonuses ?? []).map((bonus) => bonus.app),
+    ]),
+  )));
+}
+
 export interface CareerStats {
   lifetimeEarnings: number;
   bestDay: { total: number; dayName: string; date: string };
@@ -80,7 +89,7 @@ export function computeCareerStats(weeks: WeekRecord[]): CareerStats {
   const avgDaily = totalActiveDays > 0 ? lifetimeEarnings / totalActiveDays : 0;
 
   // Most used app
-  const apps = Object.keys(weeks[0]?.entries[0]?.apps || {});
+  const apps = weekAppNames(weeks);
   let mostUsedApp = { app: "—", total: 0 };
   apps.forEach((a) => {
     const t = weeks.reduce((s, w) => s + appTotal(w, a), 0);
@@ -421,7 +430,7 @@ export function computePerformanceInsights(weeks: WeekRecord[]): PerformanceInsi
     : 0;
 
   // Strongest app
-  const apps = Object.keys(weeks[0]?.entries[0]?.apps || {});
+  const apps = weekAppNames(weeks);
   let strongestApp = { app: "—", total: 0 };
   apps.forEach((a) => {
     const t = weeks.reduce((s, w) => s + appTotal(w, a), 0);

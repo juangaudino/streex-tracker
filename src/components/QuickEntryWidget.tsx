@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
 import { triggerCelebration } from "@/components/RecordCelebration";
 import { createShift, endActiveShift, getActiveShift, getDayShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resumePausedShift, shiftDurationHours } from "@/lib/shiftIntelligence";
+import { isRewardApp } from "@/lib/rewardIncome";
 
 interface QuickEntryWidgetProps {  
   openWeek: WeekRecord;
@@ -189,10 +190,11 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
   const todayHasActiveShift = hasActiveShift(today);
   const weekHasActiveShift = openWeek.entries.some(hasActiveShift);
   const shiftHours = getDayShiftHours(today);
-  const preferredApps = ["Uber", "Lyft"].filter((app) => apps.includes(app));
+  const standardApps = apps.filter((app) => !isRewardApp(app));
+  const preferredApps = ["Uber", "Lyft"].filter((app) => standardApps.includes(app));
   const primaryApps = [
     ...preferredApps,
-    ...apps.filter((app) => !preferredApps.includes(app)),
+    ...standardApps.filter((app) => !preferredApps.includes(app)),
   ].slice(0, 2);
   const activeShift = getActiveShift(today);
   const activeShiftPaused = activeShift ? isShiftPaused(activeShift) : false;
@@ -326,7 +328,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
               </>
             ) : (
               <>
-                {apps.map((app) => (
+                {standardApps.map((app) => (
                   <div key={app} className="flex items-center justify-between gap-3">
                     <label className="text-sm font-medium min-w-0 truncate flex-1">{app}</label>
                     <Input

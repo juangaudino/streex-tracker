@@ -5,6 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import { getWeeks as getLocalWeeks } from "@/lib/store";
 import { lifecycleDebug } from "@/lib/appLifecycle";
 import { buildEarningsSnapshotRows, dbToEarningsSnapshot, earningsSnapshotTransitionKey } from "@/lib/earningsSnapshots";
+import { normalizeLegacyBonusWeek } from "@/lib/rewardIncome";
 
 const DEFAULT_SETTINGS: AppSettings = {
   defaultWeeklyGoal: 1200,
@@ -24,7 +25,7 @@ const storeCache = new Map<string, WeekStoreSnapshot>();
 const pendingSnapshotKeys = new Set<string>();
 
 function dbToWeek(row: any): WeekRecord {
-  return {
+  return normalizeLegacyBonusWeek({
     id: row.id,
     startDate: row.start_date,
     endDate: row.end_date,
@@ -34,7 +35,7 @@ function dbToWeek(row: any): WeekRecord {
     entries: (typeof row.entries === "string" ? JSON.parse(row.entries) : row.entries) as DayEntry[],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-  };
+  });
 }
 
 export function useWeekStore(user: User | null) {
@@ -119,14 +120,15 @@ export function useWeekStore(user: User | null) {
 
   const addWeek = useCallback(async (w: WeekRecord) => {
     if (!user) return;
+    const normalizedWeek = normalizeLegacyBonusWeek(w);
     const { data, error } = await supabase.from("weeks").insert({
       user_id: user.id,
-      start_date: w.startDate,
-      end_date: w.endDate,
-      weekly_goal: w.weeklyGoal,
-      weekly_hours_goal: w.weeklyHoursGoal ?? 0,
-      status: w.status,
-      entries: w.entries as any,
+      start_date: normalizedWeek.startDate,
+      end_date: normalizedWeek.endDate,
+      weekly_goal: normalizedWeek.weeklyGoal,
+      weekly_hours_goal: normalizedWeek.weeklyHoursGoal ?? 0,
+      status: normalizedWeek.status,
+      entries: normalizedWeek.entries as any,
     }).select().single();
     if (error) {
       console.error("Save failed:", error);
@@ -145,23 +147,24 @@ export function useWeekStore(user: User | null) {
     const previousWeek = storeCache.get(user.id)?.weeks.find((week) => week.id === w.id)
       ?? weeks.find((week) => week.id === w.id)
       ?? null;
+    const normalizedWeek = normalizeLegacyBonusWeek(w);
     try {
       const payload = {
-        start_date: w.startDate,
-        end_date: w.endDate,
-        weekly_goal: w.weeklyGoal,
-        weekly_hours_goal: w.weeklyHoursGoal ?? 0,
-        status: w.status,
-        entries: w.entries as any,
+        start_date: normalizedWeek.startDate,
+        end_date: normalizedWeek.endDate,
+        weekly_goal: normalizedWeek.weeklyGoal,
+        weekly_hours_goal: normalizedWeek.weeklyHoursGoal ?? 0,
+        status: normalizedWeek.status,
+        entries: normalizedWeek.entries as any,
         updated_at: now,
       };
       console.info("[weeks.updateWeek] saving", {
         weekId: w.id,
         userId: user.id,
-        startDate: w.startDate,
-        endDate: w.endDate,
-        status: w.status,
-        entries: w.entries.length,
+        startDate: normalizedWeek.startDate,
+        endDate: normalizedWeek.endDate,
+        status: normalizedWeek.status,
+        entries: normalizedWeek.entries.length,
       });
       const { error } = await supabase
         .from("weeks")
@@ -184,7 +187,7 @@ export function useWeekStore(user: User | null) {
       const snapshotRows = buildEarningsSnapshotRows({
         userId: user.id,
         previousWeek,
-        nextWeek: w,
+        nextWeek: normalizedWeek,
       }).filter((row) => {
         const key = earningsSnapshotTransitionKey(row);
         if (existingSnapshotKeys.has(key) || pendingSnapshotKeys.has(key)) return false;
@@ -213,7 +216,7 @@ export function useWeekStore(user: User | null) {
         }
       }
       setWeeks((prev) => {
-        const nextWeeks = prev.map((x) => (x.id === w.id ? { ...w, updatedAt: now } : x));
+        const nextWeeks = prev.map((x) => (x.id === normalizedWeek.id ? { ...normalizedWeek, updatedAt: now } : x));
         const nextSnapshots = insertedSnapshots.length ? [...earningsSnapshots, ...insertedSnapshots] : earningsSnapshots;
         storeCache.set(user.id, { weeks: nextWeeks, settings, earningsSnapshots: nextSnapshots, hasLocalData });
         return nextWeeks;
@@ -277,7 +280,7 @@ export function useWeekStore(user: User | null) {
       setHasLocalData(false);
       return 0;
     }
-    const rows = toImport.map((w) => ({
+    const rows = toImport.map(normalizeLegacyBonusWeek).map((w) => ({
       user_id: user.id,
       start_date: w.startDate,
       end_date: w.endDate,

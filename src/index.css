@@ -303,11 +303,30 @@
     @apply text-foreground font-sans antialiased;
     background-color: var(--app-bg);
     transition: background-color 0.3s ease, color 0.3s ease;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   #root {
     min-height: 100svh;
     background-color: var(--app-bg);
+  }
+
+  /* Align currency, percentages, hours, and miles where the mono stack is used. */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "cv11" 1;
+    letter-spacing: -0.005em;
+  }
+
+  /* Opt-in card polish for calm, theme-aware hover affordance. */
+  .streex-card-hover {
+    transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+  }
+
+  .streex-card-hover:hover {
+    border-color: hsl(var(--primary) / 0.35);
   }
 }
 

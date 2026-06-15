@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.5.1";
+export const CURRENT_VERSION = "0.5.2";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.2",
+    date: "2026-06",
+    title: "Visual Consistency Polish",
+    tags: ["polish"],
+    items: [
+      "Stat cards received subtle visual polish for clearer hierarchy and cleaner metric readability",
+      "Monospace numeric values now use tabular numerics for better alignment across earnings, hours, miles, and percentage displays",
+      "Card hover polish is opt-in and theme-aware",
+      "No auth, Supabase, routing, earnings, shift, bonus, snapshot, Ask My Data, export, XP, achievement, admin, or backend behavior changed",
+    ],
+  },
   {
     version: "0.5.1",
     date: "2026-06",

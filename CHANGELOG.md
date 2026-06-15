@@ -2,6 +2,18 @@
 
 ## Beta Releases
 
+### Beta 0.5.2 — Visual Consistency Polish
+
+### Changed
+
+- Stat cards received subtle visual polish for clearer hierarchy and cleaner metric readability.
+- Monospace numeric values now use tabular numerics for better alignment across earnings, hours, miles, and percentage displays.
+- Card hover polish is opt-in and theme-aware.
+
+### Production Behavior
+
+- No auth, Supabase, routing, earnings, shift, bonus, snapshot, Ask My Data, export, XP, achievement, admin, or backend behavior changed.
+
 ### Beta 0.5.1 — Daily Report Export Match
 
 ### Fixed

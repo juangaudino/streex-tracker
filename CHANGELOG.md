@@ -2,6 +2,17 @@
 
 ## Beta Releases
 
+### Beta 0.5.3 — Mobile Numeric Input Cursor Fix
+
+### Fixed
+
+- Numeric money, miles, rides, shift earnings, bonus, and goal fields now place the cursor at the end when focused for faster mobile edits.
+- Text, auth, search, and normal typing fields are unaffected.
+
+### Production Behavior
+
+- No calculation, Supabase, auth, routing, dashboard, export, XP, achievement, or backend behavior changed.
+
 ### Beta 0.5.2 — Visual Consistency Polish
 
 ### Changed

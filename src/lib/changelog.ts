@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.5.2";
+export const CURRENT_VERSION = "0.5.3";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,17 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.3",
+    date: "2026-06",
+    title: "Mobile Numeric Input Cursor Fix",
+    tags: ["fix", "polish"],
+    items: [
+      "Numeric money, miles, rides, shift earnings, bonus, and goal fields now place the cursor at the end when focused for faster mobile edits",
+      "Text, auth, search, and normal typing fields are unaffected",
+      "No calculation, Supabase, auth, routing, dashboard, export, XP, achievement, or backend behavior changed",
+    ],
+  },
   {
     version: "0.5.2",
     date: "2026-06",

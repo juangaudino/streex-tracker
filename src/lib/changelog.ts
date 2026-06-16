@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.5.3";
+export const CURRENT_VERSION = "0.5.4";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.4",
+    date: "2026-06",
+    title: "Full Focus Cleanup + Quick Update Input Polish",
+    tags: ["fix", "polish"],
+    items: [
+      "Quick Update money, miles, and rides fields now avoid the iOS zero-value input underline glitch while keeping the cursor-at-end behavior",
+      "Full Focus no longer repeats the compact Utility block because weather and traffic now live in the Conditions card and drill-down",
+      "Full Focus weekly operations no longer shows the redundant active-shift explanation under the snapshot",
+      "Standard Dashboard utility, earnings calculations, shifts, snapshots, Supabase, auth, routing, and backend behavior were not changed",
+    ],
+  },
   {
     version: "0.5.3",
     date: "2026-06",

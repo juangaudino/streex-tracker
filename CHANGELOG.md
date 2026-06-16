@@ -2,6 +2,21 @@
 
 ## Beta Releases
 
+### Beta 0.5.4 — Full Focus Cleanup + Quick Update Input Polish
+
+### Fixed
+
+- Quick Update money, miles, and rides fields now avoid the iOS zero-value input underline glitch while keeping the cursor-at-end behavior.
+
+### Changed
+
+- Full Focus no longer repeats the compact Utility block because weather and traffic now live in the Conditions card and drill-down.
+- Full Focus weekly operations no longer shows the redundant active-shift explanation under the snapshot.
+
+### Production Behavior
+
+- Standard Dashboard utility, earnings calculations, shifts, snapshots, Supabase, auth, routing, and backend behavior were not changed.
+
 ### Beta 0.5.3 — Mobile Numeric Input Cursor Fix
 
 ### Fixed

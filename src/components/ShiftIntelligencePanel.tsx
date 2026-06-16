@@ -15,6 +15,7 @@ interface ShiftIntelligencePanelProps {
   snapshotTitle?: string;
   snapshotOnly?: boolean;
   showModeBadge?: boolean;
+  showSnapshotInsight?: boolean;
 }
 
 function Metric({ label, value, sub, icon, tone = "default" }: {
@@ -80,6 +81,7 @@ export default function ShiftIntelligencePanel({
   snapshotTitle = "Advanced Operations Snapshot",
   snapshotOnly = false,
   showModeBadge = true,
+  showSnapshotInsight = true,
 }: ShiftIntelligencePanelProps) {
   const intelligence = buildPatternIntelligence(weeks, earningsSnapshots);
   const { summary } = intelligence;
@@ -109,9 +111,11 @@ export default function ShiftIntelligencePanel({
         <Metric icon={<BarChart3 className="h-3.5 w-3.5" />} label="Blocks" value={`${summary.totalShifts}`} sub={`${summary.multiShiftDays} split day${summary.multiShiftDays === 1 ? "" : "s"}`} />
         <Metric icon={<Route className="h-3.5 w-3.5" />} label="Miles/Hr" value={formatNullableNumber(summary.milesPerHour)} sub="movement pace" />
       </div>
-      <p className="rounded-lg border border-border/70 bg-card/70 p-3 text-xs text-muted-foreground">
-        {buildEfficiencyInsight(summary)}
-      </p>
+      {showSnapshotInsight && (
+        <p className="rounded-lg border border-border/70 bg-card/70 p-3 text-xs text-muted-foreground">
+          {buildEfficiencyInsight(summary)}
+        </p>
+      )}
     </div>
   );
 

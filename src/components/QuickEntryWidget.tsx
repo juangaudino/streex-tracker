@@ -266,9 +266,8 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                         {quickApp} total today
                       </label>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        inputMode="decimal"
                         className="mt-2 h-16 text-right font-mono text-4xl font-bold"
                         placeholder="0.00"
                         value={localApps[quickApp] || ""}
@@ -284,9 +283,8 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                       <label className="rounded-xl border border-border bg-background/60 p-3">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Miles</span>
                         <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
+                          type="text"
+                          inputMode="decimal"
                           className="mt-1 h-10 text-right font-mono"
                           placeholder={activeShift ? "optional" : "optional"}
                           value={localMileage}
@@ -296,9 +294,8 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                       <label className="rounded-xl border border-border bg-background/60 p-3">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rides</span>
                         <Input
-                          type="number"
-                          step="1"
-                          min="0"
+                          type="text"
+                          inputMode="numeric"
                           className="mt-1 h-10 text-right font-mono"
                           placeholder={activeShift ? "optional" : "needs shift"}
                           value={localRideCount}

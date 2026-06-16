@@ -769,9 +769,8 @@ export default function DashboardPage() {
           snapshotTitle="This Week Operations Snapshot"
           snapshotOnly
           showModeBadge={false}
+          showSnapshotInsight={false}
         />
-
-        <DailyCommandCenterView compact utility={driverUtility} />
 
         {(() => {
           const insight = !isDayClosed ? (dailyChase ?? weeklyChase) : null;

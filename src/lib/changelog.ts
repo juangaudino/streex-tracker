@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.6.0";
+export const CURRENT_VERSION = "0.6.1";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.6.1",
+    date: "2026-06",
+    title: "Deep Insights Refinement + Light Mode",
+    tags: ["polish", "fix"],
+    items: [
+      "Deep Insights now adapts to Classic Light with a bright editorial analytics treatment instead of forcing the dark cockpit view",
+      "The existing dark Deep Insights cockpit remains intact for dark, Signature, RPG, Night, and Velocity themes",
+      "Charts, tooltips, panels, KPI cards, filters, empty states, tables, and insight blocks now share one theme-aware visual layer",
+      "No analytics calculations, Supabase schema, auth, Dashboard, Full Focus, Entry, Ask My Data, or backend behavior changed",
+    ],
+  },
   {
     version: "0.6.0",
     date: "2026-06",

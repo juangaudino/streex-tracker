@@ -2,6 +2,18 @@
 
 ## Beta Releases
 
+### Beta 0.6.1 — Deep Insights Refinement + Light Mode
+
+### Changed
+
+- Deep Insights now adapts to Classic Light with a bright editorial analytics treatment instead of forcing the dark cockpit view.
+- The existing dark Deep Insights cockpit remains intact for dark, Signature, RPG, Night, and Velocity themes.
+- Charts, tooltips, panels, KPI cards, filters, empty states, tables, and insight blocks now share one theme-aware visual layer.
+
+### Production Behavior
+
+- No analytics calculations, Supabase schema, auth, Dashboard, Full Focus, Career, Entry, Ask My Data, exports, XP, achievements, or backend behavior changed.
+
 ### Beta 0.6.0 — Deep Insights Desktop V1
 
 ### Added

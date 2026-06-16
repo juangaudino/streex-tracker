@@ -21,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.6.0 - Deep Insights Desktop V1
+Beta 0.6.1 - Deep Insights Refinement + Light Mode
 ```
 
 Source of truth:
@@ -249,6 +249,13 @@ The exported Daily Report image captures the visible report card instead of a se
 
 Deep Insights is the desktop-first analytics cockpit.
 
+Current behavior:
+
+- Dark and premium themes keep the dark Streex control-room treatment.
+- Classic Light uses a bright editorial analytics treatment.
+- Charts, tooltips, KPI cards, filters, panels, empty states, insight blocks, and tables are theme-aware.
+- No Deep Insights calculation, data, auth, Supabase, or backend behavior changed in `Beta 0.6.1`.
+
 Current state:
 
 - dedicated route: `/deep-insights`
@@ -361,6 +368,7 @@ These numbers are planning labels, not immovable promises. If a bugfix, producti
 
 ## Recent Beta Highlights
 
+- `0.6.1`: Deep Insights Refinement + Light Mode added theme-aware chart, panel, table, tooltip, and filter styling.
 - `0.6.0`: Deep Insights Desktop V1 added as a new desktop-first analytics cockpit.
 - `0.5.1`: Daily Report export now matches the visible report card; CSS import warning fixed.
 - `0.5.0`: Bonus Category added; bonuses count toward earnings story but not operational efficiency.

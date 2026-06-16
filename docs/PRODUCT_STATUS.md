@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-06-12
+Last updated: 2026-06-16
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -10,6 +10,7 @@ Use this with:
 - `AGENTS.md`
 - `docs/PROJECT_CONTEXT.md`
 - `docs/STREEX_AI_WORKFLOW.md`
+- `docs/ROADMAP.md`
 - `CHANGELOG.md`
 - `src/lib/changelog.ts`
 
@@ -20,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.5.1 - Daily Report Export Match
+Beta 0.6.0 - Deep Insights Desktop V1
 ```
 
 Source of truth:
@@ -244,6 +245,39 @@ Current export behavior:
 
 The exported Daily Report image captures the visible report card instead of a separate export-only template. This keeps the downloaded/shared card aligned with the in-app design.
 
+### Deep Insights
+
+Deep Insights is the desktop-first analytics cockpit.
+
+Current state:
+
+- dedicated route: `/deep-insights`
+- available from the Progress menu
+- not part of bottom navigation
+- dark control-room layout for power-user analysis
+- time, app/platform, and weekday filters
+- KPI strip
+- earnings trend
+- weekly earnings comparison
+- weekday earnings chart
+- app contribution mix
+- hours worked chart where shift data exists
+- earnings/hour trend where valid shift duration exists
+- earnings/mile trend where mileage exists
+- best days
+- lowest earning days
+- best weeks
+- best shifts where shift-level earnings can be resolved
+- app performance breakdown
+- data-supported insight copy
+
+Important metric rules:
+
+- Earnings totals follow the normal money story, including bonuses where they already count.
+- Operational efficiency uses only data that can be supported by shift time, mileage, snapshots, or manual shift earnings.
+- App-specific hourly claims are hidden because Streex does not store app-specific hours.
+- Vehicle, market/location, weather-history, and GPS filters are intentionally out of V1 until those dimensions are stored reliably.
+
 ### Ask My Data
 
 Ask My Data is the AI analytics layer.
@@ -308,8 +342,26 @@ Before implementing a new prompt, Codex should:
 2. propose a version number when the change is meaningful
 3. ask for user approval if versioning is ambiguous
 
+## Roadmap
+
+The living roadmap is stored in:
+
+```text
+docs/ROADMAP.md
+```
+
+Current planned sequence:
+
+- `Beta 0.6.1`: Deep Insights Refinement + Light Mode
+- `Beta 0.6.2`: Deep Insights Filter + Comparison Upgrade
+- `Beta 0.6.3`: Deep Insights Micro-Visualization Pass
+- `Beta 0.7.0`: Deep Insights Intelligence Layer
+
+These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
+
 ## Recent Beta Highlights
 
+- `0.6.0`: Deep Insights Desktop V1 added as a new desktop-first analytics cockpit.
 - `0.5.1`: Daily Report export now matches the visible report card; CSS import warning fixed.
 - `0.5.0`: Bonus Category added; bonuses count toward earnings story but not operational efficiency.
 - `0.4.9`: Historical Rank drill-down added Day and Week views.

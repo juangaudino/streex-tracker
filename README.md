@@ -18,13 +18,14 @@ New contributors and new Codex chats should begin with:
 - `docs/PROJECT_CONTEXT.md`
 - `docs/STREEX_AI_WORKFLOW.md`
 - `docs/PRODUCT_STATUS.md`
+- `docs/ROADMAP.md`
 - `CHANGELOG.md`
 
 `docs/PRODUCT_STATUS.md` is the master living status document for Claude, ChatGPT, Codex, and Lovable. If an external AI has repo access, ask it to read that file first.
 
 ## Current Production Status
 
-- Current release: **Beta 0.5.1**
+- Current release: **Beta 0.6.0**
 - Production app: `https://gig.getstreex.com`
 - Hosting: **Vercel**
 - DNS/domain: **Cloudflare** for `getstreex.com`
@@ -54,6 +55,7 @@ Streex turns gig work into a living professional identity system:
 - 🧬 **XP + Driver Identity system**
 - 🛣️ **Career titles, archetypes, rival benchmarks, and ideal week comparisons**
 - 📚 **Weekly letters, monthly recaps, and journey timeline**
+- 🧭 **Deep Insights** desktop analytics cockpit
 - 🎨 **Light, Dark, RPG, and Night Drive themes**
 - 🫀 **Pulse Mode** that lets the UI subtly react to momentum
 - 📤 **JSON and CSV data export**

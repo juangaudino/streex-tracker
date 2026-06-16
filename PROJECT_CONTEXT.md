@@ -5,6 +5,7 @@ This root file is kept as a short pointer for tools that look for project contex
 For current status, architecture, infrastructure, and product rules, read:
 
 - `docs/PRODUCT_STATUS.md`
+- `docs/ROADMAP.md`
 - `docs/PROJECT_CONTEXT.md`
 - `AGENTS.md`
 - `docs/STREEX_AI_WORKFLOW.md`
@@ -17,6 +18,6 @@ Current production summary:
 - Domain/DNS: Cloudflare
 - Active Supabase project ref: `ywbrovislvqkfzsyqpiv`
 - Legacy Lovable Supabase project ref: `mnwymfyvvdhekzvipjmp`
-- Current release: `Beta 0.5.1`
+- Current release: `Beta 0.6.0`
 
 Do not place secrets in repo documentation.

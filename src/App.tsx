@@ -15,6 +15,7 @@ import JourneyPage from "./pages/JourneyPage";
 import MonthlyRecapPage from "./pages/MonthlyRecapPage";
 import LettersPage from "./pages/LettersPage";
 import AssistantPage from "./pages/AssistantPage";
+import DeepInsightsPage from "./pages/DeepInsightsPage";
 import AdminPage from "./pages/AdminPage";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -129,6 +130,7 @@ const App = () => {
               <Route path="/recap" element={<MonthlyRecapPage />} />
               <Route path="/letters" element={<LettersPage />} />
               <Route path="/assistant" element={<AssistantPage />} />
+              <Route path="/deep-insights" element={<DeepInsightsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Route>

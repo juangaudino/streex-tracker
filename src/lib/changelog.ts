@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.5.4";
+export const CURRENT_VERSION = "0.6.0";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,20 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.6.0",
+    date: "2026-06",
+    title: "Deep Insights Desktop V1",
+    tags: ["new", "feature"],
+    items: [
+      "New Deep Insights section added as a desktop-first analytics cockpit without replacing Dashboard or Full Focus",
+      "Progress menu now includes Deep Insights alongside Journey, History, Compare, Achievements, Letters, and Monthly Recap",
+      "Deep Insights includes time, app/platform, and weekday filters that update KPIs, charts, tables, and supported insight copy together",
+      "Charts and rankings reuse existing earnings, bonus, shift, mileage, ride, and snapshot data with safe empty states for missing data",
+      "Operational efficiency only appears when valid shift duration or mileage exists, and app-specific hourly claims stay hidden because Streex does not store app-specific hours yet",
+      "No Supabase schema, auth, Dashboard, Full Focus, Entry, Ask My Data, or backend behavior changed",
+    ],
+  },
   {
     version: "0.5.4",
     date: "2026-06",

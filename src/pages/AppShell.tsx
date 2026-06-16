@@ -229,6 +229,13 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
                   >
                     <BarChart3 className="h-4 w-4" /> Compare
                   </RouterNavLink>
+                  <RouterNavLink
+                    to="/deep-insights"
+                    onClick={() => setProgressMenu(false)}
+                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                  >
+                    <BarChart3 className="h-4 w-4" /> Deep Insights
+                  </RouterNavLink>
                 </div>
               </>
             )}

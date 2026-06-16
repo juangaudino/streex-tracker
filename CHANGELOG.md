@@ -2,6 +2,26 @@
 
 ## Beta Releases
 
+### Beta 0.6.0 — Deep Insights Desktop V1
+
+### Added
+
+- New `/deep-insights` section added as a desktop-first analytics cockpit without replacing Dashboard or Full Focus.
+- Progress menu now includes Deep Insights alongside Journey, History, Compare, Achievements, Letters, and Monthly Recap.
+- Deep Insights includes global time, app/platform, and weekday filters that update KPIs, charts, tables, and supported insight copy together.
+- Initial V1 modules include KPI cards, earnings trends, weekly comparison, weekday earnings, app contribution, hours worked, earnings/hour, earnings/mile, best days, low days, best weeks, best shifts, and app performance breakdown.
+
+### Data Integrity
+
+- Charts and rankings reuse existing earnings, bonus, shift, mileage, ride, and snapshot data.
+- Operational efficiency only appears when valid shift duration or mileage exists.
+- App-specific hourly claims stay hidden because Streex does not store app-specific hours yet.
+- Unsupported filters such as vehicle, market, GPS, and historical weather context are intentionally left out of V1.
+
+### Production Behavior
+
+- No Supabase schema, auth, Dashboard, Full Focus, Career, Entry, Ask My Data, exports, XP, achievements, or backend behavior changed.
+
 ### Beta 0.5.4 — Full Focus Cleanup + Quick Update Input Polish
 
 ### Fixed

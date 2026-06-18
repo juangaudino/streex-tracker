@@ -7,7 +7,7 @@ import { getWeeklyMomentumPreview } from "@/lib/career";
 import { getDayMiles, getDayRideCount, getDayShiftHours } from "@/lib/shiftIntelligence";
 import { operationalDayTotal } from "@/lib/rewardIncome";
 import { exportNodeAsPng, shareNodeAsPng } from "@/lib/shareExport";
-import { Trophy, Flame, TrendingUp, Sparkles, Target, Clock, Route, Share2, Download } from "lucide-react";
+import { Trophy, Flame, TrendingUp, Sparkles, Target, Clock, Route, Share2, Download, StickyNote } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -191,6 +191,15 @@ export default function EndDayDialog({
                     <p className="text-xs text-muted-foreground">+{completedShifts.length - 2} more shift block{completedShifts.length - 2 === 1 ? "" : "s"}</p>
                   )}
                 </div>
+              </div>
+            )}
+
+            {todayEntry.notes?.trim() && (
+              <div className="rounded-xl border border-border bg-card/50 px-4 py-3">
+                <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <StickyNote className="h-3 w-3" /> Daily Note
+                </p>
+                <p className="text-sm leading-relaxed">{todayEntry.notes.trim()}</p>
               </div>
             )}
 

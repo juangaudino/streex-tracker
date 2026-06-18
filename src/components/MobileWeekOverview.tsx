@@ -2,7 +2,7 @@ import { dayTotal, weekTotal, formatCurrency, getLoggedDays, getActiveEnteredDay
 import { getDayMiles, getDayShiftHours } from "@/lib/shiftIntelligence";
 import type { WeekRecord } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronRight, StickyNote } from "lucide-react";
 
 interface MobileWeekOverviewProps {
   week: WeekRecord;
@@ -81,6 +81,9 @@ export default function MobileWeekOverview({
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold">{day.dayName}</span>
                   <span className="text-[10px] text-muted-foreground font-mono">{day.date}</span>
+                  {day.notes?.trim() && (
+                    <StickyNote className="h-3.5 w-3.5 text-primary" aria-label="Daily note" />
+                  )}
                 </div>
                 {(shiftHours > 0 || miles > 0) && (
                   <p className="text-[10px] text-muted-foreground mt-0.5">

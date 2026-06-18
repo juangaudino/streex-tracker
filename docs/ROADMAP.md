@@ -1,6 +1,6 @@
 # Streex Roadmap
 
-Last updated: 2026-06-16
+Last updated: 2026-06-18
 
 This is the living product roadmap for Streex Gig Earnings.
 
@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after the Quick Add decimal input fix:
+Current baseline after Daily Notes:
 
 ```text
-Beta 0.6.2 - Quick Add Decimal Input Fix
+Beta 0.6.3 - Daily Notes
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -89,7 +89,23 @@ Scope:
 - Normalize decimal commas from regional mobile keyboards.
 - Keep normal Entry, snapshots, earnings calculations, and storage behavior unchanged.
 
-### Beta 0.6.3 - Deep Insights Filter + Comparison Upgrade
+### Beta 0.6.3 - Daily Notes
+
+Status: completed.
+
+Scope:
+
+- Attach one short optional note to a specific day.
+- Edit or clear the note from mobile day detail or desktop Entry.
+- Surface a compact note indicator and include notes in Daily Report.
+- Keep notes outside every statistic and performance calculation.
+- Reuse the existing day JSON metadata without a migration.
+
+Deferred:
+
+- Cross-history note browsing, filtering, and search.
+
+### Beta 0.6.4 - Deep Insights Filter + Comparison Upgrade
 
 Status: planned next, number may shift.
 
@@ -104,7 +120,7 @@ Intent:
 
 Move Deep Insights from a static analytics cockpit into a stronger exploration tool.
 
-### Beta 0.6.4 - Deep Insights Micro-Visualization Pass
+### Beta 0.6.5 - Deep Insights Micro-Visualization Pass
 
 Status: planned, number may shift.
 
@@ -546,6 +562,7 @@ These are valuable but intentionally not part of the immediate next patch:
 - Provider integrations.
 - AI-generated Deep Insights summaries.
 - Maintenance logs and vehicle service timelines.
+- Search and browse daily notes across long history.
 - Saved AI conversation archive.
 - Market tagging.
 - Smart mileage capture.

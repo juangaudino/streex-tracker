@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.6.2";
+export const CURRENT_VERSION = "0.6.3";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.6.3",
+    date: "2026-06",
+    title: "Daily Notes",
+    tags: ["new", "feature"],
+    items: [
+      "Each tracked day can now hold one short optional context note from the day detail or desktop Entry view",
+      "Days with notes show a compact note indicator, and Daily Report includes the note in its visible and exported report",
+      "Daily notes remain contextual metadata and do not affect earnings, rankings, records, averages, goals, XP, achievements, or performance calculations",
+      "Notes reuse the existing day JSON structure, so no Supabase migration or backend architecture change was required",
+    ],
+  },
   {
     version: "0.6.2",
     date: "2026-06",

@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { dayTotal, formatCurrency } from "@/lib/store";
 import { bonusDayTotal, isRewardApp, standardDayEarnings } from "@/lib/rewardIncome";
 import type { DayEntry } from "@/lib/types";
-import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Save, StickyNote, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { getActiveShift, getDayRideCount, getDayShiftHours, hasActiveShift, isShiftPaused, shiftBreakHours, shiftDurationHours } from "@/lib/shiftIntelligence";
@@ -18,6 +19,7 @@ interface MobileDayDetailProps {
   onUpdate: (dayIdx: number, app: string, val: string) => void;
   onLoggedToggle: (dayIdx: number, checked: boolean) => void;
   onMileageUpdate?: (dayIdx: number, val: number) => void;
+  onNoteUpdate?: (dayIdx: number, value: string) => void;
   onStartShift?: (dayIdx: number) => void;
   onEndShift?: (dayIdx: number) => void;
   onPauseResumeShift?: (dayIdx: number) => void;
@@ -51,6 +53,7 @@ export default function MobileDayDetail({
   onUpdate,
   onLoggedToggle,
   onMileageUpdate,
+  onNoteUpdate,
   onStartShift,
   onEndShift,
   onPauseResumeShift,
@@ -239,6 +242,39 @@ export default function MobileDayDetail({
               }}
             />
           </div>
+        </div>
+      )}
+
+      {onNoteUpdate && (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <StickyNote className="h-4 w-4 text-primary" /> Daily Note
+              </p>
+              <p className="text-xs text-muted-foreground">Context only. It never changes your stats.</p>
+            </div>
+            {day.notes?.trim() && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="text-muted-foreground"
+                onClick={() => onNoteUpdate(dayIdx, "")}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+          <Textarea
+            value={day.notes ?? ""}
+            maxLength={180}
+            rows={3}
+            placeholder="Sick day, stopped early, unusual weather..."
+            className="resize-none"
+            onChange={(event) => onNoteUpdate(dayIdx, event.target.value)}
+          />
+          <p className="text-right text-[10px] text-muted-foreground">{day.notes?.length ?? 0}/180</p>
         </div>
       )}
 

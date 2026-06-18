@@ -2,6 +2,19 @@
 
 ## Beta Releases
 
+### Beta 0.6.3 — Daily Notes
+
+### Added
+
+- Each tracked day can now hold one short optional context note from mobile day detail or desktop Entry.
+- Days with notes show a compact note indicator.
+- Daily Report includes the note when it exists, including in the report image export.
+
+### Data Integrity
+
+- Notes are contextual metadata only and do not affect earnings, rankings, records, averages, goals, XP, achievements, or performance calculations.
+- Notes reuse the existing day JSON structure; no Supabase migration or backend architecture change was required.
+
 ### Beta 0.6.2 — Quick Add Decimal Input Fix
 
 ### Fixed

@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-06-16
+Last updated: 2026-06-18
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -21,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.6.2 - Quick Add Decimal Input Fix
+Beta 0.6.3 - Daily Notes
 ```
 
 Source of truth:
@@ -360,8 +360,8 @@ docs/ROADMAP.md
 Current planned sequence:
 
 - `Beta 0.6.1`: Deep Insights Refinement + Light Mode
-- `Beta 0.6.3`: Deep Insights Filter + Comparison Upgrade
-- `Beta 0.6.4`: Deep Insights Micro-Visualization Pass
+- `Beta 0.6.4`: Deep Insights Filter + Comparison Upgrade
+- `Beta 0.6.5`: Deep Insights Micro-Visualization Pass
 - `Beta 0.7.0`: Deep Insights Intelligence Layer
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.

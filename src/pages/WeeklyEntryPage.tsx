@@ -3,6 +3,7 @@ import { useOutletContext, useNavigate, useSearchParams } from "react-router-dom
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   createWeek,
@@ -15,7 +16,7 @@ import {
 } from "@/lib/store";
 import { DAY_NAMES, type BonusEntry, type DayEntry, type ShiftSession, type WeekRecord } from "@/lib/types";
 import type { StoreContext } from "./types";
-import { CalendarPlus, Save, Lock, Trash2, AlertTriangle, CheckCircle2, History, ChevronDown, ChevronRight } from "lucide-react";
+import { CalendarPlus, Save, Lock, Trash2, AlertTriangle, CheckCircle2, History, ChevronDown, ChevronRight, StickyNote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -304,6 +305,16 @@ export default function WeeklyEntryPage() {
     setEditWeek({ ...editWeek, entries });
   }
 
+  function handleNoteUpdate(dayIdx: number, value: string) {
+    if (!editWeek) return;
+    const notes = value.slice(0, 180);
+    const entries = editWeek.entries.map((day, index) => {
+      if (index !== dayIdx) return day;
+      return { ...day, notes: notes.trim() ? notes : undefined };
+    });
+    setEditWeek({ ...editWeek, entries });
+  }
+
   function handleAddBonus(dayIdx: number, app: string, amount: number) {
     if (!editWeek) return;
     const cleanAmount = Math.max(0, Number(amount) || 0);
@@ -557,6 +568,7 @@ export default function WeeklyEntryPage() {
         onUpdate={handleCellChange}
         onLoggedToggle={handleLoggedToggle}
         onMileageUpdate={handleMileageUpdate}
+        onNoteUpdate={handleNoteUpdate}
         onStartShift={handleStartShift}
         onEndShift={handleEndShift}
         onPauseResumeShift={handlePauseResumeShift}
@@ -926,6 +938,9 @@ export default function WeeklyEntryPage() {
                 <th className="text-right px-4 py-3 font-bold text-foreground min-w-[100px]">
                   Total
                 </th>
+                <th className="px-3 py-3 font-semibold text-muted-foreground text-left min-w-[200px]">
+                  Note
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -951,6 +966,7 @@ export default function WeeklyEntryPage() {
                         {isActive && (
                           <span className="inline-block w-1.5 h-1.5 rounded-full bg-success" />
                         )}
+                        {day.notes?.trim() && <StickyNote className="h-3.5 w-3.5 text-primary" aria-label="Daily note" />}
                       </div>
                       <div className="text-[10px] text-muted-foreground font-mono">{day.date}</div>
                     </td>
@@ -983,6 +999,16 @@ export default function WeeklyEntryPage() {
                     )}>
                       {formatCurrency(dt, sym)}
                     </td>
+                    <td className="px-2 py-2">
+                      <Textarea
+                        value={day.notes ?? ""}
+                        maxLength={180}
+                        rows={1}
+                        placeholder="Optional context"
+                        className="min-h-9 resize-none text-xs"
+                        onChange={(event) => handleNoteUpdate(dayIdx, event.target.value)}
+                      />
+                    </td>
                   </tr>
                 );
               })}
@@ -1001,6 +1027,7 @@ export default function WeeklyEntryPage() {
                 <td className="px-4 py-3 text-right font-mono font-bold text-primary text-lg">
                   {formatCurrency(wt, sym)}
                 </td>
+                <td></td>
               </tr>
             </tfoot>
           </table>

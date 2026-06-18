@@ -18,6 +18,6 @@ Current production summary:
 - Domain/DNS: Cloudflare
 - Active Supabase project ref: `ywbrovislvqkfzsyqpiv`
 - Legacy Lovable Supabase project ref: `mnwymfyvvdhekzvipjmp`
-- Current release: `Beta 0.6.1`
+- Current release: `Beta 0.6.2`
 
 Do not place secrets in repo documentation.

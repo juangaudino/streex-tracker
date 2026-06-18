@@ -2,6 +2,17 @@
 
 ## Beta Releases
 
+### Beta 0.6.2 — Quick Add Decimal Input Fix
+
+### Fixed
+
+- Quick Add earnings now accepts decimal cents without removing the decimal point while the user is typing.
+- Locale decimal commas are normalized safely for mobile keyboards.
+
+### Production Behavior
+
+- Accumulated-total behavior, snapshots, earnings calculations, Entry, Supabase, auth, and backend behavior were not changed.
+
 ### Beta 0.6.1 — Deep Insights Refinement + Light Mode
 
 ### Changed

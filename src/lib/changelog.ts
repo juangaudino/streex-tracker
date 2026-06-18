@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.6.1";
+export const CURRENT_VERSION = "0.6.2";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,17 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.6.2",
+    date: "2026-06",
+    title: "Quick Add Decimal Input Fix",
+    tags: ["fix"],
+    items: [
+      "Quick Add earnings now accepts decimal cents without removing the decimal point while the user is typing",
+      "Locale decimal commas are normalized safely so mobile users can enter values such as 48,75 or 48.75",
+      "Accumulated-total behavior, snapshots, earnings calculations, Entry, Supabase, and backend behavior were not changed",
+    ],
+  },
   {
     version: "0.6.1",
     date: "2026-06",

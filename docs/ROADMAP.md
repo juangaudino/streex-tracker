@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after Deep Insights light-mode refinement:
+Current baseline after the Quick Add decimal input fix:
 
 ```text
-Beta 0.6.1 - Deep Insights Refinement + Light Mode
+Beta 0.6.2 - Quick Add Decimal Input Fix
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -79,7 +79,17 @@ Intent:
 
 Make Deep Insights feel polished in both dark and light contexts before expanding the data model or feature surface.
 
-### Beta 0.6.2 - Deep Insights Filter + Comparison Upgrade
+### Beta 0.6.2 - Quick Add Decimal Input Fix
+
+Status: completed.
+
+Scope:
+
+- Preserve decimal fractions while typing Quick Add accumulated earnings.
+- Normalize decimal commas from regional mobile keyboards.
+- Keep normal Entry, snapshots, earnings calculations, and storage behavior unchanged.
+
+### Beta 0.6.3 - Deep Insights Filter + Comparison Upgrade
 
 Status: planned next, number may shift.
 
@@ -94,7 +104,7 @@ Intent:
 
 Move Deep Insights from a static analytics cockpit into a stronger exploration tool.
 
-### Beta 0.6.3 - Deep Insights Micro-Visualization Pass
+### Beta 0.6.4 - Deep Insights Micro-Visualization Pass
 
 Status: planned, number may shift.
 
@@ -512,6 +522,14 @@ Personalization:
 - narrative intensity
 - card behavior
 - display preferences
+- future units preferences for Fahrenheit/Celsius and miles/kilometers
+
+Units preferences guardrails:
+
+- Keep historical distance in one canonical internal unit.
+- Convert only at display and input boundaries.
+- Update weather, traffic speed, Entry, reports, exports, operations snapshots, Deep Insights, and Ask My Data together.
+- Do not implement this as a partial surface-level setting.
 
 Guardrail:
 

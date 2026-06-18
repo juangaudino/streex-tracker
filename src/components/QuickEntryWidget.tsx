@@ -17,6 +17,7 @@ import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
 import { triggerCelebration } from "@/components/RecordCelebration";
 import { createShift, endActiveShift, getActiveShift, getDayShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resumePausedShift, shiftDurationHours } from "@/lib/shiftIntelligence";
 import { isRewardApp } from "@/lib/rewardIncome";
+import { normalizeDecimalDraft, parseDecimalDraft } from "@/lib/decimalInput";
 
 interface QuickEntryWidgetProps {  
   openWeek: WeekRecord;
@@ -43,6 +44,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"quick" | "full">("quick");
   const [quickApp, setQuickApp] = useState<string | null>(null);
+  const [quickAmountDraft, setQuickAmountDraft] = useState("");
   const todayIdx = getTodayDayIdx(openWeek);
   const today = todayIdx >= 0 ? openWeek.entries[todayIdx] : null;
 
@@ -63,6 +65,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
       setLocalRideCount(active?.rideCount ? String(active.rideCount) : "");
       setMode("quick");
       setQuickApp(null);
+      setQuickAmountDraft("");
     }
     setOpen(isOpen);
   }
@@ -107,7 +110,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
 
   async function handleQuickSave(app: string) {
     if (!today || resolvedIdx < 0) return;
-    const appTotal = Number(localApps[app]) || 0;
+    const appTotal = parseDecimalDraft(quickAmountDraft) ?? 0;
     const prevTotal = dayTotal(today);
     const mileage = localMileage.trim() === "" ? null : Math.max(0, parseFloat(localMileage) || 0);
     const rides = localRideCount.trim() === "" ? null : Math.max(0, Math.trunc(Number(localRideCount) || 0));
@@ -149,6 +152,22 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     }
     const saved = await persistQuickWeek({ ...openWeek, entries });
     if (saved) setOpen(false);
+  }
+
+  function selectQuickApp(app: string) {
+    setQuickApp(app);
+    const currentAmount = Number(localApps[app]) || 0;
+    setQuickAmountDraft(currentAmount > 0 ? String(currentAmount) : "");
+  }
+
+  function openFullEntry() {
+    if (quickApp) {
+      const parsedDraft = parseDecimalDraft(quickAmountDraft);
+      if (parsedDraft !== null) {
+        setLocalApps((prev) => ({ ...prev, [quickApp]: parsedDraft }));
+      }
+    }
+    setMode("full");
   }
 
   async function handleStartShift() {
@@ -247,7 +266,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                         type="button"
                         variant="outline"
                         className="h-16 w-full justify-between rounded-xl px-4"
-                        onClick={() => setQuickApp(app)}
+                        onClick={() => selectQuickApp(app)}
                       >
                         <span className="text-base font-semibold">{app}</span>
                         <span className="font-mono text-lg text-primary">
@@ -255,7 +274,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                         </span>
                       </Button>
                     ))}
-                    <Button type="button" variant="secondary" className="w-full" onClick={() => setMode("full")}>
+                    <Button type="button" variant="secondary" className="w-full" onClick={openFullEntry}>
                       More Apps
                     </Button>
                   </div>
@@ -268,12 +287,14 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                       <Input
                         type="text"
                         inputMode="decimal"
+                        pattern="[0-9]*[.,]?[0-9]{0,2}"
                         className="mt-2 h-16 text-right font-mono text-4xl font-bold"
                         placeholder="0.00"
-                        value={localApps[quickApp] || ""}
-                        onChange={(e) =>
-                          setLocalApps((prev) => ({ ...prev, [quickApp]: parseFloat(e.target.value) || 0 }))
-                        }
+                        value={quickAmountDraft}
+                        onChange={(e) => {
+                          const nextDraft = normalizeDecimalDraft(e.target.value);
+                          if (nextDraft !== null) setQuickAmountDraft(nextDraft);
+                        }}
                       />
                       <p className="mt-2 text-xs text-muted-foreground">
                         Enter the current accumulated total, not an amount to add.
@@ -317,7 +338,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                         Save Update
                       </Button>
                     </div>
-                    <Button type="button" variant="ghost" className="w-full" onClick={() => setMode("full")}>
+                    <Button type="button" variant="ghost" className="w-full" onClick={openFullEntry}>
                       More Apps
                     </Button>
                   </div>

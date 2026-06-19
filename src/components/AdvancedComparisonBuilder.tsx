@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { CalendarRange, Layers, Plus, RefreshCw, Scale, Trash2 } from "lucide-react";
+import { CalendarRange, Filter, Layers, Plus, RefreshCw, Scale, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 interface Props {
   weeks: WeekRecord[];
   currencySymbol: string;
+  viewTabs?: ReactNode;
 }
 
 interface MetricDefinition {
@@ -90,6 +91,11 @@ function formatHumanDate(value: string): string {
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function isDefaultPresetLabel(block: ComparisonBlock): boolean {
+  return (block.id === "current-week" && block.label === "Current week")
+    || (block.id === "previous-same-point" && block.label === "Previous week · same point");
+}
+
 function metricDefinitions(symbol: string): MetricDefinition[] {
   const money = (value: number) => formatCurrency(value, symbol);
   const compactMoney = (value: number) => `${symbol}${compactNumber(value)}`;
@@ -131,7 +137,7 @@ function compactNumber(value: number): string {
   return new Intl.NumberFormat("en-US", { notation: Math.abs(value) >= 10000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(value);
 }
 
-export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Props) {
+export default function AdvancedComparisonBuilder({ weeks, currencySymbol, viewTabs }: Props) {
   const { isDark } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialBlocks = readBlocks(searchParams.get("blocks")) ?? buildDefaultComparisonBlocks(weeks);
@@ -237,16 +243,22 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
 
   return (
     <div className="space-y-5">
-      {/* Compare controls — visually paired with the "Explore your data" panel above. */}
+      {/* One exploration control surface for Compare mode. */}
       <section className={cn("rounded-2xl border p-4 md:p-5 backdrop-blur", panel)}>
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="grid gap-1.5">
-            <span className={cn("text-[10px] font-black uppercase tracking-[0.18em]", label)}>Compare controls</span>
-            <p className={cn("text-xs leading-relaxed", muted)}>
-              Compare performance across two to four selected periods.
-            </p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-[#E6CE20]" />
+                <h2 className={cn("text-sm font-bold tracking-wide", text)}>Explore your data</h2>
+              </div>
+              <p className={cn("mt-1 text-xs leading-relaxed", muted)}>
+                Compare performance across two to four selected periods.
+              </p>
+            </div>
+            {viewTabs}
           </div>
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-wrap items-end gap-3 md:pt-0.5">
             <label className={cn("grid gap-1.5 text-[10px] font-black uppercase tracking-[0.18em]", label)}>
               App filter
               <select
@@ -348,7 +360,7 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
                 <label className="col-span-2 space-y-1">
                   <span className={cn("text-[9px] font-bold uppercase tracking-wider", label)}>Name (optional)</span>
                   <Input
-                    value={block.label ?? ""}
+                    value={isDefaultPresetLabel(block) ? "" : block.label ?? ""}
                     maxLength={32}
                     placeholder="Auto-generated from dates"
                     onChange={(event) => updateBlock(block.id, { label: event.target.value || undefined })}

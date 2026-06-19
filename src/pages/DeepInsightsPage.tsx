@@ -281,18 +281,14 @@ function Filters({
   data,
   onChange,
   onReset,
-  activeView,
-  onViewChange,
-  isDark,
+  viewTabs,
 }: {
   ui: DeepInsightsVisual;
   filters: DeepInsightsFilters;
   data: DeepInsightsData;
   onChange: (filters: DeepInsightsFilters) => void;
   onReset: () => void;
-  activeView: "overview" | "compare";
-  onViewChange: (view: "overview" | "compare") => void;
-  isDark: boolean;
+  viewTabs: ReactNode;
 }) {
   const selectClass = cn("h-10 rounded-xl border px-3 text-sm font-semibold outline-none transition", ui.select);
   const filterActive = filters.timePreset !== "all" || filters.app !== "all" || filters.weekday !== "all";
@@ -301,47 +297,11 @@ function Filters({
     <Panel
       ui={ui}
       title="Explore your data"
-      subtitle={activeView === "overview"
-        ? "Every module below respects these filters."
-        : "Choose the periods and app scope you want to compare."}
+      subtitle="Every module below respects these filters."
       icon={Filter}
       className={ui.filterPanel}
     >
-      <div className={cn("mb-4 inline-grid grid-cols-2 gap-1 rounded-xl border p-1", ui.rowDivider)} role="tablist" aria-label="Deep Insights view">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeView === "overview"}
-          onClick={() => onViewChange("overview")}
-          className={cn(
-            "h-9 rounded-lg px-5 text-xs font-bold uppercase tracking-[0.14em] transition",
-            activeView === "overview"
-              ? "bg-[#E6CE20] text-[#0B0B0B] shadow-sm"
-              : cn(ui.muted, isDark ? "hover:bg-white/[0.05]" : "hover:bg-slate-100"),
-          )}
-        >
-          Overview
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeView === "compare"}
-          onClick={() => onViewChange("compare")}
-          className={cn(
-            "h-9 rounded-lg px-5 text-xs font-bold uppercase tracking-[0.14em] transition",
-            activeView === "compare"
-              ? "bg-[#E6CE20] text-[#0B0B0B] shadow-sm"
-              : cn(ui.muted, isDark ? "hover:bg-white/[0.05]" : "hover:bg-slate-100"),
-          )}
-        >
-          Compare
-        </button>
-      </div>
-      {activeView === "compare" ? (
-        <p className={cn("text-xs leading-relaxed", ui.muted)}>
-          The app filter below applies consistently to every comparison block.
-        </p>
-      ) : (
+      <div className="mb-4">{viewTabs}</div>
       <div className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto]">
         <label className={cn("grid gap-1.5 text-[10px] font-black uppercase tracking-[0.18em]", ui.label)}>
           Time
@@ -385,7 +345,6 @@ function Filters({
           Reset
         </button>
       </div>
-      )}
     </Panel>
   );
 }
@@ -418,6 +377,28 @@ export default function DeepInsightsPage() {
     setSearchParams(next, { replace: true });
   }
 
+  const viewTabs = (
+    <div className={cn("inline-grid grid-cols-2 gap-1 rounded-xl border p-1", ui.rowDivider)} role="tablist" aria-label="Deep Insights view">
+      {(["overview", "compare"] as const).map((view) => (
+        <button
+          key={view}
+          type="button"
+          role="tab"
+          aria-selected={activeView === view}
+          onClick={() => setActiveView(view)}
+          className={cn(
+            "h-9 rounded-lg px-5 text-xs font-bold uppercase tracking-[0.14em] transition",
+            activeView === view
+              ? "bg-[#E6CE20] text-[#0B0B0B] shadow-sm"
+              : cn(ui.muted, isDark ? "hover:bg-white/[0.05]" : "hover:bg-slate-100"),
+          )}
+        >
+          {view === "overview" ? "Overview" : "Compare"}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div className={cn("min-h-full", ui.shell)}>
       <div className={cn("pointer-events-none fixed inset-0 -z-0", ui.aurora)} />
@@ -446,21 +427,18 @@ export default function DeepInsightsPage() {
           </div>
         </header>
 
+        {activeView === "compare" ? (
+          <AdvancedComparisonBuilder weeks={weeks} currencySymbol={sym} viewTabs={viewTabs} />
+        ) : (
+          <>
         <Filters
           ui={ui}
           filters={filters}
           data={data}
           onChange={setFilters}
           onReset={() => setFilters({ timePreset: "all", app: "all", weekday: "all" })}
-          activeView={activeView}
-          onViewChange={setActiveView}
-          isDark={isDark}
+          viewTabs={viewTabs}
         />
-
-        {activeView === "compare" ? (
-          <AdvancedComparisonBuilder weeks={weeks} currencySymbol={sym} />
-        ) : (
-          <>
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
           <KpiCard ui={ui} label="Avg / mile" value={data.totals.earningsPerMile ? `${formatCurrency(data.totals.earningsPerMile, sym)}/mi` : "—"} detail={data.totals.miles ? `${formatCompact(data.totals.miles)} miles` : "No mileage"} />
           <KpiCard ui={ui} label="Best day" value={data.totals.bestDay ? formatCurrency(data.totals.bestDay.earnings, sym) : "—"} detail={data.totals.bestDay ? `${data.totals.bestDay.dayName} · ${data.totals.bestDay.date}` : "No earning days"} tone="yellow" />

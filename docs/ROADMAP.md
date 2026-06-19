@@ -144,7 +144,7 @@ Move Deep Insights from a static analytics cockpit into a stronger exploration t
 
 ### Beta 0.7.1 - Deep Insights Visual Refinement
 
-Status: in progress.
+Status: completed.
 
 Scope:
 

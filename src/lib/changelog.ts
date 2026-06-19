@@ -24,7 +24,10 @@ export const CHANGELOG: ChangelogEntry[] = [
     tags: ["fix", "polish"],
     items: [
       "The global app header now stays visibly above Deep Insights fixed background layers while preserving all existing controls and behavior",
-      "Advanced Comparison visual refinement is being prepared as a separate reviewed design pass without changing its tested calculation engine",
+      "Overview and Compare now share one Explore your data control surface with mode-specific filters and actions",
+      "Comparison blocks now remain side by side on desktop, show clear start and end context, and use consistent identity colors across blocks, charts, and the metric matrix",
+      "Generated period labels now stay aligned with edited dates while optional custom names remain available",
+      "Classic Light and dark premium themes now share the same comparison hierarchy, spacing, contrast, and responsive behavior",
       "No comparison calculations, existing Compare behavior, Supabase, auth, Dashboard, Full Focus, Entry, or backend behavior changed",
     ],
   },

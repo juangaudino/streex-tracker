@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { CalendarRange, Plus, RefreshCw, Scale, Trash2 } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CalendarRange, Layers, Plus, RefreshCw, Scale, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -41,6 +41,17 @@ const BLOCK_TYPES: Array<{ value: ComparisonBlockType; label: string }> = [
   { value: "custom", label: "Custom" },
 ];
 
+const BLOCK_ACCENTS = [
+  { color: "#E6CE20", darker: "#A48B00" },
+  { color: "#38BDF8", darker: "#0284C7" },
+  { color: "#34D399", darker: "#059669" },
+  { color: "#A78BFA", darker: "#6D28D9" },
+];
+
+function accentFor(index: number) {
+  return BLOCK_ACCENTS[index % BLOCK_ACCENTS.length];
+}
+
 function isDate(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
@@ -70,6 +81,12 @@ function rangeForSelection(type: ComparisonBlockType, anchor: string) {
   const range = comparisonRangeForType(type, anchor);
   const today = todayString();
   return range.startDate <= today && range.endDate > today ? { ...range, endDate: today } : range;
+}
+
+function formatHumanDate(value: string): string {
+  if (!isDate(value)) return value;
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function metricDefinitions(symbol: string): MetricDefinition[] {
@@ -115,8 +132,8 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
   const [searchParams, setSearchParams] = useSearchParams();
   const initialBlocks = readBlocks(searchParams.get("blocks")) ?? buildDefaultComparisonBlocks(weeks);
   const [blocks, setBlocks] = useState<ComparisonBlock[]>(() => initialBlocks.length >= 2 ? initialBlocks : [
-    { id: "block-a", type: "day", label: "Block A", startDate: todayString(), endDate: todayString() },
-    { id: "block-b", type: "day", label: "Block B", startDate: todayString(), endDate: todayString() },
+    { id: "block-a", type: "day", startDate: todayString(), endDate: todayString() },
+    { id: "block-b", type: "day", startDate: todayString(), endDate: todayString() },
   ]);
   const [appFilter, setAppFilter] = useState(() => searchParams.get("compareApp") || "all");
   const [chartMetric, setChartMetric] = useState("earnings");
@@ -124,12 +141,28 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
   const data = useMemo(() => buildComparisonData({ blocks, weeks, appFilter, currencySymbol }), [appFilter, blocks, currencySymbol, weeks]);
   const metrics = useMemo(() => metricDefinitions(currencySymbol).filter((metric) => data.results.some((result) => metric.read(result.metrics) !== null)), [currencySymbol, data.results]);
   const selectedChartMetric = metrics.find((metric) => metric.id === chartMetric) ?? metrics[0];
-  const chartData = selectedChartMetric ? data.results.map((result) => ({ label: result.displayLabel, value: selectedChartMetric.read(result.metrics) ?? 0 })) : [];
+  const chartData = selectedChartMetric ? data.results.map((result, index) => ({
+    label: result.displayLabel,
+    value: selectedChartMetric.read(result.metrics) ?? 0,
+    fill: accentFor(index).color,
+  })) : [];
 
-  const panel = isDark ? "border-white/10 bg-white/[0.045]" : "border-slate-200 bg-white/85";
-  const muted = isDark ? "text-white/55" : "text-slate-500";
-  const input = isDark ? "border-white/10 bg-black/40 text-white" : "border-slate-200 bg-white text-slate-950";
-  const table = isDark ? "border-white/10 bg-black/20" : "border-slate-200 bg-white/80";
+  // Panel styling matched to DeepInsightsPage Panel component.
+  const panel = isDark
+    ? "border-white/10 bg-white/[0.045] shadow-[0_18px_60px_rgba(0,0,0,0.28)]"
+    : "border-slate-200/90 bg-white/82 shadow-[0_16px_50px_rgba(15,23,42,0.08)]";
+  const muted = isDark ? "text-white/58" : "text-slate-600";
+  const quiet = isDark ? "text-white/45" : "text-slate-500";
+  const label = isDark ? "text-white/45" : "text-slate-500";
+  const text = isDark ? "text-white" : "text-slate-950";
+  const input = isDark
+    ? "border-white/10 bg-black/45 text-white focus:border-[#E6CE20]/55"
+    : "border-slate-200 bg-white text-slate-950 focus:border-[#D8BD00]";
+  const tableShell = isDark ? "border-white/10 bg-black/20" : "border-slate-200 bg-white/78";
+  const tableHeadBg = isDark ? "bg-white/[0.04]" : "bg-slate-50";
+  const tableStickyHead = isDark ? "bg-[#111211]" : "bg-slate-50";
+  const tableStickyCell = isDark ? "bg-[#0D0E0D]" : "bg-white";
+  const rowBorder = isDark ? "border-t border-white/10" : "border-t border-slate-200";
   const gridStroke = isDark ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.10)";
   const axisStroke = isDark ? "rgba(255,255,255,0.42)" : "rgba(15,23,42,0.48)";
 
@@ -150,11 +183,27 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
 
   function changeBlockType(block: ComparisonBlock, type: ComparisonBlockType) {
     const range = rangeForSelection(type, block.startDate);
-    updateBlock(block.id, { type, ...range });
+    // Clear stored label so generated label reflects the new period.
+    updateBlock(block.id, { type, label: undefined, ...range });
   }
 
   function changeAnchor(block: ComparisonBlock, anchor: string) {
-    updateBlock(block.id, block.type === "custom" ? { startDate: anchor, endDate: block.endDate < anchor ? anchor : block.endDate } : rangeForSelection(block.type, anchor));
+    if (block.type === "custom") {
+      updateBlock(block.id, {
+        startDate: anchor,
+        endDate: block.endDate < anchor ? anchor : block.endDate,
+        label: undefined,
+      });
+    } else {
+      updateBlock(block.id, { ...rangeForSelection(block.type, anchor), label: undefined });
+    }
+  }
+
+  function changeCustomEnd(block: ComparisonBlock, end: string) {
+    updateBlock(block.id, {
+      endDate: end < block.startDate ? block.startDate : end,
+      label: undefined,
+    });
   }
 
   function addBlock() {
@@ -176,151 +225,254 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
     if (values.length > 1) bestByMetric.set(metric.id, Math.max(...values));
   }
 
+  const columnClass = blocks.length >= 4
+    ? "lg:grid-cols-4"
+    : blocks.length === 3
+      ? "lg:grid-cols-3"
+      : "lg:grid-cols-2";
+
   return (
     <div className="space-y-5">
-      <section className={cn("rounded-2xl border p-4 md:p-5", panel)}>
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#D6BE00]">Advanced Comparison</p>
-            <h2 className="mt-1 text-xl font-bold">Compare the periods that matter</h2>
-            <p className={cn("mt-1 max-w-2xl text-sm", muted)}>Two to four blocks, one consistent metric language. Missing operational data stays hidden.</p>
+      {/* Compare controls — visually paired with the "Explore your data" panel above. */}
+      <section className={cn("rounded-2xl border p-4 md:p-5 backdrop-blur", panel)}>
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="grid gap-1.5">
+            <span className={cn("text-[10px] font-black uppercase tracking-[0.18em]", label)}>Compare controls</span>
+            <p className={cn("text-xs leading-relaxed", muted)}>
+              Build 2–4 period blocks. Edits clear preset labels so titles always match the dates.
+            </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={resetSamePoint} disabled={buildDefaultComparisonBlocks(weeks).length < 2}>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className={cn("grid gap-1.5 text-[10px] font-black uppercase tracking-[0.18em]", label)}>
+              App filter
+              <select
+                value={appFilter}
+                onChange={(event) => persist(blocks, event.target.value)}
+                className={cn("h-10 min-w-[10rem] rounded-xl border px-3 text-sm font-semibold outline-none transition", input)}
+              >
+                <option value="all">All apps</option>
+                {data.appOptions.map((app) => <option key={app} value={app}>{app}</option>)}
+              </select>
+            </label>
+            <Button type="button" variant="outline" size="sm" onClick={resetSamePoint} disabled={buildDefaultComparisonBlocks(weeks).length < 2} className="h-10">
               <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Current vs previous
             </Button>
-            <Button type="button" size="sm" onClick={addBlock} disabled={blocks.length >= 4}>
+            <Button type="button" size="sm" onClick={addBlock} disabled={blocks.length >= 4} className="h-10">
               <Plus className="mr-1.5 h-3.5 w-3.5" /> Add block
             </Button>
           </div>
         </div>
-
-        <div className="mt-4 grid gap-3 lg:grid-cols-[14rem_1fr]">
-          <label className="space-y-1.5">
-            <span className={cn("text-[10px] font-bold uppercase tracking-wider", muted)}>Global app filter</span>
-            <select
-              value={appFilter}
-              onChange={(event) => persist(blocks, event.target.value)}
-              className={cn("h-10 w-full rounded-lg border px-3 text-sm outline-none", input)}
-            >
-              <option value="all">All apps</option>
-              {data.appOptions.map((app) => <option key={app} value={app}>{app}</option>)}
-            </select>
-          </label>
-          {data.appFilterActive && (
-            <div className={cn("rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-xs leading-relaxed", isDark ? "text-amber-100" : "text-amber-900")}>
-              App-only mode compares earnings. Hours, miles, rides, and efficiency are hidden because they cannot be attributed reliably to one platform.
-            </div>
-          )}
-        </div>
+        {data.appFilterActive && (
+          <div className={cn(
+            "mt-3 rounded-xl border border-[#E6CE20]/30 px-3 py-2 text-xs leading-relaxed",
+            isDark ? "bg-[#E6CE20]/8 text-[#F8E875]" : "bg-[#FFF8B7]/60 text-slate-800",
+          )}>
+            App-only mode compares earnings. Hours, miles, rides, and efficiency stay hidden because they cannot be attributed reliably to one platform.
+          </div>
+        )}
       </section>
 
-      <section className="grid gap-3 xl:grid-cols-2">
+      {/* Block columns — horizontal on desktop, stacked on mobile. */}
+      <section className={cn("grid gap-3 grid-cols-1", columnClass)}>
         {blocks.map((block, index) => {
           const result = data.results[index];
+          const accent = accentFor(index);
           return (
-            <article key={block.id} className={cn("rounded-2xl border p-4", panel)}>
+            <article
+              key={block.id}
+              className={cn("relative overflow-hidden rounded-2xl border p-4 backdrop-blur", panel)}
+              style={{ borderTopColor: accent.color, borderTopWidth: 3 }}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className={cn("text-[10px] font-bold uppercase tracking-[0.18em]", muted)}>Block {index + 1}</p>
-                  <p className="mt-1 truncate text-base font-bold">{result?.displayLabel}</p>
-                  <p className={cn("text-xs font-mono", muted)}>{result?.rangeLabel}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: accent.color }}>
+                    Block {index + 1}
+                  </p>
+                  <p className={cn("mt-1 truncate text-base font-bold", text)}>{result?.displayLabel}</p>
+                  <p className={cn("text-[11px] font-mono", quiet)}>{result?.rangeLabel}</p>
                 </div>
                 {blocks.length > 2 && (
-                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => persist(blocks.filter((candidate) => candidate.id !== block.id))} aria-label={`Remove block ${index + 1}`}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground"
+                    onClick={() => persist(blocks.filter((candidate) => candidate.id !== block.id))}
+                    aria-label={`Remove block ${index + 1}`}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 )}
               </div>
 
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <label className="space-y-1">
-                  <span className={cn("text-[9px] font-bold uppercase tracking-wider", muted)}>Type</span>
-                  <select value={block.type} onChange={(event) => changeBlockType(block, event.target.value as ComparisonBlockType)} className={cn("h-9 w-full rounded-lg border px-2 text-xs", input)}>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <label className="col-span-2 space-y-1">
+                  <span className={cn("text-[9px] font-bold uppercase tracking-wider", label)}>Type</span>
+                  <select
+                    value={block.type}
+                    onChange={(event) => changeBlockType(block, event.target.value as ComparisonBlockType)}
+                    className={cn("h-9 w-full rounded-lg border px-2 text-xs outline-none", input)}
+                  >
                     {BLOCK_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
                   </select>
                 </label>
-                <label className="col-span-1 space-y-1 sm:col-span-2">
-                  <span className={cn("text-[9px] font-bold uppercase tracking-wider", muted)}>Label</span>
-                  <Input value={block.label ?? ""} maxLength={32} placeholder="Optional" onChange={(event) => updateBlock(block.id, { label: event.target.value })} className={cn("h-9 text-xs", input)} />
+                <label className="space-y-1">
+                  <span className={cn("text-[9px] font-bold uppercase tracking-wider", label)}>Start</span>
+                  <Input
+                    type="date"
+                    max={todayString()}
+                    value={block.startDate}
+                    onChange={(event) => changeAnchor(block, event.target.value)}
+                    className={cn("h-9 text-xs", input)}
+                  />
                 </label>
-                {block.type !== "custom" ? (
-                  <label className="space-y-1">
-                    <span className={cn("text-[9px] font-bold uppercase tracking-wider", muted)}>{block.type === "day" ? "Date" : "Anchor"}</span>
-                    <Input type="date" max={todayString()} value={block.startDate} onChange={(event) => changeAnchor(block, event.target.value)} className={cn("h-9 text-xs", input)} />
-                  </label>
-                ) : (
-                  <>
-                    <label className="space-y-1">
-                      <span className={cn("text-[9px] font-bold uppercase tracking-wider", muted)}>Start</span>
-                      <Input type="date" max={todayString()} value={block.startDate} onChange={(event) => changeAnchor(block, event.target.value)} className={cn("h-9 text-xs", input)} />
-                    </label>
-                    <label className="space-y-1">
-                      <span className={cn("text-[9px] font-bold uppercase tracking-wider", muted)}>End</span>
-                      <Input type="date" min={block.startDate} max={todayString()} value={block.endDate} onChange={(event) => updateBlock(block.id, { endDate: event.target.value < block.startDate ? block.startDate : event.target.value })} className={cn("h-9 text-xs", input)} />
-                    </label>
-                  </>
-                )}
+                <label className="space-y-1">
+                  <span className={cn("text-[9px] font-bold uppercase tracking-wider", label)}>End</span>
+                  <Input
+                    type="date"
+                    min={block.startDate}
+                    max={todayString()}
+                    value={block.endDate}
+                    readOnly={block.type !== "custom"}
+                    disabled={block.type !== "custom"}
+                    onChange={(event) => changeCustomEnd(block, event.target.value)}
+                    className={cn("h-9 text-xs disabled:opacity-70", input)}
+                  />
+                </label>
+                <label className="col-span-2 space-y-1">
+                  <span className={cn("text-[9px] font-bold uppercase tracking-wider", label)}>Label override (optional)</span>
+                  <Input
+                    value={block.label ?? ""}
+                    maxLength={32}
+                    placeholder="Auto-generated from dates"
+                    onChange={(event) => updateBlock(block.id, { label: event.target.value || undefined })}
+                    className={cn("h-9 text-xs", input)}
+                  />
+                </label>
               </div>
 
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <Summary label="Earnings" value={formatCurrency(result?.metrics.earnings ?? 0, currencySymbol)} muted={muted} />
-                <Summary label="Active days" value={`${result?.metrics.activeDays ?? 0}`} muted={muted} />
-                <Summary label="Per active day" value={result?.metrics.averagePerActiveDay !== null ? formatCurrency(result?.metrics.averagePerActiveDay ?? 0, currencySymbol) : "—"} muted={muted} />
+              <div className={cn("mt-4 grid grid-cols-3 gap-2 rounded-xl border p-2", isDark ? "border-white/10 bg-black/20" : "border-slate-200 bg-slate-50/60")}>
+                <Summary label="Earnings" value={formatCurrency(result?.metrics.earnings ?? 0, currencySymbol)} muted={label} text={text} />
+                <Summary label="Active days" value={`${result?.metrics.activeDays ?? 0}`} muted={label} text={text} />
+                <Summary
+                  label="Per active day"
+                  value={result?.metrics.averagePerActiveDay !== null && result?.metrics.averagePerActiveDay !== undefined
+                    ? formatCurrency(result.metrics.averagePerActiveDay, currencySymbol)
+                    : "—"}
+                  muted={label}
+                  text={text}
+                />
               </div>
+
+              <p className={cn("mt-3 text-[10px] font-mono", quiet)}>
+                {formatHumanDate(block.startDate)} → {formatHumanDate(block.endDate)}
+              </p>
             </article>
           );
         })}
       </section>
 
-      <section className={cn("rounded-2xl border p-4 md:p-5", panel)}>
+      {/* Chart panel */}
+      <section className={cn("rounded-2xl border p-4 md:p-5 backdrop-blur", panel)}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="flex items-center gap-2 text-sm font-bold"><Scale className="h-4 w-4 text-[#D6BE00]" /> Metric comparison</p>
-            <p className={cn("mt-1 text-xs", muted)}>Best values are highlighted only where higher clearly represents stronger performance.</p>
+          <div className="flex items-center gap-2">
+            <Layers className="h-4 w-4 text-[#E6CE20]" />
+            <div>
+              <h3 className={cn("text-sm font-bold tracking-wide", text)}>Side-by-side chart</h3>
+              <p className={cn("text-xs", muted)}>Each bar uses its block's identity color.</p>
+            </div>
           </div>
           {selectedChartMetric && (
-            <select value={selectedChartMetric.id} onChange={(event) => setChartMetric(event.target.value)} className={cn("h-9 rounded-lg border px-3 text-xs", input)}>
-              {metrics.filter((metric) => metric.id !== "bestDay" && metric.id !== "lowestActiveDay").map((metric) => <option key={metric.id} value={metric.id}>{metric.label}</option>)}
+            <select
+              value={selectedChartMetric.id}
+              onChange={(event) => setChartMetric(event.target.value)}
+              className={cn("h-9 rounded-lg border px-3 text-xs outline-none", input)}
+            >
+              {metrics.filter((metric) => metric.id !== "bestDay" && metric.id !== "lowestActiveDay").map((metric) => (
+                <option key={metric.id} value={metric.id}>{metric.label}</option>
+              ))}
             </select>
           )}
         </div>
 
         {selectedChartMetric && (
-          <div className="mt-4 h-56">
+          <div className="mt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={gridStroke} vertical={false} />
-                <XAxis dataKey="label" stroke={axisStroke} tick={{ fontSize: 11 }} interval={0} />
-                <YAxis stroke={axisStroke} tick={{ fontSize: 11 }} tickFormatter={compactNumber} width={48} />
-                <Tooltip formatter={(value) => selectedChartMetric.format(Number(value), data.results[0])} contentStyle={{ background: isDark ? "rgba(5,6,5,.96)" : "rgba(255,255,255,.98)", border: `1px solid ${gridStroke}`, borderRadius: 10 }} />
-                <Bar dataKey="value" fill="#E6CE20" radius={[6, 6, 0, 0]} />
+                <XAxis dataKey="label" stroke={axisStroke} tick={{ fontSize: 11 }} interval={0} tickLine={false} axisLine={false} />
+                <YAxis stroke={axisStroke} tick={{ fontSize: 11 }} tickFormatter={compactNumber} width={48} tickLine={false} axisLine={false} />
+                <Tooltip
+                  formatter={(value) => selectedChartMetric.format(Number(value), data.results[0])}
+                  contentStyle={{
+                    background: isDark ? "rgba(5,6,5,0.96)" : "rgba(255,255,255,0.98)",
+                    border: `1px solid ${gridStroke}`,
+                    borderRadius: 10,
+                  }}
+                />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {chartData.map((entry, index) => <Cell key={index} fill={entry.fill} />)}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         )}
+      </section>
 
-        <div className={cn("mt-4 overflow-x-auto rounded-xl border", table)}>
+      {/* Metric matrix */}
+      <section className={cn("rounded-2xl border p-4 md:p-5 backdrop-blur", panel)}>
+        <div className="flex items-center gap-2">
+          <Scale className="h-4 w-4 text-[#E6CE20]" />
+          <div>
+            <h3 className={cn("text-sm font-bold tracking-wide", text)}>Metric matrix</h3>
+            <p className={cn("text-xs", muted)}>Best values are highlighted only where higher clearly represents stronger performance.</p>
+          </div>
+        </div>
+
+        <div className={cn("mt-4 overflow-x-auto rounded-xl border", tableShell)}>
           <table className="min-w-[680px] w-full text-sm">
             <thead>
-              <tr className={isDark ? "bg-white/[0.04]" : "bg-slate-50"}>
-                <th className={cn("sticky left-0 z-10 min-w-44 px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider", isDark ? "bg-[#111211]" : "bg-slate-50", muted)}>Metric</th>
-                {data.results.map((result) => <th key={result.block.id} className="min-w-36 px-3 py-2 text-right text-xs font-semibold">{result.displayLabel}</th>)}
+              <tr className={tableHeadBg}>
+                <th className={cn("sticky left-0 z-10 min-w-44 px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider", tableStickyHead, muted)}>Metric</th>
+                {data.results.map((result, index) => {
+                  const accent = accentFor(index);
+                  return (
+                    <th
+                      key={result.block.id}
+                      className="min-w-36 px-3 py-2 text-right text-xs font-semibold"
+                      style={{ color: accent.color }}
+                    >
+                      {result.displayLabel}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
               {metrics.map((metric) => {
                 const best = bestByMetric.get(metric.id);
                 return (
-                  <tr key={metric.id} className={isDark ? "border-t border-white/10" : "border-t border-slate-200"}>
-                    <th className={cn("sticky left-0 z-10 px-3 py-2 text-left text-xs font-medium", isDark ? "bg-[#0D0E0D]" : "bg-white")}>{metric.label}</th>
-                    {data.results.map((result) => {
+                  <tr key={metric.id} className={rowBorder}>
+                    <th className={cn("sticky left-0 z-10 px-3 py-2 text-left text-xs font-medium", tableStickyCell, text)}>
+                      {metric.label}
+                    </th>
+                    {data.results.map((result, index) => {
                       const value = metric.read(result.metrics);
                       const highlighted = best !== undefined && value === best;
+                      const accent = accentFor(index);
                       return (
-                        <td key={result.block.id} className={cn("px-3 py-2 text-right font-mono", highlighted && "bg-[#E6CE20]/12 text-[#B39D00] font-bold")}>
+                        <td
+                          key={result.block.id}
+                          className={cn("px-3 py-2 text-right font-mono", highlighted && "font-bold")}
+                          style={highlighted ? {
+                            background: `${accent.color}1F`,
+                            color: isDark ? accent.color : accent.darker,
+                          } : undefined}
+                        >
                           {value === null ? <span className={muted}>—</span> : metric.format(value, result)}
-                          {value !== null && metric.detail?.(result) && <span className={cn("block text-[10px] font-sans font-normal", muted)}>{metric.detail(result)}</span>}
+                          {value !== null && metric.detail?.(result) && (
+                            <span className={cn("block text-[10px] font-sans font-normal", muted)}>{metric.detail(result)}</span>
+                          )}
                         </td>
                       );
                     })}
@@ -332,23 +484,39 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
         </div>
       </section>
 
-      <section className={cn("rounded-2xl border p-4", panel)}>
-        <p className="flex items-center gap-2 text-sm font-bold"><CalendarRange className="h-4 w-4 text-[#D6BE00]" /> What changed</p>
+      {/* Narrative */}
+      <section className={cn("rounded-2xl border p-4 md:p-5 backdrop-blur", panel)}>
+        <div className="flex items-center gap-2">
+          <CalendarRange className="h-4 w-4 text-[#E6CE20]" />
+          <h3 className={cn("text-sm font-bold tracking-wide", text)}>What changed</h3>
+        </div>
         {data.insights.length > 0 ? (
           <div className="mt-3 grid gap-2 md:grid-cols-2">
-            {data.insights.map((insight) => <p key={insight} className={cn("rounded-xl border px-3 py-2 text-sm leading-relaxed", isDark ? "border-white/10 bg-black/20 text-white/75" : "border-slate-200 bg-slate-50 text-slate-700")}>{insight}</p>)}
+            {data.insights.map((insight) => (
+              <p
+                key={insight}
+                className={cn(
+                  "rounded-xl border px-3 py-2 text-sm leading-relaxed",
+                  isDark ? "border-[#E6CE20]/18 bg-[#E6CE20]/8 text-white/78" : "border-[#E6CE20]/35 bg-[#FFF8B7]/45 text-slate-800",
+                )}
+              >
+                {insight}
+              </p>
+            ))}
           </div>
-        ) : <p className={cn("mt-2 text-sm", muted)}>Add at least two periods with data to generate comparison signals.</p>}
+        ) : (
+          <p className={cn("mt-2 text-sm", muted)}>Add at least two periods with data to generate comparison signals.</p>
+        )}
       </section>
     </div>
   );
 }
 
-function Summary({ label, value, muted }: { label: string; value: string; muted: string }) {
+function Summary({ label, value, muted, text }: { label: string; value: string; muted: string; text: string }) {
   return (
-    <div className="min-w-0 rounded-xl border border-border/70 bg-background/20 p-2.5">
+    <div className="min-w-0">
       <p className={cn("truncate text-[9px] font-bold uppercase tracking-wider", muted)}>{label}</p>
-      <p className="mt-1 truncate text-sm font-bold font-mono">{value}</p>
+      <p className={cn("mt-1 truncate text-sm font-bold font-mono", text)}>{value}</p>
     </div>
   );
 }

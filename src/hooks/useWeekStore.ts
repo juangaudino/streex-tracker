@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultWeeklyHoursGoal: 0,
   currencySymbol: "$",
   activeApps: [...DEFAULT_APPS],
+  octopusPoints: 0,
 };
 
 interface WeekStoreSnapshot {
@@ -77,6 +78,8 @@ export function useWeekStore(user: User | null) {
         activeApps: (typeof sData.active_apps === "string"
           ? JSON.parse(sData.active_apps)
           : sData.active_apps) as string[],
+        octopusPoints: Math.max(0, Number(sData.octopus_points ?? 0)),
+        octopusUpdatedAt: sData.octopus_updated_at ?? undefined,
       } : storeCache.get(user.id)?.settings ?? DEFAULT_SETTINGS;
       const nextSnapshots = snapshotsResult.error
         ? storeCache.get(user.id)?.earningsSnapshots ?? []
@@ -250,23 +253,26 @@ export function useWeekStore(user: User | null) {
     });
   }, [earningsSnapshots, hasLocalData, settings, user]);
 
-  const updateSettings = useCallback(async (s: AppSettings) => {
-    if (!user) return;
+  const updateSettings = useCallback(async (s: AppSettings): Promise<boolean> => {
+    if (!user) return false;
     const { error } = await supabase.from("user_settings").upsert({
       user_id: user.id,
       default_weekly_goal: s.defaultWeeklyGoal,
       default_weekly_hours_goal: s.defaultWeeklyHoursGoal ?? 0,
       currency_symbol: s.currencySymbol,
       active_apps: s.activeApps as any,
+      octopus_points: Math.max(0, Number(s.octopusPoints) || 0),
+      octopus_updated_at: s.octopusUpdatedAt ?? null,
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" });
     if (error) {
       console.error("Settings save failed:", error);
       alert("Error saving settings: " + error.message);
-      return;
+      return false;
     }
     storeCache.set(user.id, { weeks, settings: s, earningsSnapshots, hasLocalData });
     setSettingsState(s);
+    return true;
   }, [earningsSnapshots, hasLocalData, user, weeks]);
 
   const importLocalData = useCallback(async () => {

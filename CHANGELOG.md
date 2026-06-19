@@ -2,6 +2,26 @@
 
 ## Beta Releases
 
+### Beta 0.8.0 — Full Focus Utility Intelligence
+
+### Added
+
+- Full Focus now has one shared Utility Slot for combined Conditions and Octopus reward progress.
+- Octopus can track a correctable point balance, add or remove eligible Uber rides in batches, and show progress toward each 250-point / $25 reward.
+- This Week Operations now includes average earnings per active day compared with the historical active-day baseline.
+
+### Changed
+
+- Weather and traffic remain one visual experience, while traffic refreshes every five minutes and weather every 30 minutes.
+- Utility content rotates only after meaningful refresh or Quick Update events, with protected visibility time and manual selection.
+- Uber Quick Update ride deltas affect Octopus at 1.5 points per eligible ride; Lyft never credits the reward balance.
+
+### Data Integrity
+
+- Octopus progress is stored as user utility state and does not change earnings, total rides, records, XP, achievements, or efficiency calculations.
+- Users can synchronize the exact external point balance whenever Octopus missed a ride or the local estimate drifted.
+- Production requires the new additive user-settings migration and redeployment of the `driver-utility` Edge Function.
+
 ### Beta 0.7.1 — Deep Insights Visual Refinement
 
 ### Fixed

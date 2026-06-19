@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.7.1";
+export const CURRENT_VERSION = "0.8.0";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,21 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.8.0",
+    date: "2026-06",
+    title: "Full Focus Utility Intelligence",
+    tags: ["new", "feature"],
+    items: [
+      "Full Focus now uses one shared Utility Slot for combined weather and traffic context plus Octopus reward progress",
+      "Conditions stays visually unified while traffic refreshes every five minutes and weather refreshes every 30 minutes",
+      "Utility content rotates from real events with protected visibility windows, and users can still select either view manually",
+      "Uber Quick Update ride changes can add or remove 1.5 Octopus points per eligible ride without treating Lyft or combined rides as eligible",
+      "Octopus points can be synchronized exactly or corrected in ride batches and remain separate from earnings, records, XP, achievements, and efficiency",
+      "This Week Operations now fills its final metric position with average earnings per active day compared with historical active days",
+      "A new additive user-settings migration and updated driver-utility Edge Function are required for production",
+    ],
+  },
   {
     version: "0.7.1",
     date: "2026-06",

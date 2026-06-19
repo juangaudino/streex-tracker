@@ -12,7 +12,7 @@ export interface StoreContext {
   addWeek: (w: WeekRecord) => void;
   updateWeek: (w: WeekRecord) => Promise<boolean>;
   deleteWeek: (id: string) => void;
-  updateSettings: (s: AppSettings) => void;
+  updateSettings: (s: AppSettings) => Promise<boolean>;
   importLocalData: () => Promise<number | undefined>;
   reload: () => void;
 }

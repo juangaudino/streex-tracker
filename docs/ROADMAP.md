@@ -1,6 +1,6 @@
 # Streex Roadmap
 
-Last updated: 2026-06-18
+Last updated: 2026-06-19
 
 This is the living product roadmap for Streex Gig Earnings.
 
@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline during the Deep Insights visual refinement:
+Current baseline after the Full Focus utility expansion:
 
 ```text
-Beta 0.7.1 - Deep Insights Visual Refinement
+Beta 0.8.0 - Full Focus Utility Intelligence
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -159,7 +159,26 @@ Intent:
 
 Raise Advanced Comparison from a functional first pass to the same professional control-room standard as Deep Insights Overview.
 
-### Beta 0.7.2 - Deep Insights Micro-Visualization Pass
+### Beta 0.8.0 - Full Focus Utility Intelligence
+
+Status: completed in code; migration and Edge Function deployment required.
+
+Scope:
+
+- Turn the full-width Conditions position into one shared Utility Slot without adding another dashboard card.
+- Keep weather and traffic visually unified while refreshing traffic every five minutes and weather every 30 minutes.
+- Add deterministic event-driven rotation between Conditions and Octopus, with manual selection always available.
+- Add a correctable Octopus balance where eligible Uber ride changes add 1.5 points and 250 points unlock a $25 reward.
+- Add current-week average per active day compared with the historical active-day baseline.
+
+Data integrity:
+
+- Lyft and combined ride totals never credit Octopus automatically.
+- Only ride deltas saved from Uber Quick Update affect the balance.
+- Users can synchronize exact points or add/remove eligible rides to correct external tracking gaps.
+- Octopus points do not alter earnings, rides, records, XP, achievements, or operational efficiency.
+
+### Beta 0.8.1 - Deep Insights Micro-Visualization Pass
 
 Status: planned, number may shift.
 
@@ -175,7 +194,7 @@ Intent:
 
 Make Streex feel less like a spreadsheet and more like a professional performance intelligence platform.
 
-### Beta 0.8.0 - Deep Insights Intelligence Layer
+### Beta 0.9.0 - Deep Insights Intelligence Layer
 
 Status: planned, number may shift.
 
@@ -197,11 +216,11 @@ These themes came from the older Alpha roadmap. They are preserved here, reorgan
 
 ### Full Focus Utility Slot
 
-Status: candidate, research required before implementation.
+Status: partially implemented in Beta 0.8.0; aviation modules still require research.
 
 Concept:
 
-Use the current full-width Conditions position as a future contextual utility slot instead of adding more permanent dashboard cards. Conditions remains the only live utility until a second module provides reliable value.
+Use the current full-width Conditions position as a contextual utility slot instead of adding more permanent dashboard cards. Conditions and Octopus now share the live slot through event-driven rotation; aviation modules remain future candidates.
 
 Potential modules:
 
@@ -226,8 +245,8 @@ Secondary use case:
 UX guardrails:
 
 - No empty Utility card before a real module exists.
-- No automatic rotation while the user is driving.
-- Prefer manual selection or deterministic contextual priority when multiple modules exist.
+- No rapid decorative carousel while the user is driving.
+- Use deterministic event priority, protected visibility windows, and manual selection when multiple modules exist.
 - Keep the slot compact, glanceable, and optional.
 - Conditions remains accessible and must not disappear unpredictably.
 - No navigation, route guidance, or unsupported demand claims.

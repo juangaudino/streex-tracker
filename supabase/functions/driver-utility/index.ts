@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
     return json({ error: "Authentication issue. Please sign in again." }, 401);
   }
 
-  let body: { latitude?: number; longitude?: number };
+  let body: { latitude?: number; longitude?: number; scope?: "all" | "weather" | "traffic" };
   try {
     body = await req.json();
   } catch {
@@ -266,19 +266,20 @@ Deno.serve(async (req) => {
 
   const latitude = Number(body.latitude);
   const longitude = Number(body.longitude);
+  const scope = body.scope === "weather" || body.scope === "traffic" ? body.scope : "all";
   if (!validCoordinate(latitude, longitude)) {
     return json({ error: "A valid location is required." }, 400);
   }
 
   const [weather, traffic] = await Promise.all([
-    fetchWeather(latitude, longitude),
-    fetchTraffic(latitude, longitude),
+    scope === "all" || scope === "weather" ? fetchWeather(latitude, longitude) : Promise.resolve(undefined),
+    scope === "all" || scope === "traffic" ? fetchTraffic(latitude, longitude) : Promise.resolve(undefined),
   ]);
 
   return json({
     generatedAt: new Date().toISOString(),
     locationPrecision: "current-browser-location",
-    weather,
-    traffic,
+    ...(weather ? { weather } : {}),
+    ...(traffic ? { traffic } : {}),
   });
 });

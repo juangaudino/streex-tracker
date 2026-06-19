@@ -1699,3 +1699,36 @@
     transition: none !important;
   }
 }
+@keyframes streex-utility-road-flow {
+  from { transform: translateX(-35%); }
+  to { transform: translateX(135%); }
+}
+
+.utility-road {
+  position: relative;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, transparent 0 4%, hsl(var(--border)) 4% 96%, transparent 96%),
+    repeating-linear-gradient(90deg, transparent 0 14px, hsl(var(--muted-foreground) / 0.28) 14px 25px, transparent 25px 39px);
+  background-position: center, center;
+  background-size: 100% 1px, auto 1px;
+  background-repeat: no-repeat, repeat-x;
+}
+
+.utility-road-flow {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 24%;
+  height: 4px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+  animation: streex-utility-road-flow 4.5s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .utility-road-flow { animation: none; transform: translateX(155%); }
+}

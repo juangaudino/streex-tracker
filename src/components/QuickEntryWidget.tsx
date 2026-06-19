@@ -27,6 +27,12 @@ interface QuickEntryWidgetProps {
   weeks?: WeekRecord[];
   /** Optional End Day handler — when provided, renders End Day next to Quick Add. */
   onEndDay?: () => void;
+  onQuickUpdateSaved?: (event: {
+    app: string;
+    rideDelta: number;
+    previousRideCount: number;
+    nextRideCount: number;
+  }) => void | Promise<void>;
 }
 
 function getTodayDayIdx(week: WeekRecord): number {
@@ -40,7 +46,7 @@ function getTodayDayIdx(week: WeekRecord): number {
   return idx;
 }
 
-export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSave, weeks, onEndDay }: QuickEntryWidgetProps) {
+export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSave, weeks, onEndDay, onQuickUpdateSaved }: QuickEntryWidgetProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"quick" | "full">("quick");
   const [quickApp, setQuickApp] = useState<string | null>(null);
@@ -115,6 +121,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     const mileage = localMileage.trim() === "" ? null : Math.max(0, parseFloat(localMileage) || 0);
     const rides = localRideCount.trim() === "" ? null : Math.max(0, Math.trunc(Number(localRideCount) || 0));
     const activeShift = getActiveShift(today);
+    const previousRideCount = activeShift?.rideCount ?? 0;
     const entries = openWeek.entries.map((d, i) => {
       if (i !== resolvedIdx) return d;
       const nextApps = { ...d.apps, [app]: appTotal };
@@ -151,7 +158,16 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
       }
     }
     const saved = await persistQuickWeek({ ...openWeek, entries });
-    if (saved) setOpen(false);
+    if (saved) {
+      const nextRideCount = activeShift && rides !== null ? rides : previousRideCount;
+      await onQuickUpdateSaved?.({
+        app,
+        rideDelta: nextRideCount - previousRideCount,
+        previousRideCount,
+        nextRideCount,
+      });
+      setOpen(false);
+    }
   }
 
   function selectQuickApp(app: string) {
@@ -328,6 +344,11 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                     {!activeShift && (
                       <p className="text-xs text-muted-foreground">
                         Rides are saved to the active shift. Start a shift to track ride count.
+                      </p>
+                    )}
+                    {activeShift && quickApp.toLowerCase() === "uber" && (
+                      <p className="text-xs text-muted-foreground">
+                        Uber ride changes also update Octopus reward progress.
                       </p>
                     )}
                     <div className="grid grid-cols-2 gap-2">

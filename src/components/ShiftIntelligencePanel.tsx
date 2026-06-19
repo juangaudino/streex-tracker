@@ -4,6 +4,7 @@ import { buildPatternIntelligence } from "@/lib/shiftIntelligence";
 import type { PerformanceMode } from "@/lib/performanceMode";
 import type { EarningsSnapshot, WeekRecord } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { buildActiveDayAverageComparison } from "@/lib/weeklyOperations";
 
 interface ShiftIntelligencePanelProps {
   weeks: WeekRecord[];
@@ -16,6 +17,7 @@ interface ShiftIntelligencePanelProps {
   snapshotOnly?: boolean;
   showModeBadge?: boolean;
   showSnapshotInsight?: boolean;
+  historicalWeeks?: WeekRecord[];
 }
 
 function Metric({ label, value, sub, icon, tone = "default" }: {
@@ -82,6 +84,7 @@ export default function ShiftIntelligencePanel({
   snapshotOnly = false,
   showModeBadge = true,
   showSnapshotInsight = true,
+  historicalWeeks,
 }: ShiftIntelligencePanelProps) {
   const intelligence = buildPatternIntelligence(weeks, earningsSnapshots);
   const { summary } = intelligence;
@@ -92,6 +95,7 @@ export default function ShiftIntelligencePanel({
   const headerDescription = description ?? (isAdvanced
     ? "Operational view with shift, mileage, and efficiency context."
     : "Simple view for quick shift and earnings rhythm.");
+  const activeDayAverage = buildActiveDayAverageComparison(weeks, historicalWeeks ?? []);
   const snapshot = (
     <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
       <div className="flex items-center gap-2">
@@ -104,12 +108,22 @@ export default function ShiftIntelligencePanel({
         <Metric icon={<Route className="h-3.5 w-3.5" />} label="Miles" value={`${summary.totalMiles.toFixed(1)}`} sub={`${summary.workDays} work day${summary.workDays === 1 ? "" : "s"}`} tone="primary" />
         <Metric icon={<Gauge className="h-3.5 w-3.5" />} label="Earnings/Mi" value={formatNullableCurrency(summary.earningsPerMile, currencySymbol)} sub={formatNullableNumber(summary.milesPerHour, " mi/hr")} tone="primary" />
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className={cn("grid grid-cols-2 gap-2", historicalWeeks ? "sm:grid-cols-3" : "sm:grid-cols-4")}>
         <Metric icon={<BarChart3 className="h-3.5 w-3.5" />} label="Rides" value={`${summary.totalRides}`} sub={summary.earningsPerRide ? `${formatCurrency(summary.earningsPerRide, currencySymbol)}/ride` : "track rides"} />
         <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Active" value={`${summary.activeShifts}`} sub="open shift" />
         <Metric icon={<Clock className="h-3.5 w-3.5" />} label="Avg Shift" value={formatNullableNumber(summary.averageShiftHours, "h")} sub="completed only" />
         <Metric icon={<BarChart3 className="h-3.5 w-3.5" />} label="Blocks" value={`${summary.totalShifts}`} sub={`${summary.multiShiftDays} split day${summary.multiShiftDays === 1 ? "" : "s"}`} />
         <Metric icon={<Route className="h-3.5 w-3.5" />} label="Miles/Hr" value={formatNullableNumber(summary.milesPerHour)} sub="movement pace" />
+        {historicalWeeks && (
+          <Metric
+            icon={<Activity className="h-3.5 w-3.5" />}
+            label="Avg / Active Day"
+            value={activeDayAverage.currentAverage !== null ? formatCurrency(activeDayAverage.currentAverage, currencySymbol) : "—"}
+            sub={activeDayAverage.percentDifference !== null && activeDayAverage.historicalAverage !== null
+              ? `${activeDayAverage.percentDifference >= 0 ? "+" : ""}${activeDayAverage.percentDifference.toFixed(0)}% vs ${formatCurrency(activeDayAverage.historicalAverage, currencySymbol)} history`
+              : activeDayAverage.currentActiveDays > 0 ? "building history" : "no earning days yet"}
+          />
+        )}
       </div>
       {showSnapshotInsight && (
         <p className="rounded-lg border border-border/70 bg-card/70 p-3 text-xs text-muted-foreground">

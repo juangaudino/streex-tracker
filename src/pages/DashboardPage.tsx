@@ -28,7 +28,7 @@ import {
   formatDate,
 } from "@/lib/store";
 import type { StoreContext } from "./types";
-import { Activity, CalendarPlus, CloudSun, Download, Gauge, Target, Trophy } from "lucide-react";
+import { Activity, CalendarPlus, Download, Target, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import EndDayDialog from "@/components/EndDayDialog";
@@ -46,8 +46,19 @@ import { getWeekRanking, getWeekdayHistoricalRank } from "@/lib/career";
 import { useDriverUtility } from "@/hooks/useDriverUtility";
 import MetricDrillDownSheet, { type MetricDrillDownDetail } from "@/components/MetricDrillDownSheet";
 import type { WeekRecord } from "@/lib/types";
+import FocusUtilitySlot, { type FocusUtilityEvent } from "@/components/FocusUtilitySlot";
+import { adjustOctopusPoints } from "@/lib/octopusRewards";
 
 type PulseState = "calm" | "steady" | "strong" | "record" | "streak";
+
+function freshnessLabel(value?: string): string {
+  if (!value) return "not updated";
+  const elapsed = Date.now() - Date.parse(value);
+  if (!Number.isFinite(elapsed) || elapsed < 60_000) return "updated now";
+  const minutes = Math.floor(elapsed / 60_000);
+  if (minutes < 60) return `updated ${minutes}m ago`;
+  return `updated ${Math.floor(minutes / 60)}h ago`;
+}
 
 function DashboardPulse({ enabled, state }: { enabled: boolean; state: PulseState }) {
   useEffect(() => {
@@ -185,12 +196,13 @@ function getWeekRankWindow(weeks: WeekRecord[], weekId: string, currencySymbol: 
 }
 
 export default function DashboardPage() {
-  const { user, openWeek, weeks, settings, earningsSnapshots, hasLocalData, importLocalData, updateWeek } = useOutletContext<StoreContext>();
+  const { user, openWeek, weeks, settings, earningsSnapshots, hasLocalData, importLocalData, updateWeek, updateSettings } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [importing, setImporting] = useState(false);
   const [endDayOpen, setEndDayOpen] = useState(false);
   const [drillDownDetail, setDrillDownDetail] = useState<MetricDrillDownDetail | null>(null);
+  const [focusUtilityEvent, setFocusUtilityEvent] = useState<FocusUtilityEvent | null>(null);
   const { achievements } = useAchievements(user, weeks);
   const { summary: driverIdentity, loading: identityLoading } = useDriverIdentity(user, weeks, openWeek);
   const sym = settings.currencySymbol;
@@ -434,21 +446,26 @@ export default function DashboardPage() {
   const traffic = driverUtility.data?.traffic;
   const weatherLive = weather?.status === "live";
   const trafficLive = traffic?.status === "live";
-  const conditionsValue = weatherLive || trafficLive
-    ? [
-        weatherLive ? `${weather.temperature}°` : null,
-        trafficLive ? `${traffic.level || "flow"} flow` : null,
-      ].filter(Boolean).join(" / ")
-    : driverUtility.state === "idle" || driverUtility.state === "denied"
-      ? "Enable"
-      : "Pending";
-  const conditionsSub = weatherLive && trafficLive
-    ? "weather + traffic"
-    : weatherLive
-      ? weather.condition || "weather live"
-      : trafficLive
-        ? "traffic live"
-        : "live utility";
+  const triggerOctopusUtility = () => setFocusUtilityEvent({ id: Date.now(), type: "octopus" });
+
+  async function saveOctopusPoints(points: number): Promise<boolean> {
+    const saved = await updateSettings({
+      ...settings,
+      octopusPoints: Math.max(0, Math.round(points * 2) / 2),
+      octopusUpdatedAt: new Date().toISOString(),
+    });
+    if (saved) triggerOctopusUtility();
+    return saved;
+  }
+
+  async function handleQuickUpdateSaved(event: { app: string; rideDelta: number }) {
+    if (event.app.toLowerCase() !== "uber") return;
+    if (event.rideDelta !== 0) {
+      await saveOctopusPoints(adjustOctopusPoints(settings.octopusPoints, event.rideDelta));
+      return;
+    }
+    triggerOctopusUtility();
+  }
   const goalProgressDetail: MetricDrillDownDetail = {
     eyebrow: "Goal Progress",
     title: "How your weekly goal is tracking",
@@ -586,7 +603,7 @@ export default function DashboardPage() {
       {
         label: "Weather",
         value: weatherLive ? `${weather.temperature}°F` : "Unavailable",
-        helper: weatherLive ? weather.condition || "Live weather" : weather?.copy || "No live weather loaded",
+        helper: weatherLive ? `${weather.condition || "Live weather"} · ${freshnessLabel(weather.observedAt)}` : weather?.copy || "No live weather loaded",
       },
       {
         label: "Rain risk",
@@ -597,7 +614,7 @@ export default function DashboardPage() {
         label: "Traffic",
         value: trafficLive ? `${traffic.level || "Unknown"}` : "Unavailable",
         helper: trafficLive && traffic.currentSpeed && traffic.freeFlowSpeed
-          ? `${traffic.currentSpeed}/${traffic.freeFlowSpeed} mph flow`
+          ? `${traffic.currentSpeed}/${traffic.freeFlowSpeed} mph flow · ${freshnessLabel(traffic.observedAt)}`
           : traffic?.copy || "No live traffic loaded",
       },
       {
@@ -703,14 +720,15 @@ export default function DashboardPage() {
             />
           </div>
 
-          <FocusMetric
-            icon={trafficLive ? <Gauge className="h-3.5 w-3.5" /> : <CloudSun className="h-3.5 w-3.5" />}
-            label="Conditions"
-            value={conditionsValue}
-            sub={conditionsSub}
-            tone={traffic?.level === "light" || weatherLive ? "primary" : "default"}
-            onOpen={() => setDrillDownDetail(conditionsDetail)}
-            className="w-full"
+          <FocusUtilitySlot
+            weather={weather}
+            traffic={traffic}
+            utilityState={driverUtility.state}
+            octopusPoints={settings.octopusPoints}
+            octopusUpdatedAt={settings.octopusUpdatedAt}
+            event={focusUtilityEvent}
+            onOpenConditions={() => setDrillDownDetail(conditionsDetail)}
+            onSaveOctopusPoints={saveOctopusPoints}
           />
 
           <button
@@ -756,6 +774,7 @@ export default function DashboardPage() {
           apps={settings.activeApps}
           currencySymbol={sym}
           onSave={(updated) => updateWeek(updated)}
+          onQuickUpdateSaved={handleQuickUpdateSaved}
           weeks={weeks}
           onEndDay={todayEntry && !isDayClosed ? () => setEndDayOpen(true) : undefined}
         />
@@ -771,6 +790,7 @@ export default function DashboardPage() {
           snapshotOnly
           showModeBadge={false}
           showSnapshotInsight={false}
+          historicalWeeks={weeks}
         />
 
         {(() => {
@@ -932,6 +952,7 @@ export default function DashboardPage() {
           apps={settings.activeApps}
           currencySymbol={sym}
           onSave={(updated) => updateWeek(updated)}
+          onQuickUpdateSaved={handleQuickUpdateSaved}
           weeks={weeks}
           onEndDay={todayEntry && !isDayClosed ? () => setEndDayOpen(true) : undefined}
         />
@@ -972,6 +993,7 @@ export default function DashboardPage() {
         snapshotTitle="This Week Operations Snapshot"
         snapshotOnly
         showModeBadge={false}
+        historicalWeeks={weeks}
       />
 
       {todayEntry && !isDayClosed && (

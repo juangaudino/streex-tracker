@@ -88,4 +88,6 @@ export interface AppSettings {
   defaultWeeklyHoursGoal?: number;
   currencySymbol: string;
   activeApps: string[];
+  octopusPoints: number;
+  octopusUpdatedAt?: string;
 }

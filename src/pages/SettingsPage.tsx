@@ -52,6 +52,8 @@ export default function SettingsPage() {
       defaultWeeklyHoursGoal: Number(hoursGoal) || 0,
       currencySymbol: currencyCode,
       activeApps: apps,
+      octopusPoints: settings.octopusPoints,
+      octopusUpdatedAt: settings.octopusUpdatedAt,
     });
     toast({ title: "Settings saved." });
   }

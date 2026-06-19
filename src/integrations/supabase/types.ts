@@ -422,6 +422,8 @@ export type Database = {
           default_weekly_goal: number
           default_weekly_hours_goal: number
           id: string
+          octopus_points: number
+          octopus_updated_at: string | null
           updated_at: string
           user_id: string
         }
@@ -432,6 +434,8 @@ export type Database = {
           default_weekly_goal?: number
           default_weekly_hours_goal?: number
           id?: string
+          octopus_points?: number
+          octopus_updated_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -442,6 +446,8 @@ export type Database = {
           default_weekly_goal?: number
           default_weekly_hours_goal?: number
           id?: string
+          octopus_points?: number
+          octopus_updated_at?: string | null
           updated_at?: string
           user_id?: string
         }

@@ -8,9 +8,13 @@
 
 - The global app header now stays visibly above Deep Insights fixed background layers instead of leaving its controls hidden beneath the analytics backdrop.
 
-### In Progress
+### Changed
 
-- Advanced Comparison visual refinement is being prepared as a separate reviewed design pass.
+- Overview and Compare now share one `Explore your data` control surface with mode-specific filters and actions.
+- Comparison blocks remain side by side on desktop and preserve a safe stacked layout on mobile.
+- Each block now shows clear start/end context and carries a consistent accent through the chart and metric matrix.
+- Generated labels follow edited periods, while optional custom names remain available.
+- Classic Light and dark premium themes now share the same comparison hierarchy, contrast, and spacing.
 - The tested comparison engine and existing `/compare` operational guide remain unchanged.
 
 ### Production Behavior

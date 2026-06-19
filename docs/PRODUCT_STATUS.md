@@ -367,15 +367,15 @@ docs/ROADMAP.md
 Current planned sequence:
 
 - `Beta 0.7.0`: Advanced Comparison Builder - completed
-- `Beta 0.7.1`: Deep Insights Visual Refinement - in progress
-- `Beta 0.7.2`: Deep Insights Micro-Visualization Pass
+- `Beta 0.7.1`: Deep Insights Visual Refinement - completed
+- `Beta 0.7.2`: Deep Insights Micro-Visualization Pass - planned next
 - `Beta 0.8.0`: Deep Insights Intelligence Layer
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
 ## Recent Beta Highlights
 
-- `0.7.1`: Deep Insights header layering fix and reviewed visual refinement foundation.
+- `0.7.1`: Deep Insights header fix plus a unified, theme-aware Overview and Advanced Comparison exploration system.
 - `0.7.0`: Advanced Comparison Builder added configurable multi-period analysis inside Deep Insights while preserving the existing Compare guide.
 - `0.6.1`: Deep Insights Refinement + Light Mode added theme-aware chart, panel, table, tooltip, and filter styling.
 - `0.6.0`: Deep Insights Desktop V1 added as a new desktop-first analytics cockpit.

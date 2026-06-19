@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.7.0";
+export const CURRENT_VERSION = "0.7.1";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,17 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.7.1",
+    date: "2026-06",
+    title: "Deep Insights Visual Refinement",
+    tags: ["fix", "polish"],
+    items: [
+      "The global app header now stays visibly above Deep Insights fixed background layers while preserving all existing controls and behavior",
+      "Advanced Comparison visual refinement is being prepared as a separate reviewed design pass without changing its tested calculation engine",
+      "No comparison calculations, existing Compare behavior, Supabase, auth, Dashboard, Full Focus, Entry, or backend behavior changed",
+    ],
+  },
   {
     version: "0.7.0",
     date: "2026-06",

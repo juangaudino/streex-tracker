@@ -2,6 +2,21 @@
 
 ## Beta Releases
 
+### Beta 0.7.1 — Deep Insights Visual Refinement
+
+### Fixed
+
+- The global app header now stays visibly above Deep Insights fixed background layers instead of leaving its controls hidden beneath the analytics backdrop.
+
+### In Progress
+
+- Advanced Comparison visual refinement is being prepared as a separate reviewed design pass.
+- The tested comparison engine and existing `/compare` operational guide remain unchanged.
+
+### Production Behavior
+
+- No comparison calculations, Supabase schema, auth, Dashboard, Full Focus, Entry, or backend behavior changed.
+
 ### Beta 0.7.0 — Advanced Comparison Builder
 
 ### Added

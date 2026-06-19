@@ -90,7 +90,7 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
       <AchievementToastContainer />
       <CelebrationContainer />
       <header className={cn(
-        "border-b border-border px-4 flex items-center gap-3 transition-all",
+        "relative z-30 shrink-0 border-b border-border bg-background px-4 flex items-center gap-3 transition-all",
         fullFocusShell ? "py-1" : "py-1.5",
       )}>
         <img

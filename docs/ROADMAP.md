@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after the Advanced Comparison Builder:
+Current baseline during the Deep Insights visual refinement:
 
 ```text
-Beta 0.7.0 - Advanced Comparison Builder
+Beta 0.7.1 - Deep Insights Visual Refinement
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -142,7 +142,24 @@ Intent:
 
 Move Deep Insights from a static analytics cockpit into a stronger exploration tool without replacing the focused weekly Compare workflow.
 
-### Beta 0.7.1 - Deep Insights Micro-Visualization Pass
+### Beta 0.7.1 - Deep Insights Visual Refinement
+
+Status: in progress.
+
+Scope:
+
+- Keep the global app header above Deep Insights fixed visual layers.
+- Integrate Overview and Compare into one coherent Deep Insights exploration system.
+- Present comparison blocks as horizontal desktop columns with clear start/end context.
+- Replace stale preset labels with date-aware generated labels and optional user naming.
+- Align block accents, chart encoding, metric matrix, typography, spacing, and theme behavior with the existing Overview quality bar.
+- Preserve the tested comparison engine and the separate `/compare` operational weekly guide.
+
+Intent:
+
+Raise Advanced Comparison from a functional first pass to the same professional control-room standard as Deep Insights Overview.
+
+### Beta 0.7.2 - Deep Insights Micro-Visualization Pass
 
 Status: planned, number may shift.
 

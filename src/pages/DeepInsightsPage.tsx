@@ -281,18 +281,67 @@ function Filters({
   data,
   onChange,
   onReset,
+  activeView,
+  onViewChange,
+  isDark,
 }: {
   ui: DeepInsightsVisual;
   filters: DeepInsightsFilters;
   data: DeepInsightsData;
   onChange: (filters: DeepInsightsFilters) => void;
   onReset: () => void;
+  activeView: "overview" | "compare";
+  onViewChange: (view: "overview" | "compare") => void;
+  isDark: boolean;
 }) {
   const selectClass = cn("h-10 rounded-xl border px-3 text-sm font-semibold outline-none transition", ui.select);
   const filterActive = filters.timePreset !== "all" || filters.app !== "all" || filters.weekday !== "all";
 
   return (
-    <Panel ui={ui} title="Explore your data" subtitle="Every module below respects these filters." icon={Filter} className={ui.filterPanel}>
+    <Panel
+      ui={ui}
+      title="Explore your data"
+      subtitle={activeView === "overview"
+        ? "Every module below respects these filters."
+        : "Build period blocks below. Compare uses its own controls."}
+      icon={Filter}
+      className={ui.filterPanel}
+    >
+      <div className={cn("mb-4 inline-grid grid-cols-2 gap-1 rounded-xl border p-1", ui.rowDivider)} role="tablist" aria-label="Deep Insights view">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeView === "overview"}
+          onClick={() => onViewChange("overview")}
+          className={cn(
+            "h-9 rounded-lg px-5 text-xs font-bold uppercase tracking-[0.14em] transition",
+            activeView === "overview"
+              ? "bg-[#E6CE20] text-[#0B0B0B] shadow-sm"
+              : cn(ui.muted, isDark ? "hover:bg-white/[0.05]" : "hover:bg-slate-100"),
+          )}
+        >
+          Overview
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeView === "compare"}
+          onClick={() => onViewChange("compare")}
+          className={cn(
+            "h-9 rounded-lg px-5 text-xs font-bold uppercase tracking-[0.14em] transition",
+            activeView === "compare"
+              ? "bg-[#E6CE20] text-[#0B0B0B] shadow-sm"
+              : cn(ui.muted, isDark ? "hover:bg-white/[0.05]" : "hover:bg-slate-100"),
+          )}
+        >
+          Compare
+        </button>
+      </div>
+      {activeView === "compare" ? (
+        <p className={cn("text-xs leading-relaxed", ui.muted)}>
+          Overview filters are paused. Compare blocks each carry their own range and app filter.
+        </p>
+      ) : (
       <div className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto]">
         <label className={cn("grid gap-1.5 text-[10px] font-black uppercase tracking-[0.18em]", ui.label)}>
           Time
@@ -336,6 +385,7 @@ function Filters({
           Reset
         </button>
       </div>
+      )}
     </Panel>
   );
 }

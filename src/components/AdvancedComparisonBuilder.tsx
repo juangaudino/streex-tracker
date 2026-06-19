@@ -29,6 +29,7 @@ interface MetricDefinition {
   label: string;
   read: (metrics: ComparisonMetrics) => number | null;
   format: (value: number, result: ComparisonResult) => string;
+  axisFormat: (value: number) => string;
   highlight?: boolean;
   detail?: (result: ComparisonResult) => string | undefined;
 }
@@ -91,23 +92,25 @@ function formatHumanDate(value: string): string {
 
 function metricDefinitions(symbol: string): MetricDefinition[] {
   const money = (value: number) => formatCurrency(value, symbol);
+  const compactMoney = (value: number) => `${symbol}${compactNumber(value)}`;
   return [
-    { id: "earnings", label: "Total earnings", read: (m) => m.earnings, format: money, highlight: true },
-    { id: "hours", label: "Hours worked", read: (m) => m.hours, format: (v) => `${v.toFixed(1)}h` },
-    { id: "earningsPerHour", label: "Earnings / hour", read: (m) => m.earningsPerHour, format: (v) => `${money(v)}/hr`, highlight: true },
-    { id: "miles", label: "Miles", read: (m) => m.miles, format: (v) => v.toFixed(1) },
-    { id: "earningsPerMile", label: "Earnings / mile", read: (m) => m.earningsPerMile, format: (v) => `${money(v)}/mi`, highlight: true },
-    { id: "rides", label: "Rides", read: (m) => m.rides, format: (v) => String(Math.round(v)) },
-    { id: "earningsPerRide", label: "Earnings / ride", read: (m) => m.earningsPerRide, format: money, highlight: true },
-    { id: "activeDays", label: "Active days", read: (m) => m.activeDays, format: (v) => String(Math.round(v)) },
-    { id: "calendarDays", label: "Calendar days", read: (m) => m.calendarDays, format: (v) => String(Math.round(v)) },
-    { id: "averagePerActiveDay", label: "Average / active day", read: (m) => m.averagePerActiveDay, format: money, highlight: true },
-    { id: "averagePerCalendarDay", label: "Average / calendar day", read: (m) => m.averagePerCalendarDay, format: money, highlight: true },
+    { id: "earnings", label: "Total earnings", read: (m) => m.earnings, format: money, axisFormat: compactMoney, highlight: true },
+    { id: "hours", label: "Hours worked", read: (m) => m.hours, format: (v) => `${v.toFixed(1)}h`, axisFormat: (v) => `${compactNumber(v)}h` },
+    { id: "earningsPerHour", label: "Earnings / hour", read: (m) => m.earningsPerHour, format: (v) => `${money(v)}/hr`, axisFormat: compactMoney, highlight: true },
+    { id: "miles", label: "Miles", read: (m) => m.miles, format: (v) => v.toFixed(1), axisFormat: (v) => `${compactNumber(v)}mi` },
+    { id: "earningsPerMile", label: "Earnings / mile", read: (m) => m.earningsPerMile, format: (v) => `${money(v)}/mi`, axisFormat: compactMoney, highlight: true },
+    { id: "rides", label: "Rides", read: (m) => m.rides, format: (v) => String(Math.round(v)), axisFormat: compactNumber },
+    { id: "earningsPerRide", label: "Earnings / ride", read: (m) => m.earningsPerRide, format: money, axisFormat: compactMoney, highlight: true },
+    { id: "activeDays", label: "Active days", read: (m) => m.activeDays, format: (v) => String(Math.round(v)), axisFormat: compactNumber },
+    { id: "calendarDays", label: "Calendar days", read: (m) => m.calendarDays, format: (v) => String(Math.round(v)), axisFormat: compactNumber },
+    { id: "averagePerActiveDay", label: "Average / active day", read: (m) => m.averagePerActiveDay, format: money, axisFormat: compactMoney, highlight: true },
+    { id: "averagePerCalendarDay", label: "Average / calendar day", read: (m) => m.averagePerCalendarDay, format: money, axisFormat: compactMoney, highlight: true },
     {
       id: "bestDay",
       label: "Best day",
       read: (m) => m.bestDay?.earnings ?? null,
       format: money,
+      axisFormat: compactMoney,
       highlight: true,
       detail: (result) => result.metrics.bestDay ? `${result.metrics.bestDay.dayName} · ${result.metrics.bestDay.date}` : undefined,
     },
@@ -116,10 +119,11 @@ function metricDefinitions(symbol: string): MetricDefinition[] {
       label: "Lowest active day",
       read: (m) => m.lowestActiveDay?.earnings ?? null,
       format: money,
+      axisFormat: compactMoney,
       detail: (result) => result.metrics.lowestActiveDay ? `${result.metrics.lowestActiveDay.dayName} · ${result.metrics.lowestActiveDay.date}` : undefined,
     },
-    { id: "earningsGoalProgress", label: "Earnings goal", read: (m) => m.earningsGoalProgress, format: (v) => `${v.toFixed(1)}%`, highlight: true },
-    { id: "hoursGoalProgress", label: "Hours goal", read: (m) => m.hoursGoalProgress, format: (v) => `${v.toFixed(1)}%`, highlight: true },
+    { id: "earningsGoalProgress", label: "Earnings goal", read: (m) => m.earningsGoalProgress, format: (v) => `${v.toFixed(1)}%`, axisFormat: (v) => `${compactNumber(v)}%`, highlight: true },
+    { id: "hoursGoalProgress", label: "Hours goal", read: (m) => m.hoursGoalProgress, format: (v) => `${v.toFixed(1)}%`, axisFormat: (v) => `${compactNumber(v)}%`, highlight: true },
   ];
 }
 
@@ -286,11 +290,10 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: accent.color }}>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: isDark ? accent.color : accent.darker }}>
                     Block {index + 1}
                   </p>
                   <p className={cn("mt-1 truncate text-base font-bold", text)}>{result?.displayLabel}</p>
-                  <p className={cn("text-[11px] font-mono", quiet)}>{result?.rangeLabel}</p>
                 </div>
                 {blocks.length > 2 && (
                   <Button
@@ -405,7 +408,7 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={gridStroke} vertical={false} />
                 <XAxis dataKey="label" stroke={axisStroke} tick={{ fontSize: 11 }} interval={0} tickLine={false} axisLine={false} />
-                <YAxis stroke={axisStroke} tick={{ fontSize: 11 }} tickFormatter={compactNumber} width={48} tickLine={false} axisLine={false} />
+                <YAxis stroke={axisStroke} tick={{ fontSize: 11 }} tickFormatter={selectedChartMetric.axisFormat} width={58} tickLine={false} axisLine={false} />
                 <Tooltip
                   formatter={(value) => selectedChartMetric.format(Number(value), data.results[0])}
                   contentStyle={{
@@ -444,7 +447,7 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
                     <th
                       key={result.block.id}
                       className="min-w-36 px-3 py-2 text-right text-xs font-semibold"
-                      style={{ color: accent.color }}
+                      style={{ color: isDark ? accent.color : accent.darker }}
                     >
                       {result.displayLabel}
                     </th>

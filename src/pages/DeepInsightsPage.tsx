@@ -429,56 +429,38 @@ export default function DeepInsightsPage() {
               <div>
                 <h1 className={cn("text-4xl font-black tracking-tight sm:text-5xl", ui.text)}>Deep Insights</h1>
                 <p className={cn("mt-2 max-w-2xl text-sm leading-relaxed", ui.muted)}>
-                  Your career, visualized. Desktop-first analytics built from your real earnings, shifts, rides, miles, and snapshots.
+                  {activeView === "compare"
+                    ? "Compare mode active. Configure 2–4 period blocks below — each block carries its own date range and accent color."
+                    : "Your career, visualized. Desktop-first analytics built from your real earnings, shifts, rides, miles, and snapshots."}
                 </p>
               </div>
             </div>
+            {activeView === "overview" && (
             <div className="grid grid-cols-2 gap-3 text-right sm:grid-cols-4 lg:min-w-[520px]">
               <KpiCard ui={ui} label="Period" value={data.rangeLabel} detail={`${data.totals.activeDays} earning days`} tone="yellow" />
               <KpiCard ui={ui} label="Earnings" value={formatCurrency(data.totals.earnings, sym)} detail="Filtered total" tone="blue" />
               <KpiCard ui={ui} label="Hours" value={formatHours(data.totals.hours)} detail={data.totals.hours ? "Valid shift time" : "No shift time"} />
               <KpiCard ui={ui} label="Avg / hr" value={data.totals.earningsPerHour ? `${formatCurrency(data.totals.earningsPerHour, sym)}/hr` : "—"} detail="Operational only" tone="green" />
             </div>
+            )}
           </div>
         </header>
 
-        <div className={cn("grid grid-cols-2 rounded-2xl border p-1", ui.filterPanel)} role="tablist" aria-label="Deep Insights view">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeView === "overview"}
-            onClick={() => setActiveView("overview")}
-            className={cn(
-              "h-10 rounded-xl text-sm font-bold transition",
-              activeView === "overview"
-                ? "bg-[#E6CE20] text-[#0B0B0B] shadow-sm"
-                : cn(ui.muted, isDark ? "hover:bg-white/[0.05]" : "hover:bg-slate-100"),
-            )}
-          >
-            Overview
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeView === "compare"}
-            onClick={() => setActiveView("compare")}
-            className={cn(
-              "h-10 rounded-xl text-sm font-bold transition",
-              activeView === "compare"
-                ? "bg-[#E6CE20] text-[#0B0B0B] shadow-sm"
-                : cn(ui.muted, isDark ? "hover:bg-white/[0.05]" : "hover:bg-slate-100"),
-            )}
-          >
-            Compare
-          </button>
-        </div>
+        <Filters
+          ui={ui}
+          filters={filters}
+          data={data}
+          onChange={setFilters}
+          onReset={() => setFilters({ timePreset: "all", app: "all", weekday: "all" })}
+          activeView={activeView}
+          onViewChange={setActiveView}
+          isDark={isDark}
+        />
 
         {activeView === "compare" ? (
           <AdvancedComparisonBuilder weeks={weeks} currencySymbol={sym} />
         ) : (
           <>
-        <Filters ui={ui} filters={filters} data={data} onChange={setFilters} onReset={() => setFilters({ timePreset: "all", app: "all", weekday: "all" })} />
-
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
           <KpiCard ui={ui} label="Avg / mile" value={data.totals.earningsPerMile ? `${formatCurrency(data.totals.earningsPerMile, sym)}/mi` : "—"} detail={data.totals.miles ? `${formatCompact(data.totals.miles)} miles` : "No mileage"} />
           <KpiCard ui={ui} label="Best day" value={data.totals.bestDay ? formatCurrency(data.totals.bestDay.earnings, sym) : "—"} detail={data.totals.bestDay ? `${data.totals.bestDay.dayName} · ${data.totals.bestDay.date}` : "No earning days"} tone="yellow" />

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useSearchParams } from "react-router-dom";
 import {
   Area,
   AreaChart,
@@ -32,6 +32,7 @@ import {
   Trophy,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import AdvancedComparisonBuilder from "@/components/AdvancedComparisonBuilder";
 import { useTheme } from "@/contexts/ThemeContext";
 import { buildDeepInsightsData, type DeepInsightsData, type DeepInsightsFilters, type DeepInsightsTimePreset } from "@/lib/deepInsights";
 import { formatCurrency } from "@/lib/store";
@@ -341,6 +342,7 @@ function Filters({
 
 export default function DeepInsightsPage() {
   const { weeks, earningsSnapshots, settings } = useOutletContext<StoreContext>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isDark } = useTheme();
   const ui = useMemo(() => getVisual(isDark), [isDark]);
   const [filters, setFilters] = useState<DeepInsightsFilters>({ timePreset: "all", app: "all", weekday: "all" });
@@ -357,6 +359,14 @@ export default function DeepInsightsPage() {
   const filteredNote = data.appFilterActive
     ? "App filter is active. Efficiency metrics hide because Streex does not store app-specific hours yet."
     : null;
+  const activeView = searchParams.get("view") === "compare" ? "compare" : "overview";
+
+  function setActiveView(view: "overview" | "compare") {
+    const next = new URLSearchParams(searchParams);
+    if (view === "overview") next.delete("view");
+    else next.set("view", "compare");
+    setSearchParams(next, { replace: true });
+  }
 
   return (
     <div className={cn("min-h-full", ui.shell)}>
@@ -382,6 +392,41 @@ export default function DeepInsightsPage() {
           </div>
         </header>
 
+        <div className={cn("grid grid-cols-2 rounded-2xl border p-1", ui.filterPanel)} role="tablist" aria-label="Deep Insights view">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeView === "overview"}
+            onClick={() => setActiveView("overview")}
+            className={cn(
+              "h-10 rounded-xl text-sm font-bold transition",
+              activeView === "overview"
+                ? "bg-[#E6CE20] text-[#0B0B0B] shadow-sm"
+                : cn(ui.muted, isDark ? "hover:bg-white/[0.05]" : "hover:bg-slate-100"),
+            )}
+          >
+            Overview
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeView === "compare"}
+            onClick={() => setActiveView("compare")}
+            className={cn(
+              "h-10 rounded-xl text-sm font-bold transition",
+              activeView === "compare"
+                ? "bg-[#E6CE20] text-[#0B0B0B] shadow-sm"
+                : cn(ui.muted, isDark ? "hover:bg-white/[0.05]" : "hover:bg-slate-100"),
+            )}
+          >
+            Compare
+          </button>
+        </div>
+
+        {activeView === "compare" ? (
+          <AdvancedComparisonBuilder weeks={weeks} currencySymbol={sym} />
+        ) : (
+          <>
         <Filters ui={ui} filters={filters} data={data} onChange={setFilters} onReset={() => setFilters({ timePreset: "all", app: "all", weekday: "all" })} />
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
@@ -622,6 +667,8 @@ export default function DeepInsightsPage() {
             }))}
           />
         </Panel>
+          </>
+        )}
       </div>
     </div>
   );

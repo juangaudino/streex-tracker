@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after the Full Focus goal hierarchy refinement:
+Current baseline after the Advanced Comparison Builder:
 
 ```text
-Beta 0.6.4 - Full Focus Goal Hierarchy
+Beta 0.7.0 - Advanced Comparison Builder
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -50,6 +50,15 @@ Deep Insights 0.6.1 refined that cockpit with:
 - preserved dark cockpit mode
 - theme-aware charts, cards, filters, tables, tooltips, empty states, and insight blocks
 - no calculation or backend behavior changes
+
+Deep Insights 0.7.0 added a separate comparison workspace with:
+
+- two to four day, week, month, year, or custom-period blocks
+- one global app/platform filter
+- comparable summary cards, metric table, chart, and narrative signals
+- honest missing-data behavior for hours, miles, rides, and efficiency
+- URL-backed comparison state after interaction
+- no changes to the existing `/compare` operational weekly guide
 
 ## Roadmap Status Labels
 
@@ -117,22 +126,23 @@ Scope:
 - Give Conditions a clearer full-width utility position.
 - Preserve all goal calculations and the existing drill-down.
 
-### Beta 0.6.5 - Deep Insights Filter + Comparison Upgrade
+### Beta 0.7.0 - Advanced Comparison Builder
 
-Status: planned next, number may shift.
+Status: completed.
 
 Scope:
 
-- Add custom date range if feasible.
-- Add previous-period comparisons, for example last 30 days vs previous 30 days.
-- Add stronger monthly comparison views.
-- Add compact delta language where data supports it.
+- Compare two to four day, week, month, year, or custom-period blocks.
+- Apply one shared app/platform filter without making unsupported app-specific efficiency claims.
+- Show comparable summary cards, a metric table, a selectable chart, and concise data-supported signals.
+- Keep current-period comparisons honest by comparing the same elapsed point where defaults use the current week.
+- Preserve `/compare` unchanged as a separate operational same-point weekly guide.
 
 Intent:
 
-Move Deep Insights from a static analytics cockpit into a stronger exploration tool.
+Move Deep Insights from a static analytics cockpit into a stronger exploration tool without replacing the focused weekly Compare workflow.
 
-### Beta 0.6.6 - Deep Insights Micro-Visualization Pass
+### Beta 0.7.1 - Deep Insights Micro-Visualization Pass
 
 Status: planned, number may shift.
 
@@ -148,7 +158,7 @@ Intent:
 
 Make Streex feel less like a spreadsheet and more like a professional performance intelligence platform.
 
-### Beta 0.7.0 - Deep Insights Intelligence Layer
+### Beta 0.8.0 - Deep Insights Intelligence Layer
 
 Status: planned, number may shift.
 

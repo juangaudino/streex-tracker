@@ -2,6 +2,26 @@
 
 ## Beta Releases
 
+### Beta 0.7.0 — Advanced Comparison Builder
+
+### Added
+
+- Deep Insights now includes a separate Compare workspace for comparing two to four days, weeks, months, years, or custom periods.
+- Comparison blocks drive shared summary cards, a metric table, a selectable bar chart, and concise data-supported signals.
+- Comparison state is URL-backed after interaction so configured views survive refreshes and can be revisited.
+
+### Data Integrity
+
+- Earnings totals include bonuses according to the existing money-story rules.
+- Earnings/hour, earnings/mile, and earnings/ride use operational earnings only and appear only when their required data exists.
+- App-only comparisons hide hours, miles, rides, and efficiency because those resources cannot be attributed reliably to one platform.
+- Weekly goal progress appears only for a tracked `Week` selection, including the current week to date.
+
+### Production Behavior
+
+- The existing `/compare` page remains unchanged as the operational same-point weekly guide.
+- No Supabase schema, auth, Dashboard, Full Focus, Entry, existing Compare, or backend behavior changed.
+
 ### Beta 0.6.4 — Full Focus Goal Hierarchy
 
 ### Changed

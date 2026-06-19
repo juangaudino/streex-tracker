@@ -21,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.6.4 - Full Focus Goal Hierarchy
+Beta 0.7.0 - Advanced Comparison Builder
 ```
 
 Source of truth:
@@ -247,7 +247,7 @@ The exported Daily Report image captures the visible report card instead of a se
 
 ### Deep Insights
 
-Deep Insights is the desktop-first analytics cockpit.
+Deep Insights is the desktop-first analytics cockpit. Beta 0.7.0 adds an Advanced Comparison workspace without replacing the existing operational Compare page.
 
 Current behavior:
 
@@ -277,6 +277,10 @@ Current state:
 - best shifts where shift-level earnings can be resolved
 - app performance breakdown
 - data-supported insight copy
+- `Overview | Compare` workspace switch inside Deep Insights
+- two to four day, week, month, year, or custom comparison blocks
+- shared app/platform filter, metric table, comparison chart, and narrative signals
+- URL-backed comparison state after interaction
 
 Important metric rules:
 
@@ -284,6 +288,9 @@ Important metric rules:
 - Operational efficiency uses only data that can be supported by shift time, mileage, snapshots, or manual shift earnings.
 - App-specific hourly claims are hidden because Streex does not store app-specific hours.
 - Vehicle, market/location, weather-history, and GPS filters are intentionally out of V1 until those dimensions are stored reliably.
+- Comparison totals include bonuses, while efficiency continues using operational earnings only.
+- App-filtered comparisons hide resource and efficiency metrics that cannot be attributed honestly to one platform.
+- The existing `/compare` route remains the unchanged same-point weekly operational guide.
 
 ### Ask My Data
 
@@ -359,15 +366,15 @@ docs/ROADMAP.md
 
 Current planned sequence:
 
-- `Beta 0.6.1`: Deep Insights Refinement + Light Mode
-- `Beta 0.6.5`: Deep Insights Filter + Comparison Upgrade
-- `Beta 0.6.6`: Deep Insights Micro-Visualization Pass
-- `Beta 0.7.0`: Deep Insights Intelligence Layer
+- `Beta 0.7.0`: Advanced Comparison Builder - completed
+- `Beta 0.7.1`: Deep Insights Micro-Visualization Pass
+- `Beta 0.8.0`: Deep Insights Intelligence Layer
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
 ## Recent Beta Highlights
 
+- `0.7.0`: Advanced Comparison Builder added configurable multi-period analysis inside Deep Insights while preserving the existing Compare guide.
 - `0.6.1`: Deep Insights Refinement + Light Mode added theme-aware chart, panel, table, tooltip, and filter styling.
 - `0.6.0`: Deep Insights Desktop V1 added as a new desktop-first analytics cockpit.
 - `0.5.1`: Daily Report export now matches the visible report card; CSS import warning fixed.

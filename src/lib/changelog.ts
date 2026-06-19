@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.6.4";
+export const CURRENT_VERSION = "0.7.0";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,20 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.7.0",
+    date: "2026-06",
+    title: "Advanced Comparison Builder",
+    tags: ["new", "feature"],
+    items: [
+      "Deep Insights now includes a separate Compare workspace for side-by-side analysis of two to four days, weeks, months, years, or custom periods",
+      "Comparison blocks share one global app filter and update summary cards, a metric table, chart, and data-supported narrative signals together",
+      "Money totals include bonuses while hourly, mileage, and ride efficiency continue using operational earnings only",
+      "App-only comparisons hide hours, miles, rides, and efficiency because Streex cannot attribute those resources reliably to one platform",
+      "The existing Compare page remains unchanged as the operational same-point weekly guide",
+      "No Supabase schema, auth, Dashboard, Full Focus, Entry, existing Compare, or backend behavior changed",
+    ],
+  },
   {
     version: "0.6.4",
     date: "2026-06",

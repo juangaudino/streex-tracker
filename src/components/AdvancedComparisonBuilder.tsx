@@ -226,9 +226,9 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
   }
 
   const columnClass = blocks.length >= 4
-    ? "lg:grid-cols-4"
+    ? "lg:min-w-[1180px] lg:grid-cols-4"
     : blocks.length === 3
-      ? "lg:grid-cols-3"
+      ? "lg:min-w-[860px] lg:grid-cols-3"
       : "lg:grid-cols-2";
 
   return (
@@ -239,7 +239,7 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
           <div className="grid gap-1.5">
             <span className={cn("text-[10px] font-black uppercase tracking-[0.18em]", label)}>Compare controls</span>
             <p className={cn("text-xs leading-relaxed", muted)}>
-              Build 2–4 period blocks. Edits clear preset labels so titles always match the dates.
+              Compare performance across two to four selected periods.
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
@@ -273,14 +273,15 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
       </section>
 
       {/* Block columns — horizontal on desktop, stacked on mobile. */}
-      <section className={cn("grid gap-3 grid-cols-1", columnClass)}>
+      <section className="overflow-x-auto pb-1">
+        <div className={cn("grid grid-cols-1 gap-3", columnClass)}>
         {blocks.map((block, index) => {
           const result = data.results[index];
           const accent = accentFor(index);
           return (
             <article
               key={block.id}
-              className={cn("relative overflow-hidden rounded-2xl border p-4 backdrop-blur", panel)}
+              className={cn("relative min-w-0 overflow-hidden rounded-2xl border p-4 backdrop-blur", panel)}
               style={{ borderTopColor: accent.color, borderTopWidth: 3 }}
             >
               <div className="flex items-start justify-between gap-3">
@@ -327,20 +328,22 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
                   />
                 </label>
                 <label className="space-y-1">
-                  <span className={cn("text-[9px] font-bold uppercase tracking-wider", label)}>End</span>
+                  <span className={cn("text-[9px] font-bold uppercase tracking-wider", label)}>
+                    End{block.type !== "custom" ? " · Auto" : ""}
+                  </span>
                   <Input
                     type="date"
                     min={block.startDate}
                     max={todayString()}
                     value={block.endDate}
                     readOnly={block.type !== "custom"}
-                    disabled={block.type !== "custom"}
+                    aria-readonly={block.type !== "custom"}
                     onChange={(event) => changeCustomEnd(block, event.target.value)}
-                    className={cn("h-9 text-xs disabled:opacity-70", input)}
+                    className={cn("h-9 min-w-0 w-full text-xs", block.type !== "custom" && "cursor-default opacity-75", input)}
                   />
                 </label>
                 <label className="col-span-2 space-y-1">
-                  <span className={cn("text-[9px] font-bold uppercase tracking-wider", label)}>Label override (optional)</span>
+                  <span className={cn("text-[9px] font-bold uppercase tracking-wider", label)}>Name (optional)</span>
                   <Input
                     value={block.label ?? ""}
                     maxLength={32}
@@ -370,6 +373,7 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
             </article>
           );
         })}
+        </div>
       </section>
 
       {/* Chart panel */}
@@ -379,7 +383,7 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol }: Pro
             <Layers className="h-4 w-4 text-[#E6CE20]" />
             <div>
               <h3 className={cn("text-sm font-bold tracking-wide", text)}>Side-by-side chart</h3>
-              <p className={cn("text-xs", muted)}>Each bar uses its block's identity color.</p>
+              <p className={cn("text-xs", muted)}>Selected metric across each period.</p>
             </div>
           </div>
           {selectedChartMetric && (

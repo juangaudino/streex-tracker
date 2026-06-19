@@ -303,7 +303,7 @@ function Filters({
       title="Explore your data"
       subtitle={activeView === "overview"
         ? "Every module below respects these filters."
-        : "Build period blocks below. Compare uses its own controls."}
+        : "Choose the periods and app scope you want to compare."}
       icon={Filter}
       className={ui.filterPanel}
     >
@@ -339,7 +339,7 @@ function Filters({
       </div>
       {activeView === "compare" ? (
         <p className={cn("text-xs leading-relaxed", ui.muted)}>
-          Overview filters are paused. Compare blocks each carry their own range and app filter.
+          The app filter below applies consistently to every comparison block.
         </p>
       ) : (
       <div className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto]">
@@ -430,7 +430,7 @@ export default function DeepInsightsPage() {
                 <h1 className={cn("text-4xl font-black tracking-tight sm:text-5xl", ui.text)}>Deep Insights</h1>
                 <p className={cn("mt-2 max-w-2xl text-sm leading-relaxed", ui.muted)}>
                   {activeView === "compare"
-                    ? "Compare mode active. Configure 2–4 period blocks below — each block carries its own date range and accent color."
+                    ? "See what changed, what improved, and what drove the difference across the periods that matter."
                     : "Your career, visualized. Desktop-first analytics built from your real earnings, shifts, rides, miles, and snapshots."}
                 </p>
               </div>

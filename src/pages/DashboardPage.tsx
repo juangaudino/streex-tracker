@@ -70,6 +70,7 @@ function FocusMetric({
   sub,
   tone = "default",
   onOpen,
+  className,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -77,6 +78,7 @@ function FocusMetric({
   sub?: string;
   tone?: "default" | "primary" | "success" | "warning";
   onOpen?: () => void;
+  className?: string;
 }) {
   const toneClass =
     tone === "primary" ? "border-primary/25 bg-primary/5"
@@ -103,6 +105,7 @@ function FocusMetric({
         className={cn(
           "rounded-xl border p-3 min-w-0 text-left transition-colors hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/30",
           toneClass,
+          className,
         )}
       >
         {content}
@@ -111,7 +114,7 @@ function FocusMetric({
   }
 
   return (
-    <div className={cn("rounded-xl border p-3 min-w-0", toneClass)}>
+    <div className={cn("rounded-xl border p-3 min-w-0", toneClass, className)}>
       {content}
     </div>
   );
@@ -690,17 +693,6 @@ export default function DashboardPage() {
               tone={dayVsAvg !== null && dayVsAvg >= 0 ? "success" : dayVsAvg !== null ? "warning" : "default"}
               onOpen={() => setDrillDownDetail(dayVsAverageDetail)}
             />
-	            <FocusMetric
-	              icon={<Target className="h-3.5 w-3.5" />}
-	              label="Goal"
-	              value={`${pct.toFixed(0)}%`}
-	              sub={weeklyHoursGoal > 0 ? `${weeklyHours.toFixed(1)}h / ${weeklyHoursGoal}h` : `${formatCurrency(remaining, sym)} left`}
-	              tone={pct >= 100 ? "success" : "primary"}
-	              onOpen={() => setDrillDownDetail(goalProgressDetail)}
-	            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
             <FocusMetric
               icon={<Trophy className="h-3.5 w-3.5" />}
               label="Rank"
@@ -709,45 +701,54 @@ export default function DashboardPage() {
               tone={historicalRank.rank > 0 && historicalRank.rank <= 10 ? "success" : "default"}
               onOpen={() => setDrillDownDetail(rankDetail)}
             />
-            <FocusMetric
-              icon={trafficLive ? <Gauge className="h-3.5 w-3.5" /> : <CloudSun className="h-3.5 w-3.5" />}
-              label="Conditions"
-              value={conditionsValue}
-              sub={conditionsSub}
-              tone={traffic?.level === "light" || weatherLive ? "primary" : "default"}
-              onOpen={() => setDrillDownDetail(conditionsDetail)}
-            />
           </div>
 
-          <div className="space-y-1.5">
-	            <div className="flex justify-between text-xs">
-	              <span className="text-muted-foreground">Weekly earnings goal</span>
-	              <span className="font-mono font-bold">{pct.toFixed(1)}%</span>
-	            </div>
-            <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-              <div
-                className={cn("h-full rounded-full transition-all duration-500", barColor)}
-                style={{ width: `${Math.min(pct, 100)}%` }}
-	              />
-	            </div>
-	            {weeklyHoursGoal > 0 && (
-	              <>
-	                <div className="flex justify-between text-xs pt-1">
-	                  <span className="text-muted-foreground">Weekly hours goal</span>
-	                  <span className="font-mono font-bold">{hoursPct.toFixed(1)}%</span>
-	                </div>
-	                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-	                  <div
-	                    className={cn("h-full rounded-full transition-all duration-500", hoursPct >= 100 ? "bg-success" : "bg-primary")}
-	                    style={{ width: `${Math.min(hoursPct, 100)}%` }}
-	                  />
-	                </div>
-	                <p className="text-[11px] text-muted-foreground">
-	                  <span className="font-semibold text-foreground">{goalOutcome.title}.</span> {goalOutcome.copy}
-	                </p>
-	              </>
-	            )}
-	          </div>
+          <FocusMetric
+            icon={trafficLive ? <Gauge className="h-3.5 w-3.5" /> : <CloudSun className="h-3.5 w-3.5" />}
+            label="Conditions"
+            value={conditionsValue}
+            sub={conditionsSub}
+            tone={traffic?.level === "light" || weatherLive ? "primary" : "default"}
+            onOpen={() => setDrillDownDetail(conditionsDetail)}
+            className="w-full"
+          />
+
+          <button
+            type="button"
+            aria-label="Open weekly goal progress details"
+            onClick={() => setDrillDownDetail(goalProgressDetail)}
+            className="block w-full rounded-lg text-left transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 focus:ring-offset-card"
+          >
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Weekly earnings goal</span>
+                <span className="font-mono font-bold">{pct.toFixed(1)}%</span>
+              </div>
+              <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className={cn("h-full rounded-full transition-all duration-500", barColor)}
+                  style={{ width: `${Math.min(pct, 100)}%` }}
+                />
+              </div>
+              {weeklyHoursGoal > 0 && (
+                <>
+                  <div className="flex justify-between text-xs pt-1">
+                    <span className="text-muted-foreground">Weekly hours goal</span>
+                    <span className="font-mono font-bold">{hoursPct.toFixed(1)}%</span>
+                  </div>
+                  <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={cn("h-full rounded-full transition-all duration-500", hoursPct >= 100 ? "bg-success" : "bg-primary")}
+                      style={{ width: `${Math.min(hoursPct, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    <span className="font-semibold text-foreground">{goalOutcome.title}.</span> {goalOutcome.copy}
+                  </p>
+                </>
+              )}
+            </div>
+          </button>
         </section>
 
         <QuickEntryWidget

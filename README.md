@@ -25,7 +25,7 @@ New contributors and new Codex chats should begin with:
 
 ## Current Production Status
 
-- Current release: **Beta 0.6.3**
+- Current release: **Beta 0.6.4**
 - Production app: `https://gig.getstreex.com`
 - Hosting: **Vercel**
 - DNS/domain: **Cloudflare** for `getstreex.com`

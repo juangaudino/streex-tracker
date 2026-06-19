@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after Daily Notes:
+Current baseline after the Full Focus goal hierarchy refinement:
 
 ```text
-Beta 0.6.3 - Daily Notes
+Beta 0.6.4 - Full Focus Goal Hierarchy
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -105,7 +105,19 @@ Deferred:
 
 - Cross-history note browsing, filtering, and search.
 
-### Beta 0.6.4 - Deep Insights Filter + Comparison Upgrade
+### Beta 0.6.4 - Full Focus Goal Hierarchy
+
+Status: completed.
+
+Scope:
+
+- Remove the redundant Goal mini-card from Full Focus.
+- Make the existing weekly earnings and hours progress bars open Goal Progress details.
+- Pair Day vs Avg with Historical Rank.
+- Give Conditions a clearer full-width utility position.
+- Preserve all goal calculations and the existing drill-down.
+
+### Beta 0.6.5 - Deep Insights Filter + Comparison Upgrade
 
 Status: planned next, number may shift.
 
@@ -120,7 +132,7 @@ Intent:
 
 Move Deep Insights from a static analytics cockpit into a stronger exploration tool.
 
-### Beta 0.6.5 - Deep Insights Micro-Visualization Pass
+### Beta 0.6.6 - Deep Insights Micro-Visualization Pass
 
 Status: planned, number may shift.
 
@@ -155,6 +167,52 @@ Turn Deep Insights from charts and tables into a true intelligence layer.
 ## Strategic Roadmap Themes
 
 These themes came from the older Alpha roadmap. They are preserved here, reorganized for the current Beta product.
+
+### Full Focus Utility Slot
+
+Status: candidate, research required before implementation.
+
+Concept:
+
+Use the current full-width Conditions position as a future contextual utility slot instead of adding more permanent dashboard cards. Conditions remains the only live utility until a second module provides reliable value.
+
+Potential modules:
+
+#### Flight Reservation Tracker
+
+Primary use case:
+
+- Follow a specific flight connected to an upcoming driver reservation.
+- Show flight number, current status, scheduled and estimated arrival, delay, terminal, and gate only when the provider supports them reliably.
+- Let the user add or remove a tracked flight intentionally.
+- Keep the module useful for pickup timing without turning Streex into an airline app.
+
+#### Airport Pulse
+
+Secondary use case:
+
+- Show upcoming arrivals for one or more user-selected airports.
+- Summarize arrival volume over a useful operating window such as the next 30, 60, or 90 minutes.
+- Surface broad delay or cancellation pressure when supported by reliable data.
+- Help the driver understand airport demand context without pretending to forecast guaranteed rides.
+
+UX guardrails:
+
+- No empty Utility card before a real module exists.
+- No automatic rotation while the user is driving.
+- Prefer manual selection or deterministic contextual priority when multiple modules exist.
+- Keep the slot compact, glanceable, and optional.
+- Conditions remains accessible and must not disappear unpredictably.
+- No navigation, route guidance, or unsupported demand claims.
+
+Research requirements:
+
+- Compare aviation data providers, API pricing, rate limits, attribution, and commercial-use terms.
+- Verify live-status reliability, timezone handling, airport coverage, terminal/gate availability, and delay freshness.
+- Define refresh and caching rules that control cost without showing stale reservation data.
+- Decide how preferred airports and tracked reservations persist per user.
+- Confirm whether notifications belong in a later phase and what background/PWA limitations apply.
+- Prototype both reservation tracking and aggregate airport volume before choosing final UI behavior.
 
 ### Traffic Intelligence Layer
 

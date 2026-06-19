@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.6.3";
+export const CURRENT_VERSION = "0.6.4";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.6.4",
+    date: "2026-06",
+    title: "Full Focus Goal Hierarchy",
+    tags: ["polish", "fix"],
+    items: [
+      "Full Focus no longer repeats mixed money and hours information inside a separate Goal mini-card",
+      "Weekly earnings and hours progress bars now open the existing combined Goal Progress drill-down",
+      "Day vs Avg and Historical Rank now share the first metric row while Conditions receives a clearer full-width utility position",
+      "Focus Utility Slot, Flight Reservation Tracker, and Airport Pulse research are preserved in the roadmap without adding empty dashboard placeholders",
+      "Goal calculations, weather, traffic, Dashboard Standard, Supabase, auth, and backend behavior were not changed",
+    ],
+  },
   {
     version: "0.6.3",
     date: "2026-06",

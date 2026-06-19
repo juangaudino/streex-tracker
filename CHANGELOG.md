@@ -2,6 +2,22 @@
 
 ## Beta Releases
 
+### Beta 0.6.4 — Full Focus Goal Hierarchy
+
+### Changed
+
+- Full Focus no longer repeats mixed money and hours information inside a separate Goal mini-card.
+- Weekly earnings and hours progress bars now open the existing combined Goal Progress drill-down.
+- Day vs Avg and Historical Rank share the first metric row, while Conditions receives a clearer full-width utility position.
+
+### Roadmap
+
+- Focus Utility Slot, Flight Reservation Tracker, and Airport Pulse research are preserved without adding empty dashboard placeholders.
+
+### Production Behavior
+
+- Goal calculations, weather, traffic, Standard Dashboard, Supabase, auth, and backend behavior were not changed.
+
 ### Beta 0.6.3 — Daily Notes
 
 ### Added

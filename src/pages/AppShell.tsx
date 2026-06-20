@@ -98,7 +98,7 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
           alt="Streex"
           className={cn(
             "w-auto object-contain select-none transition-all",
-            fullFocusShell ? "h-10 sm:h-14 md:h-16 -my-1" : "h-12 sm:h-20 md:h-24 -my-1 sm:-my-2",
+            fullFocusShell ? "h-5 sm:h-6 md:h-7" : "h-6 sm:h-7 md:h-8",
           )}
           draggable={false}
         />

@@ -1,4 +1,5 @@
 import streexLogo from "@/assets/streex-logo.png";
+import streexSplashLogo from "@/assets/streex-logo-splash.png";
 import { cn } from "@/lib/utils";
 
 type MotionDensity = "splash" | "auth";
@@ -28,12 +29,14 @@ export function StreexMotionBackground({ density = "auth" }: StreexMotionBackgro
 }
 
 export function AnimatedStreexLogo({ variant = "auth", className }: AnimatedStreexLogoProps) {
+  const logo = variant === "splash" ? streexSplashLogo : streexLogo;
+
   return (
     <div className={cn("streex-motion-logo-wrap", `streex-motion-logo-${variant}`, className)}>
       <span className="streex-logo-glow" aria-hidden="true" />
       <span className="streex-motion-logo-crop">
         <img
-          src={streexLogo}
+          src={logo}
           alt="Streex"
           className="streex-motion-logo-img"
           draggable={false}

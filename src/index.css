@@ -426,11 +426,11 @@
 }
 
 .streex-motion-logo-splash {
-  width: min(72vw, 24rem);
+  width: min(78vw, 30rem);
 }
 
 .streex-motion-logo-auth {
-  width: min(52vw, 13rem);
+  width: min(58vw, 15rem);
 }
 
 .streex-motion-logo-crop {
@@ -438,7 +438,7 @@
   z-index: 1;
   display: block;
   width: 100%;
-  aspect-ratio: 2.35 / 1;
+  aspect-ratio: 825 / 409;
   overflow: hidden;
   border-radius: 0.9rem;
   background: #06110d;
@@ -449,7 +449,11 @@
 }
 
 .streex-motion-logo-splash .streex-motion-logo-crop {
-  border-radius: 1.25rem;
+  aspect-ratio: 645 / 192;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .streex-logo-glow {
@@ -463,15 +467,13 @@
 }
 
 .streex-motion-logo-img {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 138%;
-  max-width: none;
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 100%;
   height: auto;
   object-fit: contain;
   user-select: none;
-  transform: translate(-50%, -51%);
   filter:
     drop-shadow(0 16px 26px rgb(0 0 0 / 0.68))
     drop-shadow(0 0 18px rgb(230 206 32 / 0.12));

@@ -23,7 +23,7 @@ import { useAuth } from "./hooks/useAuth";
 import { useAppRuntime } from "./hooks/useAppRuntime";
 import { useWeekStore } from "./hooks/useWeekStore";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import streexLogo from "./assets/streex-logo.png";
+import StreexLogo from "./components/StreexLogo";
 import AppUpdateNotice from "./components/AppUpdateNotice";
 import { Button } from "./components/ui/button";
 import { useAppLifecycle } from "./hooks/useAppLifecycle";
@@ -82,12 +82,7 @@ const App = () => {
       <ThemeProvider>
         <div className="min-h-screen flex items-center justify-center bg-background px-5">
           <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 text-center">
-            <img
-              src={streexLogo}
-              alt="Streex"
-              className="w-36 h-auto object-contain select-none mx-auto"
-              draggable={false}
-            />
+            <StreexLogo className="h-10 mx-auto" />
             <div className="space-y-2">
               <h1 className="text-xl font-bold">Account restricted</h1>
               <p className="text-sm text-muted-foreground">

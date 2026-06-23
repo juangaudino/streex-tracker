@@ -1,5 +1,5 @@
 import { Sparkles, Trophy, Crown, Flame, CalendarRange, Quote, Medal } from "lucide-react";
-import streexLogo from "@/assets/streex-logo.png";
+import StreexLogo from "@/components/StreexLogo";
 
 export type ShareCardKind =
   | "weekly-letter"
@@ -74,7 +74,7 @@ export default function ShareCard({
       <div className={`relative h-full w-full ${isLandscape ? "p-5" : "p-6"} flex flex-col justify-between`}>
         {/* Top: brand + tag */}
         <div className="flex items-center justify-between">
-          <img src={streexLogo} alt="Streex" className="h-10 w-auto object-contain opacity-90" />
+          <StreexLogo className="h-10 opacity-90" />
           <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.22em] ${meta.accent}`}>
             {meta.icon}
             {meta.tag}

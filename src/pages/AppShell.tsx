@@ -28,7 +28,7 @@ import { NavLink as RouterNavLink } from "react-router-dom";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import type { StoreContext } from "./types";
 import ChangelogDialog from "@/components/ChangelogDialog";
-import streexLogo from "@/assets/streex-logo.png";
+import StreexLogo from "@/components/StreexLogo";
 import { useDashboardExperience } from "@/hooks/useDashboardExperience";
 import { cn } from "@/lib/utils";
 import { createShift, endActiveShift, getActiveShift, hasActiveShift, isShiftPaused, pauseActiveShift, resumePausedShift } from "@/lib/shiftIntelligence";
@@ -93,14 +93,11 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
         "relative z-30 shrink-0 border-b border-border bg-background px-4 flex items-center gap-3 transition-all",
         fullFocusShell ? "py-1" : "py-1.5",
       )}>
-        <img
-          src={streexLogo}
-          alt="Streex"
+        <StreexLogo
           className={cn(
-            "w-auto object-contain select-none transition-all",
-            fullFocusShell ? "h-10 sm:h-14 md:h-16 -my-1" : "h-12 sm:h-20 md:h-24 -my-1 sm:-my-2",
+            "transition-all",
+            fullFocusShell ? "h-4 sm:h-5 md:h-6" : "h-5 sm:h-6 md:h-7",
           )}
-          draggable={false}
         />
         <span className={cn(
           "text-sm text-muted-foreground hidden sm:inline transition-opacity",

@@ -1,4 +1,4 @@
-import streexLogo from "@/assets/streex-logo.png";
+import streexLogoDark from "@/assets/streex-logo-dark.png";
 import { cn } from "@/lib/utils";
 
 type MotionDensity = "splash" | "auth";
@@ -33,7 +33,7 @@ export function AnimatedStreexLogo({ variant = "auth", className }: AnimatedStre
       <span className="streex-logo-glow" aria-hidden="true" />
       <span className="streex-motion-logo-crop">
         <img
-          src={streexLogo}
+          src={streexLogoDark}
           alt="Streex"
           className="streex-motion-logo-img"
           draggable={false}

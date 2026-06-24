@@ -25,7 +25,7 @@ New contributors and new Codex chats should begin with:
 
 ## Current Production Status
 
-- Current release: **Beta 0.7.1**
+- Current release: **Beta 0.8.0**
 - Production app: `https://gig.getstreex.com`
 - Hosting: **Vercel**
 - DNS/domain: **Cloudflare** for `getstreex.com`
@@ -56,6 +56,7 @@ Streex turns gig work into a living professional identity system:
 - 🛣️ **Career titles, archetypes, rival benchmarks, and ideal week comparisons**
 - 📚 **Weekly letters, monthly recaps, and journey timeline**
 - 🧭 **Deep Insights** desktop analytics cockpit with configurable multi-period comparisons
+- 🧰 **Full Focus Utility Slot** for unified conditions and Octopus reward progress
 - 🎨 **Light, Dark, RPG, and Night Drive themes**
 - 🫀 **Pulse Mode** that lets the UI subtly react to momentum
 - 📤 **JSON and CSV data export**

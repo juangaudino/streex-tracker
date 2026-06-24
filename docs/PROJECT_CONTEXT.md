@@ -21,7 +21,7 @@ Streex is currently in public beta versioning.
 
 Current release:
 
-`Beta 0.7.1`
+`Beta 0.8.0`
 
 Older `V3.x` through `V5.x` labels are Alpha Archive history. Keep them for continuity, but do not use the old Alpha sequence for new beta work.
 
@@ -101,6 +101,7 @@ Historical/optional tooling:
 ## Key Systems
 
 - Dashboard and Full Focus operational mode
+- Full Focus Utility Slot with Conditions and Octopus reward progress
 - Weekly Entry, Quick Add, historical week editing
 - Shift blocks, hours, manual mileage, and efficiency metrics
 - Pattern Intelligence and performance modes

@@ -1,6 +1,6 @@
 # Streex Roadmap
 
-Last updated: 2026-06-19
+Last updated: 2026-06-23
 
 This is the living product roadmap for Streex Gig Earnings.
 

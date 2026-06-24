@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-06-18
+Last updated: 2026-06-23
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -21,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.7.1 - Deep Insights Visual Refinement
+Beta 0.8.0 - Full Focus Utility Intelligence
 ```
 
 Source of truth:
@@ -146,14 +146,21 @@ Full Focus currently includes:
 
 - Today total
 - Day vs average
-- Goal progress
 - Historical rank
-- Conditions
+- shared Utility Slot for Conditions and Octopus reward progress
 - weekly earnings and hours progress
 - Quick Add
 - End Day
 - current-week operations snapshot
 - metric drill-down sheets for explanation
+
+Recent Full Focus utility behavior:
+
+- Conditions keeps weather and traffic together as one visual module.
+- Traffic refreshes more frequently than weather, but both remain one combined card.
+- Octopus reward progress can rotate into the same Utility Slot after eligible Uber ride updates.
+- Octopus points are correctable utility state and do not alter earnings, rides, records, XP, achievements, or efficiency.
+- On mobile, Progress lives in the bottom navigation to preserve header space; on desktop, Progress remains in the top navigation.
 
 ### Entry + Quick Add
 
@@ -247,7 +254,7 @@ The exported Daily Report image captures the visible report card instead of a se
 
 ### Deep Insights
 
-Deep Insights is the desktop-first analytics cockpit. Beta 0.7.0 adds an Advanced Comparison workspace without replacing the existing operational Compare page.
+Deep Insights is the desktop-first analytics cockpit. Beta 0.7.0 added an Advanced Comparison workspace without replacing the existing operational Compare page.
 
 Current behavior:
 
@@ -291,6 +298,11 @@ Important metric rules:
 - Comparison totals include bonuses, while efficiency continues using operational earnings only.
 - App-filtered comparisons hide resource and efficiency metrics that cannot be attributed honestly to one platform.
 - The existing `/compare` route remains the unchanged same-point weekly operational guide.
+
+Next planned Deep Insights work:
+
+- `Beta 0.8.1`: micro-visualization pass for sparklines, compact trends, contribution bars, and ranking/percentile indicators.
+- `Beta 0.9.0`: deeper intelligence layer for operational patterns, efficiency rankings, shift density, and richer best/worst detection.
 
 ### Ask My Data
 
@@ -366,17 +378,20 @@ docs/ROADMAP.md
 
 Current planned sequence:
 
-- `Beta 0.7.0`: Advanced Comparison Builder - completed
-- `Beta 0.7.1`: Deep Insights Visual Refinement - completed
-- `Beta 0.7.2`: Deep Insights Micro-Visualization Pass - planned next
-- `Beta 0.8.0`: Deep Insights Intelligence Layer
+- `Beta 0.8.0`: Full Focus Utility Intelligence - completed
+- `Beta 0.8.1`: Deep Insights Micro-Visualization Pass - planned next
+- `Beta 0.9.0`: Deep Insights Intelligence Layer - planned
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
 ## Recent Beta Highlights
 
+- `0.8.0`: Full Focus Utility Intelligence added the shared Conditions/Octopus Utility Slot, Octopus point tracking, event-driven utility rotation, and the weekly active-day average metric.
 - `0.7.1`: Deep Insights header fix plus a unified, theme-aware Overview and Advanced Comparison exploration system.
 - `0.7.0`: Advanced Comparison Builder added configurable multi-period analysis inside Deep Insights while preserving the existing Compare guide.
+- `0.6.4`: Full Focus goal hierarchy removed redundant goal card and promoted Conditions into the full-width utility position.
+- `0.6.3`: Daily Notes added one short contextual note per day without affecting statistics.
+- `0.6.2`: Quick Add decimal input fix restored cents entry on mobile.
 - `0.6.1`: Deep Insights Refinement + Light Mode added theme-aware chart, panel, table, tooltip, and filter styling.
 - `0.6.0`: Deep Insights Desktop V1 added as a new desktop-first analytics cockpit.
 - `0.5.1`: Daily Report export now matches the visible report card; CSS import warning fixed.
@@ -411,6 +426,7 @@ High priority:
 
 - Improve Supabase Auth email delivery with proper custom SMTP/domain sender.
 - Keep monitoring login/session behavior after the migration.
+- Confirm the Beta 0.8.0 user-settings migration and `driver-utility` Edge Function are deployed to the active Supabase backend.
 - Validate Daily Report export on iOS PWA after next deploy.
 - Continue bug-fix stabilization before adding large roadmap systems.
 
@@ -418,6 +434,8 @@ Medium priority:
 
 - Replace or evolve Ask My Data away from any remaining Lovable AI dependency if needed.
 - Continue improving shift-level attribution from earnings snapshots.
+- Prepare the historical CSV/Excel import workflow before importing multi-year data.
+- Research aviation providers for Flight Reservation Tracker and Airport Pulse before building the next Utility Slot module.
 - Add more robust admin email sender configuration.
 - Keep `docs/ASK_MY_DATA_CHALLENGE_SET.md` updated after Ask My Data fixes.
 

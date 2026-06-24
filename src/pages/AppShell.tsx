@@ -123,6 +123,7 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
               key={item.to}
               to={item.to}
               end={item.to === "/"}
+              onClick={() => setProgressMenu(false)}
               className={({ isActive }) =>
                 `flex items-center gap-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
@@ -135,6 +136,44 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
               {item.label}
             </NavLink>
           ))}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => { setProgressMenu((v) => !v); setMobileMenu(false); }}
+              className={cn(
+                "flex items-center gap-2 rounded-lg text-sm font-medium transition-colors",
+                progressActive || progressMenu
+                  ? fullFocusShell ? "bg-primary/10 px-2.5 py-1.5 text-primary" : "bg-primary/10 px-3 py-2 text-primary"
+                  : fullFocusShell ? "px-2.5 py-1.5 text-muted-foreground/70 hover:bg-accent hover:text-foreground" : "px-3 py-2 text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+              aria-label="Progress"
+              aria-expanded={progressMenu}
+            >
+              <Medal className="h-4 w-4" />
+              Progress
+            </button>
+            {progressMenu && (
+              <>
+                <div className="fixed inset-0 z-40 hidden md:block" onClick={() => setProgressMenu(false)} />
+                <div className="absolute right-0 top-full z-50 mt-1 hidden min-w-[230px] rounded-xl border border-border bg-card p-3 shadow-lg md:block">
+                  <p className="px-1 pb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Progress</p>
+                  <div className="space-y-1">
+                    {progressItems.map((item) => (
+                      <RouterNavLink
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setProgressMenu(false)}
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                      >
+                        <item.icon className="h-4 w-4 text-muted-foreground" />
+                        {item.label}
+                      </RouterNavLink>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </nav>
 
         {/* Hubs (always at the right, both mobile + desktop) */}

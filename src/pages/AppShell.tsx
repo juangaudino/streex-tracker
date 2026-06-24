@@ -42,6 +42,18 @@ const navItems = [
   { to: "/assistant", icon: FlaskConical, label: "Ask AI" },
 ];
 
+const progressItems = [
+  { to: "/journey", icon: Map, label: "Journey" },
+  { to: "/recap", icon: CalendarRange, label: "Monthly Recap" },
+  { to: "/letters", icon: BookOpen, label: "Letters" },
+  { to: "/achievements", icon: Trophy, label: "Achievements" },
+  { to: "/history", icon: History, label: "History" },
+  { to: "/compare", icon: BarChart3, label: "Compare" },
+  { to: "/deep-insights", icon: BarChart3, label: "Deep Insights" },
+];
+
+const progressRoutes = new Set(progressItems.map((item) => item.to));
+
 interface AppShellProps {
   store: StoreContext;
   user: SupabaseUser;
@@ -62,6 +74,7 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
   const hasActiveGlobalShift = activeShiftDayIdx >= 0;
   const activeShift = hasActiveGlobalShift && openWeek ? getActiveShift(openWeek.entries[activeShiftDayIdx]) : null;
   const activeShiftPaused = activeShift ? isShiftPaused(activeShift) : false;
+  const progressActive = progressRoutes.has(location.pathname);
   const currentLocalDate = formatDate(new Date());
   const currentDayIdx = openWeek?.entries.findIndex((day) => day.date === currentLocalDate) ?? -1;
   const canStartShift = Boolean(openWeek && currentDayIdx >= 0 && !hasActiveGlobalShift);
@@ -103,7 +116,7 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
           "text-sm text-muted-foreground hidden sm:inline transition-opacity",
           fullFocusShell && "opacity-60",
         )}>Earnings Tracker</span>
-        {/* Right side: Progress hub + Profile hub (always visible) + desktop nav inline */}
+        {/* Right side: desktop nav inline + operation/profile controls */}
         <nav className="hidden md:flex ml-auto gap-1 items-center">
           {navItems.map((item) => (
             <NavLink
@@ -125,29 +138,31 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
         </nav>
 
         {/* Hubs (always at the right, both mobile + desktop) */}
-        <div className="ml-auto md:ml-2 flex items-center gap-1">
+        <div className="ml-auto md:ml-2 flex min-w-0 items-center gap-1">
           <button
             type="button"
             onClick={handleShiftToggle}
             disabled={!canUseShiftControl}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-45 disabled:pointer-events-none",
-              hasActiveGlobalShift
-                ? "border-success/35 bg-success/10 text-success shadow-sm"
-                : "border-primary/25 bg-primary/5 text-primary hover:bg-primary/10",
+              "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors disabled:pointer-events-none disabled:opacity-45 sm:px-2.5",
+              activeShiftPaused
+                ? "border-success bg-success text-success-foreground shadow-[0_0_0_3px_hsl(var(--success)/0.14),0_10px_22px_hsl(var(--success)/0.18)] hover:bg-success/90"
+                : hasActiveGlobalShift
+                  ? "border-success/35 bg-success/10 text-success shadow-sm hover:bg-success/15"
+                  : "border-primary/25 bg-primary/5 text-primary hover:bg-primary/10",
             )}
             aria-label={hasActiveGlobalShift ? (activeShiftPaused ? "Resume active shift" : "Pause active shift") : "Start shift"}
             title={!openWeek ? "Start a week before starting a shift" : currentDayIdx < 0 && !hasActiveGlobalShift ? "Today is outside the open week" : undefined}
           >
             {hasActiveGlobalShift ? activeShiftPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-            <span className="hidden min-[420px]:inline">{hasActiveGlobalShift ? activeShiftPaused ? "Resume Shift" : "Pause Shift" : "Start Shift"}</span>
-            <span className="min-[420px]:hidden">{hasActiveGlobalShift ? activeShiftPaused ? "Resume" : "Pause" : "Start"}</span>
+            <span className="md:hidden">{hasActiveGlobalShift ? activeShiftPaused ? "Resume" : "Pause" : "Start"}</span>
+            <span className="hidden md:inline">{hasActiveGlobalShift ? activeShiftPaused ? "Resume Shift" : "Pause Shift" : "Start Shift"}</span>
           </button>
           {hasActiveGlobalShift && (
             <button
               type="button"
               onClick={handleEndShift}
-              className="inline-flex items-center gap-1.5 rounded-full border border-success/35 bg-success/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-success shadow-sm transition-colors hover:bg-success/15"
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-success/35 bg-success/10 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-success shadow-sm transition-colors hover:bg-success/15 sm:px-2.5"
               aria-label="End active shift"
             >
               <Square className="h-3.5 w-3.5" />
@@ -170,74 +185,6 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
             <span className="hidden min-[470px]:inline">{isFullFocus ? "Full Focus" : "Standard"}</span>
             <span className="min-[470px]:hidden">{isFullFocus ? "Focus" : "Std"}</span>
           </button>
-          {/* Progress Hub */}
-          <div className="relative">
-            <button
-              onClick={() => { setProgressMenu((v) => !v); setMobileMenu(false); }}
-              className="inline-flex p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              aria-label="Progress"
-            >
-              <Medal className="h-5 w-5" />
-            </button>
-            {progressMenu && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setProgressMenu(false)} />
-                <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-xl shadow-lg p-3 min-w-[200px] space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 px-1 pb-1">Progress</p>
-                  <RouterNavLink
-                    to="/journey"
-                    onClick={() => setProgressMenu(false)}
-                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                  >
-                    <Map className="h-4 w-4" /> Journey
-                  </RouterNavLink>
-                  <RouterNavLink
-                    to="/recap"
-                    onClick={() => setProgressMenu(false)}
-                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                  >
-                    <CalendarRange className="h-4 w-4" /> Monthly Recap
-                  </RouterNavLink>
-                  <RouterNavLink
-                    to="/letters"
-                    onClick={() => setProgressMenu(false)}
-                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                  >
-                    <BookOpen className="h-4 w-4" /> Letters
-                  </RouterNavLink>
-                  <RouterNavLink
-                    to="/achievements"
-                    onClick={() => setProgressMenu(false)}
-                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                  >
-                    <Trophy className="h-4 w-4" /> Achievements
-                  </RouterNavLink>
-                  <RouterNavLink
-                    to="/history"
-                    onClick={() => setProgressMenu(false)}
-                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                  >
-                    <History className="h-4 w-4" /> History
-                  </RouterNavLink>
-                  <RouterNavLink
-                    to="/compare"
-                    onClick={() => setProgressMenu(false)}
-                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                  >
-                    <BarChart3 className="h-4 w-4" /> Compare
-                  </RouterNavLink>
-                  <RouterNavLink
-                    to="/deep-insights"
-                    onClick={() => setProgressMenu(false)}
-                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                  >
-                    <BarChart3 className="h-4 w-4" /> Deep Insights
-                  </RouterNavLink>
-                </div>
-              </>
-            )}
-          </div>
-
           {/* Profile Hub */}
           <div className="relative">
             <button
@@ -311,7 +258,42 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
             {item.label}
           </NavLink>
         ))}
+        <button
+          type="button"
+          onClick={() => { setProgressMenu((v) => !v); setMobileMenu(false); }}
+          className={cn(
+            "flex-1 flex flex-col items-center text-[10px] font-medium transition-colors",
+            progressActive ? "text-primary" : "text-muted-foreground",
+            fullFocusShell ? "py-1.5" : "py-2",
+          )}
+          aria-label="Progress"
+          aria-expanded={progressMenu}
+        >
+          <Medal className="h-5 w-5 mb-0.5" />
+          Progress
+        </button>
       </nav>
+      {progressMenu && (
+        <>
+          <div className="fixed inset-0 z-40 bg-background/10 md:hidden" onClick={() => setProgressMenu(false)} />
+          <div className="fixed bottom-16 left-3 right-3 z-50 rounded-2xl border border-border bg-card p-3 shadow-2xl md:hidden">
+            <p className="px-1 pb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Progress</p>
+            <div className="grid grid-cols-2 gap-1">
+              {progressItems.map((item) => (
+                <RouterNavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setProgressMenu(false)}
+                  className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                >
+                  <item.icon className="h-4 w-4 text-muted-foreground" />
+                  {item.label}
+                </RouterNavLink>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -2,6 +2,19 @@
 
 ## Beta Releases
 
+### Beta 0.8.1 — Deep Insights Micro-Visualization Pass
+
+### Changed
+
+- Selected Deep Insights KPI cards now include compact sparklines, weekly distribution bars, recent activity marks, and an operational contribution rail.
+- App contribution and performance rows now carry restrained in-cell visual context while preserving exact values and labels.
+- Top-day and top-week rankings now include percentile context within the current filtered view.
+
+### Data Integrity
+
+- Every micro-visualization reuses the already filtered Deep Insights datasets and disappears when the required data is unavailable.
+- No earnings, bonus, shift, ride, mileage, ranking, auth, Supabase, Full Focus, or backend calculation changed.
+
 ### Beta 0.8.0 — Full Focus Utility Intelligence
 
 ### Added

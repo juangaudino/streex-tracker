@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.8.0";
+export const CURRENT_VERSION = "0.8.1";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.8.1",
+    date: "2026-06",
+    title: "Deep Insights Micro-Visualization Pass",
+    tags: ["polish", "feature"],
+    items: [
+      "Deep Insights KPI cards now pair selected totals with compact, data-backed sparklines, weekly bars, and recent activity indicators",
+      "Operational earnings now show their contribution to the filtered money total while preserving bonus and reward exclusions",
+      "App contribution and performance rankings now include subtle in-row visual context without hiding exact values",
+      "Top-day and top-week lists now show compact percentile context calculated from the active filtered view",
+      "Micro-visualizations remain desktop-first, degrade safely when data is missing, and do not change analytics calculations, Full Focus, or mobile operations",
+    ],
+  },
   {
     version: "0.8.0",
     date: "2026-06",

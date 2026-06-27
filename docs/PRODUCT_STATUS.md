@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-06-23
+Last updated: 2026-06-26
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -21,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.8.0 - Full Focus Utility Intelligence
+Beta 0.8.1 - Deep Insights Micro-Visualization Pass
 ```
 
 Source of truth:
@@ -299,9 +299,12 @@ Important metric rules:
 - App-filtered comparisons hide resource and efficiency metrics that cannot be attributed honestly to one platform.
 - The existing `/compare` route remains the unchanged same-point weekly operational guide.
 
+Latest Deep Insights work:
+
+- `Beta 0.8.1`: selected KPI sparklines, weekly distributions, activity marks, contribution context, and ranking/percentile indicators.
+
 Next planned Deep Insights work:
 
-- `Beta 0.8.1`: micro-visualization pass for sparklines, compact trends, contribution bars, and ranking/percentile indicators.
 - `Beta 0.9.0`: deeper intelligence layer for operational patterns, efficiency rankings, shift density, and richer best/worst detection.
 
 ### Ask My Data
@@ -379,13 +382,14 @@ docs/ROADMAP.md
 Current planned sequence:
 
 - `Beta 0.8.0`: Full Focus Utility Intelligence - completed
-- `Beta 0.8.1`: Deep Insights Micro-Visualization Pass - planned next
+- `Beta 0.8.1`: Deep Insights Micro-Visualization Pass - completed
 - `Beta 0.9.0`: Deep Insights Intelligence Layer - planned
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
 ## Recent Beta Highlights
 
+- `0.8.1`: Deep Insights added selected KPI sparklines, compact distributions, operational contribution context, and filter-aware ranking visuals.
 - `0.8.0`: Full Focus Utility Intelligence added the shared Conditions/Octopus Utility Slot, Octopus point tracking, event-driven utility rotation, and the weekly active-day average metric.
 - `0.7.1`: Deep Insights header fix plus a unified, theme-aware Overview and Advanced Comparison exploration system.
 - `0.7.0`: Advanced Comparison Builder added configurable multi-period analysis inside Deep Insights while preserving the existing Compare guide.
@@ -432,7 +436,7 @@ High priority:
 
 Medium priority:
 
-- Replace or evolve Ask My Data away from any remaining Lovable AI dependency if needed.
+- Replace or evolve Ask My Data away from the Lovable AI dependency only after a deliberate provider decision; external AI replacement is intentionally deferred for now.
 - Continue improving shift-level attribution from earnings snapshots.
 - Prepare the historical CSV/Excel import workflow before importing multi-year data.
 - Research aviation providers for Flight Reservation Tracker and Airport Pulse before building the next Utility Slot module.

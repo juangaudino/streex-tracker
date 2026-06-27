@@ -1,6 +1,6 @@
 # Streex Roadmap
 
-Last updated: 2026-06-23
+Last updated: 2026-06-26
 
 This is the living product roadmap for Streex Gig Earnings.
 
@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after the Full Focus utility expansion:
+Current baseline after the Deep Insights micro-visualization pass:
 
 ```text
-Beta 0.8.0 - Full Focus Utility Intelligence
+Beta 0.8.1 - Deep Insights Micro-Visualization Pass
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -180,7 +180,7 @@ Data integrity:
 
 ### Beta 0.8.1 - Deep Insights Micro-Visualization Pass
 
-Status: planned, number may shift.
+Status: completed.
 
 Scope:
 
@@ -193,6 +193,15 @@ Scope:
 Intent:
 
 Make Streex feel less like a spreadsheet and more like a professional performance intelligence platform.
+
+Delivered:
+
+- Selected KPI sparklines and compact weekly distributions.
+- Recent earning-day activity marks.
+- Operational-income contribution context.
+- Subtle app-contribution and ranking row visuals.
+- Filter-aware day and week percentile labels.
+- No new analytics formulas, backend work, or Full Focus changes.
 
 ### Beta 0.9.0 - Deep Insights Intelligence Layer
 

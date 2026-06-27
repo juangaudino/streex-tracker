@@ -168,6 +168,11 @@ function formatHours(value: number): string {
   return `${value.toFixed(value >= 10 ? 1 : 2)}h`;
 }
 
+function rankContext(rank: number, total: number): string {
+  if (total < 5) return `#${rank} of ${total}`;
+  return `Top ${Math.max(1, Math.ceil((rank / total) * 100))}%`;
+}
+
 function ChartTooltip({ ui, valuePrefix = "", valueSuffix = "" }: { ui: DeepInsightsVisual; valuePrefix?: string; valueSuffix?: string }) {
   return (
     <Tooltip
@@ -223,26 +228,123 @@ function EmptyState({ ui, children }: { ui: DeepInsightsVisual; children: ReactN
   );
 }
 
+function finiteValues(values: Array<number | null | undefined>, limit = 16): number[] {
+  return values
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value))
+    .slice(-limit);
+}
+
+function MiniSparkline({
+  values,
+  color,
+  label,
+}: {
+  values: Array<number | null | undefined>;
+  color: string;
+  label: string;
+}) {
+  const series = finiteValues(values);
+  if (series.length < 2) return null;
+
+  const min = Math.min(...series);
+  const max = Math.max(...series);
+  const span = max - min || 1;
+  const points = series.map((value, index) => {
+    const x = (index / (series.length - 1)) * 100;
+    const y = 27 - ((value - min) / span) * 21;
+    return `${x},${y}`;
+  }).join(" ");
+  const lastPoint = points.split(" ").at(-1)?.split(",") ?? ["100", "16"];
+
+  return (
+    <svg className="h-8 w-full" viewBox="0 0 100 32" preserveAspectRatio="none" role="img" aria-label={label}>
+      <line x1="0" y1="28" x2="100" y2="28" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+      <circle cx={lastPoint[0]} cy={lastPoint[1]} r="2.25" fill={color} vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function MiniBars({
+  values,
+  color,
+  label,
+}: {
+  values: Array<number | null | undefined>;
+  color: string;
+  label: string;
+}) {
+  const series = finiteValues(values, 12);
+  if (!series.some((value) => value > 0)) return null;
+  const max = Math.max(...series, 1);
+
+  return (
+    <div className="flex h-8 items-end gap-1" role="img" aria-label={label}>
+      {series.map((value, index) => (
+        <span
+          key={`${index}-${value}`}
+          className="min-w-0 flex-1 rounded-t-sm"
+          style={{ backgroundColor: color, height: `${Math.max(12, (value / max) * 100)}%`, opacity: index === series.length - 1 ? 1 : 0.58 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ActivityStrip({ values, label }: { values: boolean[]; label: string }) {
+  const series = values.slice(-14);
+  if (!series.length) return null;
+
+  return (
+    <div className="grid h-7 grid-flow-col auto-cols-fr items-center gap-1" role="img" aria-label={label}>
+      {series.map((active, index) => (
+        <span
+          key={`${index}-${active}`}
+          className={cn("h-2 rounded-full", active ? "bg-[#E6CE20]" : "bg-current opacity-10")}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ContributionRail({ value, label }: { value: number; label: string }) {
+  const percent = Math.max(0, Math.min(100, value));
+  return (
+    <div className="space-y-1.5" role="img" aria-label={label}>
+      <div
+        className="h-1.5 overflow-hidden rounded-full"
+        style={{ backgroundColor: "color-mix(in srgb, currentColor 12%, transparent)" }}
+      >
+        <div className="h-full rounded-full bg-emerald-400" style={{ width: `${percent}%` }} />
+      </div>
+      <p className="text-[9px] font-bold uppercase tracking-[0.12em] opacity-60">{percent.toFixed(0)}% direct earnings</p>
+    </div>
+  );
+}
+
 function KpiCard({
   ui,
   label,
   value,
   detail,
   tone = "neutral",
+  visual,
 }: {
   ui: DeepInsightsVisual;
   label: string;
   value: string;
   detail?: string;
   tone?: "neutral" | "yellow" | "blue" | "green";
+  visual?: ReactNode;
 }) {
   const toneClass = ui.kpiTones[tone];
 
   return (
-    <div className={cn("rounded-2xl p-4", ui.kpiBase, toneClass)}>
+    <div className={cn("flex min-h-[118px] flex-col rounded-2xl p-4", ui.kpiBase, toneClass)}>
       <p className={cn("text-[10px] font-black uppercase tracking-[0.18em]", ui.label)}>{label}</p>
       <p className={cn("mt-2 font-mono text-2xl font-black leading-none tracking-tight", ui.text)}>{value}</p>
       {detail && <p className={cn("mt-2 text-xs", ui.quiet)}>{detail}</p>}
+      {visual && <div className={cn("mt-auto pt-3", ui.text)}>{visual}</div>}
     </div>
   );
 }
@@ -253,7 +355,15 @@ function DataRows({
   empty,
 }: {
   ui: DeepInsightsVisual;
-  rows: Array<{ left: string; sub?: string; right: string; accent?: string }>;
+  rows: Array<{
+    left: string;
+    sub?: string;
+    right: string;
+    accent?: string;
+    visualPercent?: number;
+    visualColor?: string;
+    positionLabel?: string;
+  }>;
   empty: string;
 }) {
   if (!rows.length) {
@@ -263,12 +373,23 @@ function DataRows({
   return (
     <div className={cn("overflow-hidden rounded-xl border", ui.table)}>
       {rows.map((row) => (
-        <div key={`${row.left}-${row.sub}-${row.right}`} className="flex items-center justify-between gap-4 px-4 py-3">
-          <div className="min-w-0">
+        <div key={`${row.left}-${row.sub}-${row.right}`} className="relative flex items-center justify-between gap-4 overflow-hidden px-4 py-3">
+          {typeof row.visualPercent === "number" && (
+            <div
+              className="pointer-events-none absolute inset-y-0 left-0 opacity-[0.08]"
+              style={{ width: `${Math.max(0, Math.min(100, row.visualPercent))}%`, backgroundColor: row.visualColor ?? "#E6CE20" }}
+              aria-hidden="true"
+            />
+          )}
+          <div className="relative min-w-0">
             <p className={cn("truncate text-sm font-bold", ui.text)}>{row.left}</p>
-            {row.sub && <p className={cn("mt-0.5 truncate text-xs", ui.quiet)}>{row.sub}</p>}
+            {(row.sub || row.positionLabel) && (
+              <p className={cn("mt-0.5 truncate text-xs", ui.quiet)}>
+                {row.sub}{row.sub && row.positionLabel ? " · " : ""}{row.positionLabel}
+              </p>
+            )}
           </div>
-          <p className={cn("shrink-0 font-mono text-sm font-black", ui.text, row.accent)}>{row.right}</p>
+          <p className={cn("relative shrink-0 font-mono text-sm font-black", ui.text, row.accent)}>{row.right}</p>
         </div>
       ))}
     </div>
@@ -365,6 +486,14 @@ export default function DeepInsightsPage() {
   const hourlyWeeks = data.weeks.filter((week) => week.earningsPerHour !== null);
   const mileageWeeks = data.weeks.filter((week) => week.earningsPerMile !== null);
   const hoursWeeks = data.weeks.filter((week) => week.hours > 0);
+  const recentDays = data.days.slice(-16);
+  const recentWeeks = data.weeks.slice(-12);
+  const operationalShare = data.totals.earnings > 0
+    ? (data.totals.operationalEarnings / data.totals.earnings) * 100
+    : 0;
+  const topDayBenchmark = data.topDays[0]?.earnings ?? 0;
+  const topWeekBenchmark = data.bestWeeks[0]?.earnings ?? 0;
+  const topShiftBenchmark = data.bestShifts[0]?.rate ?? 0;
   const filteredNote = data.appFilterActive
     ? "App filter is active. Efficiency metrics hide because Streex does not store app-specific hours yet."
     : null;
@@ -419,9 +548,29 @@ export default function DeepInsightsPage() {
             {activeView === "overview" && (
             <div className="grid grid-cols-2 gap-3 text-right sm:grid-cols-4 lg:min-w-[520px]">
               <KpiCard ui={ui} label="Period" value={data.rangeLabel} detail={`${data.totals.activeDays} earning days`} tone="yellow" />
-              <KpiCard ui={ui} label="Earnings" value={formatCurrency(data.totals.earnings, sym)} detail="Filtered total" tone="blue" />
-              <KpiCard ui={ui} label="Hours" value={formatHours(data.totals.hours)} detail={data.totals.hours ? "Valid shift time" : "No shift time"} />
-              <KpiCard ui={ui} label="Avg / hr" value={data.totals.earningsPerHour ? `${formatCurrency(data.totals.earningsPerHour, sym)}/hr` : "—"} detail="Operational only" tone="green" />
+              <KpiCard
+                ui={ui}
+                label="Earnings"
+                value={formatCurrency(data.totals.earnings, sym)}
+                detail="Filtered total"
+                tone="blue"
+                visual={<MiniSparkline values={recentDays.map((day) => day.earnings)} color="#38BDF8" label="Recent daily earnings trend" />}
+              />
+              <KpiCard
+                ui={ui}
+                label="Hours"
+                value={formatHours(data.totals.hours)}
+                detail={data.totals.hours ? "Valid shift time" : "No shift time"}
+                visual={<MiniBars values={recentWeeks.map((week) => week.hours)} color="#94A3B8" label="Recent weekly hours distribution" />}
+              />
+              <KpiCard
+                ui={ui}
+                label="Avg / hr"
+                value={data.totals.earningsPerHour ? `${formatCurrency(data.totals.earningsPerHour, sym)}/hr` : "—"}
+                detail="Operational only"
+                tone="green"
+                visual={<MiniSparkline values={hourlyWeeks.map((week) => week.earningsPerHour)} color="#34D399" label="Recent weekly earnings per hour trend" />}
+              />
             </div>
             )}
           </div>
@@ -440,14 +589,51 @@ export default function DeepInsightsPage() {
           viewTabs={viewTabs}
         />
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
-          <KpiCard ui={ui} label="Avg / mile" value={data.totals.earningsPerMile ? `${formatCurrency(data.totals.earningsPerMile, sym)}/mi` : "—"} detail={data.totals.miles ? `${formatCompact(data.totals.miles)} miles` : "No mileage"} />
+          <KpiCard
+            ui={ui}
+            label="Avg / mile"
+            value={data.totals.earningsPerMile ? `${formatCurrency(data.totals.earningsPerMile, sym)}/mi` : "—"}
+            detail={data.totals.miles ? `${formatCompact(data.totals.miles)} miles` : "No mileage"}
+            visual={<MiniSparkline values={mileageWeeks.map((week) => week.earningsPerMile)} color="#A78BFA" label="Recent weekly earnings per mile trend" />}
+          />
           <KpiCard ui={ui} label="Best day" value={data.totals.bestDay ? formatCurrency(data.totals.bestDay.earnings, sym) : "—"} detail={data.totals.bestDay ? `${data.totals.bestDay.dayName} · ${data.totals.bestDay.date}` : "No earning days"} tone="yellow" />
           <KpiCard ui={ui} label="Best week" value={data.totals.bestWeek ? formatCurrency(data.totals.bestWeek.earnings, sym) : "—"} detail={data.totals.bestWeek?.label ?? "No weeks"} />
-          <KpiCard ui={ui} label="Shifts" value={formatCompact(data.totals.shifts)} detail="Recorded blocks" />
-          <KpiCard ui={ui} label="Rides" value={formatCompact(data.totals.rides)} detail={data.totals.rides ? "Recorded rides" : "No ride data"} />
-          <KpiCard ui={ui} label="Miles" value={formatCompact(data.totals.miles)} detail={data.totals.miles ? "Recorded miles" : "No mileage"} />
-          <KpiCard ui={ui} label="Active days" value={formatCompact(data.totals.activeDays)} detail="Days with earnings" />
-          <KpiCard ui={ui} label="Operational" value={formatCurrency(data.totals.operationalEarnings, sym)} detail="Bonus/reward excluded" tone="green" />
+          <KpiCard
+            ui={ui}
+            label="Shifts"
+            value={formatCompact(data.totals.shifts)}
+            detail="Recorded blocks"
+            visual={<MiniBars values={recentWeeks.map((week) => week.shifts)} color="#38BDF8" label="Recent weekly shift distribution" />}
+          />
+          <KpiCard
+            ui={ui}
+            label="Rides"
+            value={formatCompact(data.totals.rides)}
+            detail={data.totals.rides ? "Recorded rides" : "No ride data"}
+            visual={<MiniBars values={recentWeeks.map((week) => week.rides)} color="#E6CE20" label="Recent weekly ride distribution" />}
+          />
+          <KpiCard
+            ui={ui}
+            label="Miles"
+            value={formatCompact(data.totals.miles)}
+            detail={data.totals.miles ? "Recorded miles" : "No mileage"}
+            visual={<MiniBars values={recentWeeks.map((week) => week.miles)} color="#A78BFA" label="Recent weekly mileage distribution" />}
+          />
+          <KpiCard
+            ui={ui}
+            label="Active days"
+            value={formatCompact(data.totals.activeDays)}
+            detail="Days with earnings"
+            visual={<ActivityStrip values={recentDays.map((day) => day.earnings > 0)} label="Recent earning-day activity" />}
+          />
+          <KpiCard
+            ui={ui}
+            label="Operational"
+            value={formatCurrency(data.totals.operationalEarnings, sym)}
+            detail="Bonus/reward excluded"
+            tone="green"
+            visual={<ContributionRail value={operationalShare} label={`${operationalShare.toFixed(0)} percent of earnings are operational`} />}
+          />
         </section>
 
         {filteredNote && (
@@ -502,6 +688,8 @@ export default function DeepInsightsPage() {
                     sub: `${Math.round(app.share)}% · ${app.days} active days`,
                     right: formatCurrency(app.earnings, sym),
                     accent: index === 0 ? "text-[#E6CE20]" : undefined,
+                    visualPercent: app.share,
+                    visualColor: CHART_COLORS[index % CHART_COLORS.length],
                   }))}
                 />
               </div>
@@ -630,6 +818,8 @@ export default function DeepInsightsPage() {
                   sub: day.date,
                   right: formatCurrency(day.earnings, sym),
                   accent: index === 0 ? "text-[#E6CE20]" : undefined,
+                  visualPercent: topDayBenchmark > 0 ? (day.earnings / topDayBenchmark) * 100 : 0,
+                  positionLabel: rankContext(index + 1, Math.max(data.totals.activeDays, 1)),
                 }))}
               />
               <DataRows
@@ -649,6 +839,8 @@ export default function DeepInsightsPage() {
                   sub: `${formatHours(week.hours)} · ${week.shifts} shifts`,
                   right: formatCurrency(week.earnings, sym),
                   accent: index === 0 ? "text-[#E6CE20]" : undefined,
+                  visualPercent: topWeekBenchmark > 0 ? (week.earnings / topWeekBenchmark) * 100 : 0,
+                  positionLabel: rankContext(index + 1, Math.max(data.weeks.length, 1)),
                 }))}
               />
               <DataRows
@@ -659,6 +851,7 @@ export default function DeepInsightsPage() {
                   sub: `${shift.date} · ${shift.label} · ${shift.source}`,
                   right: `${formatCurrency(shift.rate, sym)}/hr`,
                   accent: index === 0 ? "text-[#E6CE20]" : undefined,
+                  visualPercent: topShiftBenchmark > 0 ? (shift.rate / topShiftBenchmark) * 100 : 0,
                 }))}
               />
             </div>
@@ -674,6 +867,8 @@ export default function DeepInsightsPage() {
               sub: `${app.days} active days · ${Math.round(app.share)}% share`,
               right: formatCurrency(app.earnings, sym),
               accent: index === 0 ? "text-[#E6CE20]" : undefined,
+              visualPercent: app.share,
+              visualColor: CHART_COLORS[index % CHART_COLORS.length],
             }))}
           />
         </Panel>

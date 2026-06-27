@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-06-26
+Last updated: 2026-06-27
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -21,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.8.1 - Deep Insights Micro-Visualization Pass
+Beta 0.8.2 - Career Drill-Down Expansion
 ```
 
 Source of truth:
@@ -383,12 +383,14 @@ Current planned sequence:
 
 - `Beta 0.8.0`: Full Focus Utility Intelligence - completed
 - `Beta 0.8.1`: Deep Insights Micro-Visualization Pass - completed
+- `Beta 0.8.2`: Career Drill-Down Expansion - completed
 - `Beta 0.9.0`: Deep Insights Intelligence Layer - planned
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
 ## Recent Beta Highlights
 
+- `0.8.2`: Career added contextual monthly, record, app, weekday, and hourly-efficiency drill-downs while preserving Full Focus unchanged.
 - `0.8.1`: Deep Insights added selected KPI sparklines, compact distributions, operational contribution context, and filter-aware ranking visuals.
 - `0.8.0`: Full Focus Utility Intelligence added the shared Conditions/Octopus Utility Slot, Octopus point tracking, event-driven utility rotation, and the weekly active-day average metric.
 - `0.7.1`: Deep Insights header fix plus a unified, theme-aware Overview and Advanced Comparison exploration system.

@@ -18,28 +18,38 @@ interface ShiftIntelligencePanelProps {
   showModeBadge?: boolean;
   showSnapshotInsight?: boolean;
   historicalWeeks?: WeekRecord[];
+  intelligenceData?: ReturnType<typeof buildPatternIntelligence>;
+  onOpenEarningsPerHour?: () => void;
 }
 
-function Metric({ label, value, sub, icon, tone = "default" }: {
+function Metric({ label, value, sub, icon, tone = "default", onOpen }: {
   label: string;
   value: string;
   sub?: string;
   icon: React.ReactNode;
   tone?: "default" | "primary";
+  onOpen?: () => void;
 }) {
-  return (
-    <div className={cn(
+  const className = cn(
       "rounded-xl border p-3 min-w-0",
       tone === "primary" ? "border-primary/25 bg-primary/5" : "border-border bg-card",
-    )}>
+      onOpen && "text-left transition-colors hover:border-primary/45 focus:outline-none focus:ring-2 focus:ring-primary/30",
+    );
+  const content = (
+    <>
       <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         {icon}
         <span className="truncate">{label}</span>
       </div>
       <p className="mt-1 text-lg font-bold font-mono truncate">{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground truncate">{sub}</p>}
-    </div>
+    </>
   );
+
+  if (onOpen) {
+    return <button type="button" className={className} onClick={onOpen} aria-label={`Open ${label} details`}>{content}</button>;
+  }
+  return <div className={className}>{content}</div>;
 }
 
 function formatNullableCurrency(value: number | null, currencySymbol: string): string {
@@ -85,8 +95,10 @@ export default function ShiftIntelligencePanel({
   showModeBadge = true,
   showSnapshotInsight = true,
   historicalWeeks,
+  intelligenceData,
+  onOpenEarningsPerHour,
 }: ShiftIntelligencePanelProps) {
-  const intelligence = buildPatternIntelligence(weeks, earningsSnapshots);
+  const intelligence = intelligenceData ?? buildPatternIntelligence(weeks, earningsSnapshots);
   const { summary } = intelligence;
   const maxEph = Math.max(1, ...intelligence.hourlyHeatmap.map((bucket) => bucket.earningsPerHour));
   const isAdvanced = mode === "advanced";
@@ -104,7 +116,7 @@ export default function ShiftIntelligencePanel({
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <Metric icon={<Clock className="h-3.5 w-3.5" />} label="Duration" value={`${summary.totalHours.toFixed(1)}h`} sub={`${summary.completedShifts} completed`} tone="primary" />
-        <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Earnings/Hr" value={formatNullableCurrency(summary.earningsPerHour, currencySymbol)} sub="efficiency" tone="primary" />
+        <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Earnings/Hr" value={formatNullableCurrency(summary.earningsPerHour, currencySymbol)} sub="efficiency" tone="primary" onOpen={onOpenEarningsPerHour} />
         <Metric icon={<Route className="h-3.5 w-3.5" />} label="Miles" value={`${summary.totalMiles.toFixed(1)}`} sub={`${summary.workDays} work day${summary.workDays === 1 ? "" : "s"}`} tone="primary" />
         <Metric icon={<Gauge className="h-3.5 w-3.5" />} label="Earnings/Mi" value={formatNullableCurrency(summary.earningsPerMile, currencySymbol)} sub={formatNullableNumber(summary.milesPerHour, " mi/hr")} tone="primary" />
       </div>
@@ -170,6 +182,7 @@ export default function ShiftIntelligencePanel({
               label="Per Hour"
               value={formatNullableCurrency(summary.earningsPerHour, currencySymbol)}
               sub="completed shifts"
+              onOpen={onOpenEarningsPerHour}
             />
             <Metric
               icon={<BarChart3 className="h-3.5 w-3.5" />}

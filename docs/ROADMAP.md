@@ -1,6 +1,6 @@
 # Streex Roadmap
 
-Last updated: 2026-06-26
+Last updated: 2026-06-27
 
 This is the living product roadmap for Streex Gig Earnings.
 
@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after the Deep Insights micro-visualization pass:
+Current baseline after the Career drill-down expansion:
 
 ```text
-Beta 0.8.1 - Deep Insights Micro-Visualization Pass
+Beta 0.8.2 - Career Drill-Down Expansion
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -202,6 +202,25 @@ Delivered:
 - Subtle app-contribution and ranking row visuals.
 - Filter-aware day and week percentile labels.
 - No new analytics formulas, backend work, or Full Focus changes.
+
+### Beta 0.8.2 - Career Drill-Down Expansion
+
+Status: completed.
+
+Scope:
+
+- Add shared Progress and History details to Career monthly progression.
+- Add Day and Week record history to the Career record cards.
+- Correct `Most Used App` to `Top Earning App` and expose attributed app contribution.
+- Add weekday sample and ranking context.
+- Explain Career hourly efficiency without presenting estimated timing as observed truth.
+- Improve the shared drill-down sheet for short mobile viewports and initial tab selection.
+
+Boundaries:
+
+- Full Focus content, calculations, layout, and drill-down behavior remain unchanged.
+- Simple summary cards remain static unless future review finds meaningful hidden context.
+- Additional interactive statistics require individual product review rather than automatic expansion.
 
 ### Beta 0.9.0 - Deep Insights Intelligence Layer
 

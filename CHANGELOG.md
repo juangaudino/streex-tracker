@@ -2,6 +2,25 @@
 
 ## Beta Releases
 
+### Beta 0.8.2 — Career Drill-Down Expansion
+
+### Added
+
+- Career Monthly Progression now opens a shared Progress/History detail with same-point comparison, provisional rank, top months, and record chase context.
+- Best Day and Best Week now open a shared records detail with top-five historical results and record margins.
+- Top Earning App and Best Weekday now expose compact, data-supported breakdowns.
+- Career Earnings/Hour now explains measured hours, represented operational earnings, completed shifts, and exclusions.
+
+### Changed
+
+- `Most Used App` is now correctly labeled `Top Earning App` because the metric ranks attributed earnings, not app usage.
+- The shared metric sheet supports a requested initial tab and internal scrolling on short mobile viewports.
+
+### Scope
+
+- Full Focus cards, details, calculations, layout, and behavior remain unchanged.
+- No Supabase schema, backend, earnings, shift, bonus, XP, achievement, or navigation behavior changed.
+
 ### Beta 0.8.1 — Deep Insights Micro-Visualization Pass
 
 ### Changed

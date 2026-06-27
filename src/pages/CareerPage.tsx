@@ -1,5 +1,8 @@
+import { useMemo, useState } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import { computeCareerStats, computePerformanceInsights } from "@/lib/career";
+import { buildCareerDrillDownData } from "@/lib/careerDrillDowns";
+import { buildCareerDrillDownDetails } from "@/lib/careerDrillDownDetails";
 import { formatCurrency } from "@/lib/store";
 import type { StoreContext } from "./types";
 import {
@@ -11,15 +14,34 @@ import { generateWeeklyLetter } from "@/lib/weeklyLetter";
 import WeeklyLetterCard from "@/components/WeeklyLetterCard";
 import ShiftIntelligencePanel from "@/components/ShiftIntelligencePanel";
 import { usePerformanceMode } from "@/hooks/usePerformanceMode";
+import MetricDrillDownSheet, { type MetricDrillDownDetail } from "@/components/MetricDrillDownSheet";
+import { buildPatternIntelligence } from "@/lib/shiftIntelligence";
+import { cn } from "@/lib/utils";
 
 export default function CareerPage() {
   const { weeks, settings, earningsSnapshots } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
   const sym = settings.currencySymbol;
-  const stats = computeCareerStats(weeks);
+  const [drillDownDetail, setDrillDownDetail] = useState<MetricDrillDownDetail | null>(null);
+  const stats = useMemo(() => computeCareerStats(weeks), [weeks]);
   const mp = stats.monthlyProgression;
-  const perf = computePerformanceInsights(weeks);
+  const perf = useMemo(() => computePerformanceInsights(weeks), [weeks]);
+  const careerDetails = useMemo(() => buildCareerDrillDownData(weeks), [weeks]);
+  const careerIntelligence = useMemo(
+    () => buildPatternIntelligence(weeks, earningsSnapshots),
+    [weeks, earningsSnapshots],
+  );
   const { performanceMode } = usePerformanceMode();
+  const drillDowns = useMemo(
+    () => buildCareerDrillDownDetails({
+      data: careerDetails,
+      stats,
+      performance: perf,
+      efficiency: careerIntelligence.summary,
+      currencySymbol: sym,
+    }),
+    [careerDetails, careerIntelligence.summary, perf, stats, sym],
+  );
 
   const lastClosed = [...weeks]
     .filter((w) => w.status === "closed")
@@ -97,6 +119,7 @@ export default function CareerPage() {
           value={stats.bestDay.total > 0 ? formatCurrency(stats.bestDay.total, sym) : "—"}
           sub={stats.bestDay.dayName !== "—" ? `${stats.bestDay.dayName} · ${stats.bestDay.date}` : "No data yet"}
           accent="gold"
+          onOpen={() => setDrillDownDetail({ ...drillDowns.records, initialPageId: "day" })}
         />
         <HeroStat
           icon={<Calendar className="h-4 w-4" />}
@@ -104,6 +127,7 @@ export default function CareerPage() {
           value={stats.bestWeek.total > 0 ? formatCurrency(stats.bestWeek.total, sym) : "—"}
           sub={stats.bestWeek.startDate ? `${stats.bestWeek.startDate} → ${stats.bestWeek.endDate}` : "—"}
           accent="primary"
+          onOpen={() => setDrillDownDetail({ ...drillDowns.records, initialPageId: "week" })}
         />
       </section>
 
@@ -129,13 +153,14 @@ export default function CareerPage() {
         <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Monthly Progression</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <ProgressionCard
-            title="This Month vs Last Month"
+            title="Last Month Chase"
             pct={mp.pctOfLastMonth}
             currentValue={formatCurrency(mp.currentMonthTotal, sym)}
             targetLabel="Last month"
             targetValue={mp.lastMonthTotal > 0 ? formatCurrency(mp.lastMonthTotal, sym) : "—"}
             emptyMessage="Building your first comparison."
             accent="primary"
+            onOpen={() => setDrillDownDetail({ ...drillDowns.monthly, initialPageId: "progress" })}
           />
           <ProgressionCard
             title="Best Month Chase"
@@ -146,6 +171,7 @@ export default function CareerPage() {
             emptyMessage="Your legacy starts here."
             accent="gold"
             isRecord={mp.isCurrentBest}
+            onOpen={() => setDrillDownDetail({ ...drillDowns.monthly, initialPageId: "history" })}
           />
         </div>
       </section>
@@ -183,12 +209,14 @@ export default function CareerPage() {
               ? `${stats.bestWeekday.dayName}`
               : "—"}
             sub={stats.bestWeekday.avg > 0 ? `${formatCurrency(stats.bestWeekday.avg, sym)} avg` : undefined}
+            onOpen={() => setDrillDownDetail(drillDowns.weekdays)}
           />
           <StatBlock
             icon={<Sparkles className="h-4 w-4 text-primary" />}
-            label="Most Used App"
+            label="Top Earning App"
             value={stats.mostUsedApp.app}
             sub={stats.mostUsedApp.total > 0 ? formatCurrency(stats.mostUsedApp.total, sym) : undefined}
+            onOpen={() => setDrillDownDetail(drillDowns.apps)}
           />
         </div>
       </section>
@@ -204,6 +232,8 @@ export default function CareerPage() {
           ? "Lifetime view across your saved shifts, mileage, and efficiency."
           : "Career-wide shift and earnings rhythm."}
         snapshotTitle="Lifetime Operations Snapshot"
+        intelligenceData={careerIntelligence}
+        onOpenEarningsPerHour={() => setDrillDownDetail(drillDowns.efficiency)}
       />
 
       <section className="space-y-2">
@@ -232,45 +262,57 @@ export default function CareerPage() {
             ))}
         </div>
       </section>
+
+      <MetricDrillDownSheet detail={drillDownDetail} onClose={() => setDrillDownDetail(null)} />
     </div>
   );
 }
 
-function HeroStat({ icon, label, value, sub, accent }: {
+function HeroStat({ icon, label, value, sub, accent, onOpen }: {
   icon: React.ReactNode; label: string; value: string; sub?: string;
   accent: "gold" | "primary";
+  onOpen?: () => void;
 }) {
   const accentClass = accent === "gold" ? "border-gold/30" : "border-primary/30";
   const valClass = accent === "gold" ? "text-gold" : "text-primary";
-  return (
-    <div className={`bg-card rounded-xl border ${accentClass} p-4 space-y-1`}>
+  const className = `bg-card rounded-xl border ${accentClass} p-4 space-y-1 ${onOpen ? "text-left transition-colors hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30" : ""}`;
+  const content = (
+    <>
       <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         {icon}
         <span>{label}</span>
       </div>
       <p className={`text-xl font-bold font-mono ${valClass}`}>{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground truncate">{sub}</p>}
-    </div>
+    </>
   );
+  if (onOpen) return <button type="button" className={className} onClick={onOpen} aria-label={`Open ${label} details`}>{content}</button>;
+  return <div className={className}>{content}</div>;
 }
 
-function StatBlock({ icon, label, value, sub }: {
-  icon: React.ReactNode; label: string; value: string; sub?: string;
+function StatBlock({ icon, label, value, sub, onOpen }: {
+  icon: React.ReactNode; label: string; value: string; sub?: string; onOpen?: () => void;
 }) {
-  return (
-    <div className="bg-card rounded-xl border border-border p-4 space-y-1">
+  const className = cn(
+    "bg-card rounded-xl border border-border p-4 space-y-1",
+    onOpen && "text-left transition-colors hover:border-primary/45 focus:outline-none focus:ring-2 focus:ring-primary/30",
+  );
+  const content = (
+    <>
       <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         {icon}
         <span>{label}</span>
       </div>
       <p className="text-lg font-bold font-mono text-foreground">{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
-    </div>
+    </>
   );
+  if (onOpen) return <button type="button" className={className} onClick={onOpen} aria-label={`Open ${label} details`}>{content}</button>;
+  return <div className={className}>{content}</div>;
 }
 
 function ProgressionCard({
-  title, pct, currentValue, targetLabel, targetValue, emptyMessage, accent, isRecord,
+  title, pct, currentValue, targetLabel, targetValue, emptyMessage, accent, isRecord, onOpen,
 }: {
   title: string;
   pct: number | null;
@@ -280,6 +322,7 @@ function ProgressionCard({
   emptyMessage: string;
   accent: "primary" | "gold";
   isRecord?: boolean;
+  onOpen?: () => void;
 }) {
   const accentBorder = accent === "gold" ? "border-gold/30" : "border-primary/30";
   const accentText = accent === "gold" ? "text-gold" : "text-primary";
@@ -287,8 +330,9 @@ function ProgressionCard({
   const displayPct = pct === null ? null : Math.min(Math.round(pct), 999);
   const barWidth = pct === null ? 0 : Math.min(pct, 100);
 
-  return (
-    <div className={`relative bg-card rounded-xl border ${accentBorder} p-4 space-y-3 overflow-hidden`}>
+  const className = `relative bg-card rounded-xl border ${accentBorder} p-4 space-y-3 overflow-hidden ${onOpen ? "text-left transition-colors hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30" : ""}`;
+  const content = (
+    <>
       <div className="flex items-center justify-between gap-2">
         <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{title}</p>
         {isRecord && (
@@ -312,6 +356,8 @@ function ProgressionCard({
         <span>Current: <span className="font-mono font-bold text-foreground">{currentValue}</span></span>
         <span>{targetLabel}: <span className="font-mono font-bold text-foreground">{targetValue}</span></span>
       </div>
-    </div>
+    </>
   );
+  if (onOpen) return <button type="button" className={className} onClick={onOpen} aria-label={`Open ${title} details`}>{content}</button>;
+  return <div className={className}>{content}</div>;
 }

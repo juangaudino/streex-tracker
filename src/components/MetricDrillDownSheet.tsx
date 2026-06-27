@@ -20,6 +20,7 @@ export interface MetricDrillDownDetail {
   }[];
   notes?: string[];
   pages?: MetricDrillDownPage[];
+  initialPageId?: string;
 }
 
 export interface MetricDrillDownPage {
@@ -37,7 +38,9 @@ export default function MetricDrillDownSheet({ detail, onClose }: MetricDrillDow
   const [activePageId, setActivePageId] = useState<string | null>(null);
 
   useEffect(() => {
-    setActivePageId(detail?.pages?.[0]?.id ?? null);
+    const requestedPage = detail?.initialPageId;
+    const initialPage = detail?.pages?.find((page) => page.id === requestedPage) ?? detail?.pages?.[0];
+    setActivePageId(initialPage?.id ?? null);
   }, [detail]);
 
   if (!detail) return null;
@@ -54,7 +57,10 @@ export default function MetricDrillDownSheet({ detail, onClose }: MetricDrillDow
         aria-label="Close metric details"
         onClick={onClose}
       />
-      <section className="relative w-full rounded-t-2xl border border-border bg-card p-4 pb-[max(env(safe-area-inset-bottom),1rem)] shadow-2xl">
+      <section
+        className="relative w-full overflow-y-auto overscroll-contain rounded-t-2xl border border-border bg-card p-4 pb-[max(env(safe-area-inset-bottom),1rem)] shadow-2xl"
+        style={{ maxHeight: "calc(100dvh - max(env(safe-area-inset-top), 0.5rem))" }}
+      >
         <div className="mx-auto max-w-xl space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">

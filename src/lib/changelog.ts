@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.8.1";
+export const CURRENT_VERSION = "0.8.2";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.8.2",
+    date: "2026-06",
+    title: "Career Drill-Down Expansion",
+    tags: ["feature", "polish"],
+    items: [
+      "Career monthly progression now opens a shared Progress and History detail with same-point pace, provisional rank, top months, and chase gaps",
+      "Best Day and Best Week now share a compact records detail with top-five history and record separation context",
+      "Most Used App was corrected to Top Earning App and now opens an attributed earnings contribution breakdown",
+      "Best Weekday and Career Earnings per Hour now explain their averages, sample size, coverage, and data boundaries",
+      "The shared drill-down sheet now supports an initial tab and safe internal mobile scrolling while existing Full Focus drill-down content remains unchanged",
+    ],
+  },
   {
     version: "0.8.1",
     date: "2026-06",

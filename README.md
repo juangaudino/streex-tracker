@@ -14,6 +14,7 @@ It is built for one feeling:
 
 New contributors and new Codex chats should begin with:
 
+- `docs/NEW_CHAT_HANDOFF.md`
 - `AGENTS.md`
 - `docs/PROJECT_CONTEXT.md`
 - `docs/STREEX_AI_WORKFLOW.md`
@@ -22,6 +23,8 @@ New contributors and new Codex chats should begin with:
 - `CHANGELOG.md`
 
 `docs/PRODUCT_STATUS.md` is the master living status document for Claude, ChatGPT, Codex, and Lovable. If an external AI has repo access, ask it to read that file first.
+
+`docs/NEW_CHAT_HANDOFF.md` is the concise operational handoff: current architecture, finished systems, pending work, design rules, known risks, routes, and collaboration workflow. A machine-specific `START_HERE.local.md` may also exist locally and is intentionally ignored by Git.
 
 ## Current Production Status
 

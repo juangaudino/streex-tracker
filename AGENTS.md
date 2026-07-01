@@ -4,11 +4,13 @@ This repository is the source of truth for the Streex Gig Earnings App.
 
 ## Start Every Task
 
-1. Read `docs/PROJECT_CONTEXT.md`.
-2. Read `docs/STREEX_AI_WORKFLOW.md`.
-3. Read `docs/PRODUCT_STATUS.md`.
-4. Check `git status` before editing.
-5. Assume Lovable may have changed production code since the previous chat. Review the latest repo state before implementation.
+1. Read `START_HERE.local.md` when it exists in the current workspace.
+2. Read `docs/NEW_CHAT_HANDOFF.md`.
+3. Read `docs/PROJECT_CONTEXT.md`.
+4. Read `docs/STREEX_AI_WORKFLOW.md`.
+5. Read `docs/PRODUCT_STATUS.md`.
+6. Check `git status` before editing.
+7. Assume Lovable or another AI may have changed production code since the previous chat. Review the latest repo state before implementation.
 
 ## Core Rules
 
@@ -64,10 +66,10 @@ For meaningful user-facing or architectural changes, update both:
 
 Streex is in public beta versioning.
 
-- Current beta baseline: `0.1.0`.
+- Current beta baseline: `0.8.2`.
 - Preserve older `V3.x` through `V5.x` entries as Alpha Archive history.
-- Use `0.1.x` for small bug fixes, QA fixes, and polish.
-- Use `0.2.0`, `0.3.0`, etc. for meaningful beta feature releases.
+- Increment the patch number for small bug fixes, QA fixes, and focused polish.
+- Increment the minor number for meaningful beta features or new product surfaces.
 - Reserve `1.0.0` for the first stable public release.
 - Before implementing a new prompt, bug fix, polish session, roadmap feature, or update request, classify the request and propose the version number for user approval.
 - Do not continue the old Alpha `V5.x` sequence for new beta releases.

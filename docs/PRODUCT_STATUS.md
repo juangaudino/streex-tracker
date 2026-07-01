@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-06-27
+Last updated: 2026-06-30
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -313,7 +313,9 @@ Ask My Data is the AI analytics layer.
 
 Current state:
 
-- Works against the active Supabase Edge Function when configured.
+- The route, UI, challenge set, intent routing, tests, usage logging, and `ask-my-data` Edge Function source remain in the repository.
+- The current Edge Function still expects `LOVABLE_API_KEY` and calls Lovable's AI gateway.
+- After moving production infrastructure away from Lovable, generative Ask My Data must be treated as unavailable or unverified until a deliberate provider replacement is approved and deployed.
 - Defaults to full historical scope when the user does not specify a timeframe.
 - Has intent routing and challenge-set documentation.
 - Supports deterministic answers for many earnings, weekday, week, shift, rides, and pattern questions when data exists.
@@ -321,7 +323,7 @@ Current state:
 
 Important limitation:
 
-Ask My Data should be treated as beta. Do not overclaim exact hourly, location, trip-type, or health insights unless the underlying data exists.
+Ask My Data should be treated as beta and currently provider-blocked. Do not represent it as production-ready merely because the UI and Edge Function exist. Do not overclaim exact hourly, location, trip-type, or health insights unless the underlying data exists.
 
 ### Admin Ops
 

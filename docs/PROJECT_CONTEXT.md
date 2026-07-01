@@ -115,6 +115,7 @@ Historical/optional tooling:
 ## Important Files
 
 - `AGENTS.md`: Codex instructions
+- `docs/NEW_CHAT_HANDOFF.md`: complete operational handoff for new chats and contributors
 - `docs/STREEX_AI_WORKFLOW.md`: AI/tool operating system
 - `docs/PRODUCT_STATUS.md`: living feature and release status
 - `docs/ASK_MY_DATA_CHALLENGE_SET.md`: Ask My Data QA certification prompts

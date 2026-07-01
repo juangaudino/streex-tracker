@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+START_HERE.local.md
 
 # Local migration workspaces contain real user data. Never commit them.
 .migration-output/

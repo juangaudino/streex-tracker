@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.8.2";
+export const CURRENT_VERSION = "0.8.3";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.8.3",
+    date: "2026-07",
+    title: "Weekly Comparison Clarity",
+    tags: ["polish", "feature"],
+    items: [
+      "Compare now separates previous-week and record-week analysis into focused mobile-friendly sections",
+      "Each tracked day shows its daily difference and running cumulative gap without counting future days as zero",
+      "Each comparison includes a compact cumulative trend that opens into a detailed interactive chart",
+      "The low-value app comparison table and horizontal scrolling were removed while the four summary indicators remain unchanged",
+      "No earnings, bonus, record, Supabase, auth, Dashboard, Full Focus, Entry, or backend calculation changed",
+    ],
+  },
   {
     version: "0.8.2",
     date: "2026-06",

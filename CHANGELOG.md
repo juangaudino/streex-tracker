@@ -2,6 +2,19 @@
 
 ## Beta Releases
 
+### Beta 0.8.3 — Weekly Comparison Clarity
+
+### Changed
+
+- Compare now separates previous-week and record-week analysis into focused mobile-friendly sections.
+- Each tracked day shows both its daily difference and running cumulative gap without treating future days as zero.
+- Each comparison includes a compact cumulative trend that opens into a detailed interactive chart.
+- The app comparison table and horizontal scrolling were removed while the four summary indicators remain unchanged.
+
+### Scope
+
+- No earnings, bonus, record, Supabase, auth, Dashboard, Full Focus, Entry, or backend calculation changed.
+
 ### Beta 0.8.2 — Career Drill-Down Expansion
 
 ### Added

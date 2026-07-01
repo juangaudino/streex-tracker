@@ -21,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.8.2 - Career Drill-Down Expansion
+Beta 0.8.3 - Weekly Comparison Clarity
 ```
 
 Source of truth:
@@ -386,12 +386,14 @@ Current planned sequence:
 - `Beta 0.8.0`: Full Focus Utility Intelligence - completed
 - `Beta 0.8.1`: Deep Insights Micro-Visualization Pass - completed
 - `Beta 0.8.2`: Career Drill-Down Expansion - completed
+- `Beta 0.8.3`: Weekly Comparison Clarity - completed
 - `Beta 0.9.0`: Deep Insights Intelligence Layer - planned
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
 ## Recent Beta Highlights
 
+- `0.8.3`: Compare separated previous-week and record-week progress, added daily and cumulative gaps, and introduced expandable cumulative trend charts without counting future days.
 - `0.8.2`: Career added contextual monthly, record, app, weekday, and hourly-efficiency drill-downs while preserving Full Focus unchanged.
 - `0.8.1`: Deep Insights added selected KPI sparklines, compact distributions, operational contribution context, and filter-aware ranking visuals.
 - `0.8.0`: Full Focus Utility Intelligence added the shared Conditions/Octopus Utility Slot, Octopus point tracking, event-driven utility rotation, and the weekly active-day average metric.

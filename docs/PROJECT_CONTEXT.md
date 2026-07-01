@@ -21,7 +21,7 @@ Streex is currently in public beta versioning.
 
 Current release:
 
-`Beta 0.8.2`
+`Beta 0.8.3`
 
 Older `V3.x` through `V5.x` labels are Alpha Archive history. Keep them for continuity, but do not use the old Alpha sequence for new beta work.
 

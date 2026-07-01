@@ -1,6 +1,6 @@
 # Streex Roadmap
 
-Last updated: 2026-06-27
+Last updated: 2026-07-01
 
 This is the living product roadmap for Streex Gig Earnings.
 
@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after the Career drill-down expansion:
+Current baseline after the weekly comparison clarity release:
 
 ```text
-Beta 0.8.2 - Career Drill-Down Expansion
+Beta 0.8.3 - Weekly Comparison Clarity
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -221,6 +221,23 @@ Boundaries:
 - Full Focus content, calculations, layout, and drill-down behavior remain unchanged.
 - Simple summary cards remain static unless future review finds meaningful hidden context.
 - Additional interactive statistics require individual product review rather than automatic expansion.
+
+### Beta 0.8.3 - Weekly Comparison Clarity
+
+Status: completed.
+
+Scope:
+
+- Preserve the four same-point summary indicators on Compare.
+- Separate previous-week and record-week analysis into focused mobile-friendly sections.
+- Show daily and running cumulative differences through the same tracked days.
+- Add a compact cumulative trend to each section with an expandable detailed chart.
+- Remove the low-value app comparison table and horizontal scrolling.
+
+Boundaries:
+
+- Future days are excluded from daily and cumulative comparisons.
+- Earnings, bonus, record, Supabase, auth, Dashboard, Full Focus, Entry, and backend calculations remain unchanged.
 
 ### Beta 0.9.0 - Deep Insights Intelligence Layer
 

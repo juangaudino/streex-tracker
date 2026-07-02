@@ -4,6 +4,7 @@ import {
   Legend,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -55,7 +56,14 @@ export default function WeeklyComparisonSection({
   points,
   symbol,
 }: WeeklyComparisonSectionProps) {
-  const finalDifference = points.at(-1)?.cumulativeDiff ?? 0;
+  const trackedPoints = points.filter((point) => point.isTracked);
+  const futurePoints = points.filter((point) => point.isFuture);
+  const finalDifference = trackedPoints.at(-1)?.cumulativeDiff ?? 0;
+  const currentTotal = trackedPoints.at(-1)?.currentCumulative ?? 0;
+  const referenceTotal = points.at(-1)?.referenceCumulative ?? 0;
+  const remainingToMatch = Math.max(0, referenceTotal - currentTotal);
+  const requiredPerDay = futurePoints.length ? remainingToMatch / futurePoints.length : 0;
+  const lastTrackedDay = trackedPoints.at(-1)?.day;
 
   return (
     <section className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -71,29 +79,42 @@ export default function WeeklyComparisonSection({
       </div>
 
       <div className="divide-y divide-border">
-        {points.length ? points.map((point) => (
-          <div key={point.dayIndex} className="px-4 py-3.5 sm:px-5">
+        {trackedPoints.length ? points.map((point) => (
+          <div key={point.dayIndex} className={point.isFuture ? "bg-secondary/15 px-4 py-3.5 sm:px-5" : "px-4 py-3.5 sm:px-5"}>
+            {point.isFuture && point.dayIndex === futurePoints[0]?.dayIndex ? (
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Upcoming</p>
+            ) : null}
             <div className="flex items-center justify-between gap-4">
               <p className="font-semibold">{point.day}</p>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">Day</span>
-                <DiffValue value={point.dailyDiff} symbol={symbol} />
-              </div>
+              {point.dailyDiff !== null ? (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground">Day</span>
+                  <DiffValue value={point.dailyDiff} symbol={symbol} />
+                </div>
+              ) : (
+                <span className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                  {point.isFuture ? "Upcoming" : "Not logged"}
+                </span>
+              )}
             </div>
             <div className="mt-2 grid grid-cols-2 gap-3 text-sm">
               <div>
                 <p className="text-xs text-muted-foreground">This week</p>
-                <p className="mt-0.5 font-mono font-semibold">{formatCurrency(point.current, symbol)}</p>
+                <p className={point.current === null ? "mt-0.5 text-sm font-medium text-muted-foreground" : "mt-0.5 font-mono font-semibold"}>
+                  {point.current === null ? "Pending" : formatCurrency(point.current, symbol)}
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">{referenceLabel}</p>
                 <p className="mt-0.5 font-mono text-muted-foreground">{formatCurrency(point.reference, symbol)}</p>
               </div>
             </div>
-            <div className="mt-2 flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2">
-              <span className="text-xs font-medium text-muted-foreground">Running difference</span>
-              <DiffValue value={point.cumulativeDiff} symbol={symbol} />
-            </div>
+            {point.cumulativeDiff !== null ? (
+              <div className="mt-2 flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2">
+                <span className="text-xs font-medium text-muted-foreground">Running difference</span>
+                <DiffValue value={point.cumulativeDiff} symbol={symbol} />
+              </div>
+            ) : null}
           </div>
         )) : (
           <p className="px-4 py-6 text-center text-sm text-muted-foreground sm:px-5">
@@ -102,7 +123,7 @@ export default function WeeklyComparisonSection({
         )}
       </div>
 
-      {points.length ? <Sheet>
+      {trackedPoints.length ? <Sheet>
         <SheetTrigger asChild>
           <button
             type="button"
@@ -122,13 +143,15 @@ export default function WeeklyComparisonSection({
             <div className="h-20 w-full" aria-hidden="true">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={points} margin={{ top: 6, right: 4, bottom: 2, left: 4 }}>
-                  <Line type="monotone" dataKey="currentCumulative" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} />
+                  <Line type="monotone" dataKey="currentCumulative" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} connectNulls={false} />
+                  <Line type="monotone" dataKey="projectedCumulative" stroke="hsl(var(--primary))" strokeWidth={2} strokeDasharray="5 4" dot={false} connectNulls={false} />
                   <Line type="monotone" dataKey="referenceCumulative" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            <div className="mt-1 flex items-center gap-4 text-[11px] text-muted-foreground">
+            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-4 rounded bg-primary" />This week</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-4 border-t-2 border-dashed border-primary" />Projection</span>
               <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-4 border-t-2 border-dashed border-muted-foreground" />{referenceLabel}</span>
             </div>
           </button>
@@ -136,7 +159,7 @@ export default function WeeklyComparisonSection({
         <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-2xl pb-[max(env(safe-area-inset-bottom),1.25rem)] sm:inset-x-auto sm:left-1/2 sm:w-[min(48rem,calc(100vw-2rem))] sm:-translate-x-1/2">
           <SheetHeader className="pr-8 text-left">
             <SheetTitle>{title}</SheetTitle>
-            <SheetDescription>Cumulative earnings through the same tracked days.</SheetDescription>
+            <SheetDescription>Actual earnings, historical reference, and an estimated finish at your current tracked-day pace.</SheetDescription>
           </SheetHeader>
           <div className="mt-6 h-72 w-full sm:h-96">
             <ResponsiveContainer width="100%" height="100%">
@@ -152,7 +175,9 @@ export default function WeeklyComparisonSection({
                 />
                 <Tooltip content={<ComparisonTooltip symbol={symbol} />} />
                 <Legend verticalAlign="top" height={36} />
-                <Line name="This week" type="monotone" dataKey="currentCumulative" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                {lastTrackedDay ? <ReferenceLine x={lastTrackedDay} stroke="hsl(var(--border))" strokeDasharray="3 3" label={{ value: "Today", position: "insideTopRight", fill: "hsl(var(--muted-foreground))", fontSize: 11 }} /> : null}
+                <Line name="This week" type="monotone" dataKey="currentCumulative" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls={false} />
+                <Line name="Projected pace" type="monotone" dataKey="projectedCumulative" stroke="hsl(var(--primary))" strokeWidth={2.5} strokeDasharray="7 5" dot={false} connectNulls={false} />
                 <Line name={referenceLabel} type="monotone" dataKey="referenceCumulative" stroke="hsl(var(--muted-foreground))" strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 3 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -162,6 +187,18 @@ export default function WeeklyComparisonSection({
               <span className="text-sm font-medium">Difference at the current point</span>
               <DiffValue value={finalDifference} symbol={symbol} />
             </div>
+            {futurePoints.length ? (
+              <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Remaining to match</p>
+                  <p className="mt-1 font-mono font-semibold">{formatCurrency(remainingToMatch, symbol)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">Needed per remaining day</p>
+                  <p className="mt-1 font-mono font-semibold">{formatCurrency(requiredPerDay, symbol)}</p>
+                </div>
+              </div>
+            ) : null}
           </div>
         </SheetContent>
       </Sheet> : null}

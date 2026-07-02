@@ -27,7 +27,7 @@ describe("buildWeeklyComparisonPoints", () => {
       [0, 1],
     );
 
-    expect(points.map((point) => ({
+    expect(points.filter((point) => point.isTracked).map((point) => ({
       dailyDiff: point.dailyDiff,
       cumulativeDiff: point.cumulativeDiff,
     }))).toEqual([
@@ -36,15 +36,34 @@ describe("buildWeeklyComparisonPoints", () => {
     ]);
   });
 
-  it("sorts selected days and excludes future days", () => {
+  it("keeps future reference days without treating them as current zeroes", () => {
     const points = buildWeeklyComparisonPoints(
       week("current", [50, 0, 75, 0, 0, 0, 0]),
       week("record", [40, 500, 90, 500, 0, 0, 0]),
       [2, 0],
     );
 
-    expect(points.map((point) => point.dayIndex)).toEqual([0, 2]);
-    expect(points.at(-1)?.currentCumulative).toBe(125);
-    expect(points.at(-1)?.referenceCumulative).toBe(130);
+    expect(points).toHaveLength(7);
+    expect(points[3]).toMatchObject({
+      isFuture: true,
+      current: null,
+      dailyDiff: null,
+      cumulativeDiff: null,
+      referenceCumulative: 1_130,
+    });
+    expect(points[2].currentCumulative).toBe(125);
+    expect(points[2].cumulativeDiff).toBe(-5);
+  });
+
+  it("projects future cumulative earnings from the tracked-day average", () => {
+    const points = buildWeeklyComparisonPoints(
+      week("current", [80, 120, 0, 0, 0, 0, 0]),
+      week("previous", [100, 100, 100, 100, 100, 100, 100]),
+      [0, 1],
+    );
+
+    expect(points[1].projectedCumulative).toBe(200);
+    expect(points[2].projectedCumulative).toBe(300);
+    expect(points[6].projectedCumulative).toBe(700);
   });
 });

@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after the weekly comparison clarity release:
+Current baseline after the weekly comparison projection release:
 
 ```text
-Beta 0.8.3 - Weekly Comparison Clarity
+Beta 0.8.4 - Weekly Comparison Projection
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -238,6 +238,22 @@ Boundaries:
 
 - Future days are excluded from daily and cumulative comparisons.
 - Earnings, bonus, record, Supabase, auth, Dashboard, Full Focus, Entry, and backend calculations remain unchanged.
+
+### Beta 0.8.4 - Weekly Comparison Projection
+
+Status: completed.
+
+Scope:
+
+- Keep upcoming days visible with their historical reference amounts while marking current earnings as pending.
+- Continue historical cumulative lines through Sunday without generating future deficits.
+- Add a dashed projection based on current tracked-day pace.
+- Show the remaining amount and average required per remaining day to match each reference week.
+
+Boundaries:
+
+- Projections are labeled estimates and never alter stored earnings or actual comparison metrics.
+- Actual daily and cumulative gaps remain limited to tracked days.
 
 ### Beta 0.9.0 - Deep Insights Intelligence Layer
 

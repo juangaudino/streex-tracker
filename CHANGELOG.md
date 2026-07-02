@@ -2,6 +2,19 @@
 
 ## Beta Releases
 
+### Beta 0.8.4 — Weekly Comparison Projection
+
+### Added
+
+- Upcoming days remain visible with their previous-week or record-week reference values while current earnings stay marked as pending.
+- Cumulative charts continue the historical reference through Sunday and add a clearly dashed pace projection.
+- Expanded charts mark the current comparison point and show the amount remaining plus the daily average needed to match the reference.
+
+### Data Integrity
+
+- Daily and cumulative differences are calculated only for tracked days; upcoming days are never treated as zero or presented as losses.
+- Projection is explicitly estimated from the current tracked-day average and does not alter stored data or actual performance metrics.
+
 ### Beta 0.8.3 — Weekly Comparison Clarity
 
 ### Changed

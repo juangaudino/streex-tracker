@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.8.3";
+export const CURRENT_VERSION = "0.8.4";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.8.4",
+    date: "2026-07",
+    title: "Weekly Comparison Projection",
+    tags: ["polish", "feature"],
+    items: [
+      "Compare now keeps upcoming days visible with their historical reference values without treating pending earnings as zero",
+      "Cumulative charts continue the reference week through Sunday and add a clearly dashed projection based on the current tracked-day pace",
+      "Expanded trends mark the current comparison point and show the amount remaining plus the daily pace needed to match the reference",
+      "Actual daily and cumulative differences remain limited to tracked days so future results are never presented as losses",
+      "No earnings, bonus, record, Supabase, auth, Dashboard, Full Focus, Entry, or backend calculation changed",
+    ],
+  },
   {
     version: "0.8.3",
     date: "2026-07",

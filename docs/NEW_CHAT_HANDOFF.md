@@ -16,7 +16,7 @@ Also read:
 ## 1. Current Snapshot
 
 - Product: Streex Gig Earnings App.
-- Current release: `Beta 0.8.3 - Weekly Comparison Clarity`.
+- Current release: `Beta 0.8.4 - Weekly Comparison Projection`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.

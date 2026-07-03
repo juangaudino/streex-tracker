@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after the weekly comparison projection release:
+Current baseline after app-specific ride attribution:
 
 ```text
-Beta 0.8.4 - Weekly Comparison Projection
+Beta 0.8.5 - App-Specific Ride Attribution
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -254,6 +254,23 @@ Boundaries:
 
 - Projections are labeled estimates and never alter stored earnings or actual comparison metrics.
 - Actual daily and cumulative gaps remain limited to tracked days.
+
+### Beta 0.8.5 - App-Specific Ride Attribution
+
+Status: completed.
+
+Scope:
+
+- Treat Quick Update rides as the accumulated count for the selected app.
+- Combine app-specific counts into the total rides used by shift and career analytics.
+- Keep mileage as one shared accumulated shift total across app updates.
+- Limit Octopus progress to known Uber ride deltas.
+- Preserve historical total-only rides without inventing attribution.
+
+Boundaries:
+
+- Ride attribution is additive JSON metadata inside existing week entries; no SQL migration is required.
+- Manual total-ride editing clears an unsafe app breakdown while preserving the corrected total.
 
 ### Beta 0.9.0 - Deep Insights Intelligence Layer
 

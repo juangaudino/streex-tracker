@@ -2,6 +2,21 @@
 
 ## Beta Releases
 
+### Beta 0.8.5 — App-Specific Ride Attribution
+
+### Fixed
+
+- Quick Update now treats rides as the selected app's accumulated count instead of overwriting the shared shift total.
+- Uber, Lyft, and other attributed app counts combine automatically into the total rides used by shift and career analytics.
+- Octopus progress now receives only known Uber ride deltas; Lyft and unattributed historical rides never receive Uber credit.
+
+### Data Integrity
+
+- Miles remain one shared accumulated shift total and are never added twice across app updates.
+- Historical total-only ride counts remain preserved without inventing app ownership or retroactive rewards.
+- Editing the total ride count manually resets app attribution because a new per-app split cannot be inferred safely.
+- Ride attribution remains inside the existing weekly entries JSON; no SQL migration or backend deployment is required.
+
 ### Beta 0.8.4 — Weekly Comparison Projection
 
 ### Added

@@ -32,6 +32,7 @@ import MobileDayDetail from "@/components/MobileDayDetail";
 import WeekClosingDialog from "@/components/WeekClosingDialog";
 import { activeShiftDurationHours, createShift, endActiveShift, getDayShiftHours, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours } from "@/lib/shiftIntelligence";
 import { isRewardApp, operationalWeekTotal } from "@/lib/rewardIncome";
+import { formatRideAttribution, replaceShiftTotalRideCount } from "@/lib/rideAttribution";
 
 function timeInputValue(value?: string): string {
   if (!value) return "";
@@ -397,7 +398,7 @@ export default function WeeklyEntryPage() {
       if (i !== dayIdx) return d;
       return {
         ...d,
-        shifts: (d.shifts ?? []).map((shift) => shift.id === shiftId ? { ...shift, rideCount } : shift),
+        shifts: (d.shifts ?? []).map((shift) => shift.id === shiftId ? replaceShiftTotalRideCount(shift, rideCount) : shift),
       };
     });
     persistShiftState({ ...editWeek, entries });
@@ -763,7 +764,8 @@ export default function WeeklyEntryPage() {
                     min="0"
                     className="h-9 w-20 text-right font-mono text-xs"
                     value={activeShiftBlock.shift.rideCount || ""}
-                    placeholder="rides"
+                    placeholder="total rides"
+                    aria-label="Total rides for active shift"
                     onChange={(e) => handleShiftRideCountUpdate(activeShiftBlock.dayIdx, activeShiftBlock.shift.id, e.target.value)}
                   />
                 </div>
@@ -808,6 +810,9 @@ export default function WeeklyEntryPage() {
                       {hours.toFixed(1)}h · {rate ? `${formatCurrency(rate, sym)}/hr` : "—/hr"} · {(shift.miles ?? 0).toFixed(1)} mi · {shift.rideCount ?? 0} rides
                       {shiftBreakHours(shift) > 0 ? ` · ${shiftBreakHours(shift).toFixed(1)}h break` : ""}
                     </p>
+                    {formatRideAttribution(shift) ? (
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">{formatRideAttribution(shift)}</p>
+                    ) : null}
                   </div>
                 </button>
 
@@ -879,7 +884,7 @@ export default function WeeklyEntryPage() {
                       />
                     </label>
                     <label className="space-y-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rides</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total rides</span>
                       <Input
                         type="number"
                         step="1"

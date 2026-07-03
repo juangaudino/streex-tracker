@@ -16,7 +16,7 @@ Also read:
 ## 1. Current Snapshot
 
 - Product: Streex Gig Earnings App.
-- Current release: `Beta 0.8.4 - Weekly Comparison Projection`.
+- Current release: `Beta 0.8.5 - App-Specific Ride Attribution`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.
@@ -172,6 +172,8 @@ Navigation rules:
 - Multi-app daily earnings entry.
 - Custom app keys can exist in day app records; default apps are Uber, Lyft, Spark Driver, DoorDash, Amazon Flex, Instacart, and Shipt.
 - Quick Add/Quick Update for primary apps using accumulated totals.
+- Quick Update rides are accumulated per selected app, while miles remain one shared accumulated shift total.
+- App ride counts combine into the shift total; historical total-only rides remain unattributed and never receive invented Octopus credit.
 - Decimal cents and locale decimal comma handling.
 - Optional miles and rides during quick updates.
 - Bonus entry by app/date.

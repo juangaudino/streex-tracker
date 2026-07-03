@@ -9,6 +9,7 @@ import { ArrowLeft, Plus, Save, StickyNote, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { getActiveShift, getDayRideCount, getDayShiftHours, hasActiveShift, isShiftPaused, shiftBreakHours, shiftDurationHours } from "@/lib/shiftIntelligence";
+import { formatRideAttribution } from "@/lib/rideAttribution";
 
 interface MobileDayDetailProps {
   day: DayEntry;
@@ -321,6 +322,9 @@ export default function MobileDayDetail({
                   {shift.endTime ? `${shiftDurationHours(shift).toFixed(1)}h` : "running"}
                   {shift.endTime && shiftBreakHours(shift) > 0 ? ` · ${shiftBreakHours(shift).toFixed(1)}h break` : ""}
                 </p>
+                {formatRideAttribution(shift) ? (
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">{formatRideAttribution(shift)}</p>
+                ) : null}
               </div>
               <div className="grid min-w-0 grid-cols-1 gap-2">
                 {onShiftTimeUpdate && (
@@ -412,7 +416,7 @@ export default function MobileDayDetail({
                 )}
                 {onShiftRideCountUpdate && (
                   <label className="min-w-0 space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rides</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total rides</span>
                     <Input
                       type="number"
                       step="1"

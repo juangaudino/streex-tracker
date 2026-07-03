@@ -34,6 +34,10 @@ export interface ShiftSession {
   earnings?: number;
   miles?: number;
   rideCount?: number;
+  /** Accumulated ride/delivery counts by app for this shift. */
+  ridesByApp?: Record<string, number>;
+  /** Preserved total from before app attribution existed. */
+  legacyRideCount?: number;
   note?: string;
 }
 

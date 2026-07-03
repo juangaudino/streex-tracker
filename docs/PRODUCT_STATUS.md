@@ -21,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.8.4 - Weekly Comparison Projection
+Beta 0.8.5 - App-Specific Ride Attribution
 ```
 
 Source of truth:
@@ -177,6 +177,14 @@ Entry supports:
 - bonus income entry
 
 Quick Add is designed around accumulated totals, not incremental add-only values. The user enters the current total visible in the driver app, and Streex computes changes/snapshots safely.
+
+Quick Update tracking rules:
+
+- Earnings are accumulated totals for the selected app.
+- Rides are accumulated totals for the selected app and combine into the shift total.
+- Miles are one shared accumulated shift total across all apps.
+- Historical total-only rides remain unattributed unless the user establishes a new app breakdown.
+- Only known Uber ride deltas affect Octopus progress.
 
 ### Shift Intelligence
 
@@ -388,12 +396,14 @@ Current planned sequence:
 - `Beta 0.8.2`: Career Drill-Down Expansion - completed
 - `Beta 0.8.3`: Weekly Comparison Clarity - completed
 - `Beta 0.8.4`: Weekly Comparison Projection - completed
+- `Beta 0.8.5`: App-Specific Ride Attribution - completed
 - `Beta 0.9.0`: Deep Insights Intelligence Layer - planned
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
 ## Recent Beta Highlights
 
+- `0.8.5`: Quick Update separated ride counts by app, preserved shared accumulated mileage, and limited Octopus changes to known Uber ride deltas.
 - `0.8.4`: Compare restored upcoming reference days, added a clearly labeled pace projection, and exposed remaining and per-day planning targets without creating future losses.
 - `0.8.3`: Compare separated previous-week and record-week progress, added daily and cumulative gaps, and introduced expandable cumulative trend charts without counting future days.
 - `0.8.2`: Career added contextual monthly, record, app, weekday, and hourly-efficiency drill-downs while preserving Full Focus unchanged.

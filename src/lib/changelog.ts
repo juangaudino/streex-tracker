@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.8.4";
+export const CURRENT_VERSION = "0.8.5";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.8.5",
+    date: "2026-07",
+    title: "App-Specific Ride Attribution",
+    tags: ["fix", "feature"],
+    items: [
+      "Quick Update ride counts are now accumulated per selected app while miles remain one shared accumulated shift total",
+      "Uber, Lyft, and future supported app counts combine automatically into the shift and day ride total used by analytics",
+      "Octopus reward progress now responds only to known Uber ride changes instead of the full shared shift delta",
+      "Historical total-only ride counts remain preserved as unattributed and never receive invented app ownership or retroactive rewards",
+      "Manual total-ride edits safely reset app attribution when the breakdown can no longer be guaranteed",
+    ],
+  },
   {
     version: "0.8.4",
     date: "2026-07",

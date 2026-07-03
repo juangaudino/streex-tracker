@@ -18,6 +18,7 @@ import { triggerCelebration } from "@/components/RecordCelebration";
 import { createShift, endActiveShift, getActiveShift, getDayShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resumePausedShift, shiftDurationHours } from "@/lib/shiftIntelligence";
 import { isRewardApp } from "@/lib/rewardIncome";
 import { normalizeDecimalDraft, parseDecimalDraft } from "@/lib/decimalInput";
+import { getAppRideCount, updateShiftAppRideCount } from "@/lib/rideAttribution";
 
 interface QuickEntryWidgetProps {  
   openWeek: WeekRecord;
@@ -30,8 +31,6 @@ interface QuickEntryWidgetProps {
   onQuickUpdateSaved?: (event: {
     app: string;
     rideDelta: number;
-    previousRideCount: number;
-    nextRideCount: number;
   }) => void | Promise<void>;
 }
 
@@ -68,7 +67,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
       setLocalLogged(today.logged !== undefined ? today.logged : dayTotal(today) > 0);
       setResolvedIdx(todayIdx);
       setLocalMileage(active?.miles ? String(active.miles) : today.mileage ? String(today.mileage) : "");
-      setLocalRideCount(active?.rideCount ? String(active.rideCount) : "");
+      setLocalRideCount("");
       setMode("quick");
       setQuickApp(null);
       setQuickAmountDraft("");
@@ -121,16 +120,17 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     const mileage = localMileage.trim() === "" ? null : Math.max(0, parseFloat(localMileage) || 0);
     const rides = localRideCount.trim() === "" ? null : Math.max(0, Math.trunc(Number(localRideCount) || 0));
     const activeShift = getActiveShift(today);
-    const previousRideCount = activeShift?.rideCount ?? 0;
+    const rideUpdate = activeShift && rides !== null
+      ? updateShiftAppRideCount(activeShift, app, rides)
+      : null;
     const entries = openWeek.entries.map((d, i) => {
       if (i !== resolvedIdx) return d;
       const nextApps = { ...d.apps, [app]: appTotal };
       const shifts = (d.shifts ?? []).map((shift) => {
         if (!activeShift || shift.id !== activeShift.id) return shift;
         return {
-          ...shift,
+          ...(rideUpdate?.shift ?? shift),
           ...(mileage !== null ? { miles: mileage } : {}),
-          ...(rides !== null ? { rideCount: rides } : {}),
         };
       });
       return {
@@ -159,12 +159,9 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     }
     const saved = await persistQuickWeek({ ...openWeek, entries });
     if (saved) {
-      const nextRideCount = activeShift && rides !== null ? rides : previousRideCount;
       await onQuickUpdateSaved?.({
         app,
-        rideDelta: nextRideCount - previousRideCount,
-        previousRideCount,
-        nextRideCount,
+        rideDelta: rideUpdate?.appRideDelta ?? 0,
       });
       setOpen(false);
     }
@@ -174,6 +171,9 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     setQuickApp(app);
     const currentAmount = Number(localApps[app]) || 0;
     setQuickAmountDraft(currentAmount > 0 ? String(currentAmount) : "");
+    const active = today ? getActiveShift(today) : null;
+    const appRides = active ? getAppRideCount(active, app) : null;
+    setLocalRideCount(appRides !== null && appRides > 0 ? String(appRides) : "");
   }
 
   function openFullEntry() {
@@ -318,7 +318,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <label className="rounded-xl border border-border bg-background/60 p-3">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Miles</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total miles</span>
                         <Input
                           type="text"
                           inputMode="decimal"
@@ -329,7 +329,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                         />
                       </label>
                       <label className="rounded-xl border border-border bg-background/60 p-3">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rides</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{quickApp} rides</span>
                         <Input
                           type="text"
                           inputMode="numeric"
@@ -344,6 +344,11 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                     {!activeShift && (
                       <p className="text-xs text-muted-foreground">
                         Rides are saved to the active shift. Start a shift to track ride count.
+                      </p>
+                    )}
+                    {activeShift && (
+                      <p className="text-xs text-muted-foreground">
+                        Miles are the shared shift total. Rides are the accumulated {quickApp} total only.
                       </p>
                     )}
                     {activeShift && quickApp.toLowerCase() === "uber" && (

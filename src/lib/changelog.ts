@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.8.6";
+export const CURRENT_VERSION = "0.8.7";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.8.7",
+    date: "2026-07",
+    title: "Mileage Accumulation Integrity",
+    tags: ["fix"],
+    items: [
+      "Quick Update mileage is now consistently interpreted as the accumulated day total across every shift and app update",
+      "The active shift receives only the mileage difference since the previous day total instead of another copy of the full odometer value",
+      "Day and week mileage now use the explicit day total as the authoritative value for efficiency and progress analytics",
+      "Previously affected cumulative shift patterns are recognized as differences for shift-level displays and analytics",
+      "Downward mileage corrections adjust recent shift mileage without producing negative values or changing earnings and rides",
+    ],
+  },
   {
     version: "0.8.6",
     date: "2026-07",
@@ -36,7 +49,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "App-Specific Ride Attribution",
     tags: ["fix", "feature"],
     items: [
-      "Quick Update ride counts are now accumulated per selected app while miles remain one shared accumulated shift total",
+      "Quick Update ride counts are now accumulated per selected app while mileage remains one shared accumulated day input",
       "Uber, Lyft, and future supported app counts combine automatically into the shift and day ride total used by analytics",
       "Octopus reward progress now responds only to known Uber ride changes instead of the full shared shift delta",
       "Historical total-only ride counts remain preserved as unattributed and never receive invented app ownership or retroactive rewards",

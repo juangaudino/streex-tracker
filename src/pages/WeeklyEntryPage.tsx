@@ -30,9 +30,10 @@ import { CalendarIcon } from "lucide-react";
 import MobileWeekOverview from "@/components/MobileWeekOverview";
 import MobileDayDetail from "@/components/MobileDayDetail";
 import WeekClosingDialog from "@/components/WeekClosingDialog";
-import { activeShiftDurationHours, createShift, endActiveShift, getDayShiftHours, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours, updateShiftBoundaryTime } from "@/lib/shiftIntelligence";
+import { activeShiftDurationHours, createShift, endActiveShift, getDayShiftHours, getShiftMiles, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours, updateShiftBoundaryTime } from "@/lib/shiftIntelligence";
 import { isRewardApp, operationalWeekTotal } from "@/lib/rewardIncome";
 import { formatRideAttribution, replaceShiftTotalRideCount } from "@/lib/rideAttribution";
+import { replaceShiftMileage } from "@/lib/mileageAttribution";
 
 function timeInputValue(value?: string): string {
   if (!value) return "";
@@ -380,13 +381,9 @@ export default function WeeklyEntryPage() {
 
   function handleShiftMilesUpdate(dayIdx: number, shiftId: string, val: string) {
     if (!editWeek) return;
-    const miles = parseFloat(val) || 0;
     const entries = editWeek.entries.map((d, i) => {
       if (i !== dayIdx) return d;
-      return {
-        ...d,
-        shifts: (d.shifts ?? []).map((shift) => shift.id === shiftId ? { ...shift, miles } : shift),
-      };
+      return replaceShiftMileage(d, shiftId, parseFloat(val) || 0);
     });
     persistShiftState({ ...editWeek, entries });
   }
@@ -751,7 +748,7 @@ export default function WeeklyEntryPage() {
                     step="0.1"
                     min="0"
                     className="h-9 w-20 text-right font-mono text-xs"
-                    value={activeShiftBlock.shift.miles || ""}
+                    value={getShiftMiles(activeShiftBlock.day, activeShiftBlock.shift) || ""}
                     placeholder="mi"
                     onChange={(e) => handleShiftMilesUpdate(activeShiftBlock.dayIdx, activeShiftBlock.shift.id, e.target.value)}
                   />
@@ -804,7 +801,7 @@ export default function WeeklyEntryPage() {
                       {day.dayName} · {formatShiftTime(shift.startTime)} → {formatShiftTime(shift.endTime)}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {hours.toFixed(1)}h · {rate ? `${formatCurrency(rate, sym)}/hr` : "—/hr"} · {(shift.miles ?? 0).toFixed(1)} mi · {shift.rideCount ?? 0} rides
+                      {hours.toFixed(1)}h · {rate ? `${formatCurrency(rate, sym)}/hr` : "—/hr"} · {getShiftMiles(day, shift).toFixed(1)} mi · {shift.rideCount ?? 0} rides
                       {shiftBreakHours(shift) > 0 ? ` · ${shiftBreakHours(shift).toFixed(1)}h break` : ""}
                     </p>
                     {formatRideAttribution(shift) ? (
@@ -863,7 +860,7 @@ export default function WeeklyEntryPage() {
                         step="0.1"
                         min="0"
                         className="h-10 min-w-0 w-full text-right font-mono text-sm md:h-9 md:text-xs"
-                        value={shift.miles || ""}
+                        value={getShiftMiles(day, shift) || ""}
                         placeholder="mi"
                         onChange={(e) => handleShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
                       />

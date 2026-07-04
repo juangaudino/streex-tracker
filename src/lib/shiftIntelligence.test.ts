@@ -36,7 +36,7 @@ describe("shift intelligence", () => {
       miles: 42,
       rideCount: 9,
     };
-    const d = day(0, 220, [shift], 10);
+    const d = day(0, 220, [shift]);
 
     expect(shiftDurationHours(shift)).toBe(3.5);
     expect(getDayMiles(d)).toBe(42);

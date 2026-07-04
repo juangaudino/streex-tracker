@@ -8,7 +8,7 @@ import type { DayEntry } from "@/lib/types";
 import { ArrowLeft, Plus, Save, StickyNote, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { getActiveShift, getDayRideCount, getDayShiftHours, hasActiveShift, isShiftPaused, shiftBreakHours, shiftDurationHours } from "@/lib/shiftIntelligence";
+import { getActiveShift, getDayRideCount, getDayShiftHours, getShiftMiles, hasActiveShift, isShiftPaused, shiftBreakHours, shiftDurationHours } from "@/lib/shiftIntelligence";
 import { formatRideAttribution } from "@/lib/rideAttribution";
 
 interface MobileDayDetailProps {
@@ -381,7 +381,7 @@ export default function MobileDayDetail({
                         step="0.1"
                         min="0"
                         className="h-10 min-w-0 flex-1 text-right font-mono text-sm"
-                        value={shift.miles || ""}
+                        value={getShiftMiles(day, shift) || ""}
                         placeholder="mi"
                         onChange={(e) => onShiftMilesUpdate(dayIdx, shift.id, e.target.value)}
                       />

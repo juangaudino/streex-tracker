@@ -5,6 +5,7 @@ import {
   getDayMiles,
   getDayRideCount,
   getDayShiftHours,
+  getShiftMiles,
   resolveShiftRate,
   shiftDurationHours,
 } from "./shiftIntelligence";
@@ -341,7 +342,7 @@ export function buildDeepInsightsData(args: {
             hours,
             rate: rate.rate,
             source: rate.source,
-            miles: Number(shift.miles) || 0,
+            miles: getShiftMiles(day, shift),
             rides: Math.max(0, Math.trunc(Number(shift.rideCount) || 0)),
           });
         }

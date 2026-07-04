@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after shift time edit synchronization:
+Current baseline after mileage accumulation integrity:
 
 ```text
-Beta 0.8.6 - Shift Time Edit Synchronization
+Beta 0.8.7 - Mileage Accumulation Integrity
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -263,7 +263,7 @@ Scope:
 
 - Treat Quick Update rides as the accumulated count for the selected app.
 - Combine app-specific counts into the total rides used by shift and career analytics.
-- Keep mileage as one shared accumulated shift total across app updates.
+- Keep mileage as one shared accumulated day total across app updates; multi-shift delta allocation was completed in Beta 0.8.7.
 - Limit Octopus progress to known Uber ride deltas.
 - Preserve historical total-only rides without inventing attribution.
 
@@ -287,6 +287,23 @@ Boundaries:
 
 - No SQL migration is required; the existing weekly JSON remains compatible.
 - Earnings, rides, mileage, auth, Supabase schema, and backend behavior remain unchanged.
+
+### Beta 0.8.7 - Mileage Accumulation Integrity
+
+Status: completed.
+
+Scope:
+
+- Treat Quick Update mileage as one accumulated day total across all shifts.
+- Attribute only the change since the previous total to the active shift.
+- Use the explicit daily mileage as the authoritative day and week value.
+- Recognize previously stored cumulative shift patterns for corrected shift-level analytics.
+- Support safe downward corrections without negative mileage.
+
+Boundaries:
+
+- Existing weekly JSON remains compatible and requires no SQL migration.
+- Earnings, rides, hours, auth, Supabase schema, and backend behavior remain unchanged.
 
 ### Beta 0.9.0 - Deep Insights Intelligence Layer
 

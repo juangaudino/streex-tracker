@@ -1,6 +1,7 @@
 import { isRewardApp, operationalDayTotal } from "./rewardIncome";
 import { earningsSnapshotTransitionKey } from "./earningsSnapshots";
 import type { DayEntry, EarningsSnapshot, ShiftSession, ShiftWorkBlock, WeekRecord } from "./types";
+import { getAccumulatedDayMileage, getEffectiveShiftMileage } from "./mileageAttribution";
 
 export interface ShiftSummary {
   totalShifts: number;
@@ -168,8 +169,11 @@ export function isShiftRunning(shift: ShiftSession): boolean {
 }
 
 export function getDayMiles(day: DayEntry): number {
-  const shiftMiles = (day.shifts ?? []).reduce((sum, shift) => sum + (Number(shift.miles) || 0), 0);
-  return round(shiftMiles || Number(day.mileage) || 0);
+  return getAccumulatedDayMileage(day);
+}
+
+export function getShiftMiles(day: DayEntry, shift: ShiftSession): number {
+  return getEffectiveShiftMileage(day, shift);
 }
 
 export function getWeekMiles(week: WeekRecord): number {

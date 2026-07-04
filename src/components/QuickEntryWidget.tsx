@@ -15,10 +15,11 @@ import type { WeekRecord, DayEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
 import { triggerCelebration } from "@/components/RecordCelebration";
-import { createShift, endActiveShift, getActiveShift, getDayShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resumePausedShift, shiftDurationHours } from "@/lib/shiftIntelligence";
+import { createShift, endActiveShift, getActiveShift, getDayMiles, getDayShiftHours, getShiftMiles, hasActiveShift, isShiftPaused, pauseActiveShift, resumePausedShift, shiftDurationHours } from "@/lib/shiftIntelligence";
 import { isRewardApp } from "@/lib/rewardIncome";
 import { normalizeDecimalDraft, parseDecimalDraft } from "@/lib/decimalInput";
 import { getAppRideCount, updateShiftAppRideCount } from "@/lib/rideAttribution";
+import { applyAccumulatedDayMileage } from "@/lib/mileageAttribution";
 
 interface QuickEntryWidgetProps {  
   openWeek: WeekRecord;
@@ -66,7 +67,8 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
       setLocalApps({ ...today.apps });
       setLocalLogged(today.logged !== undefined ? today.logged : dayTotal(today) > 0);
       setResolvedIdx(todayIdx);
-      setLocalMileage(active?.miles ? String(active.miles) : today.mileage ? String(today.mileage) : "");
+      const accumulatedMileage = getDayMiles(today);
+      setLocalMileage(accumulatedMileage > 0 ? String(accumulatedMileage) : "");
       setLocalRideCount("");
       setMode("quick");
       setQuickApp(null);
@@ -128,18 +130,20 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
       const nextApps = { ...d.apps, [app]: appTotal };
       const shifts = (d.shifts ?? []).map((shift) => {
         if (!activeShift || shift.id !== activeShift.id) return shift;
-        return {
-          ...(rideUpdate?.shift ?? shift),
-          ...(mileage !== null ? { miles: mileage } : {}),
-        };
+        return rideUpdate?.shift ?? shift;
       });
-      return {
+      let nextDay: DayEntry = {
         ...d,
         apps: nextApps,
         logged: Object.values(nextApps).some((value) => (Number(value) || 0) > 0) ? true : d.logged,
-        ...(mileage !== null ? { mileage } : {}),
         shifts,
       };
+      if (mileage !== null) {
+        nextDay = activeShift
+          ? applyAccumulatedDayMileage(nextDay, activeShift.id, mileage)
+          : { ...nextDay, mileage };
+      }
+      return nextDay;
     });
     const nextDay = entries[resolvedIdx];
     const nextTotal = nextDay ? dayTotal(nextDay) : appTotal;
@@ -318,7 +322,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <label className="rounded-xl border border-border bg-background/60 p-3">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total miles</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Day miles</span>
                         <Input
                           type="text"
                           inputMode="decimal"
@@ -348,7 +352,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                     )}
                     {activeShift && (
                       <p className="text-xs text-muted-foreground">
-                        Miles are the shared shift total. Rides are the accumulated {quickApp} total only.
+                        Miles are today&apos;s accumulated total. Rides are the accumulated {quickApp} total only.
                       </p>
                     )}
                     {activeShift && quickApp.toLowerCase() === "uber" && (
@@ -390,7 +394,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                 ))}
                 <div className="flex items-center gap-2 pt-2 border-t border-border">
                   <div className="flex items-center justify-between w-full gap-3 pb-2">
-                    <label className="text-sm text-muted-foreground">Miles</label>
+                    <label className="text-sm text-muted-foreground">Day miles</label>
                     <Input
                       type="number"
                       step="0.1"
@@ -443,7 +447,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                     </div>
                     <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                       <Route className="h-3.5 w-3.5" />
-                      {Number(shift.miles || 0).toFixed(1)} mi
+                      {getShiftMiles(today, shift).toFixed(1)} mi
                     </span>
                   </div>
                 </div>

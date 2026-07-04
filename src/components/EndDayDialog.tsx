@@ -4,7 +4,7 @@ import { bestDay, dayTotal, formatCurrency, weekTotal } from "@/lib/store";
 import type { WeekRecord, DayEntry } from "@/lib/types";
 import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
 import { getWeeklyMomentumPreview } from "@/lib/career";
-import { getDayMiles, getDayRideCount, getDayShiftHours } from "@/lib/shiftIntelligence";
+import { getDayMiles, getDayRideCount, getDayShiftHours, getShiftMiles } from "@/lib/shiftIntelligence";
 import { operationalDayTotal } from "@/lib/rewardIncome";
 import { exportNodeAsPng, shareNodeAsPng } from "@/lib/shareExport";
 import { Trophy, Flame, TrendingUp, Sparkles, Target, Clock, Route, Share2, Download, StickyNote } from "lucide-react";
@@ -183,7 +183,7 @@ export default function EndDayDialog({
                         {new Date(shift.endTime!).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                       </span>
                       {" · "}
-                      {shift.miles ? `${Number(shift.miles).toFixed(1)} mi` : "miles optional"}
+                      {getShiftMiles(todayEntry, shift) > 0 ? `${getShiftMiles(todayEntry, shift).toFixed(1)} mi` : "miles optional"}
                       {shift.rideCount ? ` · ${shift.rideCount} rides` : ""}
                     </p>
                   ))}

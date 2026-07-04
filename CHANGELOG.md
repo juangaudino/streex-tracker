@@ -2,6 +2,21 @@
 
 ## Beta Releases
 
+### Beta 0.8.7 — Mileage Accumulation Integrity
+
+### Fixed
+
+- Quick Update now consistently treats mileage as the accumulated day total across multiple shifts and app updates.
+- The active shift receives only the difference since the previous accumulated total instead of another copy of the full day mileage.
+- Day and week mileage now use the explicit daily total as the authoritative value.
+- Previously affected patterns such as `50 → 115.9` are interpreted as `50 + 65.9` for shift-level analytics.
+
+### Data Integrity
+
+- Downward corrections adjust recent shift mileage without creating negative values.
+- Earnings, rides, hours, Supabase schema, auth, and backend behavior remain unchanged.
+- Existing weekly JSON remains compatible; no SQL migration is required.
+
 ### Beta 0.8.6 — Shift Time Edit Synchronization
 
 ### Fixed
@@ -26,7 +41,7 @@
 
 ### Data Integrity
 
-- Miles remain one shared accumulated shift total and are never added twice across app updates.
+- Mileage remains one shared accumulated day input; multi-shift delta allocation is completed in Beta 0.8.7.
 - Historical total-only ride counts remain preserved without inventing app ownership or retroactive rewards.
 - Editing the total ride count manually resets app attribution because a new per-app split cannot be inferred safely.
 - Ride attribution remains inside the existing weekly entries JSON; no SQL migration or backend deployment is required.

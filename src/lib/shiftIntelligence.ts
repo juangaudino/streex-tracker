@@ -89,8 +89,47 @@ function durationHours(startTime?: string, endTime?: string): number {
 }
 
 export function getShiftBlocks(shift: ShiftSession): ShiftWorkBlock[] {
-  if (shift.blocks?.length) return shift.blocks;
-  return [{ id: `${shift.id}_block_1`, startTime: shift.startTime, endTime: shift.endTime }];
+  const source = shift.blocks?.length
+    ? shift.blocks
+    : [{ id: `${shift.id}_block_1`, startTime: shift.startTime, endTime: shift.endTime }];
+  const shiftStart = Date.parse(shift.startTime);
+  const shiftEnd = shift.endTime ? Date.parse(shift.endTime) : null;
+
+  return source.flatMap((block, index) => {
+    let startTime = index === 0 ? shift.startTime : block.startTime;
+    let endTime = block.endTime ?? (index === source.length - 1 ? shift.endTime : undefined);
+    let start = Date.parse(startTime);
+    let end = endTime ? Date.parse(endTime) : null;
+
+    if (Number.isFinite(shiftStart) && Number.isFinite(start) && start < shiftStart) {
+      startTime = shift.startTime;
+      start = shiftStart;
+    }
+    if (shiftEnd !== null && Number.isFinite(shiftEnd) && end !== null && Number.isFinite(end) && end > shiftEnd) {
+      endTime = shift.endTime;
+      end = shiftEnd;
+    }
+    if (end !== null && Number.isFinite(start) && Number.isFinite(end) && end <= start) return [];
+    return [{ ...block, startTime, endTime }];
+  });
+}
+
+export function updateShiftBoundaryTime(
+  shift: ShiftSession,
+  field: "startTime" | "endTime",
+  value: string,
+): ShiftSession | null {
+  const next = { ...shift, [field]: value };
+  if (next.endTime && Date.parse(next.endTime) <= Date.parse(next.startTime)) return null;
+  const source = shift.blocks?.length
+    ? shift.blocks
+    : [{ id: `${shift.id}_block_1`, startTime: shift.startTime, endTime: shift.endTime }];
+  const blocks = source.map((block, index) => ({
+    ...block,
+    ...(index === 0 ? { startTime: next.startTime } : {}),
+    ...(index === source.length - 1 && next.endTime ? { endTime: next.endTime } : {}),
+  }));
+  return { ...next, blocks: getShiftBlocks({ ...next, blocks }) };
 }
 
 export function shiftDurationHours(shift: ShiftSession): number {

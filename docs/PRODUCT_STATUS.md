@@ -21,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.8.5 - App-Specific Ride Attribution
+Beta 0.8.6 - Shift Time Edit Synchronization
 ```
 
 Source of truth:
@@ -397,12 +397,14 @@ Current planned sequence:
 - `Beta 0.8.3`: Weekly Comparison Clarity - completed
 - `Beta 0.8.4`: Weekly Comparison Projection - completed
 - `Beta 0.8.5`: App-Specific Ride Attribution - completed
+- `Beta 0.8.6`: Shift Time Edit Synchronization - completed
 - `Beta 0.9.0`: Deep Insights Intelligence Layer - planned
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
 ## Recent Beta Highlights
 
+- `0.8.6`: Shift time edits now synchronize operational work-block boundaries while preserving real pause intervals.
 - `0.8.5`: Quick Update separated ride counts by app, preserved shared accumulated mileage, and limited Octopus changes to known Uber ride deltas.
 - `0.8.4`: Compare restored upcoming reference days, added a clearly labeled pace projection, and exposed remaining and per-day planning targets without creating future losses.
 - `0.8.3`: Compare separated previous-week and record-week progress, added daily and cumulative gaps, and introduced expandable cumulative trend charts without counting future days.

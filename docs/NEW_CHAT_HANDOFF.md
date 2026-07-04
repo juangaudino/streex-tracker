@@ -16,7 +16,7 @@ Also read:
 ## 1. Current Snapshot
 
 - Product: Streex Gig Earnings App.
-- Current release: `Beta 0.8.5 - App-Specific Ride Attribution`.
+- Current release: `Beta 0.8.6 - Shift Time Edit Synchronization`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.

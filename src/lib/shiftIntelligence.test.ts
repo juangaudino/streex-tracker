@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPatternIntelligence, classifyWeeklyGoalOutcome, getDayRideCount, getDayMiles, getWeekMiles, getWeekRideCount, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours } from "./shiftIntelligence";
+import { buildPatternIntelligence, classifyWeeklyGoalOutcome, getDayRideCount, getDayMiles, getWeekMiles, getWeekRideCount, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours, updateShiftBoundaryTime } from "./shiftIntelligence";
 import type { DayEntry, EarningsSnapshot, WeekRecord } from "./types";
 import { DAY_NAMES } from "./types";
 
@@ -58,6 +58,49 @@ describe("shift intelligence", () => {
 
     expect(shiftDurationHours(shift)).toBe(9.25);
     expect(shiftBreakHours(shift)).toBe(0.75);
+  });
+
+  it("treats edited shift boundaries as authoritative over stale work blocks", () => {
+    const staleShift = {
+      id: "s1",
+      startTime: "2026-07-03T08:23:00",
+      endTime: "2026-07-03T10:40:00",
+      blocks: [
+        { id: "b1", startTime: "2026-07-03T08:23:00", endTime: "2026-07-03T11:58:00" },
+      ],
+    };
+
+    expect(shiftDurationHours(staleShift)).toBe(2.28);
+  });
+
+  it("synchronizes edited boundaries while preserving internal pauses", () => {
+    const shift = {
+      id: "s1",
+      startTime: "2026-05-04T08:00:00",
+      endTime: "2026-05-04T18:00:00",
+      blocks: [
+        { id: "b1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T12:00:00" },
+        { id: "b2", startTime: "2026-05-04T12:45:00", endTime: "2026-05-04T18:00:00" },
+      ],
+    };
+    const updated = updateShiftBoundaryTime(shift, "endTime", "2026-05-04T16:00:00");
+
+    expect(updated?.blocks?.[1].endTime).toBe("2026-05-04T16:00:00");
+    expect(shiftDurationHours(updated!)).toBe(7.25);
+    expect(shiftBreakHours(updated!)).toBe(0.75);
+  });
+
+  it("does not count time after a paused block when the shift is ended while paused", () => {
+    const pausedThenEnded = {
+      id: "s1",
+      startTime: "2026-05-04T08:00:00",
+      endTime: "2026-05-04T12:30:00",
+      blocks: [
+        { id: "b1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T12:00:00" },
+      ],
+    };
+
+    expect(shiftDurationHours(pausedThenEnded)).toBe(4);
   });
 
   it("pauses and resumes a shift as multiple work blocks", () => {

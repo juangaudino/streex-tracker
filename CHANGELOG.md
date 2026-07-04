@@ -2,6 +2,20 @@
 
 ## Beta Releases
 
+### Beta 0.8.6 — Shift Time Edit Synchronization
+
+### Fixed
+
+- Editing a shift start or end time now synchronizes the work-block boundaries used to calculate active hours.
+- Existing shifts whose internal block ends after a corrected shift end now recalculate automatically from the edited boundary.
+- Corrected duration flows through earnings/hour, rides/hour, miles/hour, Daily Report, Career, and Deep Insights.
+
+### Data Integrity
+
+- Internal pause and resume blocks remain intact.
+- Ending a shift while paused does not convert the paused interval into active work.
+- No earnings, rides, mileage, Supabase schema, auth, or backend behavior changed.
+
 ### Beta 0.8.5 — App-Specific Ride Attribution
 
 ### Fixed

@@ -30,7 +30,7 @@ import { CalendarIcon } from "lucide-react";
 import MobileWeekOverview from "@/components/MobileWeekOverview";
 import MobileDayDetail from "@/components/MobileDayDetail";
 import WeekClosingDialog from "@/components/WeekClosingDialog";
-import { activeShiftDurationHours, createShift, endActiveShift, getDayShiftHours, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours } from "@/lib/shiftIntelligence";
+import { activeShiftDurationHours, createShift, endActiveShift, getDayShiftHours, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours, updateShiftBoundaryTime } from "@/lib/shiftIntelligence";
 import { isRewardApp, operationalWeekTotal } from "@/lib/rewardIncome";
 import { formatRideAttribution, replaceShiftTotalRideCount } from "@/lib/rideAttribution";
 
@@ -426,11 +426,8 @@ export default function WeeklyEntryPage() {
         ...d,
         shifts: (d.shifts ?? []).map((shift) => {
           if (shift.id !== shiftId) return shift;
-          const next = { ...shift, [field]: applyTimeToShiftDate(d.date, val) };
-          if (next.endTime && Date.parse(next.endTime) <= Date.parse(next.startTime)) {
-            return field === "startTime" ? { ...next, endTime: undefined } : shift;
-          }
-          return next;
+          const next = updateShiftBoundaryTime(shift, field, applyTimeToShiftDate(d.date, val));
+          return next ?? shift;
         }),
       };
     });

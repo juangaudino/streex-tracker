@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after app-specific ride attribution:
+Current baseline after shift time edit synchronization:
 
 ```text
-Beta 0.8.5 - App-Specific Ride Attribution
+Beta 0.8.6 - Shift Time Edit Synchronization
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -271,6 +271,22 @@ Boundaries:
 
 - Ride attribution is additive JSON metadata inside existing week entries; no SQL migration is required.
 - Manual total-ride editing clears an unsafe app breakdown while preserving the corrected total.
+
+### Beta 0.8.6 - Shift Time Edit Synchronization
+
+Status: completed.
+
+Scope:
+
+- Treat edited shift start and end times as authoritative operational boundaries.
+- Synchronize the first and last work blocks when a shift boundary is edited.
+- Recalculate previously inconsistent late-close records from their corrected boundary.
+- Preserve internal pause and resume intervals, including shifts ended while paused.
+
+Boundaries:
+
+- No SQL migration is required; the existing weekly JSON remains compatible.
+- Earnings, rides, mileage, auth, Supabase schema, and backend behavior remain unchanged.
 
 ### Beta 0.9.0 - Deep Insights Intelligence Layer
 

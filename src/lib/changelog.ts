@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.8.5";
+export const CURRENT_VERSION = "0.8.6";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.8.6",
+    date: "2026-07",
+    title: "Shift Time Edit Synchronization",
+    tags: ["fix"],
+    items: [
+      "Edited shift start and end times now synchronize the first and last work-block boundaries used by operational analytics",
+      "Previously edited shifts with a stale block ending after the corrected shift end now recalculate automatically from the corrected boundary",
+      "Internal pause and resume blocks remain intact, including shifts intentionally ended while paused",
+      "Corrected hours now flow through earnings per hour, rides per hour, miles per hour, Daily Report, Career, and Deep Insights",
+      "No earnings, rides, mileage, Supabase schema, auth, or backend behavior changed",
+    ],
+  },
   {
     version: "0.8.5",
     date: "2026-07",

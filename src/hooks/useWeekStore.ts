@@ -6,6 +6,7 @@ import { getWeeks as getLocalWeeks } from "@/lib/store";
 import { lifecycleDebug } from "@/lib/appLifecycle";
 import { buildEarningsSnapshotRows, dbToEarningsSnapshot, earningsSnapshotTransitionKey } from "@/lib/earningsSnapshots";
 import { normalizeLegacyBonusWeek } from "@/lib/rewardIncome";
+import { inspectWeekIntegrity, parseWeekRecord } from "@/lib/weekIntegrity";
 
 const DEFAULT_SETTINGS: AppSettings = {
   defaultWeeklyGoal: 1200,
@@ -26,7 +27,7 @@ const storeCache = new Map<string, WeekStoreSnapshot>();
 const pendingSnapshotKeys = new Set<string>();
 
 function dbToWeek(row: any): WeekRecord {
-  return normalizeLegacyBonusWeek({
+  const week = parseWeekRecord(normalizeLegacyBonusWeek({
     id: row.id,
     startDate: row.start_date,
     endDate: row.end_date,
@@ -36,7 +37,15 @@ function dbToWeek(row: any): WeekRecord {
     entries: (typeof row.entries === "string" ? JSON.parse(row.entries) : row.entries) as DayEntry[],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-  });
+  }));
+  const integrityIssues = inspectWeekIntegrity(week);
+  if (integrityIssues.length) {
+    console.warn("[weeks.integrity] semantic inconsistencies detected", {
+      weekId: week.id,
+      issues: integrityIssues.map(({ severity, code, path }) => ({ severity, code, path })),
+    });
+  }
+  return week;
 }
 
 export function useWeekStore(user: User | null) {

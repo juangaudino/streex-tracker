@@ -1,6 +1,6 @@
 # STREEX deep logic and integrity audit — July 2026
 
-Status: **diagnostic implementation complete; certification withheld**  
+Status: **P1 repairs completed; QA certification still pending**
 Branch: `audit/deep-integrity-2026-07`  
 Production project: `ywbrovislvqkfzsyqpiv` (confirmed active/healthy, PostgreSQL 17.6)  
 Mutation policy: production queries were `SELECT` only. No production row, function, policy, migration, secret, or version was changed.
@@ -34,7 +34,7 @@ Passed with zero anomalies:
 - Missing or duplicate settings.
 - Deployed and checked-in generated types expose the same 13 public tables; current generated types include weekly-hours and Octopus fields.
 
-Observed anomalies:
+Observed anomalies at audit time (repaired in Beta 0.8.8):
 
 - 7 days have stored shift-mile components whose sum exceeds authoritative `day.mileage`.
 - 3 stored shifts contain work blocks outside their edited shift boundary.
@@ -44,7 +44,7 @@ Anonymized references are retained for an approved repair release: mileage weeks
 
 ## Findings
 
-### P1 — Stored shift mileage can disagree with the canonical day total
+### Resolved P1 — Stored shift mileage disagreed with the canonical day total
 
 Impact: seven historical days contain internally contradictory attribution. Current analytics use `day.mileage` as authoritative, limiting visible overcounting, but per-shift inspection/export or future logic can reinterpret the stale components.
 
@@ -52,23 +52,23 @@ Root cause: mileage previously accepted accumulated daily values as if they were
 
 Reproduction: compare `sum(day.shifts[*].miles)` with `day.mileage` in the read-only audit.
 
-Proposed correction: an explicitly approved, backed-up migration that rewrites only identified shift components while preserving each day total. Add before/after checksums and an idempotency guard.
+Resolution: repaired from the most recent shift backwards after full-week backup. Verification: zero remaining cases and no canonical total changed.
 
-### P1 — Persisted work blocks can exceed edited shift boundaries
+### Resolved P1 — Persisted work blocks exceeded edited shift boundaries
 
 Impact: three stored shifts disagree with their edited boundary. Current duration helpers clamp blocks at read time, so displayed hours may be correct while stored JSON remains contradictory.
 
 Root cause: historical boundary edits did not always rewrite the first/last block. The current UI correction does not retroactively normalize stored records.
 
-Proposed correction: normalize only the three identified shifts through the owning user session, then verify duration before/after and retain pauses.
+Resolution: affected blocks were clamped to edited boundaries after backup; valid pause intervals were retained. Verification: zero remaining cases.
 
-### P1 — Duplicate earnings snapshot transitions exist
+### Resolved P1 — Duplicate earnings snapshot transitions existed
 
 Impact: six redundant rows across four transition groups can inflate timing observation counts even when earnings deltas are deduplicated in some calculation paths.
 
 Root cause: client-side duplicate prevention is not a database uniqueness guarantee and concurrent/retried writes can pass the in-memory guard.
 
-Proposed correction: deduplicate after backup, then add a database idempotency key/unique constraint designed to permit legitimate repeated transitions at different times.
+Resolution: six redundant rows were backed up and removed. A revision-scoped event key and full unique constraint now reject retries while permitting later correction cycles; older clients receive automatic legacy keys during rollout.
 
 ### P1 — Runtime week validation was previously compile-time only
 
@@ -97,13 +97,13 @@ The deployed policies consistently use ownership predicates and all public table
 
 ## Release backlog
 
-1. **Integrity repair release:** backed-up repair of the 7 mileage records, 3 block records and 6 redundant snapshot rows; add database snapshot idempotency.
+1. **Integrity repair release:** completed as Beta 0.8.8.
 2. **QA certification release:** dedicated QA identities, cross-user RLS test, full persistence/offline round trip and Playwright mobile/desktop evidence.
 3. **Security hardening release:** leaked-password protection, reviewed RLS init-plan optimizations and origin policy.
 4. **Quality/performance release:** lint classification/fixes and route-level bundle splitting.
 
 ## Certification decision
 
-STREEX is **not yet certified** under the requested standard because P1 data inconsistencies remain stored and the mutable QA/RLS matrix has not been executed. The audit does establish reproducible contracts, runtime corruption detection, a non-mutating production scanner, an E2E route harness, quantified anomalies and a release-separated repair backlog.
+STREEX is **not yet fully certified** under the requested standard because the mutable QA/RLS matrix has not been executed. All production P1 data inconsistencies found by this audit are resolved, backed up and independently re-scanned to zero.
 
 Environment note: installing `@playwright/test` could not complete through the restricted package network, so it was not added partially or left out of sync with the lockfile. The committed harness becomes runnable after an approved dependency installation and QA credentials are available.

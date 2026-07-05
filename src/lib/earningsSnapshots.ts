@@ -9,6 +9,7 @@ export interface EarningsSnapshotInsert {
   new_amount: number;
   delta: number;
   shift_id?: string | null;
+  event_key: string;
 }
 
 function money(value: unknown): number {
@@ -77,6 +78,7 @@ export function buildEarningsSnapshotRows(params: {
   userId: string;
   previousWeek?: WeekRecord | null;
   nextWeek: WeekRecord;
+  sourceRevision?: string;
 }): EarningsSnapshotInsert[] {
   const { userId, previousWeek, nextWeek } = params;
   if (!previousWeek) return [];
@@ -99,7 +101,7 @@ export function buildEarningsSnapshotRows(params: {
       const delta = money(newAmount - previousAmount);
       if (Math.abs(delta) < 0.01) continue;
 
-      rows.push({
+      const transition = {
         user_id: userId,
         week_id: nextWeek.id,
         day_date: nextDay.date,
@@ -108,6 +110,13 @@ export function buildEarningsSnapshotRows(params: {
         new_amount: newAmount,
         delta,
         shift_id: activeShiftId(nextDay),
+      };
+      rows.push({
+        ...transition,
+        // A week revision identifies one logical save. Concurrent/retried
+        // saves of that revision share a key, while a later correction cycle
+        // receives a new revision and remains a legitimate new observation.
+        event_key: `${params.sourceRevision ?? previousWeek.updatedAt}|${earningsSnapshotTransitionKey(transition)}`,
       });
     }
   }

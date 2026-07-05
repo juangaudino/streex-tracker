@@ -200,6 +200,7 @@ export function useWeekStore(user: User | null) {
         userId: user.id,
         previousWeek,
         nextWeek: normalizedWeek,
+        sourceRevision: previousWeek?.updatedAt,
       }).filter((row) => {
         const key = earningsSnapshotTransitionKey(row);
         if (existingSnapshotKeys.has(key) || pendingSnapshotKeys.has(key)) return false;
@@ -211,7 +212,7 @@ export function useWeekStore(user: User | null) {
         try {
           const { data: snapshotData, error: snapshotError } = await supabase
             .from("earnings_snapshots")
-            .insert(snapshotRows)
+            .upsert(snapshotRows, { onConflict: "event_key", ignoreDuplicates: true })
             .select("*");
           if (snapshotError) {
             console.warn("[weeks.updateWeek] earnings snapshots unavailable", {

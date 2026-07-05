@@ -21,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.8.7 - Mileage Accumulation Integrity
+Beta 0.8.8 - Data Integrity Repair
 ```
 
 Source of truth:
@@ -399,6 +399,7 @@ Current planned sequence:
 - `Beta 0.8.4`: Weekly Comparison Projection - completed
 - `Beta 0.8.5`: App-Specific Ride Attribution - completed
 - `Beta 0.8.6`: Shift Time Edit Synchronization - completed
+- `Beta 0.8.8`: Data Integrity Repair - completed
 - `Beta 0.8.7`: Mileage Accumulation Integrity - completed
 - `Beta 0.9.0`: Deep Insights Intelligence Layer - planned
 
@@ -406,6 +407,7 @@ These numbers are planning labels, not immovable promises. If a bugfix, producti
 
 ## Recent Beta Highlights
 
+- `0.8.8`: Historical mileage and work-block inconsistencies were repaired with private backups; redundant snapshots were removed and revision-scoped idempotency now prevents recurrence.
 - `0.8.7`: Mileage now remains an accumulated day total across shifts, with only each update delta attributed to the active shift.
 - `0.8.6`: Shift time edits now synchronize operational work-block boundaries while preserving real pause intervals.
 - `0.8.5`: Quick Update separated ride counts by app, preserved shared accumulated mileage, and limited Octopus changes to known Uber ride deltas.

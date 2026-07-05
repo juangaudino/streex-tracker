@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.8.7";
+export const CURRENT_VERSION = "0.8.8";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.8.8",
+    date: "2026-07",
+    title: "Data Integrity Repair",
+    tags: ["fix"],
+    items: [
+      "Historical shift-mile components were normalized without changing the authoritative accumulated mileage for any day",
+      "Historical work blocks were synchronized with edited shift boundaries while preserving valid pause intervals",
+      "Redundant earnings snapshot transitions were removed after private backups were captured",
+      "Revision-scoped idempotency keys now prevent concurrent or retried saves from creating duplicate snapshot observations",
+      "Post-repair verification found no remaining mileage, block-boundary, or duplicate-snapshot anomalies and no canonical total changed",
+    ],
+  },
   {
     version: "0.8.7",
     date: "2026-07",

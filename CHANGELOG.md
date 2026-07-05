@@ -2,6 +2,21 @@
 
 ## Beta Releases
 
+### Beta 0.8.8 — Data Integrity Repair
+
+### Fixed
+
+- Repaired historical shift-mile components whose sum exceeded the authoritative accumulated day mileage, without changing any daily mileage total.
+- Synchronized historical work blocks with their edited shift boundaries while preserving valid pause intervals.
+- Removed redundant earnings snapshot transitions that could overstate timing observation counts.
+- Snapshot writes now carry a revision-scoped idempotency key, preventing concurrent or retried saves from creating duplicate observations while allowing legitimate later corrections.
+
+### Data Integrity
+
+- Every repaired week and deleted snapshot was backed up in a private, non-API database schema before modification.
+- Post-repair verification found zero remaining mileage, work-block, or duplicate-snapshot anomalies.
+- Canonical earnings, accumulated daily mileage, rides, bonuses, goals, and user settings were not changed.
+
 ### Beta 0.8.7 — Mileage Accumulation Integrity
 
 ### Fixed

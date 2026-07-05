@@ -22,7 +22,7 @@ Streex is in Beta.
 Current baseline after mileage accumulation integrity:
 
 ```text
-Beta 0.8.7 - Mileage Accumulation Integrity
+Beta 0.8.8 - Data Integrity Repair
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -287,6 +287,15 @@ Boundaries:
 
 - No SQL migration is required; the existing weekly JSON remains compatible.
 - Earnings, rides, mileage, auth, Supabase schema, and backend behavior remain unchanged.
+
+### Beta 0.8.8 - Data Integrity Repair
+
+- Repair historical shift-mile attribution without changing accumulated day mileage.
+- Synchronize stale work blocks with edited shift boundaries while preserving pauses.
+- Back up and remove redundant earnings snapshots.
+- Prevent duplicate snapshot writes with revision-scoped idempotency.
+
+Status: completed and verified in production.
 
 ### Beta 0.8.7 - Mileage Accumulation Integrity
 

@@ -188,6 +188,7 @@ export type Database = {
           created_at: string
           day_date: string
           delta: number
+          event_key: string
           id: string
           new_amount: number
           previous_amount: number
@@ -200,6 +201,7 @@ export type Database = {
           created_at?: string
           day_date: string
           delta?: number
+          event_key?: string
           id?: string
           new_amount?: number
           previous_amount?: number
@@ -212,6 +214,7 @@ export type Database = {
           created_at?: string
           day_date?: string
           delta?: number
+          event_key?: string
           id?: string
           new_amount?: number
           previous_amount?: number

@@ -16,7 +16,7 @@ Also read:
 ## 1. Current Snapshot
 
 - Product: Streex Gig Earnings App.
-- Current release: `Beta 0.8.7 - Mileage Accumulation Integrity`.
+- Current release: `Beta 0.8.8 - Data Integrity Repair`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.

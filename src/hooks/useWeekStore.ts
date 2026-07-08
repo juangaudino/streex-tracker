@@ -7,6 +7,7 @@ import { lifecycleDebug } from "@/lib/appLifecycle";
 import { buildEarningsSnapshotRows, dbToEarningsSnapshot, earningsSnapshotTransitionKey } from "@/lib/earningsSnapshots";
 import { normalizeLegacyBonusWeek } from "@/lib/rewardIncome";
 import { inspectWeekIntegrity, parseWeekRecord } from "@/lib/weekIntegrity";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 const DEFAULT_SETTINGS: AppSettings = {
   defaultWeeklyGoal: 1200,
@@ -25,8 +26,9 @@ interface WeekStoreSnapshot {
 
 const storeCache = new Map<string, WeekStoreSnapshot>();
 const pendingSnapshotKeys = new Set<string>();
+type WeekRow = Database["public"]["Tables"]["weeks"]["Row"];
 
-function dbToWeek(row: any): WeekRecord {
+function dbToWeek(row: WeekRow): WeekRecord {
   const week = parseWeekRecord(normalizeLegacyBonusWeek({
     id: row.id,
     startDate: row.start_date,
@@ -133,6 +135,13 @@ export function useWeekStore(user: User | null) {
   const addWeek = useCallback(async (w: WeekRecord) => {
     if (!user) return;
     const normalizedWeek = normalizeLegacyBonusWeek(w);
+    const integrityIssues = inspectWeekIntegrity(normalizedWeek);
+    if (integrityIssues.length) {
+      console.warn("[weeks.addWeek] semantic inconsistencies before save", {
+        weekId: normalizedWeek.id,
+        issues: integrityIssues.map(({ severity, code, path }) => ({ severity, code, path })),
+      });
+    }
     const { data, error } = await supabase.from("weeks").insert({
       user_id: user.id,
       start_date: normalizedWeek.startDate,
@@ -140,7 +149,7 @@ export function useWeekStore(user: User | null) {
       weekly_goal: normalizedWeek.weeklyGoal,
       weekly_hours_goal: normalizedWeek.weeklyHoursGoal ?? 0,
       status: normalizedWeek.status,
-      entries: normalizedWeek.entries as any,
+      entries: normalizedWeek.entries as unknown as Json,
     }).select().single();
     if (error) {
       console.error("Save failed:", error);
@@ -161,13 +170,21 @@ export function useWeekStore(user: User | null) {
       ?? null;
     const normalizedWeek = normalizeLegacyBonusWeek(w);
     try {
+      const integrityIssues = inspectWeekIntegrity(normalizedWeek);
+      if (integrityIssues.length) {
+        console.warn("[weeks.updateWeek] semantic inconsistencies before save", {
+          weekId: normalizedWeek.id,
+          userId: user.id,
+          issues: integrityIssues.map(({ severity, code, path }) => ({ severity, code, path })),
+        });
+      }
       const payload = {
         start_date: normalizedWeek.startDate,
         end_date: normalizedWeek.endDate,
         weekly_goal: normalizedWeek.weeklyGoal,
         weekly_hours_goal: normalizedWeek.weeklyHoursGoal ?? 0,
         status: normalizedWeek.status,
-        entries: normalizedWeek.entries as any,
+        entries: normalizedWeek.entries as unknown as Json,
         updated_at: now,
       };
       console.info("[weeks.updateWeek] saving", {
@@ -270,7 +287,7 @@ export function useWeekStore(user: User | null) {
       default_weekly_goal: s.defaultWeeklyGoal,
       default_weekly_hours_goal: s.defaultWeeklyHoursGoal ?? 0,
       currency_symbol: s.currencySymbol,
-      active_apps: s.activeApps as any,
+      active_apps: s.activeApps as unknown as Json,
       octopus_points: Math.max(0, Number(s.octopusPoints) || 0),
       octopus_updated_at: s.octopusUpdatedAt ?? null,
       updated_at: new Date().toISOString(),
@@ -303,7 +320,7 @@ export function useWeekStore(user: User | null) {
       weekly_goal: w.weeklyGoal,
       weekly_hours_goal: w.weeklyHoursGoal ?? 0,
       status: w.status,
-      entries: w.entries as any,
+      entries: w.entries as unknown as Json,
     }));
     const { error } = await supabase.from("weeks").insert(rows);
     if (error) {

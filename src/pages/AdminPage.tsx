@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Bug, CheckCircle2, Clock, Inbox, Mail, RefreshCw, Send, Shield, UserPlus, Users } from "lucide-react";
+import { useOutletContext } from "react-router-dom";
+import { AlertTriangle, Bug, CheckCircle2, Clock, Database, Inbox, Mail, RefreshCw, Send, Shield, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +23,8 @@ import {
   type FeedbackStatus,
   type FeedbackType,
 } from "@/lib/adminOps";
+import { summarizeDataHealth, type DataHealthStatus } from "@/lib/dataHealth";
+import type { StoreContext } from "./types";
 
 type AdminRow = {
   id: string;
@@ -68,7 +71,14 @@ function feedbackTone(status: FeedbackStatus): string {
   return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25";
 }
 
+function dataHealthTone(status: DataHealthStatus): string {
+  if (status === "critical") return "border-destructive/30 bg-destructive/10 text-destructive";
+  if (status === "warning") return "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300";
+  return "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+}
+
 export default function AdminPage() {
+  const { weeks, earningsSnapshots } = useOutletContext<StoreContext>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
@@ -121,6 +131,11 @@ export default function AdminPage() {
   useEffect(() => {
     loadAdmin();
   }, []);
+
+  const dataHealth = useMemo(() => summarizeDataHealth({
+    weeks,
+    snapshots: earningsSnapshots,
+  }), [earningsSnapshots, weeks]);
 
   const filteredFeedback = useMemo(() => {
     return feedback.filter((item) => {
@@ -306,6 +321,68 @@ export default function AdminPage() {
             <p className="text-2xl font-bold mt-3">{value}</p>
           </div>
         ))}
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-4 space-y-4">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Database className="h-5 w-5 text-primary" />
+              Data Health
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Internal trust layer for canonical week data, shifts, rides, mileage, and earnings snapshots.
+            </p>
+          </div>
+          <div className={`w-fit rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wider ${dataHealthTone(dataHealth.status)}`}>
+            {dataHealth.status}
+          </div>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <Metric label="Weeks Checked" value={dataHealth.weeksChecked} />
+          <Metric label="Snapshots" value={dataHealth.snapshotsChecked} />
+          <Metric label="Critical Issues" value={dataHealth.criticalIssueCount} />
+          <Metric label="Warnings" value={dataHealth.warningIssueCount} />
+        </div>
+
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-2">
+          {dataHealth.contracts.map((contract) => (
+            <div key={contract.id} className="rounded-xl border border-border bg-background/40 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-semibold text-sm">{contract.label}</p>
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                  contract.status === "pass"
+                    ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : "border-destructive/25 bg-destructive/10 text-destructive"
+                }`}>
+                  {contract.status === "pass" ? "OK" : `${contract.issueCount} issue${contract.issueCount === 1 ? "" : "s"}`}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{contract.description}</p>
+            </div>
+          ))}
+        </div>
+
+        {dataHealth.issues.length === 0 ? (
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
+            No data-health issues detected in the currently loaded admin session.
+          </div>
+        ) : (
+          <div className="rounded-xl border border-border bg-background/40 p-3 space-y-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Latest issues</p>
+            {dataHealth.issues.slice(0, 6).map((item, index) => (
+              <div key={`${item.code}-${item.path}-${index}`} className="rounded-lg border border-border bg-card px-3 py-2 text-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                  <p className="font-semibold">{item.code}</p>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{item.severity}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{item.message}</p>
+                <p className="text-[10px] text-muted-foreground/80 truncate">{item.path}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="grid lg:grid-cols-[1.2fr_0.8fr] gap-4">

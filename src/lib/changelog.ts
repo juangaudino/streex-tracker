@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.8.8";
+export const CURRENT_VERSION = "0.8.9";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.8.9",
+    date: "2026-07",
+    title: "Data Health Foundation",
+    tags: ["new", "fix"],
+    items: [
+      "Admin Ops now includes an internal Data Health panel that summarizes week, shift, mileage, ride, and snapshot integrity",
+      "Canonical data contracts are grouped into readable health sections so data trust issues are easier to detect before analytics work expands",
+      "Save and hydration paths now emit privacy-safe semantic integrity warnings when stored week data contradicts the canonical rules",
+      "A reusable Data Health summary layer and automated tests now protect future Deep Insights and QA certification work",
+      "This foundation is internal-only and does not change earnings, mileage, ride, shift, auth, Supabase, or production data storage behavior",
+    ],
+  },
   {
     version: "0.8.8",
     date: "2026-07",

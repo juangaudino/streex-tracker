@@ -16,7 +16,7 @@ Also read:
 ## 1. Current Snapshot
 
 - Product: Streex Gig Earnings App.
-- Current release: `Beta 0.8.8 - Data Integrity Repair`.
+- Current release: `Beta 0.8.9 - Data Health Foundation`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.
@@ -283,6 +283,7 @@ Design rules:
 ### Planned Product Work
 
 - Next planned release: `Beta 0.9.0 - Deep Insights Intelligence Layer`.
+- Immediate trust foundation completed: `Beta 0.8.9 - Data Health Foundation` added internal Admin Data Health checks before expanding Deep Insights intelligence.
 - Candidate scope: deeper operational patterns, efficiency rankings, duration-vs-earnings, rides/hour, miles/hour, shift density, and richer best/worst detection where data supports it.
 - The version number can move if a patch or urgent fix ships first.
 
@@ -468,7 +469,7 @@ Production variables live in Vercel. Do not print their values in chat or docs.
 
 ### Versioning
 
-- Current baseline: `0.8.2`.
+- Current baseline: `0.8.9`.
 - Patch: focused fix/refinement/polish.
 - Minor: meaningful new surface/system.
 - `1.0.0`: first stable public release only.
@@ -496,4 +497,4 @@ Production variables live in Vercel. Do not print their values in chat or docs.
 4. Do not assume Ask My Data, Edge Function secrets, or migrations are deployed merely because source exists.
 5. Ask what the owner wants to tackle next, or continue the explicitly named roadmap item.
 
-The expected next roadmap item is Deep Insights Intelligence Layer, but bug stabilization or infrastructure work may take priority and should renumber the roadmap honestly.
+The expected next roadmap item is Deep Insights Intelligence Layer, but QA certification, bug stabilization, or infrastructure work may take priority and should renumber the roadmap honestly.

@@ -21,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.8.8 - Data Integrity Repair
+Beta 0.8.9 - Data Health Foundation
 ```
 
 Source of truth:
@@ -399,14 +399,16 @@ Current planned sequence:
 - `Beta 0.8.4`: Weekly Comparison Projection - completed
 - `Beta 0.8.5`: App-Specific Ride Attribution - completed
 - `Beta 0.8.6`: Shift Time Edit Synchronization - completed
-- `Beta 0.8.8`: Data Integrity Repair - completed
 - `Beta 0.8.7`: Mileage Accumulation Integrity - completed
+- `Beta 0.8.8`: Data Integrity Repair - completed
+- `Beta 0.8.9`: Data Health Foundation - completed
 - `Beta 0.9.0`: Deep Insights Intelligence Layer - planned
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
 ## Recent Beta Highlights
 
+- `0.8.9`: Admin Ops gained an internal Data Health panel and reusable data-contract summary layer for week, shift, mileage, ride, and snapshot integrity.
 - `0.8.8`: Historical mileage and work-block inconsistencies were repaired with private backups; redundant snapshots were removed and revision-scoped idempotency now prevents recurrence.
 - `0.8.7`: Mileage now remains an accumulated day total across shifts, with only each update delta attributed to the active shift.
 - `0.8.6`: Shift time edits now synchronize operational work-block boundaries while preserving real pause intervals.

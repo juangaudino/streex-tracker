@@ -2,6 +2,19 @@
 
 ## Beta Releases
 
+### Beta 0.8.9 — Data Health Foundation
+
+### Added
+
+- Admin Ops now includes an internal Data Health panel for currently loaded week and snapshot data.
+- Data Health summarizes canonical contracts for week shape, earnings, mileage, rides, shift boundaries, and earnings snapshots.
+- A reusable Data Health summary layer and tests were added for future QA certification and Deep Insights safety work.
+
+### Data Integrity
+
+- Week hydration and save paths now emit privacy-safe semantic warnings when stored data contradicts canonical rules.
+- This release does not alter earnings, mileage, rides, shifts, auth, Supabase schema, or stored production records.
+
 ### Beta 0.8.8 — Data Integrity Repair
 
 ### Fixed

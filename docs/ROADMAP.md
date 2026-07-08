@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after mileage accumulation integrity:
+Current baseline after data-health foundation:
 
 ```text
-Beta 0.8.8 - Data Integrity Repair
+Beta 0.8.9 - Data Health Foundation
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -288,15 +288,6 @@ Boundaries:
 - No SQL migration is required; the existing weekly JSON remains compatible.
 - Earnings, rides, mileage, auth, Supabase schema, and backend behavior remain unchanged.
 
-### Beta 0.8.8 - Data Integrity Repair
-
-- Repair historical shift-mile attribution without changing accumulated day mileage.
-- Synchronize stale work blocks with edited shift boundaries while preserving pauses.
-- Back up and remove redundant earnings snapshots.
-- Prevent duplicate snapshot writes with revision-scoped idempotency.
-
-Status: completed and verified in production.
-
 ### Beta 0.8.7 - Mileage Accumulation Integrity
 
 Status: completed.
@@ -313,6 +304,31 @@ Boundaries:
 
 - Existing weekly JSON remains compatible and requires no SQL migration.
 - Earnings, rides, hours, auth, Supabase schema, and backend behavior remain unchanged.
+
+### Beta 0.8.8 - Data Integrity Repair
+
+- Repair historical shift-mile attribution without changing accumulated day mileage.
+- Synchronize stale work blocks with edited shift boundaries while preserving pauses.
+- Back up and remove redundant earnings snapshots.
+- Prevent duplicate snapshot writes with revision-scoped idempotency.
+
+Status: completed and verified in production.
+
+### Beta 0.8.9 - Data Health Foundation
+
+Status: completed.
+
+Scope:
+
+- Add an internal Admin Ops Data Health panel for currently loaded week and snapshot data.
+- Summarize canonical contracts for week shape, earnings, mileage, ride attribution, shift boundaries, and snapshot integrity.
+- Emit privacy-safe semantic warnings during week hydration and save paths when data contradicts canonical rules.
+- Add a reusable Data Health summary layer and automated tests for future QA certification and Deep Insights work.
+
+Boundaries:
+
+- This is an internal trust layer, not a user-facing analytics feature.
+- No earnings, mileage, rides, shift times, auth, Supabase schema, Edge Function, or production data was changed.
 
 ### Beta 0.9.0 - Deep Insights Intelligence Layer
 

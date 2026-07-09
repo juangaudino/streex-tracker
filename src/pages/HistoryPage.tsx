@@ -12,10 +12,10 @@ import {
   formatCurrency,
 } from "@/lib/store";
 import type { StoreContext } from "./types";
-import type { DayEntry, ShiftSession, WeekRecord } from "@/lib/types";
+import type { DayEntry, EarningsSnapshot, ShiftSession, WeekRecord } from "@/lib/types";
 import { Copy, Eye, Pencil, Plus, Trash2, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { createHistoricalShift, getShiftMiles, shiftDurationHours, updateShiftBoundaryTime } from "@/lib/shiftIntelligence";
+import { createHistoricalShift, getShiftMiles, resolveShiftRate, shiftDurationHours, updateShiftBoundaryTime } from "@/lib/shiftIntelligence";
 import { replaceShiftMileage } from "@/lib/mileageAttribution";
 import { replaceShiftTotalRideCount } from "@/lib/rideAttribution";
 import { isRewardApp } from "@/lib/rewardIncome";
@@ -43,7 +43,7 @@ function formatShiftTime(value?: string): string {
 }
 
 export default function HistoryPage() {
-  const { weeks, settings, deleteWeek, addWeek, updateWeek } =
+  const { weeks, settings, earningsSnapshots, deleteWeek, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -371,6 +371,7 @@ export default function HistoryPage() {
                                 key={shift.id}
                                 day={day}
                                 shift={shift}
+                                earningsSnapshots={earningsSnapshots}
                                 currencySymbol={sym}
                                 expanded={expandedShiftIds.has(shift.id)}
                                 onToggle={() => toggleShiftExpanded(shift.id)}
@@ -399,6 +400,7 @@ export default function HistoryPage() {
 function HistoricalShiftRow({
   day,
   shift,
+  earningsSnapshots,
   currencySymbol,
   expanded,
   onToggle,
@@ -410,6 +412,7 @@ function HistoricalShiftRow({
 }: {
   day: DayEntry;
   shift: ShiftSession;
+  earningsSnapshots: EarningsSnapshot[];
   currencySymbol: string;
   expanded: boolean;
   onToggle: () => void;
@@ -420,7 +423,7 @@ function HistoricalShiftRow({
   onDelete: () => void;
 }) {
   const hours = shiftDurationHours(shift);
-  const rate = hours > 0 && shift.earnings ? shift.earnings / hours : null;
+  const rate = resolveShiftRate(day, shift, earningsSnapshots).rate;
 
   return (
     <div className="rounded-lg border border-border bg-background/60 px-3 py-2">

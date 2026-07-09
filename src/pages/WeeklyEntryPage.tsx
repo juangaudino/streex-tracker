@@ -16,7 +16,7 @@ import {
 } from "@/lib/store";
 import { DAY_NAMES, type BonusEntry, type DayEntry, type ShiftSession, type WeekRecord } from "@/lib/types";
 import type { StoreContext } from "./types";
-import { CalendarPlus, Save, Lock, Trash2, AlertTriangle, CheckCircle2, History, ChevronDown, ChevronRight, StickyNote } from "lucide-react";
+import { CalendarPlus, Save, Lock, Trash2, AlertTriangle, CheckCircle2, History, ChevronDown, ChevronRight, Plus, StickyNote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -30,7 +30,7 @@ import { CalendarIcon } from "lucide-react";
 import MobileWeekOverview from "@/components/MobileWeekOverview";
 import MobileDayDetail from "@/components/MobileDayDetail";
 import WeekClosingDialog from "@/components/WeekClosingDialog";
-import { activeShiftDurationHours, createShift, endActiveShift, getDayShiftHours, getShiftMiles, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours, updateShiftBoundaryTime } from "@/lib/shiftIntelligence";
+import { activeShiftDurationHours, createHistoricalShift, createShift, endActiveShift, getDayShiftHours, getShiftMiles, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours, updateShiftBoundaryTime } from "@/lib/shiftIntelligence";
 import { isRewardApp, operationalWeekTotal } from "@/lib/rewardIncome";
 import { formatRideAttribution, replaceShiftTotalRideCount } from "@/lib/rideAttribution";
 import { replaceShiftMileage } from "@/lib/mileageAttribution";
@@ -362,6 +362,19 @@ export default function WeeklyEntryPage() {
     persistShiftState({ ...editWeek, entries });
   }
 
+  function handleAddHistoricalShift(dayIdx: number) {
+    if (!editWeek) return;
+    const day = editWeek.entries[dayIdx];
+    if (!day) return;
+    const shift = createHistoricalShift(day.date);
+    const entries = editWeek.entries.map((d, i) => {
+      if (i !== dayIdx) return d;
+      return { ...d, logged: true, shifts: [...(d.shifts ?? []), shift] };
+    });
+    setExpandedShiftIds((current) => new Set(current).add(shift.id));
+    persistShiftState({ ...editWeek, entries });
+  }
+
   function handleEndShift(dayIdx: number) {
     if (!editWeek) return;
     const entries = editWeek.entries.map((d, i) => i === dayIdx ? endActiveShift(d) : d);
@@ -565,6 +578,7 @@ export default function WeeklyEntryPage() {
         onMileageUpdate={handleMileageUpdate}
         onNoteUpdate={handleNoteUpdate}
         onStartShift={handleStartShift}
+        onAddHistoricalShift={handleAddHistoricalShift}
         onEndShift={handleEndShift}
         onPauseResumeShift={handlePauseResumeShift}
         onShiftMilesUpdate={handleShiftMilesUpdate}
@@ -937,6 +951,9 @@ export default function WeeklyEntryPage() {
                 <th className="text-right px-4 py-3 font-bold text-foreground min-w-[100px]">
                   Total
                 </th>
+                <th className="px-3 py-3 font-semibold text-muted-foreground text-center min-w-[130px]">
+                  Shifts
+                </th>
                 <th className="px-3 py-3 font-semibold text-muted-foreground text-left min-w-[200px]">
                   Note
                 </th>
@@ -999,6 +1016,22 @@ export default function WeeklyEntryPage() {
                       {formatCurrency(dt, sym)}
                     </td>
                     <td className="px-2 py-2">
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="min-w-5 text-center text-xs font-bold text-muted-foreground">{day.shifts?.length ?? 0}</span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-2 text-xs"
+                          onClick={() => handleAddHistoricalShift(dayIdx)}
+                          aria-label={`Add shift for ${day.dayName}`}
+                        >
+                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          Add
+                        </Button>
+                      </div>
+                    </td>
+                    <td className="px-2 py-2">
                       <Textarea
                         value={day.notes ?? ""}
                         maxLength={180}
@@ -1026,6 +1059,7 @@ export default function WeeklyEntryPage() {
                 <td className="px-4 py-3 text-right font-mono font-bold text-primary text-lg">
                   {formatCurrency(wt, sym)}
                 </td>
+                <td></td>
                 <td></td>
               </tr>
             </tfoot>

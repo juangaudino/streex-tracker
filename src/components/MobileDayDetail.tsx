@@ -22,6 +22,7 @@ interface MobileDayDetailProps {
   onMileageUpdate?: (dayIdx: number, val: number) => void;
   onNoteUpdate?: (dayIdx: number, value: string) => void;
   onStartShift?: (dayIdx: number) => void;
+  onAddHistoricalShift?: (dayIdx: number) => void;
   onEndShift?: (dayIdx: number) => void;
   onPauseResumeShift?: (dayIdx: number) => void;
   onShiftMilesUpdate?: (dayIdx: number, shiftId: string, val: string) => void;
@@ -56,6 +57,7 @@ export default function MobileDayDetail({
   onMileageUpdate,
   onNoteUpdate,
   onStartShift,
+  onAddHistoricalShift,
   onEndShift,
   onPauseResumeShift,
   onShiftMilesUpdate,
@@ -289,13 +291,21 @@ export default function MobileDayDetail({
                 {shiftHours.toFixed(1)}h logged today{rideCount > 0 ? ` · ${rideCount} rides` : ""}
               </p>
             </div>
-            <Button
-              size="sm"
-              variant={activeShift ? "secondary" : "default"}
-              onClick={() => activeShift ? onPauseResumeShift?.(dayIdx) : onStartShift(dayIdx)}
-            >
-              {activeShift ? activeShiftPaused ? "Resume" : "Pause" : "Start"}
-            </Button>
+            <div className="flex shrink-0 gap-2">
+              {onAddHistoricalShift && (
+                <Button size="sm" variant="outline" onClick={() => onAddHistoricalShift(dayIdx)}>
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  Add
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant={activeShift ? "secondary" : "default"}
+                onClick={() => activeShift ? onPauseResumeShift?.(dayIdx) : onStartShift(dayIdx)}
+              >
+                {activeShift ? activeShiftPaused ? "Resume" : "Pause" : "Start"}
+              </Button>
+            </div>
           </div>
           {activeShift && (
             <Button size="sm" variant="outline" className="w-full" onClick={() => onEndShift(dayIdx)}>

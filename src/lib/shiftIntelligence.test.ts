@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPatternIntelligence, classifyWeeklyGoalOutcome, getDayRideCount, getDayMiles, getWeekMiles, getWeekRideCount, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours, updateShiftBoundaryTime } from "./shiftIntelligence";
+import { buildPatternIntelligence, classifyWeeklyGoalOutcome, createHistoricalShift, getDayRideCount, getDayMiles, getWeekMiles, getWeekRideCount, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours, updateShiftBoundaryTime } from "./shiftIntelligence";
 import type { DayEntry, EarningsSnapshot, WeekRecord } from "./types";
 import { DAY_NAMES } from "./types";
 
@@ -28,6 +28,19 @@ function week(entries: DayEntry[]): WeekRecord {
 }
 
 describe("shift intelligence", () => {
+  it("creates closed historical shifts with editable boundaries", () => {
+    const shift = createHistoricalShift("2026-05-04");
+
+    expect(shift.startTime).toBe("2026-05-04T09:00:00");
+    expect(shift.endTime).toBe("2026-05-04T17:00:00");
+    expect(shiftDurationHours(shift)).toBe(8);
+    expect(shift.blocks).toHaveLength(1);
+    expect(shift.blocks?.[0]).toMatchObject({
+      startTime: "2026-05-04T09:00:00",
+      endTime: "2026-05-04T17:00:00",
+    });
+  });
+
   it("calculates shift duration and mileage from manual shifts", () => {
     const shift = {
       id: "s1",

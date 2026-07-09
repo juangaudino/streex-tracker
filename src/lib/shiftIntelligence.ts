@@ -210,6 +210,19 @@ export function createShift(date: string, now = new Date()): ShiftSession {
   };
 }
 
+export function createHistoricalShift(date: string): ShiftSession {
+  const datePrefix = date || new Date().toISOString().slice(0, 10);
+  const id = `shift_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const startTime = `${datePrefix}T09:00:00`;
+  const endTime = `${datePrefix}T17:00:00`;
+  return {
+    id,
+    startTime,
+    endTime,
+    blocks: [{ ...createWorkBlock(id, startTime), endTime }],
+  };
+}
+
 export function hasActiveShift(day: DayEntry): boolean {
   return Boolean(day.shifts?.some((shift) => !shift.endTime));
 }

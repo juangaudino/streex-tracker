@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
+  appTotal,
+  dayTotal,
   weekTotal,
   bestDay,
   bestApp,
@@ -15,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { createHistoricalShift, getShiftMiles, shiftDurationHours, updateShiftBoundaryTime } from "@/lib/shiftIntelligence";
 import { replaceShiftMileage } from "@/lib/mileageAttribution";
 import { replaceShiftTotalRideCount } from "@/lib/rideAttribution";
+import { isRewardApp } from "@/lib/rewardIncome";
 
 function timeInputValue(value?: string): string {
   if (!value) return "";
@@ -44,6 +48,7 @@ export default function HistoryPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const sym = settings.currencySymbol;
+  const standardApps = settings.activeApps.filter((app) => !isRewardApp(app));
   const [editingWeekId, setEditingWeekId] = useState<string | null>(null);
   const [expandedShiftIds, setExpandedShiftIds] = useState<Set<string>>(() => new Set());
 
@@ -65,6 +70,19 @@ export default function HistoryPage() {
     if (!day) return;
     const entries = week.entries.map((entry, index) => index === dayIdx ? updater(entry) : entry);
     persistWeek({ ...week, entries });
+  }
+
+  function handleDayAppUpdate(week: WeekRecord, dayIdx: number, app: string, value: string) {
+    const parsed = Number.parseFloat(value) || 0;
+    updateHistoricalDay(week, dayIdx, (day) => ({
+      ...day,
+      logged: parsed > 0 || Object.entries(day.apps).some(([name, amount]) => name !== app && Number(amount) > 0) || Boolean(day.shifts?.length),
+      apps: { ...day.apps, [app]: parsed },
+    }));
+  }
+
+  function handleNoteUpdate(week: WeekRecord, dayIdx: number, value: string) {
+    updateHistoricalDay(week, dayIdx, (day) => ({ ...day, notes: value }));
   }
 
   function handleAddShift(week: WeekRecord, dayIdx: number) {
@@ -241,9 +259,92 @@ export default function HistoryPage() {
               {editingWeekId === w.id && w.status === "closed" && (
                 <div className="mt-3 rounded-xl border border-border bg-background/45 p-3">
                   <div className="mb-3">
-                    <p className="text-sm font-bold">Historical shift editor</p>
+                    <p className="text-sm font-bold">Historical week editor</p>
                     <p className="text-xs text-muted-foreground">
-                      Add old shifts here, then edit start, end, earnings, miles, and rides from your notes.
+                      Edit earnings first, then add old shifts and assign their earnings, miles, and rides from your notes.
+                    </p>
+                  </div>
+
+                  <div className="mb-4 overflow-x-auto rounded-xl border border-border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-secondary/50">
+                          <th className="sticky left-0 z-10 min-w-[100px] bg-secondary/50 px-4 py-3 text-left font-semibold text-muted-foreground">
+                            Day
+                          </th>
+                          {standardApps.map((app) => (
+                            <th key={app} className="min-w-[90px] whitespace-nowrap px-3 py-3 text-right font-semibold text-muted-foreground">
+                              {app}
+                            </th>
+                          ))}
+                          <th className="min-w-[100px] px-4 py-3 text-right font-bold text-foreground">
+                            Total
+                          </th>
+                          <th className="min-w-[200px] px-3 py-3 text-left font-semibold text-muted-foreground">
+                            Note
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {w.entries.map((day, dayIdx) => {
+                          const total = dayTotal(day);
+                          return (
+                            <tr key={day.date} className="border-t border-border bg-card/60">
+                              <td className="sticky left-0 z-10 bg-card px-4 py-3 font-medium">
+                                <div className="font-semibold">{day.dayName.slice(0, 3)}</div>
+                                <div className="font-mono text-[10px] text-muted-foreground">{day.date}</div>
+                              </td>
+                              {standardApps.map((app) => (
+                                <td key={app} className="px-2 py-2">
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    className="h-9 w-full border-border/50 bg-transparent text-right font-mono text-sm focus:border-primary"
+                                    value={day.apps[app] || ""}
+                                    placeholder="0.00"
+                                    onChange={(event) => handleDayAppUpdate(w, dayIdx, app, event.target.value)}
+                                  />
+                                </td>
+                              ))}
+                              <td className="px-4 py-3 text-right font-mono font-bold text-foreground">
+                                {formatCurrency(total, sym)}
+                              </td>
+                              <td className="px-2 py-2">
+                                <Textarea
+                                  value={day.notes ?? ""}
+                                  maxLength={180}
+                                  rows={1}
+                                  placeholder="Optional context"
+                                  className="min-h-9 resize-none text-xs"
+                                  onChange={(event) => handleNoteUpdate(w, dayIdx, event.target.value)}
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t-2 border-border bg-secondary/30">
+                          <td className="sticky left-0 z-10 bg-secondary/30 px-4 py-3 font-bold">Total</td>
+                          {standardApps.map((app) => (
+                            <td key={app} className="px-3 py-3 text-right font-mono font-semibold">
+                              {formatCurrency(appTotal(w, app), sym)}
+                            </td>
+                          ))}
+                          <td className="px-4 py-3 text-right font-mono text-lg font-bold text-primary">
+                            {formatCurrency(weekTotal(w), sym)}
+                          </td>
+                          <td />
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  <div className="mb-3">
+                    <p className="text-sm font-bold">Historical shifts</p>
+                    <p className="text-xs text-muted-foreground">
+                      Add old shift blocks here. For multi-shift days, assign earnings per shift so Shift Intelligence can resolve them.
                     </p>
                   </div>
                   <div className="space-y-3">

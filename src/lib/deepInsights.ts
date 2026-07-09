@@ -87,6 +87,15 @@ export interface DeepInsightsShiftPattern {
   milesPerHour: number | null;
 }
 
+export interface DeepInsightsUnresolvedShift {
+  id: string;
+  date: string;
+  dayName: string;
+  label: string;
+  hours: number;
+  reason: string;
+}
+
 export interface DeepInsightsShiftIntelligence {
   completedShifts: number;
   resolvedShifts: number;
@@ -97,6 +106,7 @@ export interface DeepInsightsShiftIntelligence {
   patterns: DeepInsightsShiftPattern[];
   strongestPattern: DeepInsightsShiftPattern | null;
   weakestPattern: DeepInsightsShiftPattern | null;
+  unresolvedShifts: DeepInsightsUnresolvedShift[];
   signals: string[];
 }
 
@@ -228,12 +238,29 @@ const SHIFT_PATTERNS: Array<Pick<DeepInsightsShiftPattern, "id" | "label" | "des
   { id: "long", label: "Long", description: "6 hours or more", matches: (hours) => hours >= 6 },
 ];
 
+function unresolvedShiftReason(shift: DeepInsightsShift): string {
+  if (shift.source === "unavailable") return "Multi-shift day without assigned shift earnings";
+  if (shift.earnings <= 0) return "No positive earnings assigned to this shift";
+  return "Shift earnings could not be resolved";
+}
+
 function buildShiftIntelligence(shifts: DeepInsightsShift[], completedShifts: DeepInsightsShift[], currencySymbol: string): DeepInsightsShiftIntelligence {
   const totalCompletedHours = money(completedShifts.reduce((sum, shift) => sum + shift.hours, 0));
   const rideBacked = completedShifts.filter((shift) => shift.rides > 0);
   const mileBacked = completedShifts.filter((shift) => shift.miles > 0);
   const rideHours = money(rideBacked.reduce((sum, shift) => sum + shift.hours, 0));
   const mileHours = money(mileBacked.reduce((sum, shift) => sum + shift.hours, 0));
+  const resolvedIds = new Set(shifts.map((shift) => shift.id));
+  const unresolvedShifts = completedShifts
+    .filter((shift) => !resolvedIds.has(shift.id))
+    .map((shift) => ({
+      id: shift.id,
+      date: shift.date,
+      dayName: shift.dayName,
+      label: shift.label,
+      hours: shift.hours,
+      reason: unresolvedShiftReason(shift),
+    } satisfies DeepInsightsUnresolvedShift));
 
   const patterns = SHIFT_PATTERNS.map((definition) => {
     const matching = shifts.filter((shift) => definition.matches(shift.hours));
@@ -283,6 +310,7 @@ function buildShiftIntelligence(shifts: DeepInsightsShift[], completedShifts: De
     patterns,
     strongestPattern,
     weakestPattern,
+    unresolvedShifts,
     signals,
   };
 }

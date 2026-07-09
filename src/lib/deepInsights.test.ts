@@ -153,6 +153,16 @@ describe("deep insights", () => {
     });
     expect(result.shiftIntelligence.strongestPattern).toMatchObject({ id: "short", shifts: 2, earningsPerHour: 35 });
     expect(result.shiftIntelligence.patterns.find((pattern) => pattern.id === "long")).toMatchObject({ shifts: 0, earningsPerHour: null });
+    expect(result.shiftIntelligence.unresolvedShifts).toEqual([
+      {
+        id: "long-1",
+        date: "2026-06-01",
+        dayName: "Monday",
+        label: "2:00 PM → 8:00 PM",
+        hours: 6,
+        reason: "Multi-shift day without assigned shift earnings",
+      },
+    ]);
     expect(result.shiftIntelligence.signals.some((signal) => signal.includes("2 of 3"))).toBe(true);
   });
 });

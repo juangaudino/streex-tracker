@@ -169,6 +169,12 @@ function formatHours(value: number): string {
   return `${value.toFixed(value >= 10 ? 1 : 2)}h`;
 }
 
+function formatShortDate(value: string) {
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 function rankContext(rank: number, total: number): string {
   if (total < 5) return `#${rank} of ${total}`;
   return `Top ${Math.max(1, Math.ceil((rank / total) * 100))}%`;
@@ -864,6 +870,46 @@ export default function DeepInsightsPage() {
               {data.shiftIntelligence.resolvedShifts > 0 && data.shiftIntelligence.strongestPattern === null && (
                 <div className={cn("rounded-xl border px-4 py-3 text-sm leading-relaxed", ui.insight)}>
                   Streex needs at least two resolved shifts in a duration group before naming a strongest pattern.
+                </div>
+              )}
+              {data.shiftIntelligence.completedShifts > 0 && (
+                <div className={cn("rounded-xl border p-4", ui.table)}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className={cn("text-xs font-black uppercase tracking-[0.16em]", ui.label)}>Unresolved shifts</p>
+                      <p className={cn("mt-1 text-xs leading-relaxed", ui.quiet)}>
+                        These shifts are excluded from earnings rankings until their earnings can be assigned without guessing.
+                      </p>
+                    </div>
+                    <span className={cn(
+                      "shrink-0 rounded-full px-2.5 py-1 text-xs font-black",
+                      data.shiftIntelligence.unresolvedShifts.length
+                        ? "bg-amber-400/15 text-amber-500"
+                        : "bg-emerald-400/15 text-emerald-500",
+                    )}>
+                      {data.shiftIntelligence.unresolvedShifts.length}
+                    </span>
+                  </div>
+
+                  {data.shiftIntelligence.unresolvedShifts.length ? (
+                    <div className={cn("mt-3 divide-y rounded-xl border", ui.rowDivider)}>
+                      {data.shiftIntelligence.unresolvedShifts.map((shift) => (
+                        <div key={shift.id} className="grid gap-2 px-3 py-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                          <div className="min-w-0">
+                            <p className={cn("truncate text-sm font-bold", ui.text)}>
+                              {shift.dayName} · {formatShortDate(shift.date)} · {shift.label}
+                            </p>
+                            <p className={cn("mt-0.5 text-xs leading-relaxed", ui.quiet)}>{shift.reason}</p>
+                          </div>
+                          <p className={cn("font-mono text-xs font-bold", ui.muted)}>{formatHours(shift.hours)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={cn("mt-3 rounded-xl border px-3 py-3 text-sm", ui.insight)}>
+                      All completed shifts in this view have resolved earnings.
+                    </div>
+                  )}
                 </div>
               )}
             </div>

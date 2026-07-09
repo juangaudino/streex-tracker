@@ -120,4 +120,39 @@ describe("deep insights", () => {
     expect(result.bestShifts).toHaveLength(1);
     expect(result.bestShifts[0]).toMatchObject({ id: "shift-1", earnings: 100, rate: 25, source: "snapshot" });
   });
+
+  it("builds shift intelligence from completed shifts without inventing unresolved earnings", () => {
+    const shifts = [
+      { id: "short-1", startTime: "2026-06-01T08:00:00", endTime: "2026-06-01T10:00:00", miles: 40, rideCount: 4 },
+      { id: "short-2", startTime: "2026-06-01T11:00:00", endTime: "2026-06-01T13:00:00", miles: 50, rideCount: 6 },
+      { id: "long-1", startTime: "2026-06-01T14:00:00", endTime: "2026-06-01T20:00:00", miles: 120, rideCount: 12 },
+    ];
+    const intelligenceWeeks = [week("intelligence", "2026-06-01", "2026-06-07", [
+      day(0, "2026-06-01", { Uber: 260 }, { shifts }),
+      ...DAY_NAMES.slice(1).map((_, index) => day(index + 1, `2026-06-0${index + 2}`, {})),
+    ])];
+    const snapshots = [
+      snapshot("short-snap-1", "intelligence", "2026-06-01", "short-1", 60),
+      snapshot("short-snap-2", "intelligence", "2026-06-01", "short-2", 80),
+    ];
+
+    const result = buildDeepInsightsData({
+      weeks: intelligenceWeeks,
+      earningsSnapshots: snapshots,
+      filters: { timePreset: "all", app: "all", weekday: "all" },
+      now: new Date("2026-06-15T12:00:00"),
+    });
+
+    expect(result.shiftIntelligence).toMatchObject({
+      completedShifts: 3,
+      resolvedShifts: 2,
+      earningsCoverage: 66.67,
+      averageDuration: 3.33,
+      ridesPerHour: 2.2,
+      milesPerHour: 21,
+    });
+    expect(result.shiftIntelligence.strongestPattern).toMatchObject({ id: "short", shifts: 2, earningsPerHour: 35 });
+    expect(result.shiftIntelligence.patterns.find((pattern) => pattern.id === "long")).toMatchObject({ shifts: 0, earningsPerHour: null });
+    expect(result.shiftIntelligence.signals.some((signal) => signal.includes("2 of 3"))).toBe(true);
+  });
 });

@@ -2,6 +2,20 @@
 
 ## Beta Releases
 
+### Beta 0.9.0 — Deep Insights Intelligence Layer
+
+### Added
+
+- Deep Insights now includes Shift Intelligence with average duration, rides/hour, miles/hour, and explicit shift-earnings coverage.
+- Resolved shifts are grouped into short, standard, and long duration patterns for deterministic efficiency comparison.
+- Streex requires at least two resolved shifts in a duration group before naming a strongest pattern.
+
+### Data Integrity
+
+- Unresolved shift earnings remain outside earnings rankings and duration-pattern efficiency.
+- Rides/hour and miles/hour use only completed shifts that actually contain the corresponding data.
+- This analytics-only release does not alter stored earnings, shifts, rides, mileage, Supabase schema, or production records.
+
 ### Beta 0.8.9 — Data Health Foundation
 
 ### Added

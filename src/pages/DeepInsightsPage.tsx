@@ -29,6 +29,7 @@ import {
   MapPinned,
   RefreshCw,
   Table2,
+  TimerReset,
   Trophy,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -307,7 +308,7 @@ function ActivityStrip({ values, label }: { values: boolean[]; label: string }) 
   );
 }
 
-function ContributionRail({ value, label }: { value: number; label: string }) {
+function ContributionRail({ value, label, caption = "direct earnings" }: { value: number; label: string; caption?: string }) {
   const percent = Math.max(0, Math.min(100, value));
   return (
     <div className="space-y-1.5" role="img" aria-label={label}>
@@ -317,7 +318,7 @@ function ContributionRail({ value, label }: { value: number; label: string }) {
       >
         <div className="h-full rounded-full bg-emerald-400" style={{ width: `${percent}%` }} />
       </div>
-      <p className="text-[9px] font-bold uppercase tracking-[0.12em] opacity-60">{percent.toFixed(0)}% direct earnings</p>
+      <p className="text-[9px] font-bold uppercase tracking-[0.12em] opacity-60">{percent.toFixed(0)}% {caption}</p>
     </div>
   );
 }
@@ -494,6 +495,7 @@ export default function DeepInsightsPage() {
   const topDayBenchmark = data.topDays[0]?.earnings ?? 0;
   const topWeekBenchmark = data.bestWeeks[0]?.earnings ?? 0;
   const topShiftBenchmark = data.bestShifts[0]?.rate ?? 0;
+  const shiftPatternData = data.shiftIntelligence.patterns.filter((pattern) => pattern.shifts > 0);
   const filteredNote = data.appFilterActive
     ? "App filter is active. Efficiency metrics hide because Streex does not store app-specific hours yet."
     : null;
@@ -792,6 +794,81 @@ export default function DeepInsightsPage() {
             )}
           </Panel>
         </section>
+
+        <Panel
+          ui={ui}
+          title="Shift Intelligence"
+          subtitle="Completed shifts only. Earnings patterns require resolved shift earnings; rides and miles use only shifts that recorded those values."
+          icon={TimerReset}
+        >
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <KpiCard
+              ui={ui}
+              label="Avg duration"
+              value={data.shiftIntelligence.averageDuration !== null ? formatHours(data.shiftIntelligence.averageDuration) : "—"}
+              detail={`${data.shiftIntelligence.completedShifts} completed shifts`}
+              tone="blue"
+            />
+            <KpiCard
+              ui={ui}
+              label="Rides / hour"
+              value={data.shiftIntelligence.ridesPerHour !== null ? data.shiftIntelligence.ridesPerHour.toFixed(2) : "—"}
+              detail="Ride-backed shifts only"
+            />
+            <KpiCard
+              ui={ui}
+              label="Miles / hour"
+              value={data.shiftIntelligence.milesPerHour !== null ? data.shiftIntelligence.milesPerHour.toFixed(1) : "—"}
+              detail="Mileage-backed shifts only"
+            />
+            <KpiCard
+              ui={ui}
+              label="Earnings coverage"
+              value={data.shiftIntelligence.completedShifts ? `${data.shiftIntelligence.earningsCoverage.toFixed(0)}%` : "—"}
+              detail={`${data.shiftIntelligence.resolvedShifts} of ${data.shiftIntelligence.completedShifts} shifts resolved`}
+              tone={data.shiftIntelligence.earningsCoverage >= 80 ? "green" : "yellow"}
+              visual={data.shiftIntelligence.completedShifts ? <ContributionRail value={data.shiftIntelligence.earningsCoverage} label={`${data.shiftIntelligence.earningsCoverage.toFixed(0)} percent shift earnings coverage`} caption="resolved" /> : undefined}
+            />
+          </div>
+
+          <div className="mt-5 grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+            {shiftPatternData.length ? (
+              <div className="h-[290px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={shiftPatternData}>
+                    <CartesianGrid stroke={ui.gridStroke} vertical={false} />
+                    <XAxis dataKey="label" stroke={ui.axisStroke} tickLine={false} axisLine={false} />
+                    <YAxis stroke={ui.axisStroke} tickLine={false} axisLine={false} tickFormatter={(value) => `$${formatCompact(Number(value))}`} />
+                    <ChartTooltip ui={ui} valuePrefix={sym} valueSuffix="/hr" />
+                    <Bar dataKey="earningsPerHour" radius={[8, 8, 2, 2]} fill="#E6CE20" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <EmptyState ui={ui}>Shift patterns will appear when completed shifts have both valid duration and resolved earnings.</EmptyState>
+            )}
+            <div className="space-y-3">
+              <DataRows
+                ui={ui}
+                empty="No resolved shift patterns in this period."
+                rows={shiftPatternData.map((pattern) => ({
+                  left: pattern.label,
+                  sub: `${pattern.description} · ${pattern.shifts} shift${pattern.shifts === 1 ? "" : "s"}`,
+                  right: pattern.earningsPerHour !== null ? `${formatCurrency(pattern.earningsPerHour, sym)}/hr` : "Unresolved",
+                  accent: data.shiftIntelligence.strongestPattern?.id === pattern.id ? "text-[#E6CE20]" : undefined,
+                }))}
+              />
+              {data.shiftIntelligence.signals.map((signal) => (
+                <div key={signal} className={cn("rounded-xl border px-4 py-3 text-sm leading-relaxed", ui.insight)}>{signal}</div>
+              ))}
+              {data.shiftIntelligence.resolvedShifts > 0 && data.shiftIntelligence.strongestPattern === null && (
+                <div className={cn("rounded-xl border px-4 py-3 text-sm leading-relaxed", ui.insight)}>
+                  Streex needs at least two resolved shifts in a duration group before naming a strongest pattern.
+                </div>
+              )}
+            </div>
+          </div>
+        </Panel>
 
         <section className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
           <Panel ui={ui} title="Data-Supported Signals" subtitle="Short conclusions only when the filtered data supports them." icon={CircleDollarSign}>

@@ -1,6 +1,6 @@
 # Streex Roadmap
 
-Last updated: 2026-07-01
+Last updated: 2026-07-08
 
 This is the living product roadmap for Streex Gig Earnings.
 
@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after data-health foundation:
+Current baseline after the first Deep Insights intelligence release:
 
 ```text
-Beta 0.8.9 - Data Health Foundation
+Beta 0.9.0 - Deep Insights Intelligence Layer
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -332,7 +332,7 @@ Boundaries:
 
 ### Beta 0.9.0 - Deep Insights Intelligence Layer
 
-Status: planned, number may shift.
+Status: completed.
 
 Scope:
 
@@ -341,6 +341,18 @@ Scope:
 - Add better shift analysis, including duration vs earnings, rides/hour, miles/hour, and shift density when data exists.
 - Add advanced best/worst pattern detection.
 - Connect selected Deep Insights helpers back into Ask My Data when the AI layer is ready.
+
+Delivered in this release:
+
+- Shift Intelligence coverage, average duration, rides/hour, and miles/hour.
+- Short, standard, and long shift-duration groups using resolved shift earnings only.
+- A minimum two-shift sample before naming a strongest duration pattern.
+- Explicit exclusions for unresolved earnings and missing rides or mileage.
+
+Deferred within the broader intelligence theme:
+
+- Additional best/worst operational pattern families beyond duration groups.
+- Ask My Data integration until its independent provider path is approved and ready.
 
 Intent:
 

@@ -1,6 +1,6 @@
 # Streex New Chat Handoff
 
-Last audited: 2026-06-30
+Last audited: 2026-07-08
 
 This is the operational handoff for a new Codex, Claude, ChatGPT, or Lovable conversation. It describes the current repository state and the product decisions that must survive chat resets. Read it before proposing or implementing work.
 
@@ -16,11 +16,11 @@ Also read:
 ## 1. Current Snapshot
 
 - Product: Streex Gig Earnings App.
-- Current release: `Beta 0.8.9 - Data Health Foundation`.
+- Current release: `Beta 0.9.0 - Deep Insights Intelligence Layer`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.
-- Current audited commit: `e464f74 Add Career drill-down expansion`.
+- The 0.9.0 implementation started from synchronized baseline `04994a9 Beta 0.8.9 - Data Health Foundation`; always verify the live HEAD after publication.
 - Frontend hosting: Vercel.
 - DNS and domain: Cloudflare, `getstreex.com`.
 - Active backend: owner-controlled Supabase project `ywbrovislvqkfzsyqpiv`.
@@ -282,9 +282,9 @@ Design rules:
 
 ### Planned Product Work
 
-- Next planned release: `Beta 0.9.0 - Deep Insights Intelligence Layer`.
-- Immediate trust foundation completed: `Beta 0.8.9 - Data Health Foundation` added internal Admin Data Health checks before expanding Deep Insights intelligence.
-- Candidate scope: deeper operational patterns, efficiency rankings, duration-vs-earnings, rides/hour, miles/hour, shift density, and richer best/worst detection where data supports it.
+- Latest release: `Beta 0.9.0 - Deep Insights Intelligence Layer`.
+- Shift Intelligence now shows average duration, rides/hour, miles/hour, earnings coverage, and minimum-sample duration patterns.
+- The next release should be selected after desktop testing of Data Health and Shift Intelligence; broader pattern families remain available for a focused follow-up.
 - The version number can move if a patch or urgent fix ships first.
 
 ### Ask My Data
@@ -469,7 +469,7 @@ Production variables live in Vercel. Do not print their values in chat or docs.
 
 ### Versioning
 
-- Current baseline: `0.8.9`.
+- Current baseline: `0.9.0`.
 - Patch: focused fix/refinement/polish.
 - Minor: meaningful new surface/system.
 - `1.0.0`: first stable public release only.

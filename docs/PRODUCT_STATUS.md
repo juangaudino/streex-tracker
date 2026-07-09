@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-06-30
+Last updated: 2026-07-08
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -21,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.8.9 - Data Health Foundation
+Beta 0.9.0 - Deep Insights Intelligence Layer
 ```
 
 Source of truth:
@@ -311,10 +311,7 @@ Important metric rules:
 Latest Deep Insights work:
 
 - `Beta 0.8.1`: selected KPI sparklines, weekly distributions, activity marks, contribution context, and ranking/percentile indicators.
-
-Next planned Deep Insights work:
-
-- `Beta 0.9.0`: deeper intelligence layer for operational patterns, efficiency rankings, shift density, and richer best/worst detection.
+- `Beta 0.9.0`: Shift Intelligence with honest coverage, average duration, rides/hour, miles/hour, and duration-pattern efficiency.
 
 ### Ask My Data
 
@@ -402,12 +399,13 @@ Current planned sequence:
 - `Beta 0.8.7`: Mileage Accumulation Integrity - completed
 - `Beta 0.8.8`: Data Integrity Repair - completed
 - `Beta 0.8.9`: Data Health Foundation - completed
-- `Beta 0.9.0`: Deep Insights Intelligence Layer - planned
+- `Beta 0.9.0`: Deep Insights Intelligence Layer - completed
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
 ## Recent Beta Highlights
 
+- `0.9.0`: Deep Insights added Shift Intelligence with explicit coverage and minimum-sample guardrails for duration-pattern rankings.
 - `0.8.9`: Admin Ops gained an internal Data Health panel and reusable data-contract summary layer for week, shift, mileage, ride, and snapshot integrity.
 - `0.8.8`: Historical mileage and work-block inconsistencies were repaired with private backups; redundant snapshots were removed and revision-scoped idempotency now prevents recurrence.
 - `0.8.7`: Mileage now remains an accumulated day total across shifts, with only each update delta attributed to the active shift.

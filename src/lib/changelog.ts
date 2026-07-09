@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.8.9";
+export const CURRENT_VERSION = "0.9.0";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.0",
+    date: "2026-07",
+    title: "Deep Insights Intelligence Layer",
+    tags: ["new", "feature"],
+    items: [
+      "Deep Insights now includes Shift Intelligence with average duration, rides per hour, miles per hour, and visible shift-earnings coverage",
+      "Resolved shifts are grouped into short, standard, and long duration patterns for deterministic efficiency comparison",
+      "A duration pattern needs at least two resolved shifts before Streex names it the strongest pattern",
+      "Unresolved earnings, missing rides, and missing mileage remain excluded from metrics that cannot be supported honestly",
+      "This release is analytics-only and does not change saved earnings, shifts, rides, mileage, Supabase schema, or production records",
+    ],
+  },
   {
     version: "0.8.9",
     date: "2026-07",

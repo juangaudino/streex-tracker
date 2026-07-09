@@ -1,7 +1,6 @@
 import { appBonusTotal, operationalDayTotal } from "./rewardIncome";
 import { dayTotal, formatCurrency } from "./store";
 import {
-  activeShiftDurationHours,
   getDayMiles,
   getDayRideCount,
   getDayShiftHours,
@@ -75,6 +74,32 @@ export interface DeepInsightsAppBreakdown {
   share: number;
 }
 
+export interface DeepInsightsShiftPattern {
+  id: "short" | "standard" | "long";
+  label: string;
+  description: string;
+  shifts: number;
+  hours: number;
+  earnings: number;
+  averageEarnings: number;
+  earningsPerHour: number | null;
+  ridesPerHour: number | null;
+  milesPerHour: number | null;
+}
+
+export interface DeepInsightsShiftIntelligence {
+  completedShifts: number;
+  resolvedShifts: number;
+  earningsCoverage: number;
+  averageDuration: number | null;
+  ridesPerHour: number | null;
+  milesPerHour: number | null;
+  patterns: DeepInsightsShiftPattern[];
+  strongestPattern: DeepInsightsShiftPattern | null;
+  weakestPattern: DeepInsightsShiftPattern | null;
+  signals: string[];
+}
+
 export interface DeepInsightsData {
   appOptions: string[];
   weekdayOptions: string[];
@@ -101,6 +126,7 @@ export interface DeepInsightsData {
   lowDays: DeepInsightsDay[];
   bestWeeks: DeepInsightsWeek[];
   bestShifts: DeepInsightsShift[];
+  shiftIntelligence: DeepInsightsShiftIntelligence;
   insights: string[];
 }
 
@@ -194,6 +220,71 @@ function shiftLabel(shift: ShiftSession): string {
   const end = shift.endTime ? new Date(shift.endTime) : null;
   const fmt = (date: Date) => date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
   return `${fmt(start)} → ${end ? fmt(end) : "active"}`;
+}
+
+const SHIFT_PATTERNS: Array<Pick<DeepInsightsShiftPattern, "id" | "label" | "description"> & { matches: (hours: number) => boolean }> = [
+  { id: "short", label: "Short", description: "Under 3 hours", matches: (hours) => hours < 3 },
+  { id: "standard", label: "Standard", description: "3 to under 6 hours", matches: (hours) => hours >= 3 && hours < 6 },
+  { id: "long", label: "Long", description: "6 hours or more", matches: (hours) => hours >= 6 },
+];
+
+function buildShiftIntelligence(shifts: DeepInsightsShift[], completedShifts: DeepInsightsShift[], currencySymbol: string): DeepInsightsShiftIntelligence {
+  const totalCompletedHours = money(completedShifts.reduce((sum, shift) => sum + shift.hours, 0));
+  const rideBacked = completedShifts.filter((shift) => shift.rides > 0);
+  const mileBacked = completedShifts.filter((shift) => shift.miles > 0);
+  const rideHours = money(rideBacked.reduce((sum, shift) => sum + shift.hours, 0));
+  const mileHours = money(mileBacked.reduce((sum, shift) => sum + shift.hours, 0));
+
+  const patterns = SHIFT_PATTERNS.map((definition) => {
+    const matching = shifts.filter((shift) => definition.matches(shift.hours));
+    const hours = money(matching.reduce((sum, shift) => sum + shift.hours, 0));
+    const earnings = money(matching.reduce((sum, shift) => sum + shift.earnings, 0));
+    const rides = matching.reduce((sum, shift) => sum + shift.rides, 0);
+    const miles = money(matching.reduce((sum, shift) => sum + shift.miles, 0));
+    return {
+      id: definition.id,
+      label: definition.label,
+      description: definition.description,
+      shifts: matching.length,
+      hours,
+      earnings,
+      averageEarnings: matching.length ? money(earnings / matching.length) : 0,
+      earningsPerHour: hours > 0 ? money(earnings / hours) : null,
+      ridesPerHour: hours > 0 && rides > 0 ? money(rides / hours) : null,
+      milesPerHour: hours > 0 && miles > 0 ? money(miles / hours) : null,
+    } satisfies DeepInsightsShiftPattern;
+  });
+
+  const rankedPatterns = patterns
+    .filter((pattern) => pattern.shifts >= 2 && pattern.earningsPerHour !== null)
+    .sort((a, b) => (b.earningsPerHour ?? 0) - (a.earningsPerHour ?? 0));
+  const strongestPattern = rankedPatterns[0] ?? null;
+  const weakestPattern = rankedPatterns.length >= 2 ? rankedPatterns.at(-1) ?? null : null;
+  const signals: string[] = [];
+
+  if (strongestPattern) {
+    signals.push(`${strongestPattern.label} shifts lead measured efficiency at ${formatCurrency(strongestPattern.earningsPerHour ?? 0, currencySymbol)}/hr across ${strongestPattern.shifts} resolved shifts.`);
+  }
+  if (strongestPattern && weakestPattern) {
+    const difference = money((strongestPattern.earningsPerHour ?? 0) - (weakestPattern.earningsPerHour ?? 0));
+    signals.push(`${strongestPattern.label} shifts are ${formatCurrency(difference, currencySymbol)}/hr stronger than ${weakestPattern.label.toLowerCase()} shifts in this view.`);
+  }
+  if (completedShifts.length > 0 && shifts.length < completedShifts.length) {
+    signals.push(`Shift earnings are resolved for ${shifts.length} of ${completedShifts.length} completed shifts; unresolved shifts stay out of earnings rankings.`);
+  }
+
+  return {
+    completedShifts: completedShifts.length,
+    resolvedShifts: shifts.length,
+    earningsCoverage: completedShifts.length ? money((shifts.length / completedShifts.length) * 100) : 0,
+    averageDuration: completedShifts.length ? money(totalCompletedHours / completedShifts.length) : null,
+    ridesPerHour: rideHours > 0 ? money(rideBacked.reduce((sum, shift) => sum + shift.rides, 0) / rideHours) : null,
+    milesPerHour: mileHours > 0 ? money(mileBacked.reduce((sum, shift) => sum + shift.miles, 0) / mileHours) : null,
+    patterns,
+    strongestPattern,
+    weakestPattern,
+    signals,
+  };
 }
 
 function buildInsights(data: {
@@ -324,27 +415,31 @@ export function buildDeepInsightsData(args: {
     };
   }).filter((app) => app.earnings > 0).sort((a, b) => b.earnings - a.earnings);
 
-  const bestShifts: DeepInsightsShift[] = [];
+  const completedShifts: DeepInsightsShift[] = [];
+  const resolvedShifts: DeepInsightsShift[] = [];
   if (!selectedApp) {
     for (const week of weeks) {
       for (const day of week.entries) {
         if (!isInRange(day.date, range) || (selectedWeekday && day.dayName !== selectedWeekday)) continue;
         for (const shift of day.shifts ?? []) {
-          const hours = shift.endTime ? shiftDurationHours(shift) : activeShiftDurationHours(shift, now);
+          if (!shift.endTime) continue;
+          const hours = shiftDurationHours(shift);
+          if (hours <= 0) continue;
           const rate = resolveShiftRate(day, shift, earningsSnapshots);
-          if (!rate.rate || !rate.earnings || hours <= 0) continue;
-          bestShifts.push({
+          const baseShift: DeepInsightsShift = {
             id: shift.id,
             date: day.date,
             dayName: day.dayName,
             label: shiftLabel(shift),
-            earnings: rate.earnings,
+            earnings: rate.earnings ?? 0,
             hours,
-            rate: rate.rate,
+            rate: rate.rate ?? 0,
             source: rate.source,
             miles: getShiftMiles(day, shift),
             rides: Math.max(0, Math.trunc(Number(shift.rideCount) || 0)),
-          });
+          };
+          completedShifts.push(baseShift);
+          if (rate.rate !== null && rate.earnings !== null && rate.earnings > 0) resolvedShifts.push(baseShift);
         }
       }
     }
@@ -377,7 +472,8 @@ export function buildDeepInsightsData(args: {
     topDays: [...activeDays].sort((a, b) => b.earnings - a.earnings || a.date.localeCompare(b.date)).slice(0, 8),
     lowDays: [...activeDays].sort((a, b) => a.earnings - b.earnings || a.date.localeCompare(b.date)).slice(0, 8),
     bestWeeks: [...weekRows].sort((a, b) => b.earnings - a.earnings || a.startDate.localeCompare(b.startDate)).slice(0, 8),
-    bestShifts: bestShifts.sort((a, b) => b.rate - a.rate || b.earnings - a.earnings).slice(0, 8),
+    bestShifts: [...resolvedShifts].sort((a, b) => b.rate - a.rate || b.earnings - a.earnings).slice(0, 8),
+    shiftIntelligence: buildShiftIntelligence(resolvedShifts, completedShifts, currencySymbol),
     insights: buildInsights({
       totals,
       weekdayEarnings,

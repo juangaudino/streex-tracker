@@ -1,4 +1,4 @@
-import type { WeekRecord } from "./types";
+import type { DayEntry, WeekRecord } from "./types";
 import { dayTotal } from "./store";
 
 export interface WeeklyComparisonPoint {
@@ -13,6 +13,91 @@ export interface WeeklyComparisonPoint {
   projectedCumulative: number | null;
   referenceCumulative: number;
   cumulativeDiff: number | null;
+}
+
+export interface WeeklyReferenceWeek {
+  week: WeekRecord;
+  sampleCounts: number[];
+  sourceDates: Array<string | null>;
+  total: number;
+}
+
+function isTrackedHistoricalDay(day: DayEntry): boolean {
+  return day.logged !== undefined ? day.logged : dayTotal(day) > 0;
+}
+
+function historicalWeeksBefore(weeks: WeekRecord[], currentWeek: WeekRecord): WeekRecord[] {
+  return weeks.filter((week) => week.id !== currentWeek.id && week.startDate < currentWeek.startDate);
+}
+
+function referenceWeekFromValues(
+  currentWeek: WeekRecord,
+  id: string,
+  values: number[],
+  sampleCounts: number[],
+  sourceDates: Array<string | null>,
+): WeeklyReferenceWeek | null {
+  if (!sampleCounts.some((count) => count > 0)) return null;
+  const entries: DayEntry[] = currentWeek.entries.map((day, index) => {
+    const value = +(values[index] ?? 0).toFixed(2);
+    return {
+      dayName: day.dayName,
+      date: day.date,
+      logged: sampleCounts[index] > 0,
+      apps: { Reference: value },
+    };
+  });
+  const week: WeekRecord = {
+    id,
+    startDate: currentWeek.startDate,
+    endDate: currentWeek.endDate,
+    weeklyGoal: currentWeek.weeklyGoal,
+    weeklyHoursGoal: currentWeek.weeklyHoursGoal,
+    status: "closed",
+    entries,
+    createdAt: currentWeek.createdAt,
+    updatedAt: currentWeek.updatedAt,
+  };
+  return { week, sampleCounts, sourceDates, total: week.entries.reduce((sum, day) => sum + dayTotal(day), 0) };
+}
+
+export function buildAverageWeekReference(weeks: WeekRecord[], currentWeek: WeekRecord): WeeklyReferenceWeek | null {
+  const history = historicalWeeksBefore(weeks, currentWeek);
+  const sums = Array.from({ length: currentWeek.entries.length }, () => 0);
+  const sampleCounts = Array.from({ length: currentWeek.entries.length }, () => 0);
+  const sourceDates = Array.from({ length: currentWeek.entries.length }, () => null as string | null);
+
+  for (const week of history) {
+    week.entries.forEach((day, index) => {
+      if (!isTrackedHistoricalDay(day)) return;
+      sums[index] += dayTotal(day);
+      sampleCounts[index] += 1;
+    });
+  }
+
+  const values = sums.map((sum, index) => sampleCounts[index] ? sum / sampleCounts[index] : 0);
+  return referenceWeekFromValues(currentWeek, "reference_average_week", values, sampleCounts, sourceDates);
+}
+
+export function buildIdealWeekReference(weeks: WeekRecord[], currentWeek: WeekRecord): WeeklyReferenceWeek | null {
+  const history = historicalWeeksBefore(weeks, currentWeek);
+  const values = Array.from({ length: currentWeek.entries.length }, () => 0);
+  const sampleCounts = Array.from({ length: currentWeek.entries.length }, () => 0);
+  const sourceDates = Array.from({ length: currentWeek.entries.length }, () => null as string | null);
+
+  for (const week of history) {
+    week.entries.forEach((day, index) => {
+      if (!isTrackedHistoricalDay(day)) return;
+      const total = dayTotal(day);
+      sampleCounts[index] += 1;
+      if (total > values[index]) {
+        values[index] = total;
+        sourceDates[index] = day.date;
+      }
+    });
+  }
+
+  return referenceWeekFromValues(currentWeek, "reference_ideal_week", values, sampleCounts, sourceDates);
 }
 
 export function buildWeeklyComparisonPoints(

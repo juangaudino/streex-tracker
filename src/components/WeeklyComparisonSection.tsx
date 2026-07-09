@@ -19,9 +19,38 @@ interface WeeklyComparisonSectionProps {
   title: string;
   description: string;
   referenceLabel: string;
+  referenceDetail?: string;
   points: WeeklyComparisonPoint[];
   symbol: string;
+  tone?: "previous" | "average" | "record" | "ideal";
 }
+
+const TONE_STYLES = {
+  previous: {
+    section: "border-sky-500/25 bg-sky-500/[0.035] dark:bg-sky-400/[0.06]",
+    header: "border-sky-500/20 bg-sky-500/[0.045] dark:bg-sky-400/[0.07]",
+    icon: "text-sky-500",
+    referenceStroke: "#38bdf8",
+  },
+  average: {
+    section: "border-emerald-500/25 bg-emerald-500/[0.035] dark:bg-emerald-400/[0.06]",
+    header: "border-emerald-500/20 bg-emerald-500/[0.045] dark:bg-emerald-400/[0.07]",
+    icon: "text-emerald-500",
+    referenceStroke: "#34d399",
+  },
+  record: {
+    section: "border-amber-500/30 bg-amber-500/[0.04] dark:bg-amber-400/[0.07]",
+    header: "border-amber-500/25 bg-amber-500/[0.05] dark:bg-amber-400/[0.08]",
+    icon: "text-amber-500",
+    referenceStroke: "#f59e0b",
+  },
+  ideal: {
+    section: "border-violet-500/30 bg-violet-500/[0.04] dark:bg-violet-400/[0.07]",
+    header: "border-violet-500/25 bg-violet-500/[0.05] dark:bg-violet-400/[0.08]",
+    icon: "text-violet-500",
+    referenceStroke: "#a78bfa",
+  },
+} as const;
 
 function ComparisonTooltip({
   active,
@@ -53,9 +82,12 @@ export default function WeeklyComparisonSection({
   title,
   description,
   referenceLabel,
+  referenceDetail,
   points,
   symbol,
+  tone = "previous",
 }: WeeklyComparisonSectionProps) {
+  const style = TONE_STYLES[tone];
   const trackedPoints = points.filter((point) => point.isTracked);
   const futurePoints = points.filter((point) => point.isFuture);
   const finalDifference = trackedPoints.at(-1)?.cumulativeDiff ?? 0;
@@ -66,11 +98,16 @@ export default function WeeklyComparisonSection({
   const lastTrackedDay = trackedPoints.at(-1)?.day;
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-card">
-      <div className="flex items-start justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
+    <section className={`overflow-hidden rounded-2xl border bg-card ${style.section}`}>
+      <div className={`flex items-start justify-between gap-4 border-b px-4 py-4 sm:px-5 ${style.header}`}>
         <div>
           <h2 className="text-base font-semibold">{title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          {referenceDetail ? (
+            <p className="mt-2 inline-flex rounded-full border border-border bg-background/70 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+              {referenceDetail}
+            </p>
+          ) : null}
         </div>
         <div className="shrink-0 text-right">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Running gap</p>
@@ -132,7 +169,7 @@ export default function WeeklyComparisonSection({
           >
             <div className="mb-2 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
+                <TrendingUp className={`h-4 w-4 ${style.icon}`} />
                 <span className="text-sm font-semibold">Cumulative trend</span>
               </div>
               <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
@@ -145,14 +182,14 @@ export default function WeeklyComparisonSection({
                 <LineChart data={points} margin={{ top: 6, right: 4, bottom: 2, left: 4 }}>
                   <Line type="monotone" dataKey="currentCumulative" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} connectNulls={false} />
                   <Line type="monotone" dataKey="projectedCumulative" stroke="hsl(var(--primary))" strokeWidth={2} strokeDasharray="5 4" dot={false} connectNulls={false} />
-                  <Line type="monotone" dataKey="referenceCumulative" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" dot={false} />
+                  <Line type="monotone" dataKey="referenceCumulative" stroke={style.referenceStroke} strokeWidth={2} strokeDasharray="4 4" dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-4 rounded bg-primary" />This week</span>
               <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-4 border-t-2 border-dashed border-primary" />Projection</span>
-              <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-4 border-t-2 border-dashed border-muted-foreground" />{referenceLabel}</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-4 border-t-2 border-dashed" style={{ borderColor: style.referenceStroke }} />{referenceLabel}</span>
             </div>
           </button>
         </SheetTrigger>
@@ -178,7 +215,7 @@ export default function WeeklyComparisonSection({
                 {lastTrackedDay ? <ReferenceLine x={lastTrackedDay} stroke="hsl(var(--border))" strokeDasharray="3 3" label={{ value: "Today", position: "insideTopRight", fill: "hsl(var(--muted-foreground))", fontSize: 11 }} /> : null}
                 <Line name="This week" type="monotone" dataKey="currentCumulative" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls={false} />
                 <Line name="Projected pace" type="monotone" dataKey="projectedCumulative" stroke="hsl(var(--primary))" strokeWidth={2.5} strokeDasharray="7 5" dot={false} connectNulls={false} />
-                <Line name={referenceLabel} type="monotone" dataKey="referenceCumulative" stroke="hsl(var(--muted-foreground))" strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                <Line name={referenceLabel} type="monotone" dataKey="referenceCumulative" stroke={style.referenceStroke} strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 3 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

@@ -117,6 +117,7 @@ const App = () => {
         )}
         <BrowserRouter>
           <Routes>
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route element={<AppShell store={store} user={user} onSignOut={signOut} />}>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/entry" element={<WeeklyEntryPage />} />

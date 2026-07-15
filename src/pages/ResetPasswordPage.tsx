@@ -24,6 +24,11 @@ export default function ResetPasswordPage() {
         if (!error) setValid(true);
       });
     }
+    // Auth can consume the recovery hash while the app is restoring its
+    // session, before this page subscribes to PASSWORD_RECOVERY.
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setValid(true);
+    });
     // Also listen for auth state change with recovery event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
@@ -81,11 +86,11 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             type="password"
-            placeholder="New password (min 6 characters)"
+            placeholder="New password (min 8 characters)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={6}
+            minLength={8}
             autoComplete="new-password"
           />
           <Button type="submit" className="w-full" disabled={loading}>

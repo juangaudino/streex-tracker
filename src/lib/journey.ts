@@ -170,7 +170,7 @@ export function buildJourneyEvents(
   // Streaks: detect the first day a 4-day streak was achieved
   const days = allDays(sortedWeeks);
   let cur = 0;
-  let streakAnnounced = new Set<number>();
+  const streakAnnounced = new Set<number>();
   for (let i = 0; i < days.length; i++) {
     const t = dayTotal(days[i].d);
     const isLogged = days[i].d.logged !== undefined ? days[i].d.logged : t > 0;

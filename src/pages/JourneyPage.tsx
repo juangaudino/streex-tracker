@@ -4,6 +4,7 @@ import { buildJourneyEvents, JourneyEvent } from "@/lib/journey";
 import { generateWeeklyLetter } from "@/lib/weeklyLetter";
 import WeeklyLetterCard from "@/components/WeeklyLetterCard";
 import type { StoreContext } from "./types";
+import type { WeekRecord } from "@/lib/types";
 import { Sparkles, Crown, Share2 } from "lucide-react";
 import { useState } from "react";
 import ShareCenter from "@/components/share/ShareCenter";
@@ -102,11 +103,11 @@ function LetterEntry({
   event: JourneyEvent;
   open: boolean;
   onToggle: () => void;
-  weeks: any[];
+  weeks: WeekRecord[];
   sym: string;
 }) {
   const tone = toneClasses.letter;
-  const week = weeks.find((w: any) => w.id === e.weekId);
+  const week = weeks.find((w) => w.id === e.weekId);
   if (!week) return null;
   const letter = generateWeeklyLetter(week, weeks, sym);
   return (

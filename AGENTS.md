@@ -66,7 +66,7 @@ For meaningful user-facing or architectural changes, update both:
 
 Streex is in public beta versioning.
 
-- Current beta baseline: `0.8.2`.
+- Current beta baseline: `0.9.2`.
 - Preserve older `V3.x` through `V5.x` entries as Alpha Archive history.
 - Increment the patch number for small bug fixes, QA fixes, and focused polish.
 - Increment the minor number for meaningful beta features or new product surfaces.
@@ -76,4 +76,4 @@ Streex is in public beta versioning.
 
 ## Validation
 
-Run the narrowest useful tests first, then broaden based on risk. At minimum, use TypeScript checks for code changes and report any validation that could not run.
+Run the narrowest useful tests first, then broaden based on risk. At minimum, use `npm run typecheck`, `npm run lint`, `npm test`, and `npm run build` for code changes. Use `npm run test:e2e:smoke` for auth or routing changes when the browser runtime is available. The authenticated QA suite is manually triggered and must use the isolated QA account only.

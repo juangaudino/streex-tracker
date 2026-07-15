@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.9.0";
+export const CURRENT_VERSION = "0.9.2";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,32 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.2",
+    date: "2026-07",
+    title: "Personal Data Safety & Recovery",
+    tags: ["new", "fix"],
+    items: [
+      "Every successful week save now captures the prior version as a private restore point before writing the next version",
+      "Stale devices cannot silently overwrite a newer week; Streex asks whether to keep the newer copy or intentionally preserve the local edit",
+      "History now exposes restore points and safely preserves the current version before a restore",
+      "The app visibly reports saving, saved, conflict, and retry states",
+      "No existing earnings, mileage, rides, shifts, snapshots, or historical metrics were rewritten",
+    ],
+  },
+  {
+    version: "0.9.1",
+    date: "2026-07",
+    title: "Reliability & Release Safety",
+    tags: ["fix", "polish"],
+    items: [
+      "Typecheck, lint, unit test, build, and browser smoke commands are now available as repeatable release checks",
+      "GitHub Actions now validates typecheck, lint, tests, and the production build on every main push and pull request",
+      "A separate manually triggered QA route smoke protects the isolated QA account credentials from normal CI runs",
+      "Audited production dependencies were patched and now report zero known vulnerabilities",
+      "No earnings, shifts, mileage, rides, snapshots, Supabase schema, or production records changed",
+    ],
+  },
   {
     version: "0.9.0",
     date: "2026-07",

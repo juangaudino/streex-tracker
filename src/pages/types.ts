@@ -1,4 +1,5 @@
 import type { WeekRecord, AppSettings, EarningsSnapshot } from "@/lib/types";
+import type { WeekRevision } from "@/lib/weekRevisions";
 import type { User } from "@supabase/supabase-js";
 
 export interface StoreContext {
@@ -15,4 +16,10 @@ export interface StoreContext {
   updateSettings: (s: AppSettings) => Promise<boolean>;
   importLocalData: () => Promise<number | undefined>;
   reload: () => void;
+  syncStatus: "saved" | "saving" | "conflict" | "error";
+  hasPendingConflict: boolean;
+  resolveWeekConflict: (strategy: "keep-remote" | "use-local") => Promise<boolean>;
+  retryLastSave: () => Promise<boolean>;
+  getWeekRevisions: (weekId: string) => Promise<WeekRevision[]>;
+  restoreRevision: (weekId: string, revisionId: string) => Promise<boolean>;
 }

@@ -2,13 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { WeekRecord } from "@/lib/types";
+import type { Database } from "@/integrations/supabase/types";
 import {
   buildDriverIdentitySummary,
   buildXpEventsFromWeeks,
   type StoredXpEvent,
 } from "@/lib/driverIdentity";
 
-function dbToXpEvent(row: any): StoredXpEvent {
+type XpEventRow = Database["public"]["Tables"]["xp_events"]["Row"];
+
+function dbToXpEvent(row: XpEventRow): StoredXpEvent {
   return {
     id: row.id,
     eventKey: row.event_key,
@@ -51,7 +54,7 @@ export function useDriverIdentity(user: User | null, weeks: WeekRecord[], openWe
       }));
 
       if (rows.length) {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from("xp_events")
           .upsert(rows, { onConflict: "user_id,event_key", ignoreDuplicates: true });
 
@@ -60,7 +63,7 @@ export function useDriverIdentity(user: User | null, weeks: WeekRecord[], openWe
         }
       }
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("xp_events")
         .select("*")
         .order("created_at", { ascending: true });

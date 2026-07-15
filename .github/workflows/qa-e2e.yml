@@ -1,0 +1,30 @@
+name: Manual QA E2E
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  authenticated-production-smoke:
+    name: QA account route smoke
+    runs-on: ubuntu-latest
+    environment: qa
+    env:
+      STREEX_E2E_BASE_URL: https://gig.getstreex.com
+      STREEX_QA_EMAIL: ${{ secrets.STREEX_QA_EMAIL }}
+      STREEX_QA_PASSWORD: ${{ secrets.STREEX_QA_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Require isolated QA credentials
+        run: |
+          test -n "$STREEX_QA_EMAIL"
+          test -n "$STREEX_QA_PASSWORD"
+      - run: npm run test:e2e:qa -- --project=desktop-chrome

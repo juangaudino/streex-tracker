@@ -10,7 +10,7 @@ test.describe("anonymous and recovery boundaries", () => {
     const errors = [];
     page.on("console", (message) => message.type() === "error" && errors.push(message.text()));
     await page.goto("/");
-    await expect(page.getByText(/gig earnings tracker/i)).toBeVisible();
+    await expect(page.getByText(/sign in to track your earnings/i)).toBeVisible();
     await expect(page.locator("input[type=email]")).toBeVisible();
     expect(errors).toEqual([]);
   });

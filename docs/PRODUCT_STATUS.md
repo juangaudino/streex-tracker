@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-07-08
+Last updated: 2026-07-11
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -21,7 +21,7 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.9.0 - Deep Insights Intelligence Layer
+Beta 0.9.2 - Personal Data Safety & Recovery
 ```
 
 Source of truth:
@@ -67,6 +67,23 @@ mnwymfyvvdhekzvipjmp
 ```
 
 The legacy Lovable Supabase project should be treated as historical/legacy context unless the user explicitly says otherwise. Do not deploy new migrations or Edge Functions there by default.
+
+### 0.9.2 Data Safety Backend
+
+The active Supabase project has the additive migration
+`20260711013903_add_week_revisions_and_conflict_save.sql` applied. It provides
+owner-scoped week restore points and optimistic-concurrency RPCs for week saves
+and restores. Historical migration metadata was reconciled only after the live
+schema was verified; no historical migration SQL was re-executed and no user
+data was rewritten.
+
+The frontend source for 0.9.2 still requires its normal commit, push, and Vercel
+publication before this UI is live at `gig.getstreex.com`.
+
+Security follow-up: the Supabase security advisor reports that leaked-password
+protection is disabled. Enable it in the active project's Auth password-security
+settings after confirming the desired user-policy impact; it is not a data or
+migration defect and was not changed automatically.
 
 ## Backend Rules
 
@@ -315,7 +332,7 @@ Latest Deep Insights work:
 
 ### Ask My Data
 
-Ask My Data is the AI analytics layer.
+Ask My Data is an Alpha analytics experiment and is currently paused.
 
 Current state:
 
@@ -329,7 +346,7 @@ Current state:
 
 Important limitation:
 
-Ask My Data should be treated as beta and currently provider-blocked. Do not represent it as production-ready merely because the UI and Edge Function exist. Do not overclaim exact hourly, location, trip-type, or health insights unless the underlying data exists.
+Ask My Data should be treated as Alpha and currently provider-blocked. Do not represent it as production-ready merely because the UI and Edge Function exist. Do not overclaim exact hourly, location, trip-type, or health insights unless the underlying data exists.
 
 ### Admin Ops
 
@@ -400,6 +417,9 @@ Current planned sequence:
 - `Beta 0.8.8`: Data Integrity Repair - completed
 - `Beta 0.8.9`: Data Health Foundation - completed
 - `Beta 0.9.0`: Deep Insights Intelligence Layer - completed
+- `Beta 0.9.1`: Reliability & Release Safety - completed
+- `Beta 0.9.2`: Personal Data Safety & Recovery - completed
+- `Beta 0.9.3`: Live Work Mode - planned
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 

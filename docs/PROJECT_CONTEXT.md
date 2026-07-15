@@ -21,7 +21,7 @@ Streex is currently in public beta versioning.
 
 Current release:
 
-`Beta 0.9.0`
+`Beta 0.9.2 — Personal Data Safety & Recovery`
 
 Older `V3.x` through `V5.x` labels are Alpha Archive history. Keep them for continuity, but do not use the old Alpha sequence for new beta work.
 

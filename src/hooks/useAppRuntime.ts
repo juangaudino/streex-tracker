@@ -69,12 +69,12 @@ export function useAppRuntime(user: User | null, session: Session | null, signOu
         setAccess((current) => ({ ...current, loading: true }));
       }
       const [configResult, accessResult, adminResult] = await Promise.allSettled([
-        (supabase as any)
+        supabase
           .from("app_runtime_config")
           .select("*")
           .eq("singleton", true)
           .maybeSingle(),
-        (supabase as any)
+        supabase
           .from("account_access_controls")
           .select("status")
           .eq("user_id", user.id)

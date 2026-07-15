@@ -1,6 +1,6 @@
 # Streex New Chat Handoff
 
-Last audited: 2026-07-08
+Last audited: 2026-07-11
 
 This is the operational handoff for a new Codex, Claude, ChatGPT, or Lovable conversation. It describes the current repository state and the product decisions that must survive chat resets. Read it before proposing or implementing work.
 
@@ -11,16 +11,17 @@ Also read:
 - `docs/STREEX_AI_WORKFLOW.md`
 - `docs/PRODUCT_STATUS.md`
 - `docs/ROADMAP.md`
+- `docs/QA_RUNBOOK.md`
 - `CHANGELOG.md`
 
 ## 1. Current Snapshot
 
 - Product: Streex Gig Earnings App.
-- Current release: `Beta 0.9.0 - Deep Insights Intelligence Layer`.
+- Current release: `Beta 0.9.2 - Personal Data Safety & Recovery`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.
-- The 0.9.0 implementation started from synchronized baseline `04994a9 Beta 0.8.9 - Data Health Foundation`; always verify the live HEAD after publication.
+- The 0.9.2 source starts from synchronized baseline `b553c04 Compare Update`; always verify the live HEAD after publication.
 - Frontend hosting: Vercel.
 - DNS and domain: Cloudflare, `getstreex.com`.
 - Active backend: owner-controlled Supabase project `ywbrovislvqkfzsyqpiv`.
@@ -274,6 +275,11 @@ Design rules:
 
 ### Highest Priority Operations
 
+- 0.9.2's additive active-Supabase migration `20260711013903_add_week_revisions_and_conflict_save.sql` is applied. It did not rewrite historical data; verified schema-aligned migration metadata was repaired first so only this new migration ran.
+- The 0.9.2 frontend source still needs its normal owner commit, push, and Vercel publication before the recovery UI is live in production.
+- Configure the isolated GitHub Actions `qa` environment with `STREEX_QA_EMAIL` and `STREEX_QA_PASSWORD`, then manually run the protected-route QA smoke workflow. Do not use the owner's personal account.
+- The Supabase security advisor reports leaked-password protection disabled. Treat enabling it as a separate Auth settings decision, not as a schema defect or a reason to re-run migrations.
+
 - Configure a production-grade Supabase Auth SMTP/domain sender; default auth email quota has already caused recovery friction.
 - Continue monitoring login/session persistence after the infrastructure migration.
 - Confirm in the active Supabase project that the Beta 0.8.0 Octopus migration is applied and the latest `driver-utility` function is deployed.
@@ -282,9 +288,9 @@ Design rules:
 
 ### Planned Product Work
 
-- Latest release: `Beta 0.9.0 - Deep Insights Intelligence Layer`.
-- Shift Intelligence now shows average duration, rides/hour, miles/hour, earnings coverage, and minimum-sample duration patterns.
-- The next release should be selected after desktop testing of Data Health and Shift Intelligence; broader pattern families remain available for a focused follow-up.
+- Latest release: `Beta 0.9.2 - Personal Data Safety & Recovery`.
+- The next planned release is `Beta 0.9.3 - Live Work Mode`; it requires separate product planning before implementation.
+- Do not normalize the weekly JSON model merely for scale; first solve silent write conflicts, recovery, and visible sync state for the owner's personal workflow.
 - The version number can move if a patch or urgent fix ships first.
 
 ### Ask My Data
@@ -469,7 +475,7 @@ Production variables live in Vercel. Do not print their values in chat or docs.
 
 ### Versioning
 
-- Current baseline: `0.9.0`.
+- Current baseline: `0.9.2`.
 - Patch: focused fix/refinement/polish.
 - Minor: meaningful new surface/system.
 - `1.0.0`: first stable public release only.

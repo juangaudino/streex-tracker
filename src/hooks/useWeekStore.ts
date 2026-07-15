@@ -7,6 +7,7 @@ import { lifecycleDebug } from "@/lib/appLifecycle";
 import { buildEarningsSnapshotRows, dbToEarningsSnapshot, earningsSnapshotTransitionKey } from "@/lib/earningsSnapshots";
 import { normalizeLegacyBonusWeek } from "@/lib/rewardIncome";
 import { inspectWeekIntegrity, parseWeekRecord } from "@/lib/weekIntegrity";
+import { loadWeekRevisions, restoreWeekRevision, saveWeekWithRevision, type WeekRevision } from "@/lib/weekRevisions";
 import type { Database, Json } from "@/integrations/supabase/types";
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -57,6 +58,9 @@ export function useWeekStore(user: User | null) {
   const [earningsSnapshots, setEarningsSnapshots] = useState<EarningsSnapshot[]>(() => cachedStore?.earningsSnapshots ?? []);
   const [loading, setLoading] = useState(() => !cachedStore);
   const [hasLocalData, setHasLocalData] = useState(() => cachedStore?.hasLocalData ?? false);
+  const [syncStatus, setSyncStatus] = useState<"saved" | "saving" | "conflict" | "error">("saved");
+  const [conflictDraft, setConflictDraft] = useState<WeekRecord | null>(null);
+  const [retryDraft, setRetryDraft] = useState<WeekRecord | null>(null);
 
   // Load data from DB
   const reload = useCallback(async () => {
@@ -164,10 +168,15 @@ export function useWeekStore(user: User | null) {
       console.warn("[weeks.updateWeek] skipped: no authenticated user", { weekId: w.id });
       return false;
     }
-    const now = new Date().toISOString();
     const previousWeek = storeCache.get(user.id)?.weeks.find((week) => week.id === w.id)
       ?? weeks.find((week) => week.id === w.id)
       ?? null;
+    if (!previousWeek) {
+      console.warn("[weeks.updateWeek] skipped: unknown local revision", { weekId: w.id });
+      setSyncStatus("error");
+      setRetryDraft(w);
+      return false;
+    }
     const normalizedWeek = normalizeLegacyBonusWeek(w);
     try {
       const integrityIssues = inspectWeekIntegrity(normalizedWeek);
@@ -178,15 +187,7 @@ export function useWeekStore(user: User | null) {
           issues: integrityIssues.map(({ severity, code, path }) => ({ severity, code, path })),
         });
       }
-      const payload = {
-        start_date: normalizedWeek.startDate,
-        end_date: normalizedWeek.endDate,
-        weekly_goal: normalizedWeek.weeklyGoal,
-        weekly_hours_goal: normalizedWeek.weeklyHoursGoal ?? 0,
-        status: normalizedWeek.status,
-        entries: normalizedWeek.entries as unknown as Json,
-        updated_at: now,
-      };
+      setSyncStatus("saving");
       console.info("[weeks.updateWeek] saving", {
         weekId: w.id,
         userId: user.id,
@@ -195,21 +196,26 @@ export function useWeekStore(user: User | null) {
         status: normalizedWeek.status,
         entries: normalizedWeek.entries.length,
       });
-      const { error } = await supabase
-        .from("weeks")
-        .update(payload)
-        .eq("id", w.id)
-        .eq("user_id", user.id);
-      if (error) {
+      const saveResult = await saveWeekWithRevision(normalizedWeek, previousWeek.updatedAt);
+      if (saveResult.status === "conflict") {
+        setConflictDraft(normalizedWeek);
+        setRetryDraft(null);
+        setSyncStatus("conflict");
+        await reload();
+        return false;
+      }
+      if (saveResult.status === "failed") {
         console.error("[weeks.updateWeek] Supabase update failed", {
           weekId: w.id,
           userId: user.id,
-          error,
-          payload,
+          error: saveResult.error,
         });
-        alert("Could not save this week. Please check your connection and try again.");
+        setRetryDraft(normalizedWeek);
+        setSyncStatus("error");
+        alert("Could not save this week. Your latest edit is kept locally so you can retry.");
         return false;
       }
+      const now = saveResult.updatedAt ?? new Date().toISOString();
       const existingSnapshotKeys = new Set(
         earningsSnapshots.map((snapshot) => earningsSnapshotTransitionKey(snapshot)),
       );
@@ -251,6 +257,9 @@ export function useWeekStore(user: User | null) {
         storeCache.set(user.id, { weeks: nextWeeks, settings, earningsSnapshots: nextSnapshots, hasLocalData });
         return nextWeeks;
       });
+      setConflictDraft(null);
+      setRetryDraft(null);
+      setSyncStatus("saved");
       return true;
     } catch (error) {
       console.error("[weeks.updateWeek] request failed", {
@@ -258,10 +267,60 @@ export function useWeekStore(user: User | null) {
         userId: user.id,
         error,
       });
-      alert("Could not save this week. Please check your connection and try again.");
+      setRetryDraft(normalizedWeek);
+      setSyncStatus("error");
+      alert("Could not save this week. Your latest edit is kept locally so you can retry.");
       return false;
     }
-  }, [earningsSnapshots, hasLocalData, settings, user, weeks]);
+  }, [earningsSnapshots, hasLocalData, reload, settings, user, weeks]);
+
+  const resolveWeekConflict = useCallback(async (strategy: "keep-remote" | "use-local"): Promise<boolean> => {
+    const draft = conflictDraft;
+    if (!draft) return false;
+    if (strategy === "keep-remote") {
+      setConflictDraft(null);
+      setSyncStatus("saved");
+      return true;
+    }
+    const remoteWeek = storeCache.get(user?.id ?? "")?.weeks.find((week) => week.id === draft.id)
+      ?? weeks.find((week) => week.id === draft.id);
+    if (!remoteWeek) return false;
+    setConflictDraft(null);
+    return updateWeek({ ...draft, updatedAt: remoteWeek.updatedAt });
+  }, [conflictDraft, updateWeek, user?.id, weeks]);
+
+  const retryLastSave = useCallback(async (): Promise<boolean> => {
+    if (!retryDraft) return false;
+    const remoteWeek = storeCache.get(user?.id ?? "")?.weeks.find((week) => week.id === retryDraft.id)
+      ?? weeks.find((week) => week.id === retryDraft.id);
+    if (!remoteWeek) return false;
+    return updateWeek({ ...retryDraft, updatedAt: remoteWeek.updatedAt });
+  }, [retryDraft, updateWeek, user?.id, weeks]);
+
+  const getWeekRevisions = useCallback(async (weekId: string): Promise<WeekRevision[]> => {
+    return loadWeekRevisions(weekId);
+  }, []);
+
+  const restoreRevision = useCallback(async (weekId: string, revisionId: string): Promise<boolean> => {
+    if (!user) return false;
+    const currentWeek = storeCache.get(user.id)?.weeks.find((week) => week.id === weekId)
+      ?? weeks.find((week) => week.id === weekId);
+    if (!currentWeek) return false;
+    setSyncStatus("saving");
+    const result = await restoreWeekRevision(weekId, revisionId, currentWeek.updatedAt);
+    if (result.status === "conflict") {
+      await reload();
+      setSyncStatus("saved");
+      return false;
+    }
+    if (result.status === "failed") {
+      setSyncStatus("error");
+      return false;
+    }
+    await reload();
+    setSyncStatus("saved");
+    return true;
+  }, [reload, user, weeks]);
 
   const deleteWeek = useCallback(async (id: string) => {
     if (!user) return;
@@ -350,5 +409,11 @@ export function useWeekStore(user: User | null) {
     updateSettings,
     importLocalData,
     reload,
+    syncStatus,
+    hasPendingConflict: Boolean(conflictDraft),
+    resolveWeekConflict,
+    retryLastSave,
+    getWeekRevisions,
+    restoreRevision,
   };
 }

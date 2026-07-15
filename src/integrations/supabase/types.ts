@@ -456,6 +456,59 @@ export type Database = {
         }
         Relationships: []
       }
+      week_revisions: {
+        Row: {
+          created_at: string
+          end_date: string
+          entries: Json
+          id: string
+          reason: string
+          source_updated_at: string
+          start_date: string
+          status: string
+          user_id: string
+          week_id: string
+          weekly_goal: number
+          weekly_hours_goal: number
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          entries: Json
+          id?: string
+          reason?: string
+          source_updated_at: string
+          start_date: string
+          status: string
+          user_id: string
+          week_id: string
+          weekly_goal: number
+          weekly_hours_goal?: number
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          entries?: Json
+          id?: string
+          reason?: string
+          source_updated_at?: string
+          start_date?: string
+          status?: string
+          user_id?: string
+          week_id?: string
+          weekly_goal?: number
+          weekly_hours_goal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "week_revisions_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weeks: {
         Row: {
           created_at: string
@@ -539,7 +592,50 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      list_week_revisions: {
+        Args: { p_week_id: string }
+        Returns: {
+          created_at: string
+          end_date: string
+          entries: Json
+          id: string
+          reason: string
+          source_updated_at: string
+          start_date: string
+          status: string
+          weekly_goal: number
+          weekly_hours_goal: number
+        }[]
+      }
+      restore_week_revision: {
+        Args: {
+          p_expected_updated_at: string
+          p_revision_id: string
+          p_week_id: string
+        }
+        Returns: {
+          revision_id: string
+          save_status: string
+          saved_updated_at: string
+        }[]
+      }
+      update_week_with_revision: {
+        Args: {
+          p_end_date: string
+          p_entries: Json
+          p_expected_updated_at: string
+          p_start_date: string
+          p_status: string
+          p_week_id: string
+          p_weekly_goal: number
+          p_weekly_hours_goal: number
+        }
+        Returns: {
+          revision_id: string
+          save_status: string
+          saved_updated_at: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

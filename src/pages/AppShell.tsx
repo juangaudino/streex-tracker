@@ -79,6 +79,13 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
   const currentDayIdx = openWeek?.entries.findIndex((day) => day.date === currentLocalDate) ?? -1;
   const canStartShift = Boolean(openWeek && currentDayIdx >= 0 && !hasActiveGlobalShift);
   const canUseShiftControl = Boolean(openWeek && (hasActiveGlobalShift || canStartShift));
+  const syncLabel = store.syncStatus === "saving"
+    ? "Saving"
+    : store.syncStatus === "conflict"
+      ? "Review sync"
+      : store.syncStatus === "error"
+        ? "Retry save"
+        : "Saved";
 
   async function handleShiftToggle() {
     if (!openWeek || !canUseShiftControl) return;
@@ -178,6 +185,19 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
 
         {/* Hubs (always at the right, both mobile + desktop) */}
         <div className="ml-auto md:ml-2 flex min-w-0 items-center gap-1">
+          <span
+            className={cn(
+              "hidden lg:inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
+              store.syncStatus === "saved" && "bg-success/10 text-success",
+              store.syncStatus === "saving" && "bg-primary/10 text-primary",
+              store.syncStatus === "conflict" && "bg-warning/10 text-warning",
+              store.syncStatus === "error" && "bg-destructive/10 text-destructive",
+            )}
+            title="Data sync state"
+          >
+            <span className={cn("h-1.5 w-1.5 rounded-full", store.syncStatus === "saved" ? "bg-success" : store.syncStatus === "saving" ? "bg-primary animate-pulse" : store.syncStatus === "conflict" ? "bg-warning" : "bg-destructive")} />
+            {syncLabel}
+          </span>
           <button
             type="button"
             onClick={handleShiftToggle}
@@ -240,6 +260,40 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
                   {user?.email && (
                     <p className="text-xs text-muted-foreground truncate px-1 pb-1">{user.email}</p>
                   )}
+                  {store.syncStatus !== "saved" && (
+                    <div className="rounded-lg border border-border bg-muted/40 p-2 text-xs">
+                      <p className="font-semibold text-foreground">
+                        {store.syncStatus === "saving" ? "Saving your latest edit…" : store.syncStatus === "conflict" ? "A newer week version exists." : "Your latest edit is waiting to retry."}
+                      </p>
+                      {store.syncStatus === "conflict" && store.hasPendingConflict && (
+                        <div className="mt-2 flex gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => { store.resolveWeekConflict("keep-remote"); setMobileMenu(false); }}
+                            className="rounded-md bg-background px-2 py-1 font-medium text-muted-foreground hover:text-foreground"
+                          >
+                            Use newer copy
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { store.resolveWeekConflict("use-local"); setMobileMenu(false); }}
+                            className="rounded-md bg-primary px-2 py-1 font-medium text-primary-foreground"
+                          >
+                            Keep my edit
+                          </button>
+                        </div>
+                      )}
+                      {store.syncStatus === "error" && (
+                        <button
+                          type="button"
+                          onClick={() => store.retryLastSave()}
+                          className="mt-2 rounded-md bg-primary px-2 py-1 font-medium text-primary-foreground"
+                        >
+                          Retry save
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <RouterNavLink
                     to="/settings"
                     onClick={() => setMobileMenu(false)}
@@ -279,7 +333,7 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
         userEmail={user?.email}
       />
       <main className="flex-1 overflow-y-auto pb-20 md:pb-6">
-        <Outlet context={store as any} />
+        <Outlet context={store} />
       </main>
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border flex z-50">
         {navItems.map((item) => (

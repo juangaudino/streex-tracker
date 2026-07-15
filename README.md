@@ -20,6 +20,7 @@ New contributors and new Codex chats should begin with:
 - `docs/STREEX_AI_WORKFLOW.md`
 - `docs/PRODUCT_STATUS.md`
 - `docs/ROADMAP.md`
+- `docs/QA_RUNBOOK.md`
 - `CHANGELOG.md`
 
 `docs/PRODUCT_STATUS.md` is the master living status document for Claude, ChatGPT, Codex, and Lovable. If an external AI has repo access, ask it to read that file first.
@@ -28,7 +29,7 @@ New contributors and new Codex chats should begin with:
 
 ## Current Production Status
 
-- Current release: **Beta 0.9.0**
+- Current release: **Beta 0.9.2 — Personal Data Safety & Recovery**
 - Production app: `https://gig.getstreex.com`
 - Hosting: **Vercel**
 - DNS/domain: **Cloudflare** for `getstreex.com`

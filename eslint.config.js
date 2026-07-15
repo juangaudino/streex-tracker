@@ -19,8 +19,19 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      // Streex intentionally exports a few UI helpers beside components. This rule
+      // only affects Fast Refresh ergonomics, not production behavior.
+      "react-refresh/only-export-components": "off",
       "@typescript-eslint/no-unused-vars": "off",
+    },
+  },
+  {
+    // Supabase Edge Functions use Deno's remote client without the generated
+    // browser schema. Keep all other lint rules active while avoiding false
+    // precision from forcing casts on service-role response shapes.
+    files: ["supabase/functions/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 );

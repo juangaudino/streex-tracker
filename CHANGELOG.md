@@ -2,6 +2,40 @@
 
 ## Beta Releases
 
+### Beta 0.9.2 — Personal Data Safety & Recovery
+
+### Added
+
+- Every successful week save now captures the prior week as a private restore point before writing the next version.
+- Saves compare the version originally loaded with the current remote version; a stale device cannot silently overwrite a newer week.
+- History now exposes restore points and restores them safely while preserving the current version first.
+- The app shows saving, saved, conflict, and retry states so interrupted work is visible instead of silent.
+
+### Data Integrity
+
+- Restore points use user-owned RLS policies and security-invoker functions; no service-role key is exposed to the browser.
+- Existing weeks, earnings, mileage, rides, shifts, snapshots, and historical metrics were not rewritten.
+
+### Backend / Migration
+
+- Added and applied `20260711013903_add_week_revisions_and_conflict_save.sql` to the active owner-controlled Supabase project.
+- The migration is additive: it adds private `week_revisions` and owner-scoped save, restore, and listing RPCs without replaying historical migrations or rewriting data.
+
+### Beta 0.9.1 — Reliability & Release Safety
+
+### Changed
+
+- Added repeatable `typecheck`, `validate`, and Playwright E2E commands for local release verification.
+- GitHub Actions now runs typecheck, lint, unit tests, and a production build for every push or pull request targeting `main`.
+- Added a separately triggered, credentials-protected QA route smoke for the isolated QA account.
+- Updated the authenticated E2E assertion to match the current production sign-in surface.
+- Patched audited production dependencies; the production dependency audit now reports zero known vulnerabilities.
+
+### Quality
+
+- TypeScript and ESLint now pass cleanly across the repository.
+- No earnings, shifts, mileage, rides, snapshots, Supabase schema, or production records changed.
+
 ### Beta 0.9.0 — Deep Insights Intelligence Layer
 
 ### Added

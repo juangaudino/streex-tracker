@@ -1,6 +1,6 @@
 # Streex Roadmap
 
-Last updated: 2026-07-08
+Last updated: 2026-07-11
 
 This is the living product roadmap for Streex Gig Earnings.
 
@@ -19,10 +19,10 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after the first Deep Insights intelligence release:
+Current baseline after the Personal Data Safety & Recovery release:
 
 ```text
-Beta 0.9.0 - Deep Insights Intelligence Layer
+Beta 0.9.2 - Personal Data Safety & Recovery
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -71,6 +71,72 @@ Deep Insights 0.7.0 added a separate comparison workspace with:
 - `archive`: concept preserved for history, not currently active.
 
 ## Near-Term Planned Sequence
+
+### Beta 0.9.1 - Reliability & Release Safety
+
+Status: completed.
+
+Scope:
+
+- Add repeatable local commands for typecheck, lint, unit tests, production build, and E2E smoke coverage.
+- Add a GitHub Actions quality gate for every push and pull request targeting `main`.
+- Add a separately triggered route smoke using only an isolated QA account and protected GitHub environment secrets.
+- Resolve the existing ESLint failures without changing app behavior or data calculations.
+- Patch known production dependency vulnerabilities and verify the production dependency audit is clean.
+- Mark Ask My Data as Alpha and paused until an independently approved provider path exists.
+
+Boundaries:
+
+- CI never mutates production data.
+- The manually triggered QA route smoke signs in and reads protected routes only.
+- No earnings, shifts, mileage, rides, snapshots, Supabase schema, or production records change.
+
+### Beta 0.9.2 - Personal Data Safety & Recovery
+
+Status: completed.
+
+Scope:
+
+- Prevent silent overwrites when the same week changes from another device or stale session.
+- Add a visible saved/sync state and safe retry behavior for interrupted saves.
+- Add recoverable week restore points so the owner can inspect and recover a prior version after an accidental edit.
+- Add automated coverage for restore-point parsing and run the full existing calculation suite after integration.
+
+Delivery evidence:
+
+- Active Supabase migration `20260711013903_add_week_revisions_and_conflict_save.sql` applied.
+- Restore points, optimistic save conflict detection, retry status, and History recovery controls implemented in source.
+- Frontend publication remains the normal commit/push/Vercel step.
+
+Boundaries:
+
+- Keep the current weekly JSON document model; this release addresses personal data safety, not premature normalization.
+- Never overwrite a remote version silently and never rewrite earnings, mileage, rides, or historical metrics during recovery.
+
+### Beta 0.9.3 - Live Work Mode
+
+Status: planned.
+
+Scope:
+
+- Evolve Full Focus into a clearer work-time flow: start, update, pause/resume, and end.
+- Keep Career, History, Compare, and Deep Insights available for review without competing with live shift actions.
+- Improve Quick Update context with clear last-saved totals and change confirmation.
+
+Boundaries:
+
+- Do not remove existing product surfaces.
+- Preserve current accumulated-total, app-specific rides, and shared-mileage semantics.
+
+### Personal Context Tags - Market/Zone Candidate
+
+Status: candidate after Live Work Mode.
+
+Scope direction:
+
+- Evaluate optional owner-defined market or zone tags on a shift before storing new location-adjacent data.
+- Use manual, intentional context only; no GPS tracking or inferred geography.
+- Do not add analytics claims until a meaningful sample exists.
 
 ### Beta 0.6.1 - Deep Insights Refinement + Light Mode
 

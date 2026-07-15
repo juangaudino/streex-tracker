@@ -13,7 +13,7 @@ import {
 } from "@/lib/store";
 import type { StoreContext } from "./types";
 import type { DayEntry, EarningsSnapshot, ShiftSession, WeekRecord } from "@/lib/types";
-import { Copy, Eye, Pencil, Plus, Trash2, Trophy } from "lucide-react";
+import { Copy, Eye, Pencil, Plus, RotateCcw, ShieldCheck, Trash2, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createHistoricalShift, getShiftMiles, resolveShiftRate, shiftDurationHours, updateShiftBoundaryTime } from "@/lib/shiftIntelligence";
 import { replaceShiftMileage } from "@/lib/mileageAttribution";
@@ -43,7 +43,7 @@ function formatShiftTime(value?: string): string {
 }
 
 export default function HistoryPage() {
-  const { weeks, settings, earningsSnapshots, deleteWeek, addWeek, updateWeek } =
+  const { weeks, settings, earningsSnapshots, deleteWeek, addWeek, getWeekRevisions, restoreRevision, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -51,6 +51,9 @@ export default function HistoryPage() {
   const standardApps = settings.activeApps.filter((app) => !isRewardApp(app));
   const [editingWeekId, setEditingWeekId] = useState<string | null>(null);
   const [expandedShiftIds, setExpandedShiftIds] = useState<Set<string>>(() => new Set());
+  const [recoveryWeekId, setRecoveryWeekId] = useState<string | null>(null);
+  const [revisionsByWeek, setRevisionsByWeek] = useState<Record<string, Awaited<ReturnType<typeof getWeekRevisions>>>>({});
+  const [loadingRevisions, setLoadingRevisions] = useState<string | null>(null);
 
   const sorted = [...weeks].sort(
     (a, b) => b.startDate.localeCompare(a.startDate)
@@ -63,6 +66,42 @@ export default function HistoryPage() {
   async function persistWeek(updatedWeek: WeekRecord) {
     const saved = await updateWeek(updatedWeek);
     if (!saved) toast({ title: "Could not save historical edits.", variant: "destructive" });
+  }
+
+  async function toggleRecoveryPoints(weekId: string) {
+    if (recoveryWeekId === weekId) {
+      setRecoveryWeekId(null);
+      return;
+    }
+    setRecoveryWeekId(weekId);
+    if (revisionsByWeek[weekId]) return;
+    setLoadingRevisions(weekId);
+    try {
+      const revisions = await getWeekRevisions(weekId);
+      setRevisionsByWeek((current) => ({ ...current, [weekId]: revisions }));
+    } catch (error) {
+      toast({
+        title: "Could not load restore points.",
+        description: error instanceof Error ? error.message : undefined,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingRevisions(null);
+    }
+  }
+
+  async function handleRestoreRevision(weekId: string, revisionId: string) {
+    if (!confirm("Restore this saved version? Your current version will be saved as a new restore point first.")) return;
+    const restored = await restoreRevision(weekId, revisionId);
+    if (!restored) {
+      toast({ title: "Could not restore this version. Review the sync status and try again.", variant: "destructive" });
+      return;
+    }
+    setRevisionsByWeek((current) => {
+      const { [weekId]: _restored, ...remaining } = current;
+      return remaining;
+    });
+    toast({ title: "Week restored. Your pre-restore version is safely retained." });
   }
 
   function updateHistoricalDay(week: WeekRecord, dayIdx: number, updater: (day: DayEntry) => DayEntry) {
@@ -254,7 +293,46 @@ export default function HistoryPage() {
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => toggleRecoveryPoints(w.id)}
+                  title="Restore points"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                </Button>
               </div>
+
+              {recoveryWeekId === w.id && (
+                <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
+                  <div className="flex items-start gap-2">
+                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold">Restore points</p>
+                      <p className="text-xs text-muted-foreground">Each save keeps the prior version. Restoring one also preserves your current version first.</p>
+                    </div>
+                  </div>
+                  {loadingRevisions === w.id ? (
+                    <p className="mt-3 text-xs text-muted-foreground">Loading saved versions…</p>
+                  ) : (revisionsByWeek[w.id] ?? []).length === 0 ? (
+                    <p className="mt-3 text-xs text-muted-foreground">No restore points exist yet for this week.</p>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {(revisionsByWeek[w.id] ?? []).map((revision) => (
+                        <div key={revision.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/70 p-2">
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold">{new Date(revision.createdAt).toLocaleString()}</p>
+                            <p className="text-[11px] text-muted-foreground">{revision.reason === "before_restore" ? "Saved before a restore" : "Saved before an edit"} · {formatCurrency(weekTotal({ ...w, entries: revision.entries, weeklyGoal: revision.weeklyGoal, weeklyHoursGoal: revision.weeklyHoursGoal, status: revision.status }), sym)}</p>
+                          </div>
+                          <Button size="sm" variant="outline" onClick={() => handleRestoreRevision(w.id, revision.id)}>
+                            <RotateCcw className="mr-1 h-3.5 w-3.5" /> Restore
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {editingWeekId === w.id && w.status === "closed" && (
                 <div className="mt-3 rounded-xl border border-border bg-background/45 p-3">

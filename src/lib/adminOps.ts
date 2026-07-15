@@ -100,7 +100,7 @@ export async function submitFeedback(input: {
   userId: string;
   userEmail?: string | null;
 }) {
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("feedback_items")
     .insert({
       user_id: input.userId,

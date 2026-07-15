@@ -282,7 +282,7 @@ async function sendCampaign(service: SupabaseClient, adminUserId: string, adminE
 
   const recipients = await resolveRecipients(service, { audience, specificEmail, adminEmail });
   if (!recipients.length) return json({ error: "No eligible recipients found." }, 400);
-  if (audience !== "test" && !Boolean(body.confirmBroadcast)) {
+  if (audience !== "test" && body.confirmBroadcast !== true) {
     return json({ error: "Broadcast confirmation is required." }, 400);
   }
 

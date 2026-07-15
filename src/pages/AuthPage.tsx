@@ -4,13 +4,14 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { KeyRound, Lock, LogIn, Mail, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { AuthError } from "@supabase/supabase-js";
 import ChangelogDialog from "@/components/ChangelogDialog";
 import { CURRENT_VERSION, CHANGELOG, formatVersionLabel } from "@/lib/changelog";
 import { AnimatedStreexLogo, StreexMotionBackground } from "@/components/StreexMotionBrand";
 
 interface AuthPageProps {
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>;
 }
 
 export default function AuthPage({ signIn, signUp }: AuthPageProps) {

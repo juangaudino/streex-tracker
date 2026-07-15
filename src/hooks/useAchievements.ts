@@ -4,6 +4,12 @@ import { ACHIEVEMENTS, AchievementState } from "@/lib/achievements";
 import { triggerAchievementToast } from "@/components/AchievementToast";
 import type { WeekRecord } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+type AchievementRow = Pick<
+  Database["public"]["Tables"]["user_achievements"]["Row"],
+  "achievement_id" | "unlocked_at"
+>;
 
 export function useAchievements(user: User | null, weeks: WeekRecord[]) {
   const [unlockedIds, setUnlockedIds] = useState<Map<string, string>>(new Map());
@@ -16,7 +22,7 @@ export function useAchievements(user: User | null, weeks: WeekRecord[]) {
       .from("user_achievements")
       .select("achievement_id, unlocked_at");
     const map = new Map<string, string>();
-    if (data) data.forEach((r: any) => map.set(r.achievement_id, r.unlocked_at));
+    if (data) data.forEach((row: AchievementRow) => map.set(row.achievement_id, row.unlocked_at));
     setUnlockedIds(map);
     setLoading(false);
   }, [user]);

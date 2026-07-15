@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.9.2";
+export const CURRENT_VERSION = "0.9.3";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.3",
+    date: "2026-07",
+    title: "Live Work Mode Beta",
+    tags: ["new", "feature"],
+    items: [
+      "Live Work Mode is available as a separate beta workspace from the account menu without replacing Dashboard, Entry, or Full Focus",
+      "The live workspace reflects the real ready, working, paused, and ended shift states and uses the existing canonical shift persistence",
+      "Start, pause, resume, end, and Quick Update are grouped with today's earnings, hours, mileage, rides, and sync status",
+      "Accumulated app earnings, app-specific rides, shared accumulated day mileage, and Octopus ride progress preserve their existing data contracts",
+      "The existing navigation and stable work surfaces remain available throughout the beta",
+    ],
+  },
   {
     version: "0.9.2",
     date: "2026-07",

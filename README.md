@@ -30,7 +30,7 @@ New contributors and new Codex chats should begin with:
 ## Current Production Status
 
 - Current public release: **Beta 0.9.2 — Personal Data Safety & Recovery**
-- Next local foundation: **Account Readiness & Guided Start** (pre-0.9.3; awaiting owner-managed publication)
+- Current local source candidate: **Beta 0.9.3 — Live Work Mode Beta**
 - Production app: `https://gig.getstreex.com`
 - Hosting: **Vercel**
 - DNS/domain: **Cloudflare** for `getstreex.com`

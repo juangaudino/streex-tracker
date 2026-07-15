@@ -20,6 +20,7 @@ import AdminPage from "./pages/AdminPage";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import LegalPage from "./pages/LegalPage";
+import LiveWorkModePage from "./pages/LiveWorkModePage";
 import { useAuth } from "./hooks/useAuth";
 import { useAppRuntime } from "./hooks/useAppRuntime";
 import { useWeekStore } from "./hooks/useWeekStore";
@@ -131,6 +132,7 @@ const App = () => {
               <Route path="/assistant" element={<AssistantPage />} />
               <Route path="/deep-insights" element={<DeepInsightsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/live-work" element={<LiveWorkModePage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />

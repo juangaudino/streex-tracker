@@ -24,6 +24,12 @@ Current public app version:
 Beta 0.9.2 - Personal Data Safety & Recovery
 ```
 
+Current local source candidate:
+
+```text
+Beta 0.9.3 - Live Work Mode Beta
+```
+
 Source of truth:
 
 - `src/lib/changelog.ts`
@@ -100,6 +106,17 @@ External release gates remain intentionally separate from code publication:
   CAPTCHA secret are configured.
 - The Supabase security advisor's leaked-password-protection warning requires a
   plan/policy decision before it is enabled.
+
+SMTP confirmation/recovery delivery and Cloudflare Turnstile were configured
+and exercised by the owner after publication of the account-readiness frontend.
+
+### 0.9.3 Live Work Mode Source
+
+The local source adds `/live-work` as an explicitly separate Beta workspace
+available from the person/account menu before Settings. It uses the existing
+week, shift, Quick Update, mileage, ride-attribution, sync, and Octopus paths;
+it does not replace Dashboard, Entry, Full Focus, or any analytical surface.
+Publication and real-device beta QA remain pending.
 
 ## Backend Rules
 

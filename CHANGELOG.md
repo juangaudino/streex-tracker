@@ -2,6 +2,20 @@
 
 ## Beta Releases
 
+### Beta 0.9.3 — Live Work Mode Beta
+
+### Added
+
+- Added a separate `/live-work` workspace from the account menu, explicitly labeled Beta.
+- Added real ready, working, paused, and ended shift states using the existing shift persistence model.
+- Grouped Start, Pause/Resume, End Shift, Quick Update, today's operational totals, and sync status into one focused surface.
+
+### Data Integrity
+
+- Earnings remain accumulated totals by app, rides remain app-specific, and mileage remains the shared accumulated total for the day.
+- Quick Update continues using the canonical mileage, ride-attribution, snapshot, conflict-save, and Octopus reward paths.
+- Dashboard, Entry, Full Focus, Compare, History, Career, Deep Insights, Ask My Data, and the existing navigation were not replaced or removed.
+
 ### Beta 0.9.2 — Personal Data Safety & Recovery
 
 ### Added

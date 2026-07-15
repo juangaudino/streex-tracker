@@ -138,18 +138,21 @@ Boundaries:
 
 ### Beta 0.9.3 - Live Work Mode
 
-Status: planned.
+Status: implemented in source; awaiting owner commit, Vercel publication, and real-device beta QA.
 
 Scope:
 
-- Evolve Full Focus into a clearer work-time flow: start, update, pause/resume, and end.
-- Keep Career, History, Compare, and Deep Insights available for review without competing with live shift actions.
-- Improve Quick Update context with clear last-saved totals and change confirmation.
+- Add a separate `/live-work` beta workspace instead of replacing Full Focus or any stable surface.
+- Expose it from the account/person menu immediately before Settings.
+- Group start, Quick Update, pause/resume, end, current shift time, daily totals, and sync state in one work surface.
+- Keep all existing navigation and every analytical/product surface available exactly as before.
+- Reuse canonical shift, accumulated-total, ride-attribution, mileage, snapshot, optimistic-save, and Octopus paths.
 
 Boundaries:
 
 - Do not remove existing product surfaces.
 - Preserve current accumulated-total, app-specific rides, and shared-mileage semantics.
+- Keep this surface visibly labeled Beta while real-device behavior and ergonomics are evaluated.
 
 ### Personal Context Tags - Market/Zone Candidate
 

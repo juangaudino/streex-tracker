@@ -22,6 +22,7 @@ import {
   Pause,
   Square,
   MessageSquare,
+  RadioTower,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink as RouterNavLink } from "react-router-dom";
@@ -294,6 +295,15 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
                       )}
                     </div>
                   )}
+                  <RouterNavLink
+                    to="/live-work"
+                    onClick={() => setMobileMenu(false)}
+                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                  >
+                    <RadioTower className="h-4 w-4 text-primary" />
+                    <span>Live Work Mode</span>
+                    <span className="ml-auto rounded-full border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-primary">Beta</span>
+                  </RouterNavLink>
                   <RouterNavLink
                     to="/settings"
                     onClick={() => setMobileMenu(false)}

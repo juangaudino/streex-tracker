@@ -18,6 +18,12 @@ export default function ResetPasswordPage() {
     if (hash.includes("type=recovery")) {
       setValid(true);
     }
+    const code = new URLSearchParams(window.location.search).get("code");
+    if (code) {
+      void supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (!error) setValid(true);
+      });
+    }
     // Also listen for auth state change with recovery event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {

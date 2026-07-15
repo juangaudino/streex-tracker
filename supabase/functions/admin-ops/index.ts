@@ -11,11 +11,13 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
   Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const APP_PUBLIC_URL = (Deno.env.get("APP_PUBLIC_URL") ?? "https://gig.getstreex.com").replace(/\/+$/, "");
 
 type SupabaseClient = ReturnType<typeof createClient>;
 type FeedbackStatus = "new" | "reviewed" | "planned" | "resolved" | "dismissed";
 type FeedbackType = "suggestion" | "bug" | "general";
 type AccountStatus = "active" | "blocked" | "deleted_pending";
+type SupportEmailKind = "confirmation" | "recovery";
 
 type DayEntry = {
   date?: string;
@@ -60,7 +62,25 @@ function compactUser(user: any) {
     email: user.email ?? null,
     createdAt: user.created_at ?? null,
     lastSignInAt: user.last_sign_in_at ?? null,
+    emailConfirmedAt: user.email_confirmed_at ?? null,
+    confirmationSentAt: user.confirmation_sent_at ?? null,
   };
+}
+
+async function writeAdminAudit(
+  service: SupabaseClient,
+  adminUserId: string,
+  action: string,
+  targetUserId?: string,
+  metadata: Record<string, unknown> = {},
+) {
+  const { error } = await service.from("admin_audit_events").insert({
+    admin_user_id: adminUserId,
+    target_user_id: targetUserId ?? null,
+    action,
+    metadata,
+  });
+  if (error) console.warn("admin audit write failed", { action, targetUserId, message: error.message });
 }
 
 async function getAdminUser(req: Request, anon: SupabaseClient, service: SupabaseClient) {
@@ -248,6 +268,7 @@ async function setUserStatus(service: SupabaseClient, adminUserId: string, body:
     .upsert(patch, { onConflict: "user_id" });
 
   if (error) return json({ error: error.message }, 500);
+  await writeAdminAudit(service, adminUserId, "account_status_changed", userId, { status });
   return json({ ok: true });
 }
 
@@ -269,7 +290,50 @@ async function updateAppConfig(service: SupabaseClient, adminUserId: string, bod
     .single();
 
   if (error) return json({ error: error.message }, 500);
+  await writeAdminAudit(service, adminUserId, "app_runtime_config_updated");
   return json({ config: data });
+}
+
+async function sendSupportAuthEmail(service: SupabaseClient, adminUserId: string, body: any) {
+  const userId = String(body.userId ?? "");
+  const kind = String(body.kind ?? "") as SupportEmailKind;
+  if (!userId || !["confirmation", "recovery"].includes(kind)) {
+    return json({ error: "Invalid support email request." }, 400);
+  }
+
+  const { data: targetResult, error: targetError } = await service.auth.admin.getUserById(userId);
+  const target = targetResult?.user;
+  if (targetError || !target?.email) return json({ error: "User email is unavailable." }, 404);
+  if (kind === "confirmation" && target.email_confirmed_at) {
+    return json({ error: "This email is already confirmed." }, 400);
+  }
+
+  const result = kind === "confirmation"
+    ? await service.auth.resend({
+      type: "signup",
+      email: target.email,
+      options: { emailRedirectTo: APP_PUBLIC_URL },
+    })
+    : await service.auth.resetPasswordForEmail(target.email, {
+      redirectTo: `${APP_PUBLIC_URL}/reset-password`,
+    });
+
+  if (result.error) return json({ error: result.error.message }, 500);
+  await writeAdminAudit(service, adminUserId, `support_${kind}_email_sent`, userId);
+  return json({ ok: true });
+}
+
+async function listUserAudit(service: SupabaseClient, body: any) {
+  const userId = String(body.userId ?? "");
+  if (!userId) return json({ error: "User id is required." }, 400);
+  const { data, error } = await service
+    .from("admin_audit_events")
+    .select("id,action,metadata,created_at")
+    .eq("target_user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(12);
+  if (error) return json({ error: error.message }, 500);
+  return json({ events: data ?? [] });
 }
 
 async function forceSignOutAll(service: SupabaseClient, adminUserId: string) {
@@ -286,6 +350,7 @@ async function forceSignOutAll(service: SupabaseClient, adminUserId: string) {
     .single();
 
   if (error) return json({ error: error.message }, 500);
+  await writeAdminAudit(service, adminUserId, "force_sign_out_all");
   return json({ config: data });
 }
 
@@ -377,6 +442,8 @@ Deno.serve(async (req) => {
     if (action === "updateAppConfig") return updateAppConfig(service, access.user.id, body);
     if (action === "forceSignOutAll") return forceSignOutAll(service, access.user.id);
     if (action === "setUserStatus") return setUserStatus(service, access.user.id, body);
+    if (action === "sendSupportAuthEmail") return sendSupportAuthEmail(service, access.user.id, body);
+    if (action === "listUserAudit") return listUserAudit(service, body);
     if (action === "listFeedback") {
       const { data, error } = await service
         .from("feedback_items")

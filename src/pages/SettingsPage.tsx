@@ -13,6 +13,7 @@ import { formatCurrencyAmount, getCurrencyCode, getCurrencyConfig, SUPPORTED_CUR
 import { usePerformanceMode } from "@/hooks/usePerformanceMode";
 import { useDashboardExperience } from "@/hooks/useDashboardExperience";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import {
   Select,
   SelectContent,
@@ -28,6 +29,7 @@ export default function SettingsPage() {
   const { performanceMode, setPerformanceMode } = usePerformanceMode();
   const { dashboardExperience, setDashboardExperience } = useDashboardExperience();
   const { profile, setProfile } = useUserProfile(user?.id);
+  const onboarding = useOnboarding(user, weeks);
   const [goal, setGoal] = useState(settings.defaultWeeklyGoal.toString());
   const [hoursGoal, setHoursGoal] = useState(settings.defaultWeeklyHoursGoal?.toString() || "");
   const [currencyCode, setCurrencyCode] = useState(getCurrencyCode(settings.currencySymbol));
@@ -46,8 +48,8 @@ export default function SettingsPage() {
     setPhoneNumber(profile.phoneNumber);
   }, [profile.firstName, profile.phoneNumber]);
 
-  function handleSave() {
-    updateSettings({
+  async function handleSave() {
+    const saved = await updateSettings({
       defaultWeeklyGoal: Number(goal) || 0,
       defaultWeeklyHoursGoal: Number(hoursGoal) || 0,
       currencySymbol: currencyCode,
@@ -55,7 +57,12 @@ export default function SettingsPage() {
       octopusPoints: settings.octopusPoints,
       octopusUpdatedAt: settings.octopusUpdatedAt,
     });
-    toast({ title: "Settings saved." });
+    if (!saved) {
+      toast({ title: "Settings could not be saved.", variant: "destructive" });
+      return;
+    }
+    await onboarding.complete("setup");
+    toast({ title: "Settings saved.", description: "Your getting-started checklist is updated." });
   }
 
   function addApp() {
@@ -166,7 +173,7 @@ export default function SettingsPage() {
               Profile
             </label>
             <p className="text-xs text-muted-foreground">
-              Optional. Used for greetings and daily start context only.
+              Optional. Used for greetings and daily start context only. It stays on this device.
             </p>
           </div>
           <div className="space-y-2">
@@ -530,9 +537,16 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <Button onClick={handleSave}>
-        <Save className="h-4 w-4 mr-1" /> Save Settings
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={handleSave}>
+          <Save className="h-4 w-4 mr-1" /> Save Settings
+        </Button>
+        {onboarding.state.dismissedAt && (
+          <Button type="button" variant="outline" onClick={() => void onboarding.resume()}>
+            Show getting started
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

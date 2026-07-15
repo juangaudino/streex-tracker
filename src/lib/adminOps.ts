@@ -20,6 +20,8 @@ export interface AdminUserSummary {
   email: string | null;
   createdAt: string | null;
   lastSignInAt: string | null;
+  emailConfirmedAt: string | null;
+  confirmationSentAt: string | null;
   status: AccountStatus;
   blockedAt: string | null;
   deleteRequestedAt: string | null;
@@ -28,6 +30,13 @@ export interface AdminUserSummary {
   activeDays: number;
   lastEntryDate: string | null;
   lastActivityAt: string | null;
+}
+
+export interface AdminAuditEvent {
+  id: string;
+  action: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
 }
 
 export interface FeedbackItem {

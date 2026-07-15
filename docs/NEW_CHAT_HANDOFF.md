@@ -1,6 +1,6 @@
 # Streex New Chat Handoff
 
-Last audited: 2026-07-11
+Last audited: 2026-07-14
 
 This is the operational handoff for a new Codex, Claude, ChatGPT, or Lovable conversation. It describes the current repository state and the product decisions that must survive chat resets. Read it before proposing or implementing work.
 
@@ -21,7 +21,7 @@ Also read:
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.
-- The 0.9.2 source starts from synchronized baseline `b553c04 Compare Update`; always verify the live HEAD after publication.
+- The owner confirmed the 0.9.2 baseline was committed, pushed, and visually verified. Always verify the live HEAD after a later publication.
 - Frontend hosting: Vercel.
 - DNS and domain: Cloudflare, `getstreex.com`.
 - Active backend: owner-controlled Supabase project `ywbrovislvqkfzsyqpiv`.
@@ -92,6 +92,8 @@ Important data rules:
 - `feedback_items`
 - `user_achievements`
 - `user_settings`
+- `user_onboarding`
+- `admin_audit_events` (server-only; support actions only)
 - `weeks`
 - `xp_events`
 

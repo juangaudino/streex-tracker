@@ -48,6 +48,8 @@ import MetricDrillDownSheet, { type MetricDrillDownDetail } from "@/components/M
 import type { WeekRecord } from "@/lib/types";
 import FocusUtilitySlot, { type FocusUtilityEvent } from "@/components/FocusUtilitySlot";
 import { adjustOctopusPoints } from "@/lib/octopusRewards";
+import { useOnboarding } from "@/hooks/useOnboarding";
+import OnboardingChecklist from "@/components/OnboardingChecklist";
 
 type PulseState = "calm" | "steady" | "strong" | "record" | "streak";
 
@@ -209,6 +211,7 @@ export default function DashboardPage() {
   const { pulseMode } = useTheme();
   const { isFullFocus } = useDashboardExperience();
   const { profile } = useUserProfile(user?.id);
+  const onboarding = useOnboarding(user, weeks);
   const driverUtility = useDriverUtility();
   const todayStr = formatDate(new Date());
   const dailyStartHubKey = `streex_daily_start_hub_dismissed_${todayStr}`;
@@ -297,6 +300,17 @@ export default function DashboardPage() {
         <div className="w-full max-w-2xl text-left">
           <DailyCommandCenterView utility={driverUtility} />
         </div>
+        {!hasHistory && !onboarding.loading && !onboarding.state.dismissedAt && (
+          <div className="w-full max-w-2xl text-left">
+            <OnboardingChecklist
+              state={onboarding.state}
+              onSetup={() => navigate("/settings")}
+              onCreateWeek={() => navigate("/entry")}
+              onTrack={() => navigate("/entry")}
+              onDismiss={() => void onboarding.dismiss()}
+            />
+          </div>
+        )}
         {hasHistory && (
           <div className="w-full max-w-2xl text-left">
             <DriverIdentityCard
@@ -899,6 +913,16 @@ export default function DashboardPage() {
       </div>
 
       <DailyCommandCenterView utility={driverUtility} />
+
+      {!onboarding.loading && !onboarding.isComplete && !onboarding.state.dismissedAt && (
+        <OnboardingChecklist
+          state={onboarding.state}
+          onSetup={() => navigate("/settings")}
+          onCreateWeek={() => navigate("/entry")}
+          onTrack={() => navigate("/entry")}
+          onDismiss={() => void onboarding.dismiss()}
+        />
+      )}
 
       {/* Smart Insight — single actionable contextual message */}
       {(() => {

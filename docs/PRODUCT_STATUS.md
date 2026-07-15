@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-07-11
+Last updated: 2026-07-14
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -77,13 +77,29 @@ and restores. Historical migration metadata was reconciled only after the live
 schema was verified; no historical migration SQL was re-executed and no user
 data was rewritten.
 
-The frontend source for 0.9.2 still requires its normal commit, push, and Vercel
-publication before this UI is live at `gig.getstreex.com`.
+The 0.9.2 frontend was published by the owner after the baseline audit.
 
-Security follow-up: the Supabase security advisor reports that leaked-password
-protection is disabled. Enable it in the active project's Auth password-security
-settings after confirming the desired user-policy impact; it is not a data or
-migration defect and was not changed automatically.
+### Pre-0.9.3 Account Readiness Foundation
+
+The active Supabase project now has the additive migration
+`20260715033547_account_readiness_onboarding.sql` applied and the active
+`admin-ops` Edge Function deployed with its account-support actions. The
+migration adds owner-scoped onboarding state and server-only admin audit events;
+it does not alter weeks, earnings, shifts, mileage, rides, snapshots, or
+historical metrics.
+
+The corresponding frontend source is local and awaits the owner's normal
+commit, push, and Vercel publication. It adds clear email-confirmation state,
+safe password-recovery messaging, optional Turnstile support, a guided-start
+checklist, legal routes, and limited admin account support controls.
+
+External release gates remain intentionally separate from code publication:
+
+- Supabase Auth needs a production SMTP sender and an isolated-QA delivery test.
+- Turnstile stays disabled until both its frontend site key and Supabase Auth
+  CAPTCHA secret are configured.
+- The Supabase security advisor's leaked-password-protection warning requires a
+  plan/policy decision before it is enabled.
 
 ## Backend Rules
 

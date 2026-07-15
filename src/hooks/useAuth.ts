@@ -3,6 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import type { AuthChangeEvent, User, Session } from "@supabase/supabase-js";
 import { lifecycleDebug } from "@/lib/appLifecycle";
 
+export interface AuthActionResult {
+  error: import("@supabase/supabase-js").AuthError | null;
+  emailConfirmationRequired?: boolean;
+}
+
 interface AuthSnapshot {
   session: Session | null;
   user: User | null;
@@ -56,13 +61,24 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    return { error };
+  const signUp = useCallback(async (email: string, password: string, captchaToken?: string): Promise<AuthActionResult> => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        captchaToken,
+      },
+    });
+    return { error, emailConfirmationRequired: Boolean(data.user && !data.session) };
   }, []);
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const signIn = useCallback(async (email: string, password: string, captchaToken?: string): Promise<AuthActionResult> => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: { captchaToken },
+    });
     return { error };
   }, []);
 

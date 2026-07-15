@@ -15,6 +15,7 @@ import { CURRENT_VERSION, formatVersionLabel } from "@/lib/changelog";
 import {
   callAdminEmail,
   callAdminOps,
+  type AdminAuditEvent,
   type AccountStatus,
   type AdminUserSummary,
   type EmailCampaign,
@@ -101,6 +102,8 @@ export default function AdminPage() {
   const [specificEmail, setSpecificEmail] = useState("");
   const [confirmBroadcast, setConfirmBroadcast] = useState(false);
   const [working, setWorking] = useState<string | null>(null);
+  const [auditByUser, setAuditByUser] = useState<Record<string, AdminAuditEvent[]>>({});
+  const [auditOpenFor, setAuditOpenFor] = useState<string | null>(null);
 
   async function loadAdmin() {
     try {
@@ -154,6 +157,42 @@ export default function AdminPage() {
       await loadAdmin();
     } catch (err) {
       setError(err instanceof Error ? err.message : "User update failed.");
+    } finally {
+      setWorking(null);
+    }
+  }
+
+  async function sendSupportAuthEmail(userId: string, kind: "confirmation" | "recovery") {
+    const description = kind === "confirmation"
+      ? "send a new email confirmation"
+      : "send a password recovery email";
+    if (!window.confirm(`Confirm: ${description}? Streex will send it to the account email.`)) return;
+    const key = `support-${kind}-${userId}`;
+    try {
+      setWorking(key);
+      await callAdminOps({ action: "sendSupportAuthEmail", userId, kind });
+      setError(null);
+      await loadUserAudit(userId, true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Support email could not be sent.");
+    } finally {
+      setWorking(null);
+    }
+  }
+
+  async function loadUserAudit(userId: string, force = false) {
+    if (!force && auditOpenFor === userId) {
+      setAuditOpenFor(null);
+      return;
+    }
+    const key = `audit-${userId}`;
+    try {
+      setWorking(key);
+      const result = await callAdminOps<{ events: AdminAuditEvent[] }>({ action: "listUserAudit", userId });
+      setAuditByUser((current) => ({ ...current, [userId]: result.events }));
+      setAuditOpenFor(userId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Audit history could not be loaded.");
     } finally {
       setWorking(null);
     }
@@ -390,7 +429,7 @@ export default function AdminPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-bold">User Management</h2>
-              <p className="text-xs text-muted-foreground">Block/unblock accounts. Delete is soft-delete pending only.</p>
+              <p className="text-xs text-muted-foreground">Account support only: recovery, confirmation, access status, and an audit trail. Financial data stays private.</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -400,7 +439,7 @@ export default function AdminPage() {
                   <div className="min-w-0">
                     <p className="font-semibold truncate">{user.email || user.id}</p>
                     <p className="text-xs text-muted-foreground">
-                      Created {formatDateTime(user.createdAt)} · Last login {formatDateTime(user.lastSignInAt)}
+                      Created {formatDateTime(user.createdAt)} · Last login {formatDateTime(user.lastSignInAt)} · {user.emailConfirmedAt ? "Email confirmed" : "Email unconfirmed"}
                     </p>
                   </div>
                   <span className={`w-fit rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${statusTone(user.status)}`}>
@@ -427,7 +466,31 @@ export default function AdminPage() {
                   <Button type="button" size="sm" variant="destructive" disabled={working === user.id} onClick={() => setUserStatus(user.id, "deleted_pending")}>
                     Delete Pending
                   </Button>
+                  {!user.emailConfirmedAt && (
+                    <Button type="button" size="sm" variant="outline" disabled={working === `support-confirmation-${user.id}`} onClick={() => sendSupportAuthEmail(user.id, "confirmation")}>
+                      {working === `support-confirmation-${user.id}` ? "Sending…" : "Resend confirmation"}
+                    </Button>
+                  )}
+                  <Button type="button" size="sm" variant="outline" disabled={working === `support-recovery-${user.id}`} onClick={() => sendSupportAuthEmail(user.id, "recovery")}>
+                    {working === `support-recovery-${user.id}` ? "Sending…" : "Send recovery"}
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" disabled={working === `audit-${user.id}`} onClick={() => loadUserAudit(user.id)}>
+                    {working === `audit-${user.id}` ? "Loading…" : auditOpenFor === user.id ? "Hide support history" : "Support history"}
+                  </Button>
                 </div>
+                {auditOpenFor === user.id && (
+                  <div className="rounded-lg border border-border bg-card/70 p-3 space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Support actions</p>
+                    {(auditByUser[user.id] ?? []).length === 0 ? (
+                      <p className="text-xs text-muted-foreground">No support actions recorded for this account.</p>
+                    ) : (auditByUser[user.id] ?? []).map((event) => (
+                      <div key={event.id} className="flex items-center justify-between gap-3 text-xs">
+                        <span className="font-medium">{event.action.replaceAll("_", " ")}</span>
+                        <span className="shrink-0 text-muted-foreground">{formatDateTime(event.created_at)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

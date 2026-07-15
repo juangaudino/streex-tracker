@@ -19,6 +19,7 @@ import DeepInsightsPage from "./pages/DeepInsightsPage";
 import AdminPage from "./pages/AdminPage";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import LegalPage from "./pages/LegalPage";
 import { useAuth } from "./hooks/useAuth";
 import { useAppRuntime } from "./hooks/useAppRuntime";
 import { useWeekStore } from "./hooks/useWeekStore";
@@ -57,6 +58,8 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/privacy" element={<LegalPage type="privacy" />} />
+            <Route path="/terms" element={<LegalPage type="terms" />} />
             <Route path="*" element={<AuthPage signIn={signIn} signUp={signUp} />} />
           </Routes>
         </BrowserRouter>

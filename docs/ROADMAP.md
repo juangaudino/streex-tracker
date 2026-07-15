@@ -1,6 +1,6 @@
 # Streex Roadmap
 
-Last updated: 2026-07-11
+Last updated: 2026-07-14
 
 This is the living product roadmap for Streex Gig Earnings.
 
@@ -112,6 +112,29 @@ Boundaries:
 
 - Keep the current weekly JSON document model; this release addresses personal data safety, not premature normalization.
 - Never overwrite a remote version silently and never rewrite earnings, mileage, rides, or historical metrics during recovery.
+
+### Pre-0.9.3 foundation - Account Readiness & Guided Start
+
+Status: implemented locally; active-backend migration and Admin Ops function deployed. Frontend publication and external email/CAPTCHA configuration remain owner-controlled release steps.
+
+Scope delivered:
+
+- Email/password account creation now clearly distinguishes a pending email confirmation from a completed sign-in, includes a safe resend path, and keeps password-reset responses non-enumerating.
+- A first-run checklist guides settings, the first week, and the first recorded activity without interrupting an established driver workflow.
+- Admin User Management can see confirmation state, request a confirmation or password-recovery email, and inspect a deliberately limited support audit trail without browsing private earnings history.
+- Owner-scoped onboarding state and server-only admin audit records are protected by RLS; no earnings, shifts, mileage, rides, snapshots, or historical weeks were changed.
+- The frontend has an optional Cloudflare Turnstile integration point. It remains inactive until the public site key is configured in the frontend environment and the active Supabase Auth CAPTCHA configuration is enabled.
+
+Release gates still outside source code:
+
+- Configure a production SMTP sender in Supabase Auth and prove sign-up, confirmation resend, and recovery delivery with an isolated QA account.
+- Enable CAPTCHA only after the Cloudflare Turnstile site and secret keys are configured in the matching frontend and Supabase Auth settings.
+- Configure the active project's leaked-password protection if the plan supports it, then verify the intended password policy with QA.
+
+Boundaries:
+
+- This is deliberately not Live Work Mode and does not begin Beta 0.9.3.
+- No manual owner approval is required for a tester account; account controls still govern restriction or suspension after creation.
 
 ### Beta 0.9.3 - Live Work Mode
 

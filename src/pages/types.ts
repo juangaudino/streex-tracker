@@ -1,4 +1,4 @@
-import type { WeekRecord, AppSettings, EarningsSnapshot } from "@/lib/types";
+import type { WeekRecord, AppSettings, EarningsSnapshot, OperationalSnapshot, OperationalSnapshotDraft } from "@/lib/types";
 import type { WeekRevision } from "@/lib/weekRevisions";
 import type { User } from "@supabase/supabase-js";
 
@@ -8,10 +8,12 @@ export interface StoreContext {
   openWeek: WeekRecord | null;
   settings: AppSettings;
   earningsSnapshots: EarningsSnapshot[];
+  operationalSnapshots: OperationalSnapshot[];
   loading: boolean;
   hasLocalData: boolean;
   addWeek: (w: WeekRecord) => void;
   updateWeek: (w: WeekRecord) => Promise<boolean>;
+  recordOperationalSnapshot: (draft: OperationalSnapshotDraft) => Promise<boolean>;
   deleteWeek: (id: string) => void;
   updateSettings: (s: AppSettings) => Promise<boolean>;
   importLocalData: () => Promise<number | undefined>;

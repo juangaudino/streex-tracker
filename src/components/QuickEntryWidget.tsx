@@ -11,7 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { dayTotal, formatCurrency } from "@/lib/store";
-import type { WeekRecord, DayEntry } from "@/lib/types";
+import type { WeekRecord, DayEntry, OperationalSnapshotDraft } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
 import { triggerCelebration } from "@/components/RecordCelebration";
@@ -20,6 +20,7 @@ import { isRewardApp } from "@/lib/rewardIncome";
 import { normalizeDecimalDraft, parseDecimalDraft } from "@/lib/decimalInput";
 import { getAppRideCount, updateShiftAppRideCount } from "@/lib/rideAttribution";
 import { applyAccumulatedDayMileage } from "@/lib/mileageAttribution";
+import { createOperationalEventKey } from "@/lib/operationalSnapshots";
 
 interface QuickEntryWidgetProps {  
   openWeek: WeekRecord;
@@ -32,6 +33,7 @@ interface QuickEntryWidgetProps {
   onQuickUpdateSaved?: (event: {
     app: string;
     rideDelta: number;
+    snapshot: OperationalSnapshotDraft;
   }) => void | Promise<void>;
 }
 
@@ -163,9 +165,19 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     }
     const saved = await persistQuickWeek({ ...openWeek, entries });
     if (saved) {
+      const savedShift = nextDay?.shifts?.find((shift) => shift.id === activeShift?.id);
       await onQuickUpdateSaved?.({
         app,
         rideDelta: rideUpdate?.appRideDelta ?? 0,
+        snapshot: {
+          eventKey: createOperationalEventKey(),
+          dayDate: nextDay.date,
+          shiftId: savedShift?.id ?? null,
+          recordedAt: new Date().toISOString(),
+          appTotals: { ...nextDay.apps },
+          ridesByApp: { ...(savedShift?.ridesByApp ?? {}) },
+          dayMileage: getDayMiles(nextDay),
+        },
       });
       setOpen(false);
     }

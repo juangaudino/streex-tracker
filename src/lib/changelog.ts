@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.9.3";
+export const CURRENT_VERSION = "0.9.4";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -18,10 +18,23 @@ export function formatVersionLabel(version: string): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.9.4",
+    date: "2026-07",
+    title: "Operational Explorer & Driver Playbook",
+    tags: ["new", "feature"],
+    items: [
+      "Deep Insights now supports custom dates, multi-day filters, operational time windows, weighted efficiency metrics, hourly profiles, and best-window rankings",
+      "Every metric identifies observed, estimated, mixed, or insufficient data and keeps rewards outside operational efficiency",
+      "Quick Update now captures private, append-only operational observations so future hourly rides and mileage become more precise without rewriting history",
+      "Driver Playbook exports three anonymous 9:16 JPG cards with operating profile, best times, and data-backed field signals",
+      "Live Work Mode was withdrawn from navigation and routing after beta evaluation; its unreferenced source remains archived for possible research",
+    ],
+  },
+  {
     version: "0.9.3",
     date: "2026-07",
-    title: "Live Work Mode Beta",
-    tags: ["new", "feature"],
+    title: "Live Work Mode Beta (Withdrawn)",
+    tags: ["polish"],
     items: [
       "Live Work Mode is available as a separate beta workspace from the account menu without replacing Dashboard, Entry, or Full Focus",
       "The live workspace reflects the real ready, working, paused, and ended shift states and uses the existing canonical shift persistence",

@@ -18,12 +18,15 @@ export type DeepInsightsTimePreset =
   | "last-3-months"
   | "last-6-months"
   | "this-year"
-  | "last-12-months";
+  | "last-12-months"
+  | "custom";
 
 export interface DeepInsightsFilters {
   timePreset: DeepInsightsTimePreset;
   app: string;
-  weekday: string;
+  weekdays: string[];
+  customStart?: string;
+  customEnd?: string;
 }
 
 export interface DeepInsightsDay {
@@ -166,10 +169,18 @@ function startOfWeek(date: Date): Date {
   return copy;
 }
 
-function dateRangeForPreset(preset: DeepInsightsTimePreset, now = new Date()): { start?: string; end?: string; label: string } {
+export function dateRangeForPreset(preset: DeepInsightsTimePreset, now = new Date(), customStart?: string, customEnd?: string): { start?: string; end?: string; label: string } {
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
   const end = formatDate(today);
+
+  if (preset === "custom") {
+    return {
+      start: customStart || undefined,
+      end: customEnd || undefined,
+      label: customStart || customEnd ? `${customStart || "Start"} – ${customEnd || "Today"}` : "Custom range",
+    };
+  }
 
   if (preset === "all") return { label: "All time" };
   if (preset === "this-week") {
@@ -353,10 +364,10 @@ export function buildDeepInsightsData(args: {
   now?: Date;
 }): DeepInsightsData {
   const { weeks, filters, earningsSnapshots = [], currencySymbol = "$", now = new Date() } = args;
-  const range = dateRangeForPreset(filters.timePreset, now);
+  const range = dateRangeForPreset(filters.timePreset, now, filters.customStart, filters.customEnd);
   const appOptions = allAppNames(weeks);
   const selectedApp = filters.app && filters.app !== "all" ? filters.app : null;
-  const selectedWeekday = filters.weekday && filters.weekday !== "all" ? filters.weekday : null;
+  const selectedWeekdays = new Set(filters.weekdays ?? []);
 
   const days = weeks
     .flatMap((week) => week.entries.map((day) => {
@@ -377,7 +388,7 @@ export function buildDeepInsightsData(args: {
       } satisfies DeepInsightsDay;
     }))
     .filter((day) => isInRange(day.date, range))
-    .filter((day) => !selectedWeekday || day.dayName === selectedWeekday)
+    .filter((day) => !selectedWeekdays.size || selectedWeekdays.has(day.dayName))
     .sort((a, b) => a.date.localeCompare(b.date));
 
   const weekMap = new Map<string, DeepInsightsWeek>();
@@ -428,12 +439,12 @@ export function buildDeepInsightsData(args: {
     const earnings = money(weeks.reduce((weekSum, week) => {
       return weekSum + week.entries
         .filter((day) => isInRange(day.date, range))
-        .filter((day) => !selectedWeekday || day.dayName === selectedWeekday)
+        .filter((day) => !selectedWeekdays.size || selectedWeekdays.has(day.dayName))
         .reduce((daySum, day) => daySum + dayAppEarnings(day, app), 0);
     }, 0));
     const appDays = weeks.flatMap((week) => week.entries)
       .filter((day) => isInRange(day.date, range))
-      .filter((day) => !selectedWeekday || day.dayName === selectedWeekday)
+      .filter((day) => !selectedWeekdays.size || selectedWeekdays.has(day.dayName))
       .filter((day) => dayAppEarnings(day, app) > 0).length;
     return {
       app,
@@ -448,7 +459,7 @@ export function buildDeepInsightsData(args: {
   if (!selectedApp) {
     for (const week of weeks) {
       for (const day of week.entries) {
-        if (!isInRange(day.date, range) || (selectedWeekday && day.dayName !== selectedWeekday)) continue;
+        if (!isInRange(day.date, range) || (selectedWeekdays.size && !selectedWeekdays.has(day.dayName))) continue;
         for (const shift of day.shifts ?? []) {
           if (!shift.endTime) continue;
           const hours = shiftDurationHours(shift);

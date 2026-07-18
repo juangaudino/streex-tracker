@@ -198,7 +198,7 @@ function getWeekRankWindow(weeks: WeekRecord[], weekId: string, currencySymbol: 
 }
 
 export default function DashboardPage() {
-  const { user, openWeek, weeks, settings, earningsSnapshots, hasLocalData, importLocalData, updateWeek, updateSettings } = useOutletContext<StoreContext>();
+  const { user, openWeek, weeks, settings, earningsSnapshots, hasLocalData, importLocalData, updateWeek, updateSettings, recordOperationalSnapshot } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [importing, setImporting] = useState(false);
@@ -472,7 +472,8 @@ export default function DashboardPage() {
     return saved;
   }
 
-  async function handleQuickUpdateSaved(event: { app: string; rideDelta: number }) {
+  async function handleQuickUpdateSaved(event: Parameters<typeof recordOperationalSnapshot>[0] extends never ? never : { app: string; rideDelta: number; snapshot: Parameters<typeof recordOperationalSnapshot>[0] }) {
+    await recordOperationalSnapshot(event.snapshot);
     if (event.app.toLowerCase() !== "uber") return;
     if (event.rideDelta !== 0) {
       await saveOctopusPoints(adjustOctopusPoints(settings.octopusPoints, event.rideDelta));

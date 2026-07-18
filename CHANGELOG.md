@@ -2,7 +2,26 @@
 
 ## Beta Releases
 
+### Beta 0.9.4 — Operational Explorer & Driver Playbook
+
+### Added
+
+- Deep Insights now supports custom date ranges, multi-select weekdays, operational time windows, weighted efficiency metrics, hourly profiles, and best-window rankings.
+- Metrics explicitly identify observed, estimated, mixed, or insufficient evidence. Rewards remain excluded from operational efficiency.
+- Successful Quick Updates capture private append-only cumulative observations for app earnings, app rides, and shared day mileage; historical rows are not rewritten.
+- Driver Playbook exports three anonymous 9:16 JPG cards with operating profile, best times, and actionable data-backed signals.
+
+### Changed
+
+- Live Work Mode was withdrawn from public routing and navigation after beta evaluation. Its unreferenced source file remains archived for possible future research.
+
+### Backend / Migration
+
+- Added `20260717173026_operational_snapshots_094.sql` and its append-only hardening migration `20260717175710_operational_snapshots_append_only_094.sql`, with owner-only RLS, idempotent event keys, and indexes for user/day/shift analysis.
+
 ### Beta 0.9.3 — Live Work Mode Beta
+
+Status: withdrawn after owner testing; source archived and excluded from the published bundle.
 
 ### Added
 

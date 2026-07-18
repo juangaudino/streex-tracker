@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-07-14
+Last updated: 2026-07-17
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -27,7 +27,7 @@ Beta 0.9.2 - Personal Data Safety & Recovery
 Current local source candidate:
 
 ```text
-Beta 0.9.3 - Live Work Mode Beta
+Beta 0.9.4 - Operational Explorer & Driver Playbook
 ```
 
 Source of truth:
@@ -110,13 +110,17 @@ External release gates remain intentionally separate from code publication:
 SMTP confirmation/recovery delivery and Cloudflare Turnstile were configured
 and exercised by the owner after publication of the account-readiness frontend.
 
-### 0.9.3 Live Work Mode Source
+### 0.9.3 Live Work Mode Source — Withdrawn
 
 The local source adds `/live-work` as an explicitly separate Beta workspace
 available from the person/account menu before Settings. It uses the existing
 week, shift, Quick Update, mileage, ride-attribution, sync, and Octopus paths;
 it does not replace Dashboard, Entry, Full Focus, or any analytical surface.
-Publication and real-device beta QA remain pending.
+Owner testing found that the separate workspace did not add enough value. The route and account-menu access are removed; the unreferenced page source remains archived and is excluded from the published bundle.
+
+### 0.9.4 Operational Explorer & Driver Playbook
+
+The source adds custom and multi-day Deep Insights filtering, local operational time windows, weighted operating rates, evidence labels, hourly profiles, best-window rankings, and an anonymous three-card JPG Driver Playbook. Quick Update also records additive owner-only operational observations for better future timing precision. No historical week or snapshot is rewritten.
 
 ## Backend Rules
 
@@ -452,7 +456,8 @@ Current planned sequence:
 - `Beta 0.9.0`: Deep Insights Intelligence Layer - completed
 - `Beta 0.9.1`: Reliability & Release Safety - completed
 - `Beta 0.9.2`: Personal Data Safety & Recovery - completed
-- `Beta 0.9.3`: Live Work Mode - planned
+- `Beta 0.9.3`: Live Work Mode - withdrawn and source archived
+- `Beta 0.9.4`: Operational Explorer & Driver Playbook - implemented in source
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 

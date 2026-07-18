@@ -39,6 +39,8 @@ import { buildDeepInsightsData, type DeepInsightsData, type DeepInsightsFilters,
 import { formatCurrency } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import type { StoreContext } from "./types";
+import OperationalExplorerPanel from "@/components/insights/OperationalExplorerPanel";
+import { buildOperationalExplorerData, type OperationalExplorerFilters } from "@/lib/operationalExplorer";
 
 const TIME_OPTIONS: Array<{ value: DeepInsightsTimePreset; label: string }> = [
   { value: "all", label: "All time" },
@@ -49,6 +51,7 @@ const TIME_OPTIONS: Array<{ value: DeepInsightsTimePreset; label: string }> = [
   { value: "last-6-months", label: "Last 6 months" },
   { value: "this-year", label: "This year" },
   { value: "last-12-months", label: "Last 12 months" },
+  { value: "custom", label: "Custom range" },
 ];
 
 const CHART_COLORS = ["#E6CE20", "#38BDF8", "#34D399", "#F97316", "#A78BFA", "#F43F5E", "#94A3B8"];
@@ -419,7 +422,7 @@ function Filters({
   viewTabs: ReactNode;
 }) {
   const selectClass = cn("h-10 rounded-xl border px-3 text-sm font-semibold outline-none transition", ui.select);
-  const filterActive = filters.timePreset !== "all" || filters.app !== "all" || filters.weekday !== "all";
+  const filterActive = filters.timePreset !== "all" || filters.app !== "all" || filters.weekdays.length > 0;
 
   return (
     <Panel
@@ -430,7 +433,7 @@ function Filters({
       className={ui.filterPanel}
     >
       <div className="mb-4">{viewTabs}</div>
-      <div className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto]">
+      <div className="grid gap-3 md:grid-cols-[1.2fr_1fr_auto]">
         <label className={cn("grid gap-1.5 text-[10px] font-black uppercase tracking-[0.18em]", ui.label)}>
           Time
           <select
@@ -452,17 +455,6 @@ function Filters({
             {data.appOptions.map((app) => <option key={app} value={app}>{app}</option>)}
           </select>
         </label>
-        <label className={cn("grid gap-1.5 text-[10px] font-black uppercase tracking-[0.18em]", ui.label)}>
-          Weekday
-          <select
-            className={selectClass}
-            value={filters.weekday}
-            onChange={(event) => onChange({ ...filters, weekday: event.target.value })}
-          >
-            <option value="all">All weekdays</option>
-            {data.weekdayOptions.map((weekday) => <option key={weekday} value={weekday}>{weekday}</option>)}
-          </select>
-        </label>
         <button
           type="button"
           onClick={onReset}
@@ -473,21 +465,69 @@ function Filters({
           Reset
         </button>
       </div>
+      {filters.timePreset === "custom" && (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className={cn("grid gap-1.5 text-[10px] font-black uppercase tracking-[0.18em]", ui.label)}>Start date<input type="date" className={selectClass} value={filters.customStart ?? ""} onChange={(event) => onChange({ ...filters, customStart: event.target.value })} /></label>
+          <label className={cn("grid gap-1.5 text-[10px] font-black uppercase tracking-[0.18em]", ui.label)}>End date<input type="date" className={selectClass} value={filters.customEnd ?? ""} onChange={(event) => onChange({ ...filters, customEnd: event.target.value })} /></label>
+        </div>
+      )}
+      <div className="mt-4 space-y-2">
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => onChange({ ...filters, weekdays: [] })} className={cn("rounded-full border px-3 py-1.5 text-xs font-bold", !filters.weekdays.length ? "border-[#E6CE20] bg-[#E6CE20] text-black" : ui.reset)}>All days</button>
+          <button type="button" onClick={() => onChange({ ...filters, weekdays: data.weekdayOptions.slice(0, 5) })} className={cn("rounded-full border px-3 py-1.5 text-xs font-bold", ui.reset)}>Weekdays</button>
+          <button type="button" onClick={() => onChange({ ...filters, weekdays: data.weekdayOptions.slice(5) })} className={cn("rounded-full border px-3 py-1.5 text-xs font-bold", ui.reset)}>Weekend</button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {data.weekdayOptions.map((weekday) => { const active = filters.weekdays.includes(weekday); return <button key={weekday} type="button" onClick={() => onChange({ ...filters, weekdays: active ? filters.weekdays.filter((item) => item !== weekday) : [...filters.weekdays, weekday] })} className={cn("rounded-full border px-3 py-1.5 text-xs font-bold", active ? "border-sky-400 bg-sky-400 text-slate-950" : ui.reset)}>{weekday.slice(0, 3)}</button>; })}
+        </div>
+      </div>
     </Panel>
   );
 }
 
 export default function DeepInsightsPage() {
-  const { weeks, earningsSnapshots, settings } = useOutletContext<StoreContext>();
+  const { weeks, earningsSnapshots, operationalSnapshots, settings } = useOutletContext<StoreContext>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isDark } = useTheme();
   const ui = useMemo(() => getVisual(isDark), [isDark]);
-  const [filters, setFilters] = useState<DeepInsightsFilters>({ timePreset: "all", app: "all", weekday: "all" });
+  const [filters, setFilters] = useState<DeepInsightsFilters>(() => ({
+    timePreset: (searchParams.get("range") as DeepInsightsTimePreset) || "all",
+    app: searchParams.get("app") || "all",
+    weekdays: searchParams.get("days")?.split(",").filter(Boolean) ?? [],
+    customStart: searchParams.get("from") || undefined,
+    customEnd: searchParams.get("to") || undefined,
+  }));
+  const [operationalFilters, setOperationalFilters] = useState<OperationalExplorerFilters>(() => ({
+    windowPreset: (searchParams.get("window") as OperationalExplorerFilters["windowPreset"]) || "all",
+    windowStart: searchParams.get("windowStart") || "09:00",
+    windowEnd: searchParams.get("windowEnd") || "17:00",
+  }));
   const sym = settings.currencySymbol || "$";
   const data = useMemo(
     () => buildDeepInsightsData({ weeks, earningsSnapshots, filters, currencySymbol: sym }),
     [weeks, earningsSnapshots, filters, sym],
   );
+  const operationalData = useMemo(
+    () => buildOperationalExplorerData({ weeks, earningsSnapshots, operationalSnapshots, globalFilters: filters, operationalFilters }),
+    [weeks, earningsSnapshots, operationalSnapshots, filters, operationalFilters],
+  );
+
+  function updateFilterUrl(nextFilters: DeepInsightsFilters, nextOperational = operationalFilters) {
+    const next = new URLSearchParams(searchParams);
+    const setOrDelete = (key: string, value?: string) => value && value !== "all" ? next.set(key, value) : next.delete(key);
+    setOrDelete("range", nextFilters.timePreset);
+    setOrDelete("app", nextFilters.app);
+    setOrDelete("days", nextFilters.weekdays.join(","));
+    setOrDelete("from", nextFilters.customStart);
+    setOrDelete("to", nextFilters.customEnd);
+    setOrDelete("window", nextOperational.windowPreset);
+    setOrDelete("windowStart", nextOperational.windowPreset === "custom" ? nextOperational.windowStart : undefined);
+    setOrDelete("windowEnd", nextOperational.windowPreset === "custom" ? nextOperational.windowEnd : undefined);
+    setSearchParams(next, { replace: true });
+  }
+
+  function changeFilters(next: DeepInsightsFilters) { setFilters(next); updateFilterUrl(next); }
+  function changeOperationalFilters(next: OperationalExplorerFilters) { setOperationalFilters(next); updateFilterUrl(filters, next); }
 
   const trendData = data.days.filter((day) => day.earnings > 0);
   const hourlyWeeks = data.weeks.filter((week) => week.earningsPerHour !== null);
@@ -592,9 +632,20 @@ export default function DeepInsightsPage() {
           ui={ui}
           filters={filters}
           data={data}
-          onChange={setFilters}
-          onReset={() => setFilters({ timePreset: "all", app: "all", weekday: "all" })}
+          onChange={changeFilters}
+          onReset={() => changeFilters({ timePreset: "all", app: "all", weekdays: [] })}
           viewTabs={viewTabs}
+        />
+        <OperationalExplorerPanel
+          data={operationalData}
+          filters={operationalFilters}
+          onChange={changeOperationalFilters}
+          playbook={{
+            scope: data.rangeLabel,
+            app: filters.app === "all" ? "All apps" : `${filters.app} contribution / worked hour`,
+            weekdays: filters.weekdays,
+            currencySymbol: sym,
+          }}
         />
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
           <KpiCard

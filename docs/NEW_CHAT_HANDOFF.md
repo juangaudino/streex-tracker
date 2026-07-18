@@ -18,7 +18,7 @@ Also read:
 
 - Product: Streex Gig Earnings App.
 - Current public release: `Beta 0.9.2 - Personal Data Safety & Recovery`.
-- Current local source candidate: `Beta 0.9.3 - Live Work Mode Beta`.
+- Current local source candidate: `Beta 0.9.4 - Operational Explorer & Driver Playbook`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.
@@ -138,7 +138,7 @@ Authenticated routes:
 - `/settings` - profile, themes, dashboard experience, security, data export, and preferences.
 - `/admin` - protected admin operations.
 - `/reset-password` - unauthenticated password recovery completion.
-- `/live-work` - separate authenticated Live Work Mode Beta workspace.
+- `/live-work` - withdrawn after beta evaluation; unreferenced source is archived and no public route exists.
 
 Navigation rules:
 
@@ -293,7 +293,7 @@ Design rules:
 ### Planned Product Work
 
 - Latest release: `Beta 0.9.2 - Personal Data Safety & Recovery`.
-- The next planned release is `Beta 0.9.3 - Live Work Mode`; it requires separate product planning before implementation.
+- `Beta 0.9.4 - Operational Explorer & Driver Playbook` is implemented locally with its additive active-backend migration applied; frontend owner review/publication remains.
 - Do not normalize the weekly JSON model merely for scale; first solve silent write conflicts, recovery, and visible sync state for the owner's personal workflow.
 - The version number can move if a patch or urgent fix ships first.
 

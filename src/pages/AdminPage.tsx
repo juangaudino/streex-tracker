@@ -79,7 +79,7 @@ function dataHealthTone(status: DataHealthStatus): string {
 }
 
 export default function AdminPage() {
-  const { weeks, earningsSnapshots } = useOutletContext<StoreContext>();
+  const { weeks, earningsSnapshots, operationalSnapshots } = useOutletContext<StoreContext>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
@@ -138,7 +138,8 @@ export default function AdminPage() {
   const dataHealth = useMemo(() => summarizeDataHealth({
     weeks,
     snapshots: earningsSnapshots,
-  }), [earningsSnapshots, weeks]);
+    operationalSnapshots,
+  }), [earningsSnapshots, operationalSnapshots, weeks]);
 
   const filteredFeedback = useMemo(() => {
     return feedback.filter((item) => {
@@ -381,6 +382,7 @@ export default function AdminPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
           <Metric label="Weeks Checked" value={dataHealth.weeksChecked} />
           <Metric label="Snapshots" value={dataHealth.snapshotsChecked} />
+          <Metric label="Operational observations" value={dataHealth.operationalSnapshotsChecked} />
           <Metric label="Critical Issues" value={dataHealth.criticalIssueCount} />
           <Metric label="Warnings" value={dataHealth.warningIssueCount} />
         </div>

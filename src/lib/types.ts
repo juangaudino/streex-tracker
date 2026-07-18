@@ -87,6 +87,30 @@ export interface EarningsSnapshot {
   createdAt: string;
 }
 
+export interface OperationalSnapshot {
+  id: string;
+  userId: string;
+  weekId: string;
+  dayDate: string;
+  shiftId?: string | null;
+  recordedAt: string;
+  appTotals: Record<string, number>;
+  ridesByApp: Record<string, number>;
+  dayMileage: number;
+  source: "quick_update";
+  eventKey: string;
+}
+
+export interface OperationalSnapshotDraft {
+  eventKey: string;
+  dayDate: string;
+  shiftId?: string | null;
+  recordedAt: string;
+  appTotals: Record<string, number>;
+  ridesByApp: Record<string, number>;
+  dayMileage: number;
+}
+
 export interface AppSettings {
   defaultWeeklyGoal: number;
   defaultWeeklyHoursGoal?: number;

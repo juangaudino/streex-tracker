@@ -27,7 +27,7 @@ function statusLabel(hasActive: boolean, paused: boolean) {
 }
 
 export default function LiveWorkModePage() {
-  const { openWeek, weeks, settings, updateWeek, updateSettings, syncStatus } = useOutletContext<StoreContext>();
+  const { openWeek, weeks, settings, updateWeek, updateSettings, syncStatus, recordOperationalSnapshot } = useOutletContext<StoreContext>();
   const [now, setNow] = useState(() => new Date());
   const todayDate = formatDate(now);
   const todayIdx = openWeek?.entries.findIndex((day) => day.date === todayDate) ?? -1;
@@ -79,7 +79,8 @@ export default function LiveWorkModePage() {
     )));
   }
 
-  async function handleQuickUpdateSaved(event: { app: string; rideDelta: number }) {
+  async function handleQuickUpdateSaved(event: { app: string; rideDelta: number; snapshot: Parameters<typeof recordOperationalSnapshot>[0] }) {
+    await recordOperationalSnapshot(event.snapshot);
     if (event.app.toLowerCase() !== "uber" || event.rideDelta === 0) return;
     await updateSettings({
       ...settings,

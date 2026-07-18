@@ -138,7 +138,7 @@ Boundaries:
 
 ### Beta 0.9.3 - Live Work Mode
 
-Status: implemented in source; awaiting owner commit, Vercel publication, and real-device beta QA.
+Status: withdrawn after real-device owner evaluation. Route and menu access removed; unreferenced source archived for possible research.
 
 Scope:
 
@@ -153,6 +153,17 @@ Boundaries:
 - Do not remove existing product surfaces.
 - Preserve current accumulated-total, app-specific rides, and shared-mileage semantics.
 - Keep this surface visibly labeled Beta while real-device behavior and ergonomics are evaluated.
+
+### Beta 0.9.4 - Operational Explorer & Driver Playbook
+
+Status: implemented in source; awaiting owner review, commit, publication, and production migration verification.
+
+Scope:
+
+- Add custom date ranges, multiple weekday selection, operational time windows, weighted hourly/ride/mileage metrics, hourly profile, and best-window rankings to Deep Insights.
+- Label evidence as Observed, Estimated, Mixed, or Insufficient; keep rewards outside efficiency and describe app-filter results as contribution per worked hour.
+- Capture future Quick Update operational observations in a private append-only table without rewriting historical data.
+- Generate an anonymous three-card Driver Playbook as 1080x1920 JPG files using a stable Control Room visual system.
 
 ### Personal Context Tags - Market/Zone Candidate
 

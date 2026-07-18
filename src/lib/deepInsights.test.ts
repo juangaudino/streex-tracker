@@ -72,7 +72,7 @@ describe("deep insights", () => {
     const result = buildDeepInsightsData({
       weeks,
       earningsSnapshots: [],
-      filters: { timePreset: "all", app: "all", weekday: "all" },
+      filters: { timePreset: "all", app: "all", weekdays: [] },
       now: new Date("2026-06-15T12:00:00"),
     });
 
@@ -86,7 +86,7 @@ describe("deep insights", () => {
     const result = buildDeepInsightsData({
       weeks,
       earningsSnapshots: [],
-      filters: { timePreset: "all", app: "Uber", weekday: "all" },
+      filters: { timePreset: "all", app: "Uber", weekdays: [] },
       now: new Date("2026-06-15T12:00:00"),
     });
 
@@ -100,7 +100,7 @@ describe("deep insights", () => {
     const result = buildDeepInsightsData({
       weeks,
       earningsSnapshots: [],
-      filters: { timePreset: "last-7-days", app: "all", weekday: "Monday" },
+      filters: { timePreset: "last-7-days", app: "all", weekdays: ["Monday"] },
       now: new Date("2026-06-14T12:00:00"),
     });
 
@@ -113,7 +113,7 @@ describe("deep insights", () => {
     const result = buildDeepInsightsData({
       weeks,
       earningsSnapshots: [snapshot("snap-1", "w1", "2026-06-01", "shift-1", 100)],
-      filters: { timePreset: "all", app: "all", weekday: "all" },
+      filters: { timePreset: "all", app: "all", weekdays: [] },
       now: new Date("2026-06-15T12:00:00"),
     });
 
@@ -139,7 +139,7 @@ describe("deep insights", () => {
     const result = buildDeepInsightsData({
       weeks: intelligenceWeeks,
       earningsSnapshots: snapshots,
-      filters: { timePreset: "all", app: "all", weekday: "all" },
+      filters: { timePreset: "all", app: "all", weekdays: [] },
       now: new Date("2026-06-15T12:00:00"),
     });
 

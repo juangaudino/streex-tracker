@@ -232,6 +232,59 @@ export type Database = {
           },
         ]
       }
+      operational_snapshots: {
+        Row: {
+          app_totals: Json
+          created_at: string
+          day_date: string
+          day_mileage: number
+          event_key: string
+          id: string
+          recorded_at: string
+          rides_by_app: Json
+          shift_id: string | null
+          source: string
+          user_id: string
+          week_id: string
+        }
+        Insert: {
+          app_totals?: Json
+          created_at?: string
+          day_date: string
+          day_mileage?: number
+          event_key: string
+          id?: string
+          recorded_at?: string
+          rides_by_app?: Json
+          shift_id?: string | null
+          source?: string
+          user_id: string
+          week_id: string
+        }
+        Update: {
+          app_totals?: Json
+          created_at?: string
+          day_date?: string
+          day_mileage?: number
+          event_key?: string
+          id?: string
+          recorded_at?: string
+          rides_by_app?: Json
+          shift_id?: string | null
+          source?: string
+          user_id?: string
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operational_snapshots_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_campaign_recipients: {
         Row: {
           campaign_id: string

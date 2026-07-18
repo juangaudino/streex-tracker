@@ -1,6 +1,7 @@
 import { earningsSnapshotTransitionKey } from "./earningsSnapshots";
-import type { EarningsSnapshot, WeekRecord } from "./types";
+import type { EarningsSnapshot, OperationalSnapshot, WeekRecord } from "./types";
 import { inspectSnapshotIntegrity, inspectWeekIntegrity, type IntegrityIssue, type IntegritySeverity } from "./weekIntegrity";
+import { inspectOperationalSnapshot } from "./operationalSnapshots";
 
 export type DataHealthStatus = "healthy" | "warning" | "critical";
 
@@ -16,6 +17,7 @@ export interface DataHealthSummary {
   status: DataHealthStatus;
   weeksChecked: number;
   snapshotsChecked: number;
+  operationalSnapshotsChecked: number;
   issueCount: number;
   criticalIssueCount: number;
   warningIssueCount: number;
@@ -57,9 +59,10 @@ function contract(
 export function summarizeDataHealth(params: {
   weeks: WeekRecord[];
   snapshots?: EarningsSnapshot[];
+  operationalSnapshots?: OperationalSnapshot[];
   checkedAt?: string;
 }): DataHealthSummary {
-  const { weeks, snapshots = [] } = params;
+  const { weeks, snapshots = [], operationalSnapshots = [] } = params;
   const weekById = new Map(weeks.map((week) => [week.id, week]));
   const issues: IntegrityIssue[] = [];
 
@@ -88,6 +91,13 @@ export function summarizeDataHealth(params: {
       snapshotKeys.set(key, snapshot);
     }
   }
+  const operationalKeys = new Set<string>();
+  for (const snapshot of operationalSnapshots) {
+    issues.push(...inspectOperationalSnapshot(snapshot));
+    if (!weekById.has(snapshot.weekId)) issues.push(issue(`operational:${snapshot.id}`, "OPERATIONAL_SNAPSHOT_WEEK", "Operational snapshot references an unavailable week."));
+    if (operationalKeys.has(snapshot.eventKey)) issues.push(issue(`operational:${snapshot.id}`, "DUPLICATE_OPERATIONAL_EVENT", "Operational event key is duplicated."));
+    operationalKeys.add(snapshot.eventKey);
+  }
 
   const countsBySeverity = issues.reduce<Record<IntegritySeverity, number>>((counts, item) => {
     counts[item.severity] += 1;
@@ -115,12 +125,16 @@ export function summarizeDataHealth(params: {
     contract("snapshots", "Snapshot integrity", "Earnings snapshots remain arithmetic-correct, in-range, and non-duplicated.", issues, new Set([
       "SNAPSHOT_DELTA_MISMATCH", "SNAPSHOT_OUTSIDE_WEEK", "DUPLICATE_SNAPSHOT_TRANSITION",
     ])),
+    contract("operational-snapshots", "Operational observations", "Quick Update observations stay append-only, non-negative, timestamped, and idempotent.", issues, new Set([
+      "OPERATIONAL_SNAPSHOT_IDENTITY", "OPERATIONAL_SNAPSHOT_MILEAGE", "OPERATIONAL_SNAPSHOT_TIME", "OPERATIONAL_SNAPSHOT_VALUE", "OPERATIONAL_SNAPSHOT_WEEK", "DUPLICATE_OPERATIONAL_EVENT",
+    ])),
   ];
 
   return {
     status: statusFromIssues(issues),
     weeksChecked: weeks.length,
     snapshotsChecked: snapshots.length,
+    operationalSnapshotsChecked: operationalSnapshots.length,
     issueCount: issues.length,
     criticalIssueCount,
     warningIssueCount,

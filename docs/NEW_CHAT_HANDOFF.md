@@ -1,6 +1,6 @@
 # Streex New Chat Handoff
 
-Last audited: 2026-07-14
+Last audited: 2026-07-30
 
 This is the operational handoff for a new Codex, Claude, ChatGPT, or Lovable conversation. It describes the current repository state and the product decisions that must survive chat resets. Read it before proposing or implementing work.
 
@@ -17,12 +17,12 @@ Also read:
 ## 1. Current Snapshot
 
 - Product: Streex Gig Earnings App.
-- Current public release: `Beta 0.9.2 - Personal Data Safety & Recovery`.
-- Current local source candidate: `Beta 0.9.4 - Operational Explorer & Driver Playbook`.
+- Current public release: `Beta 0.9.4 - Operational Explorer & Driver Playbook`.
+- Current local source candidate: `Beta 0.9.5 - Release Certification & Performance`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.
-- The owner confirmed the 0.9.2 baseline was committed, pushed, and visually verified. Always verify the live HEAD after a later publication.
+- The owner confirmed 0.9.4 was committed, pushed, and exercised in real work for more than one week without a reported regression. Always verify the live HEAD after a later publication.
 - Frontend hosting: Vercel.
 - DNS and domain: Cloudflare, `getstreex.com`.
 - Active backend: owner-controlled Supabase project `ywbrovislvqkfzsyqpiv`.
@@ -87,6 +87,7 @@ Important data rules:
 - `ai_usage_logs`
 - `app_runtime_config`
 - `earnings_snapshots`
+- `operational_snapshots`
 - `email_campaign_recipients`
 - `email_campaigns`
 - `email_preferences`
@@ -94,6 +95,7 @@ Important data rules:
 - `user_achievements`
 - `user_settings`
 - `user_onboarding`
+- `week_revisions`
 - `admin_audit_events` (server-only; support actions only)
 - `weeks`
 - `xp_events`
@@ -229,6 +231,8 @@ Navigation rules:
 - Existing `/compare` remains a separate operational guide.
 - URL-backed comparison state.
 - Selected micro-visualizations, percentile context, contribution rails, and activity marks.
+- Operational Explorer custom dates, multi-weekday and time-window filtering, weighted operational rates, evidence labels, hourly profiles, and best-window rankings.
+- Anonymous three-card Driver Playbook JPG export.
 
 ### Admin and Feedback
 
@@ -279,21 +283,21 @@ Design rules:
 
 ### Highest Priority Operations
 
-- 0.9.2's additive active-Supabase migration `20260711013903_add_week_revisions_and_conflict_save.sql` is applied. It did not rewrite historical data; verified schema-aligned migration metadata was repaired first so only this new migration ran.
-- The 0.9.2 frontend source still needs its normal owner commit, push, and Vercel publication before the recovery UI is live in production.
-- Configure the isolated GitHub Actions `qa` environment with `STREEX_QA_EMAIL` and `STREEX_QA_PASSWORD`, then manually run the protected-route QA smoke workflow. Do not use the owner's personal account.
+- Beta 0.9.5 is the current local certification/performance candidate. It does not require a migration and changes no stored calculations or production records.
+- After publication, require the automatic Quality Gate plus the manual protected QA workflow before certifying 0.9.5.
+- Configure the GitHub Actions `qa` environment with two isolated QA identities and the active public Supabase URL/publishable key, then run protected routes on desktop/mobile and the bidirectional read-only RLS check. Do not use the owner's personal account.
 - The Supabase security advisor reports leaked-password protection disabled. Treat enabling it as a separate Auth settings decision, not as a schema defect or a reason to re-run migrations.
 
-- Configure a production-grade Supabase Auth SMTP/domain sender; default auth email quota has already caused recovery friction.
+- Custom Supabase Auth SMTP and Cloudflare Turnstile are configured and owner-tested; keep delivery and CAPTCHA behavior under routine monitoring.
 - Continue monitoring login/session persistence after the infrastructure migration.
-- Confirm in the active Supabase project that the Beta 0.8.0 Octopus migration is applied and the latest `driver-utility` function is deployed.
-- Validate Daily Report image export on an installed iOS PWA after current deployment.
+- Validate Daily Report image export on an installed iOS PWA during a future export-affecting release.
 - Stabilize bugs before starting another major system.
 
 ### Planned Product Work
 
-- Latest release: `Beta 0.9.2 - Personal Data Safety & Recovery`.
-- `Beta 0.9.4 - Operational Explorer & Driver Playbook` is implemented locally with its additive active-backend migration applied; frontend owner review/publication remains.
+- Latest public release: `Beta 0.9.4 - Operational Explorer & Driver Playbook`, owner-verified through more than one week of real work.
+- Current local candidate: `Beta 0.9.5 - Release Certification & Performance`.
+- Planned next after certification: `Beta 0.9.6 - Historical Data Import`, followed by `Beta 0.9.7 - Deep Insights Productivity`.
 - Do not normalize the weekly JSON model merely for scale; first solve silent write conflicts, recovery, and visible sync state for the owner's personal workflow.
 - The version number can move if a patch or urgent fix ships first.
 
@@ -321,7 +325,7 @@ Design rules:
 
 ### Admin and Email
 
-- Configure/verify Resend sender domain and reply-to for production campaigns if re-engagement email is used.
+- Keep Resend sender domain and reply-to verified if re-engagement campaigns are used.
 - Cloudflare routing receives email but is not the outbound campaign/auth sender.
 - Hard user deletion remains intentionally absent; current action is delete-pending/blocked behavior.
 
@@ -338,7 +342,7 @@ Read `docs/ROADMAP.md` for the complete preserved roadmap and guardrails.
 ## 7. Known Bugs, Risks, and Honest Limitations
 
 - Ask My Data is provider-blocked/unverified after leaving Lovable infrastructure; its UI existing does not mean the AI path works.
-- Supabase default auth email quota can be exhausted. Custom SMTP is still pending.
+- Custom SMTP removes reliance on the default auth-email quota, but delivery still depends on correct provider/domain configuration and should be monitored.
 - Provider secrets and Edge Function deployments can drift between local repo, Vercel, and Supabase. Verify, never assume.
 - Historical shift data is incomplete. Efficiency coverage is much smaller than earnings history, so broad career `$ / hour` values need explicit coverage context.
 - Earnings snapshots observe manual update moments. They are not ride timestamps and cannot prove exact best earning hour.
@@ -346,8 +350,8 @@ Read `docs/ROADMAP.md` for the complete preserved roadmap and guardrails.
 - Current model does not reliably store market/location, vehicle, route, historical weather, historical traffic, or per-app hours/miles.
 - iOS Safari/PWA process kills still create true cold launches; only short resumes can be made continuous.
 - PWA icon changes may be cached by iOS/Android and can require removing/reinstalling the home-screen app.
-- Bundle build has a known non-blocking large-chunk warning (over 500 kB). No current production failure is attributed to it.
-- `index.html` still contains Lovable-era Open Graph/Twitter image metadata and `@Lovable` Twitter metadata. This is cleanup debt, not a runtime blocker.
+- Beta 0.9.5 splits routes and defers image-export code. Keep monitoring generated chunk size instead of treating the JSON persistence model as the source of frontend bundle weight.
+- React Router 7.18.2 has one current npm advisory explicitly limited to unstable RSC APIs. Streex is a client-only Vite SPA and uses neither RSC nor server actions; this is a documented non-applicable exception until a compatible patched package is published.
 - Local `.env` may be stale. Vercel Production variables are the deployment source of truth.
 - The repository contains old local/remote branches. Do not merge or delete branches blindly; compare against `main` first.
 
@@ -479,7 +483,8 @@ Production variables live in Vercel. Do not print their values in chat or docs.
 
 ### Versioning
 
-- Current baseline: `0.9.2`.
+- Current public baseline: `0.9.4`.
+- Current local candidate: `0.9.5`.
 - Patch: focused fix/refinement/polish.
 - Minor: meaningful new surface/system.
 - `1.0.0`: first stable public release only.
@@ -505,6 +510,7 @@ Production variables live in Vercel. Do not print their values in chat or docs.
 2. Run `git status --short --branch` and inspect the latest commit.
 3. Read this file, `AGENTS.md`, `docs/PRODUCT_STATUS.md`, and `docs/ROADMAP.md`.
 4. Do not assume Ask My Data, Edge Function secrets, or migrations are deployed merely because source exists.
-5. Ask what the owner wants to tackle next, or continue the explicitly named roadmap item.
+5. If 0.9.5 is not yet published, finish its release certification without modifying production data.
+6. Otherwise ask what the owner wants to tackle next, or plan the explicitly named roadmap item.
 
-The expected next roadmap item is Deep Insights Intelligence Layer, but QA certification, bug stabilization, or infrastructure work may take priority and should renumber the roadmap honestly.
+The expected next product item after 0.9.5 certification is the preview-first Historical Data Import (`0.9.6`), followed by Deep Insights Productivity (`0.9.7`). Bug stabilization or infrastructure work may still take priority and should renumber the roadmap honestly.

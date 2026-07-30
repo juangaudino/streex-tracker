@@ -15,6 +15,10 @@ jobs:
       STREEX_E2E_BASE_URL: https://gig.getstreex.com
       STREEX_QA_EMAIL: ${{ secrets.STREEX_QA_EMAIL }}
       STREEX_QA_PASSWORD: ${{ secrets.STREEX_QA_PASSWORD }}
+      STREEX_QA_ALT_EMAIL: ${{ secrets.STREEX_QA_ALT_EMAIL }}
+      STREEX_QA_ALT_PASSWORD: ${{ secrets.STREEX_QA_ALT_PASSWORD }}
+      STREEX_SUPABASE_URL: ${{ secrets.STREEX_SUPABASE_URL }}
+      STREEX_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.STREEX_SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,9 +26,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - name: Require isolated QA credentials
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Require isolated QA identities and public backend config
         run: |
           test -n "$STREEX_QA_EMAIL"
           test -n "$STREEX_QA_PASSWORD"
-      - run: npm run test:e2e:qa -- --project=desktop-chrome
+          test -n "$STREEX_QA_ALT_EMAIL"
+          test -n "$STREEX_QA_ALT_PASSWORD"
+          test -n "$STREEX_SUPABASE_URL"
+          test -n "$STREEX_SUPABASE_PUBLISHABLE_KEY"
+      - name: Read-only protected-route certification
+        run: npm run test:e2e:qa
+      - name: Read-only cross-account RLS certification
+        run: npm run test:rls:qa

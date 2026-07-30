@@ -1,6 +1,6 @@
 # Streex Roadmap
 
-Last updated: 2026-07-14
+Last updated: 2026-07-30
 
 This is the living product roadmap for Streex Gig Earnings.
 
@@ -19,10 +19,16 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current baseline after the Personal Data Safety & Recovery release:
+Current public baseline after Operational Explorer & Driver Playbook:
 
 ```text
-Beta 0.9.2 - Personal Data Safety & Recovery
+Beta 0.9.4 - Operational Explorer & Driver Playbook
+```
+
+Current local source candidate:
+
+```text
+Beta 0.9.5 - Release Certification & Performance
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -123,12 +129,12 @@ Scope delivered:
 - A first-run checklist guides settings, the first week, and the first recorded activity without interrupting an established driver workflow.
 - Admin User Management can see confirmation state, request a confirmation or password-recovery email, and inspect a deliberately limited support audit trail without browsing private earnings history.
 - Owner-scoped onboarding state and server-only admin audit records are protected by RLS; no earnings, shifts, mileage, rides, snapshots, or historical weeks were changed.
-- The frontend has an optional Cloudflare Turnstile integration point. It remains inactive until the public site key is configured in the frontend environment and the active Supabase Auth CAPTCHA configuration is enabled.
+- The frontend has a Cloudflare Turnstile integration point. The owner configured and exercised it with the active Supabase Auth CAPTCHA settings.
 
 Release gates still outside source code:
 
-- Configure a production SMTP sender in Supabase Auth and prove sign-up, confirmation resend, and recovery delivery with an isolated QA account.
-- Enable CAPTCHA only after the Cloudflare Turnstile site and secret keys are configured in the matching frontend and Supabase Auth settings.
+- Continue monitoring the configured production SMTP sender through sign-up, confirmation resend, and recovery.
+- Keep the configured Turnstile frontend and Supabase Auth keys aligned when environments change.
 - Configure the active project's leaked-password protection if the plan supports it, then verify the intended password policy with QA.
 
 Boundaries:
@@ -156,7 +162,7 @@ Boundaries:
 
 ### Beta 0.9.4 - Operational Explorer & Driver Playbook
 
-Status: implemented in source; awaiting owner review, commit, publication, and production migration verification.
+Status: published and verified through more than one week of real owner use.
 
 Scope:
 
@@ -165,9 +171,50 @@ Scope:
 - Capture future Quick Update operational observations in a private append-only table without rewriting historical data.
 - Generate an anonymous three-card Driver Playbook as 1080x1920 JPG files using a stable Control Room visual system.
 
+### Beta 0.9.5 - Release Certification & Performance
+
+Status: current local source candidate.
+
+Scope:
+
+- Load authenticated workspaces by route so initial startup does not include every analytical and administrative page.
+- Load the image-capture engine only when export, copy, or share is requested.
+- Replace inherited Lovable social metadata with STREEX-owned metadata and assets.
+- Extend the normal GitHub quality gate with a read-only public browser smoke.
+- Certify protected routes on desktop and mobile with an isolated QA identity.
+- Prove owner-data isolation in both directions with two isolated QA identities and read-only RLS checks.
+- Reconcile release, roadmap, product-status, QA, and handoff documentation with the published 0.9.4 baseline.
+
+Boundaries:
+
+- Do not change earnings, shift, ride, mileage, snapshot, or historical calculations.
+- Do not rewrite production records or introduce a Supabase migration.
+- Automatic CI stays anonymous and uses placeholder-shaped public config.
+- Authenticated and RLS certification stays manual, protected, isolated, and read-only.
+
+### Beta 0.9.6 - Historical Data Import
+
+Status: planned next after 0.9.5 certification.
+
+Scope direction:
+
+- Import historical CSV/Excel earnings through mapping, validation, dry-run preview, conflict detection, and an explicit final confirmation.
+- Preserve existing days by default and never bulk-write production without a reversible evidence trail.
+- Label imported records honestly when historical hours, miles, rides, shifts, or app attribution are unavailable.
+
+### Beta 0.9.7 - Deep Insights Productivity
+
+Status: planned.
+
+Scope direction:
+
+- Add saved Operational Explorer filter presets for recurring questions such as selected weekdays or time windows.
+- Improve filtered exports and comparison reuse without weakening Observed, Estimated, Mixed, or Insufficient evidence labels.
+- Evaluate only after 0.9.6 establishes the intended shape and trust rules for older data.
+
 ### Personal Context Tags - Market/Zone Candidate
 
-Status: candidate after Live Work Mode.
+Status: candidate after the current certification and import sequence.
 
 Scope direction:
 

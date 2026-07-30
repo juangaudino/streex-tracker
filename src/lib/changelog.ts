@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.9.4";
+export const CURRENT_VERSION = "0.9.5";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,20 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.5",
+    date: "2026-07",
+    title: "Release Certification & Performance",
+    tags: ["fix", "polish"],
+    items: [
+      "Authenticated workspaces now load by route, reducing the initial JavaScript required to open Streex",
+      "Image export code now loads only when an export, copy, or share action is requested",
+      "Automatic CI now includes the public browser boundary, while manual certification covers desktop, mobile, and read-only two-account RLS isolation",
+      "Production dependencies received compatible security updates; the remaining React Router advisory is limited to unstable RSC APIs that this client-only app does not use",
+      "Public social metadata now uses the STREEX domain and brand assets instead of inherited Lovable preview metadata",
+      "No earnings, shifts, rides, mileage, snapshots, stored weeks, migrations, or production records changed",
+    ],
+  },
   {
     version: "0.9.4",
     date: "2026-07",

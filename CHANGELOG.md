@@ -2,6 +2,22 @@
 
 ## Beta Releases
 
+### Beta 0.9.5 — Release Certification & Performance
+
+### Changed
+
+- Authenticated application pages now load by route instead of shipping every workspace in the initial JavaScript payload.
+- The image-export engine now loads only when an export, copy, or share action is requested.
+- Public metadata now uses the STREEX domain, description, and icon instead of inherited Lovable preview assets and attribution.
+
+### Quality
+
+- The automatic GitHub quality gate now includes a read-only browser smoke of the public authentication and recovery boundary.
+- Manual release certification now covers protected routes on desktop and mobile plus a read-only, two-identity RLS isolation check.
+- Compatible production security updates were applied, including React Router 7.18.2, Vite 5.4.21, and PostCSS 8.5.25; the remaining React Router audit advisory applies only to unstable RSC APIs that this client-only SPA does not use.
+- Project status, roadmap, QA runbook, and new-chat handoff now identify Beta 0.9.4 as published and verified through more than one week of real owner use.
+- No earnings, shifts, rides, mileage, snapshots, stored weeks, migrations, or production records changed.
+
 ### Beta 0.9.4 — Operational Explorer & Driver Playbook
 
 ### Added

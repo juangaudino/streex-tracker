@@ -1,22 +1,8 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "./pages/NotFound.tsx";
-import AppShell from "./pages/AppShell";
-import DashboardPage from "./pages/DashboardPage";
-import WeeklyEntryPage from "./pages/WeeklyEntryPage";
-import ComparisonsPage from "./pages/ComparisonsPage";
-import HistoryPage from "./pages/HistoryPage";
-import SettingsPage from "./pages/SettingsPage";
-import AchievementsPage from "./pages/AchievementsPage";
-import CareerPage from "./pages/CareerPage";
-import JourneyPage from "./pages/JourneyPage";
-import MonthlyRecapPage from "./pages/MonthlyRecapPage";
-import LettersPage from "./pages/LettersPage";
-import AssistantPage from "./pages/AssistantPage";
-import DeepInsightsPage from "./pages/DeepInsightsPage";
-import AdminPage from "./pages/AdminPage";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import LegalPage from "./pages/LegalPage";
@@ -30,6 +16,35 @@ import { Button } from "./components/ui/button";
 import { useAppLifecycle } from "./hooks/useAppLifecycle";
 import { lifecycleDebug } from "./lib/appLifecycle";
 import { AnimatedStreexLogo, StreexMotionBackground } from "./components/StreexMotionBrand";
+
+const AppShell = lazy(() => import("./pages/AppShell"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const WeeklyEntryPage = lazy(() => import("./pages/WeeklyEntryPage"));
+const ComparisonsPage = lazy(() => import("./pages/ComparisonsPage"));
+const HistoryPage = lazy(() => import("./pages/HistoryPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const AchievementsPage = lazy(() => import("./pages/AchievementsPage"));
+const CareerPage = lazy(() => import("./pages/CareerPage"));
+const JourneyPage = lazy(() => import("./pages/JourneyPage"));
+const MonthlyRecapPage = lazy(() => import("./pages/MonthlyRecapPage"));
+const LettersPage = lazy(() => import("./pages/LettersPage"));
+const AssistantPage = lazy(() => import("./pages/AssistantPage"));
+const DeepInsightsPage = lazy(() => import("./pages/DeepInsightsPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+
+function RouteLoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background px-6">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <StreexLogo className="h-9" />
+        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+          Loading workspace
+        </p>
+      </div>
+    </div>
+  );
+}
 
 const App = () => {
   useAppLifecycle();
@@ -115,27 +130,29 @@ const App = () => {
             onSignOut={signOut}
           />
         )}
-        <BrowserRouter>
-          <Routes>
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route element={<AppShell store={store} user={user} onSignOut={signOut} />}>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/entry" element={<WeeklyEntryPage />} />
-              <Route path="/compare" element={<ComparisonsPage />} />
-              <Route path="/history" element={<HistoryPage />} />
-              <Route path="/achievements" element={<AchievementsPage />} />
-              <Route path="/career" element={<CareerPage />} />
-              <Route path="/journey" element={<JourneyPage />} />
-              <Route path="/recap" element={<MonthlyRecapPage />} />
-              <Route path="/letters" element={<LettersPage />} />
-              <Route path="/assistant" element={<AssistantPage />} />
-              <Route path="/deep-insights" element={<DeepInsightsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/admin" element={<AdminPage />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <Suspense fallback={<RouteLoadingFallback />}>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route element={<AppShell store={store} user={user} onSignOut={signOut} />}>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/entry" element={<WeeklyEntryPage />} />
+                <Route path="/compare" element={<ComparisonsPage />} />
+                <Route path="/history" element={<HistoryPage />} />
+                <Route path="/achievements" element={<AchievementsPage />} />
+                <Route path="/career" element={<CareerPage />} />
+                <Route path="/journey" element={<JourneyPage />} />
+                <Route path="/recap" element={<MonthlyRecapPage />} />
+                <Route path="/letters" element={<LettersPage />} />
+                <Route path="/assistant" element={<AssistantPage />} />
+                <Route path="/deep-insights" element={<DeepInsightsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/admin" element={<AdminPage />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </Suspense>
       </TooltipProvider>
     </ThemeProvider>
   );

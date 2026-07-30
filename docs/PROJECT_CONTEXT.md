@@ -21,7 +21,9 @@ Streex is currently in public beta versioning.
 
 Current release:
 
-`Beta 0.9.2 — Personal Data Safety & Recovery`
+Public: `Beta 0.9.4 — Operational Explorer & Driver Playbook`
+
+Local source candidate: `Beta 0.9.5 — Release Certification & Performance`
 
 Older `V3.x` through `V5.x` labels are Alpha Archive history. Keep them for continuity, but do not use the old Alpha sequence for new beta work.
 

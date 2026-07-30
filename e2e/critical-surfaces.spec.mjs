@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const authenticatedRoutes = [
   "/", "/entry", "/career", "/compare", "/deep-insights", "/history",
-  "/journey", "/recap", "/letters", "/achievements", "/settings", "/admin",
+  "/journey", "/recap", "/letters", "/achievements", "/settings", "/assistant",
 ];
 
 test.describe("anonymous and recovery boundaries", () => {
@@ -37,8 +37,24 @@ test.describe("authenticated route contract", () => {
       const errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await page.goto(route);
+      await expect(page.getByRole("navigation").first()).toBeVisible();
       await expect(page.locator("body")).not.toContainText(/application error|unexpected error/i);
       expect(errors).toEqual([]);
     });
   }
+
+  test("0.9.4 operational explorer and playbook are reachable", async ({ page }) => {
+    await page.goto("/deep-insights");
+    await expect(page.getByRole("heading", { name: "Deep Insights" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Operational Explorer" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /create driver playbook/i })).toBeVisible();
+  });
+
+  test("admin boundary fails closed for a non-admin QA account", async ({ page }) => {
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto("/admin");
+    await expect(page.getByRole("heading", { name: /admin ops|admin access unavailable/i })).toBeVisible();
+    expect(errors).toEqual([]);
+  });
 });

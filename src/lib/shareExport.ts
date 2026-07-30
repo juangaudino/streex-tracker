@@ -1,5 +1,3 @@
-import html2canvas from "html2canvas";
-
 type ShareNavigator = Navigator & {
   canShare?: (data?: ShareData) => boolean;
   share?: (data?: ShareData) => Promise<void>;
@@ -16,11 +14,19 @@ export interface RenderImageOptions {
   scale?: number;
 }
 
+let html2canvasPromise: Promise<typeof import("html2canvas")["default"]> | null = null;
+
+function loadHtml2canvas() {
+  html2canvasPromise ??= import("html2canvas").then((module) => module.default);
+  return html2canvasPromise;
+}
+
 export async function renderNodeAsImage(
   node: HTMLElement,
   options: RenderImageOptions = {},
 ): Promise<Blob | null> {
   const format = options.format ?? "png";
+  const html2canvas = await loadHtml2canvas();
   const canvas = await html2canvas(node, {
     backgroundColor: options.backgroundColor ?? null,
     scale: options.scale ?? 2,
@@ -88,13 +94,7 @@ export async function shareNodeAsPng(
   shareData: { title?: string; text?: string } = {},
 ): Promise<"shared" | "downloaded" | "failed"> {
   try {
-    const canvas = await html2canvas(node, {
-      backgroundColor: null,
-      scale: 2,
-      useCORS: true,
-      logging: false,
-    });
-    const blob: Blob | null = await new Promise((r) => canvas.toBlob(r, "image/png"));
+    const blob = await renderNodeAsImage(node);
     if (!blob) return "failed";
     const file = new File([blob], filename, { type: "image/png" });
     const nav = navigator as ShareNavigator;
@@ -102,15 +102,7 @@ export async function shareNodeAsPng(
       await nav.share({ ...shareData, files: [file] });
       return "shared";
     }
-    // Fallback to download
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    downloadBlob(blob, filename);
     return "downloaded";
   } catch {
     return "failed";
@@ -129,13 +121,7 @@ export async function copyNodeAsPng(node: HTMLElement): Promise<boolean> {
     if (!nav.clipboard || typeof clipboardWindow.ClipboardItem === "undefined") {
       return false;
     }
-    const canvas = await html2canvas(node, {
-      backgroundColor: null,
-      scale: 2,
-      useCORS: true,
-      logging: false,
-    });
-    const blob: Blob | null = await new Promise((r) => canvas.toBlob(r, "image/png"));
+    const blob = await renderNodeAsImage(node);
     if (!blob) return false;
     const item = new clipboardWindow.ClipboardItem({ "image/png": blob });
     await nav.clipboard.write([item]);

@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-07-17
+Last updated: 2026-07-30
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -21,13 +21,13 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.9.2 - Personal Data Safety & Recovery
+Beta 0.9.4 - Operational Explorer & Driver Playbook
 ```
 
 Current local source candidate:
 
 ```text
-Beta 0.9.4 - Operational Explorer & Driver Playbook
+Beta 0.9.5 - Release Certification & Performance
 ```
 
 Source of truth:
@@ -94,21 +94,13 @@ migration adds owner-scoped onboarding state and server-only admin audit events;
 it does not alter weeks, earnings, shifts, mileage, rides, snapshots, or
 historical metrics.
 
-The corresponding frontend source is local and awaits the owner's normal
-commit, push, and Vercel publication. It adds clear email-confirmation state,
-safe password-recovery messaging, optional Turnstile support, a guided-start
-checklist, legal routes, and limited admin account support controls.
+The frontend is published with clear email-confirmation state, safe password
+recovery, Turnstile support, a guided-start checklist, legal routes, and limited
+admin account support controls. The owner configured and exercised custom SMTP
+confirmation/recovery delivery and Cloudflare Turnstile after publication.
 
-External release gates remain intentionally separate from code publication:
-
-- Supabase Auth needs a production SMTP sender and an isolated-QA delivery test.
-- Turnstile stays disabled until both its frontend site key and Supabase Auth
-  CAPTCHA secret are configured.
-- The Supabase security advisor's leaked-password-protection warning requires a
-  plan/policy decision before it is enabled.
-
-SMTP confirmation/recovery delivery and Cloudflare Turnstile were configured
-and exercised by the owner after publication of the account-readiness frontend.
+The Supabase security advisor's leaked-password-protection warning remains a
+separate Auth policy decision, not a schema defect.
 
 ### 0.9.3 Live Work Mode Source — Withdrawn
 
@@ -120,7 +112,20 @@ Owner testing found that the separate workspace did not add enough value. The ro
 
 ### 0.9.4 Operational Explorer & Driver Playbook
 
-The source adds custom and multi-day Deep Insights filtering, local operational time windows, weighted operating rates, evidence labels, hourly profiles, best-window rankings, and an anonymous three-card JPG Driver Playbook. Quick Update also records additive owner-only operational observations for better future timing precision. No historical week or snapshot is rewritten.
+Published and owner-verified through more than one week of real work. Deep
+Insights includes custom and multi-day filtering, local operational time
+windows, weighted operating rates, evidence labels, hourly profiles,
+best-window rankings, and an anonymous three-card JPG Driver Playbook. Quick
+Update records additive owner-only operational observations for better future
+timing precision. No historical week or snapshot was rewritten.
+
+### 0.9.5 Release Certification & Performance
+
+Current local source candidate. It splits authenticated workspaces into
+route-loaded bundles, defers image-export code until an export is requested,
+removes inherited Lovable social metadata, adds a public browser smoke to normal
+CI, and upgrades the manual release gate to desktop/mobile protected-route and
+bidirectional read-only RLS checks. It changes no stored data or calculations.
 
 ## Backend Rules
 
@@ -397,7 +402,8 @@ Admin Ops foundation exists:
 - app version/update controls
 - re-engagement email foundation
 
-Email delivery quality is still pending production sender/domain refinement.
+Custom SMTP is configured and owner-tested for confirmation and recovery.
+Re-engagement campaigns remain a separately controlled admin capability.
 
 ### Themes
 
@@ -457,7 +463,10 @@ Current planned sequence:
 - `Beta 0.9.1`: Reliability & Release Safety - completed
 - `Beta 0.9.2`: Personal Data Safety & Recovery - completed
 - `Beta 0.9.3`: Live Work Mode - withdrawn and source archived
-- `Beta 0.9.4`: Operational Explorer & Driver Playbook - implemented in source
+- `Beta 0.9.4`: Operational Explorer & Driver Playbook - published and owner-verified
+- `Beta 0.9.5`: Release Certification & Performance - current local candidate
+- `Beta 0.9.6`: Historical Data Import - planned next after certification
+- `Beta 0.9.7`: Deep Insights Productivity - planned
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
@@ -504,26 +513,26 @@ See `CHANGELOG.md` for full details.
 - `supabase/config.toml` should point to the active Supabase project ref for future function deployments.
 - Ask My Data and utility Edge Functions depend on Supabase function secrets. Do not assume secrets are present in a new environment.
 - OpenWeather and TomTom are backend/Edge Function concerns; do not place provider keys in frontend code.
-- Supabase default auth emails can hit quota; production email sender configuration should be improved separately.
+- Custom SMTP and Turnstile are active; keep confirmation/recovery delivery under routine release monitoring.
+- React Router 7.18.2 leaves one npm advisory whose maintainer scope is unstable RSC APIs; Streex is a client-only Vite SPA and does not use RSC/server actions. Retest and remove the documented exception when a compatible patched package exists.
 - The web app should continue to stabilize before starting a professional native SwiftUI iOS app.
 
 ## Current Follow-Up Backlog
 
 High priority:
 
-- Improve Supabase Auth email delivery with proper custom SMTP/domain sender.
-- Keep monitoring login/session behavior after the migration.
-- Confirm the Beta 0.8.0 user-settings migration and `driver-utility` Edge Function are deployed to the active Supabase backend.
-- Validate Daily Report export on iOS PWA after next deploy.
-- Continue bug-fix stabilization before adding large roadmap systems.
+- Publish and certify Beta 0.9.5 through the automatic Quality Gate and the protected manual QA workflow.
+- Configure two isolated QA identities in the GitHub `qa` environment for bidirectional RLS certification.
+- Keep monitoring login/session and SMTP confirmation/recovery delivery.
+- Validate Daily Report export on an installed iOS PWA during a future export-affecting release.
 
 Medium priority:
 
 - Replace or evolve Ask My Data away from the Lovable AI dependency only after a deliberate provider decision; external AI replacement is intentionally deferred for now.
 - Continue improving shift-level attribution from earnings snapshots.
-- Prepare the historical CSV/Excel import workflow before importing multi-year data.
+- Plan and build the preview-first historical CSV/Excel import workflow before importing multi-year data.
+- Add saved Operational Explorer filter presets and richer export only after import readiness.
 - Research aviation providers for Flight Reservation Tracker and Airport Pulse before building the next Utility Slot module.
-- Add more robust admin email sender configuration.
 - Keep `docs/ASK_MY_DATA_CHALLENGE_SET.md` updated after Ask My Data fixes.
 
 Do not implement these automatically. Treat them as product backlog.

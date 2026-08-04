@@ -8,7 +8,7 @@ import {
   resolveShiftRate,
   shiftDurationHours,
 } from "./shiftIntelligence";
-import type { DayEntry, EarningsSnapshot, ShiftSession, WeekRecord } from "./types";
+import type { DayEntry, EarningsAttribution, EarningsSnapshot, ShiftSession, WeekRecord } from "./types";
 
 export type DeepInsightsTimePreset =
   | "all"
@@ -359,11 +359,12 @@ function buildInsights(data: {
 export function buildDeepInsightsData(args: {
   weeks: WeekRecord[];
   earningsSnapshots?: EarningsSnapshot[];
+  earningsAttributions?: EarningsAttribution[];
   filters: DeepInsightsFilters;
   currencySymbol?: string;
   now?: Date;
 }): DeepInsightsData {
-  const { weeks, filters, earningsSnapshots = [], currencySymbol = "$", now = new Date() } = args;
+  const { weeks, filters, earningsSnapshots = [], earningsAttributions = [], currencySymbol = "$", now = new Date() } = args;
   const range = dateRangeForPreset(filters.timePreset, now, filters.customStart, filters.customEnd);
   const appOptions = allAppNames(weeks);
   const selectedApp = filters.app && filters.app !== "all" ? filters.app : null;
@@ -372,7 +373,14 @@ export function buildDeepInsightsData(args: {
   const days = weeks
     .flatMap((week) => week.entries.map((day) => {
       const earnings = selectedApp ? dayAppEarnings(day, selectedApp) : dayTotal(day);
-      const operationalEarnings = selectedApp ? 0 : operationalDayTotal(day);
+      const completedShifts = (day.shifts ?? []).filter((shift) => shift.endTime);
+      const resolvedShiftEarnings = completedShifts.map((shift) => resolveShiftRate(day, shift, earningsSnapshots, earningsAttributions, weeks).earnings);
+      const resolvedTotal = resolvedShiftEarnings.reduce<number>((sum, value) => sum + (value ?? 0), 0);
+      const operationalEarnings = selectedApp
+        ? 0
+        : completedShifts.length && resolvedShiftEarnings.some((value) => value !== null)
+          ? money(resolvedTotal)
+          : operationalDayTotal(day);
       return {
         date: day.date,
         label: compactDateLabel(day.date),
@@ -464,7 +472,7 @@ export function buildDeepInsightsData(args: {
           if (!shift.endTime) continue;
           const hours = shiftDurationHours(shift);
           if (hours <= 0) continue;
-          const rate = resolveShiftRate(day, shift, earningsSnapshots);
+          const rate = resolveShiftRate(day, shift, earningsSnapshots, earningsAttributions, weeks);
           const baseShift: DeepInsightsShift = {
             id: shift.id,
             date: day.date,

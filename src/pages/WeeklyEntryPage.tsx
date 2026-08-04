@@ -62,7 +62,7 @@ function formatShiftTime(value?: string): string {
 }
 
 export default function WeeklyEntryPage() {
-  const { openWeek, weeks, settings, earningsSnapshots, addWeek, updateWeek } =
+  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -554,7 +554,7 @@ export default function WeeklyEntryPage() {
   const activeShiftPaused = activeShiftBlock ? isShiftPaused(activeShiftBlock.shift) : false;
   const historicalShifts = allShifts.filter(({ shift }) => shift.endTime);
   const shiftRate = (day: DayEntry, shift: ShiftSession) => {
-    return resolveShiftRate(day, shift, earningsSnapshots).rate;
+    return resolveShiftRate(day, shift, earningsSnapshots, earningsAttributions, weeks).rate;
   };
 
   // Mobile day detail view

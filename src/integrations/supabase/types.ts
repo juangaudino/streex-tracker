@@ -232,6 +232,68 @@ export type Database = {
           },
         ]
       }
+      earnings_attributions: {
+        Row: {
+          amount: number
+          attributed_day_date: string | null
+          confidence: string
+          created_at: string
+          effective_end_at: string | null
+          effective_start_at: string | null
+          id: string
+          mode: string
+          note: string | null
+          shift_id: string | null
+          snapshot_id: string
+          source: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          attributed_day_date?: string | null
+          confidence?: string
+          created_at?: string
+          effective_end_at?: string | null
+          effective_start_at?: string | null
+          id?: string
+          mode?: string
+          note?: string | null
+          shift_id?: string | null
+          snapshot_id: string
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          attributed_day_date?: string | null
+          confidence?: string
+          created_at?: string
+          effective_end_at?: string | null
+          effective_start_at?: string | null
+          id?: string
+          mode?: string
+          note?: string | null
+          shift_id?: string | null
+          snapshot_id?: string
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "earnings_attributions_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: true
+            referencedRelation: "earnings_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       operational_snapshots: {
         Row: {
           app_totals: Json

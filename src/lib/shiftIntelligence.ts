@@ -1,6 +1,7 @@
 import { isRewardApp, operationalDayTotal } from "./rewardIncome";
 import { earningsSnapshotTransitionKey } from "./earningsSnapshots";
-import type { DayEntry, EarningsSnapshot, ShiftSession, ShiftWorkBlock, WeekRecord } from "./types";
+import { buildAttributedHourAmounts, effectiveShiftId } from "./earningsAttributions";
+import type { DayEntry, EarningsAttribution, EarningsSnapshot, ShiftSession, ShiftWorkBlock, WeekRecord } from "./types";
 import { getAccumulatedDayMileage, getEffectiveShiftMileage } from "./mileageAttribution";
 
 export interface ShiftSummary {
@@ -240,14 +241,19 @@ function isSnapshotInsideShift(snapshot: EarningsSnapshot, shift: ShiftSession):
   return created >= start && created <= end;
 }
 
-function snapshotShiftEarnings(shift: ShiftSession, snapshots: EarningsSnapshot[] = []): ShiftEarningsResolution {
+function snapshotShiftEarnings(shift: ShiftSession, snapshots: EarningsSnapshot[] = [], attributions: EarningsAttribution[] = [], weeks: WeekRecord[] = []): ShiftEarningsResolution {
   const seen = new Set<string>();
   let total = 0;
   let count = 0;
 
+  const bySnapshot = new Map(attributions.map((item) => [item.snapshotId, item]));
   const relevant = snapshots.filter((snapshot) => {
     if (isRewardApp(snapshot.app)) return false;
-    if (snapshot.dayDate !== shift.startTime.slice(0, 10)) return false;
+    const attribution = bySnapshot.get(snapshot.id);
+    const effectiveDay = attribution?.status === "resolved" ? attribution.attributedDayDate : snapshot.dayDate;
+    if (effectiveDay !== shift.startTime.slice(0, 10)) return false;
+    if (attribution) return attribution.status === "resolved" && attribution.shiftId === shift.id;
+    if (weeks.length) return effectiveShiftId(snapshot, undefined, weeks) === shift.id;
     if (snapshot.shiftId) return snapshot.shiftId === shift.id;
     return isSnapshotInsideShift(snapshot, shift);
   });
@@ -270,17 +276,62 @@ export function resolveShiftEarnings(
   day: DayEntry,
   shift: ShiftSession,
   snapshots: EarningsSnapshot[] = [],
+  attributions: EarningsAttribution[] = [],
+  weeks: WeekRecord[] = [],
 ): ShiftEarningsResolution {
   const manual = money(shift.earnings);
-  if (manual !== null) return { earnings: manual, source: "manual" };
+  if (manual !== null) {
+    const attributionBySnapshot = new Map(attributions.map((item) => [item.snapshotId, item]));
+    const completedManualTotal = (day.shifts ?? []).filter((item) => item.endTime).reduce<number | null>((sum, item) => {
+      const value = money(item.earnings);
+      return sum === null || value === null ? null : sum + value;
+    }, 0);
+    const manualAssignmentsAlreadyReconcileDay = completedManualTotal !== null
+      && Math.abs(completedManualTotal - operationalDayTotal(day)) < 0.01;
+    const seen = new Set<string>();
+    let lateAttributed = 0;
+    let snapshotCount = 0;
+    for (const snapshot of snapshots) {
+      const attribution = attributionBySnapshot.get(snapshot.id);
+      if (!attribution || attribution.status !== "resolved" || attribution.shiftId !== shift.id) continue;
+      if (Number(snapshot.delta) <= 0 || isRewardApp(snapshot.app) || isSnapshotInsideShift(snapshot, shift)) continue;
+      if (snapshot.dayDate === day.date && manualAssignmentsAlreadyReconcileDay) continue;
+      const key = earningsSnapshotTransitionKey(snapshot);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      lateAttributed += Number(snapshot.delta);
+      snapshotCount += 1;
+    }
+    return {
+      earnings: round(manual + lateAttributed),
+      source: lateAttributed > 0 ? "snapshot" : "manual",
+      snapshotCount: snapshotCount || undefined,
+    };
+  }
 
-  const fromSnapshots = snapshotShiftEarnings(shift, snapshots);
-  if (fromSnapshots.earnings !== null) return fromSnapshots;
-
+  const fromSnapshots = snapshotShiftEarnings(shift, snapshots, attributions, weeks);
   const completedShiftsForDay = (day.shifts ?? []).filter((item) => item.endTime).length;
   if (completedShiftsForDay === 1) {
+    const seen = new Set<string>();
+    const positiveSnapshotTotal = snapshots.reduce((sum, snapshot) => {
+      if (snapshot.dayDate !== day.date || Number(snapshot.delta) <= 0 || isRewardApp(snapshot.app)) return sum;
+      const key = earningsSnapshotTransitionKey(snapshot);
+      if (seen.has(key)) return sum;
+      seen.add(key);
+      return sum + Number(snapshot.delta);
+    }, 0);
+    const baseline = Math.max(0, operationalDayTotal(day) - positiveSnapshotTotal);
+    const attributed = fromSnapshots.earnings ?? 0;
+    const earnings = round(baseline + attributed);
+    if (positiveSnapshotTotal > 0) {
+      return earnings > 0
+        ? { earnings, source: fromSnapshots.earnings !== null ? "snapshot" : "single-shift-day", snapshotCount: fromSnapshots.snapshotCount }
+        : { earnings: null, source: "unavailable", snapshotCount: fromSnapshots.snapshotCount };
+    }
     return { earnings: round(operationalDayTotal(day)), source: "single-shift-day" };
   }
+
+  if (fromSnapshots.earnings !== null) return fromSnapshots;
 
   return { earnings: null, source: "unavailable" };
 }
@@ -289,10 +340,12 @@ export function resolveShiftRate(
   day: DayEntry,
   shift: ShiftSession,
   snapshots: EarningsSnapshot[] = [],
+  attributions: EarningsAttribution[] = [],
+  weeks: WeekRecord[] = [],
 ): { rate: number | null; earnings: number | null; source: ShiftEarningsSource } {
   const hours = shift.endTime ? shiftDurationHours(shift) : activeShiftDurationHours(shift);
   if (hours <= 0) return { rate: null, earnings: null, source: "unavailable" };
-  const resolved = resolveShiftEarnings(day, shift, snapshots);
+  const resolved = resolveShiftEarnings(day, shift, snapshots, attributions, weeks);
   if (resolved.earnings === null) return { rate: null, earnings: null, source: resolved.source };
   return { rate: round(resolved.earnings / hours), earnings: resolved.earnings, source: resolved.source };
 }
@@ -400,31 +453,17 @@ function localDateKey(value: Date): string {
   ].join("-");
 }
 
-function isSameDayEarningUpdate(snapshot: EarningsSnapshot): boolean {
-  const created = new Date(snapshot.createdAt);
-  if (Number.isNaN(created.getTime())) return false;
-  return localDateKey(created) === snapshot.dayDate;
-}
-
-function buildSnapshotHourMap(earningsSnapshots: EarningsSnapshot[]) {
+function buildSnapshotHourMap(weeks: WeekRecord[], earningsSnapshots: EarningsSnapshot[], earningsAttributions: EarningsAttribution[]) {
   const hourMap = new Map<number, { earnings: number; observations: number; appTotals: Record<string, number> }>();
-  const seenTransitions = new Set<string>();
-
-  for (const snapshot of earningsSnapshots) {
-    const delta = Number(snapshot.delta) || 0;
-    if (delta <= 0) continue;
-    if (isRewardApp(snapshot.app)) continue;
-    const transitionKey = earningsSnapshotTransitionKey(snapshot);
-    if (seenTransitions.has(transitionKey)) continue;
-    seenTransitions.add(transitionKey);
-    const created = new Date(snapshot.createdAt);
-    if (Number.isNaN(created.getTime())) continue;
-    if (!isSameDayEarningUpdate(snapshot)) continue;
-    const hour = created.getHours();
+  const seenByHour = new Set<string>();
+  for (const segment of buildAttributedHourAmounts({ weeks, snapshots: earningsSnapshots, attributions: earningsAttributions })) {
+    const hour = segment.hour;
     const current = hourMap.get(hour) ?? { earnings: 0, observations: 0, appTotals: {} };
-    current.earnings += delta;
-    current.observations += 1;
-    current.appTotals[snapshot.app] = (current.appTotals[snapshot.app] || 0) + delta;
+    current.earnings += segment.amount;
+    const observationKey = `${segment.snapshotId}:${hour}`;
+    if (!seenByHour.has(observationKey)) current.observations += 1;
+    seenByHour.add(observationKey);
+    current.appTotals[segment.app] = (current.appTotals[segment.app] || 0) + segment.amount;
     hourMap.set(hour, current);
   }
 
@@ -434,6 +473,7 @@ function buildSnapshotHourMap(earningsSnapshots: EarningsSnapshot[]) {
 export function buildPatternIntelligence(
   weeks: WeekRecord[],
   earningsSnapshots: EarningsSnapshot[] = [],
+  earningsAttributions: EarningsAttribution[] = [],
 ): PatternIntelligence {
   const hourMap = new Map<number, { earnings: number; hours: number; appTotals: Record<string, number> }>();
   let totalHours = 0;
@@ -507,19 +547,36 @@ export function buildPatternIntelligence(
       earningsPerHour: value.hours > 0 ? round(value.earnings / value.hours) : 0,
     };
   });
-  const snapshotHourMap = buildSnapshotHourMap(earningsSnapshots);
+  const attributedSegments = buildAttributedHourAmounts({ weeks, snapshots: earningsSnapshots, attributions: earningsAttributions });
+  const snapshotHourMap = buildSnapshotHourMap(weeks, earningsSnapshots, earningsAttributions);
   const snapshotObservationCount = [...snapshotHourMap.values()].reduce((sum, value) => sum + value.observations, 0);
-  const hasSnapshotTimingData = snapshotObservationCount >= 3;
+  const hasSnapshotTimingData = snapshotObservationCount > 0;
   const timingSource = hasSnapshotTimingData ? "snapshot" : "estimated";
+  const seenPositive = new Set<string>();
+  const positiveSnapshotTotal = earningsSnapshots.reduce((sum, snapshot) => {
+    if (Number(snapshot.delta) <= 0 || isRewardApp(snapshot.app)) return sum;
+    const key = earningsSnapshotTransitionKey(snapshot);
+    if (seenPositive.has(key)) return sum;
+    seenPositive.add(key);
+    return sum + Number(snapshot.delta);
+  }, 0);
+  const safeSnapshotIds = new Set(attributedSegments.map((segment) => segment.snapshotId));
+  const safeSnapshotTotal = earningsSnapshots.reduce((sum, snapshot) => safeSnapshotIds.has(snapshot.id) ? sum + Math.max(0, Number(snapshot.delta) || 0) : sum, 0);
+  const legacyBaseline = Math.max(0, totalShiftEarnings - positiveSnapshotTotal);
+  const performanceEarnings = positiveSnapshotTotal > 0 ? legacyBaseline + safeSnapshotTotal : totalShiftEarnings;
+  const estimatedTotal = [...hourMap.values()].reduce((sum, value) => sum + value.earnings, 0);
+  const estimatedScale = estimatedTotal > 0 ? legacyBaseline / estimatedTotal : 0;
   const hourlyHeatmap = hasSnapshotTimingData
     ? Array.from({ length: 24 }, (_, hour) => {
         const value = snapshotHourMap.get(hour) ?? { earnings: 0, observations: 0, appTotals: {} };
+        const estimated = hourMap.get(hour) ?? { earnings: 0, hours: 0, appTotals: {} };
+        const earnings = value.earnings + estimated.earnings * estimatedScale;
         return {
           hour,
           label: hourLabel(hour),
-          earnings: round(value.earnings),
-          hours: value.observations,
-          earningsPerHour: round(value.earnings),
+          earnings: round(earnings),
+          hours: round(estimated.hours),
+          earningsPerHour: estimated.hours > 0 ? round(earnings / estimated.hours) : 0,
           observations: value.observations,
         };
       })
@@ -564,9 +621,9 @@ export function buildPatternIntelligence(
     averageShiftHours: completedShifts > 0 ? round(totalHours / completedShifts) : null,
     totalMiles: round(totalMiles),
     totalRides,
-    earningsPerHour: totalHours > 0 ? round(totalShiftEarnings / totalHours) : null,
-    earningsPerMile: totalMiles > 0 ? round(totalShiftEarnings / totalMiles) : null,
-    earningsPerRide: totalRides > 0 ? round(totalShiftEarnings / totalRides) : null,
+    earningsPerHour: totalHours > 0 ? round(performanceEarnings / totalHours) : null,
+    earningsPerMile: totalMiles > 0 ? round(performanceEarnings / totalMiles) : null,
+    earningsPerRide: totalRides > 0 ? round(performanceEarnings / totalRides) : null,
     ridesPerHour: totalHours > 0 && totalRides > 0 ? round(totalRides / totalHours) : null,
     milesPerRide: totalRides > 0 ? round(totalMiles / totalRides) : null,
     minutesPerRide: totalRides > 0 && totalHours > 0 ? round((totalHours * 60) / totalRides) : null,
@@ -612,9 +669,9 @@ export function buildPatternIntelligence(
     hasEnoughShiftData: totalShifts >= 3 && totalHours >= 3,
     hasEnoughTimingData: hasSnapshotTimingData || (totalShifts >= 3 && totalHours >= 3),
     timingSource,
-    timingSourceLabel: hasSnapshotTimingData ? "Observed from earnings updates" : "Estimated from shift duration",
+    timingSourceLabel: hasSnapshotTimingData ? "Attributed earnings timing" : "Estimated from shift duration",
     timingCopy: hasSnapshotTimingData
-      ? "Based on same-day saved earnings updates. Late tips and historical adjustments improve totals, but are excluded from timing so the heatmap does not pretend they happened today."
+      ? "Based on confirmed or safely estimated earning intervals. Unassigned tips and historical adjustments stay out of hourly rankings until reviewed."
       : "Estimated by spreading operational earnings across completed shift time. Rewards like Octopus still count in totals, but are excluded from timing so efficiency stays work-focused.",
   };
 }

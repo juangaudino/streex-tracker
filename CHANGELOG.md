@@ -2,6 +2,29 @@
 
 ## Beta Releases
 
+### Beta 0.9.6 — Earnings Attribution Integrity
+
+### Added
+
+- Added an owner-scoped earnings-attribution layer that separates when an accumulated-total change was observed from when it was operationally earned.
+- Quick Update now supports automatic worked-interval attribution, selected-shift distribution, exact ride time, and safe review-later handling.
+- Data Health includes a retroactive Earnings Attribution queue with suggested single-shift repair, detailed date/time assignment, and intentional hourly exclusion.
+- Quick Add is now Quick Actions: its first screen combines the current shift state, reliable Start/Pause/Resume/End controls, and the two primary earnings updates.
+- The header replaces separate undersized Pause and End buttons with one compact Working/Paused/Start control that opens Quick Actions.
+
+### Data Integrity
+
+- Post-shift tips, different-day adjustments, and historical edits no longer become fictional work hours merely because of their save timestamp.
+- Unassigned earnings remain in reported totals but stay outside hourly rankings until resolved.
+- Shift Intelligence, Deep Insights, Operational Explorer, and Driver Playbook consume the same canonical attribution rules.
+- Original earnings snapshots, accumulated app totals, stored week JSON, and all-time money are never rewritten or duplicated.
+- Shift actions and earnings saves use single-flight guards, immediate progress labels, disabled repeat actions, and explicit success feedback so rapid taps cannot create duplicate writes.
+
+### Backend / Migration
+
+- Added `20260802181319_earnings_attribution_integrity_096.sql` with explicit Data API grants, owner-only RLS, snapshot ownership checks, and indexes for pending review and attributed day/shift lookups.
+- Added `20260802181403_harden_earnings_attribution_privileges_096.sql` to remove anonymous access and authenticated delete/truncate privileges explicitly.
+
 ### Beta 0.9.5 — Release Certification & Performance
 
 ### Changed

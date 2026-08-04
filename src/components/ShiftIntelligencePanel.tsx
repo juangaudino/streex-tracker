@@ -2,13 +2,14 @@ import { Activity, BarChart3, Clock, Gauge, Moon, Route, Sparkles, Sun } from "l
 import { formatCurrency } from "@/lib/store";
 import { buildPatternIntelligence } from "@/lib/shiftIntelligence";
 import type { PerformanceMode } from "@/lib/performanceMode";
-import type { EarningsSnapshot, WeekRecord } from "@/lib/types";
+import type { EarningsAttribution, EarningsSnapshot, WeekRecord } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { buildActiveDayAverageComparison } from "@/lib/weeklyOperations";
 
 interface ShiftIntelligencePanelProps {
   weeks: WeekRecord[];
   earningsSnapshots?: EarningsSnapshot[];
+  earningsAttributions?: EarningsAttribution[];
   currencySymbol: string;
   mode: PerformanceMode;
   heading?: string;
@@ -78,7 +79,7 @@ function formatTimingMetric(
   if (!hour) return "track more shifts";
   if (source === "snapshot") {
     const updates = hour.observations ?? 0;
-    return `${formatCurrency(hour.earnings, currencySymbol)} in update${updates === 1 ? "" : "s"}`;
+    return `${formatCurrency(hour.earningsPerHour, currencySymbol)}/hr · ${updates} attributed event${updates === 1 ? "" : "s"}`;
   }
   return `${formatCurrency(hour.earningsPerHour, currencySymbol)}/hr est.`;
 }
@@ -86,6 +87,7 @@ function formatTimingMetric(
 export default function ShiftIntelligencePanel({
   weeks,
   earningsSnapshots = [],
+  earningsAttributions = [],
   currencySymbol,
   mode,
   heading = "Shift Intelligence",
@@ -98,12 +100,12 @@ export default function ShiftIntelligencePanel({
   intelligenceData,
   onOpenEarningsPerHour,
 }: ShiftIntelligencePanelProps) {
-  const intelligence = intelligenceData ?? buildPatternIntelligence(weeks, earningsSnapshots);
+  const intelligence = intelligenceData ?? buildPatternIntelligence(weeks, earningsSnapshots, earningsAttributions);
   const { summary } = intelligence;
   const maxEph = Math.max(1, ...intelligence.hourlyHeatmap.map((bucket) => bucket.earningsPerHour));
   const isAdvanced = mode === "advanced";
-  const strongWindowLabel = intelligence.timingSource === "snapshot" ? "Observed Update Hour" : "Estimated Window";
-  const heatmapTitle = intelligence.timingSource === "snapshot" ? "Update Heatmap" : "Estimated Hourly Heatmap";
+  const strongWindowLabel = intelligence.timingSource === "snapshot" ? "Attributed Work Window" : "Estimated Window";
+  const heatmapTitle = intelligence.timingSource === "snapshot" ? "Attributed Hourly Heatmap" : "Estimated Hourly Heatmap";
   const headerDescription = description ?? (isAdvanced
     ? "Operational view with shift, mileage, and efficiency context."
     : "Simple view for quick shift and earnings rhythm.");

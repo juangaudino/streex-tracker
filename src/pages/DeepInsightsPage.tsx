@@ -486,7 +486,7 @@ function Filters({
 }
 
 export default function DeepInsightsPage() {
-  const { weeks, earningsSnapshots, operationalSnapshots, settings } = useOutletContext<StoreContext>();
+  const { weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, settings } = useOutletContext<StoreContext>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isDark } = useTheme();
   const ui = useMemo(() => getVisual(isDark), [isDark]);
@@ -504,12 +504,12 @@ export default function DeepInsightsPage() {
   }));
   const sym = settings.currencySymbol || "$";
   const data = useMemo(
-    () => buildDeepInsightsData({ weeks, earningsSnapshots, filters, currencySymbol: sym }),
-    [weeks, earningsSnapshots, filters, sym],
+    () => buildDeepInsightsData({ weeks, earningsSnapshots, earningsAttributions, filters, currencySymbol: sym }),
+    [weeks, earningsSnapshots, earningsAttributions, filters, sym],
   );
   const operationalData = useMemo(
-    () => buildOperationalExplorerData({ weeks, earningsSnapshots, operationalSnapshots, globalFilters: filters, operationalFilters }),
-    [weeks, earningsSnapshots, operationalSnapshots, filters, operationalFilters],
+    () => buildOperationalExplorerData({ weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, globalFilters: filters, operationalFilters }),
+    [weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, filters, operationalFilters],
   );
 
   function updateFilterUrl(nextFilters: DeepInsightsFilters, nextOperational = operationalFilters) {

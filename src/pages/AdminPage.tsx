@@ -26,6 +26,7 @@ import {
 } from "@/lib/adminOps";
 import { summarizeDataHealth, type DataHealthStatus } from "@/lib/dataHealth";
 import type { StoreContext } from "./types";
+import EarningsAttributionReview from "@/components/EarningsAttributionReview";
 
 type AdminRow = {
   id: string;
@@ -79,7 +80,7 @@ function dataHealthTone(status: DataHealthStatus): string {
 }
 
 export default function AdminPage() {
-  const { weeks, earningsSnapshots, operationalSnapshots } = useOutletContext<StoreContext>();
+  const { weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, settings, saveEarningsAttribution } = useOutletContext<StoreContext>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
@@ -139,7 +140,8 @@ export default function AdminPage() {
     weeks,
     snapshots: earningsSnapshots,
     operationalSnapshots,
-  }), [earningsSnapshots, operationalSnapshots, weeks]);
+    earningsAttributions,
+  }), [earningsAttributions, earningsSnapshots, operationalSnapshots, weeks]);
 
   const filteredFeedback = useMemo(() => {
     return feedback.filter((item) => {
@@ -383,6 +385,8 @@ export default function AdminPage() {
           <Metric label="Weeks Checked" value={dataHealth.weeksChecked} />
           <Metric label="Snapshots" value={dataHealth.snapshotsChecked} />
           <Metric label="Operational observations" value={dataHealth.operationalSnapshotsChecked} />
+          <Metric label="Attributions" value={dataHealth.attributionsChecked} />
+          <Metric label="Attribution pending" value={dataHealth.pendingAttributions} />
           <Metric label="Critical Issues" value={dataHealth.criticalIssueCount} />
           <Metric label="Warnings" value={dataHealth.warningIssueCount} />
         </div>
@@ -424,6 +428,14 @@ export default function AdminPage() {
             ))}
           </div>
         )}
+
+        <EarningsAttributionReview
+          weeks={weeks}
+          snapshots={earningsSnapshots}
+          attributions={earningsAttributions}
+          currencySymbol={settings.currencySymbol}
+          onSave={saveEarningsAttribution}
+        />
       </section>
 
       <section className="grid lg:grid-cols-[1.2fr_0.8fr] gap-4">

@@ -101,3 +101,20 @@ Beta 0.9.5 certification is complete only when:
 - the manual **Manual QA E2E** workflow passes with two isolated identities;
 - the production bundle and public metadata match the committed release;
 - no unexplained Supabase migration, function, Auth, or RLS drift remains.
+
+## Beta 0.9.6 earnings-attribution gate
+
+Before publishing Earnings Attribution Integrity:
+
+- Confirm reported day/week totals remain byte-for-byte and cent-for-cent unchanged after attribution edits.
+- Confirm a Quick Update inside an active shift defaults to the interval since the prior same-app update and excludes pauses.
+- Confirm a late tip can be spread across a selected completed shift or assigned to an exact in-shift time.
+- Confirm **Review later** creates a Data Health item and contributes nothing to hourly efficiency until resolved.
+- Confirm cross-day attribution adds the amount only to the selected historical shift's operational analytics, without moving the reported earning between days.
+- Confirm **Keep out of hourly** preserves the reported earning while excluding it from hourly analytics.
+- Confirm Entry, History, Career, Daily Report, Shift Intelligence, Operational Explorer, Deep Insights, and Driver Playbook use the same resolved timing.
+- Confirm `earnings_attributions` has owner-only `SELECT`, `INSERT`, and `UPDATE` policies, no authenticated delete privilege, and denies cross-user access.
+- Confirm original `earnings_snapshots`, `operational_snapshots`, and weekly JSON rows are not rewritten by the migration or review workflow.
+- On mobile, confirm the header shows only one compact `Working`, `Paused`, or `Start` control and does not overflow beside Full Focus and Account.
+- Confirm the first Quick Actions screen exposes Start or Pause/Resume and End Shift before selecting an earnings app.
+- Rapidly tap each shift action and Save Update twice; only one save may run, the control must show progress immediately, and retry must remain available after a simulated failure.

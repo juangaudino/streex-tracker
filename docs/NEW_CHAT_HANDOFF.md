@@ -17,12 +17,12 @@ Also read:
 ## 1. Current Snapshot
 
 - Product: Streex Gig Earnings App.
-- Current public release: `Beta 0.9.4 - Operational Explorer & Driver Playbook`.
-- Current local source candidate: `Beta 0.9.5 - Release Certification & Performance`.
+- Current public release: `Beta 0.9.5 - Release Certification & Performance`.
+- Current local source candidate: `Beta 0.9.6 - Earnings Attribution Integrity`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.
-- The owner confirmed 0.9.4 was committed, pushed, and exercised in real work for more than one week without a reported regression. Always verify the live HEAD after a later publication.
+- The owner confirmed 0.9.4 through extended real work and published 0.9.5 after its local release work. Always verify the live HEAD after a later publication.
 - Frontend hosting: Vercel.
 - DNS and domain: Cloudflare, `getstreex.com`.
 - Active backend: owner-controlled Supabase project `ywbrovislvqkfzsyqpiv`.
@@ -66,6 +66,7 @@ The primary earnings model is intentionally JSON-oriented:
 - Each day contains app earnings, bonuses, shifts/work blocks, mileage, rides through shifts, note metadata, logged state, and closed-day state.
 - `user_settings` stores weekly goals, active apps, currency symbol, and Octopus balance.
 - `earnings_snapshots` stores observed app-total transitions and timestamps.
+- `earnings_attributions` stores the owner-scoped analytical timing decision for a positive snapshot without rewriting that snapshot or the reported total.
 - XP, achievements, feedback, admin, runtime config, email campaigns, and access controls use dedicated tables.
 
 Canonical TypeScript models live in `src/lib/types.ts`.
@@ -87,6 +88,7 @@ Important data rules:
 - `ai_usage_logs`
 - `app_runtime_config`
 - `earnings_snapshots`
+- `earnings_attributions`
 - `operational_snapshots`
 - `email_campaign_recipients`
 - `email_campaigns`
@@ -283,8 +285,9 @@ Design rules:
 
 ### Highest Priority Operations
 
-- Beta 0.9.5 is the current local certification/performance candidate. It does not require a migration and changes no stored calculations or production records.
-- After publication, require the automatic Quality Gate plus the manual protected QA workflow before certifying 0.9.5.
+- Beta 0.9.5 is the current public certification/performance baseline.
+- Beta 0.9.6 is the local Earnings Attribution Integrity candidate. Active-project migrations `20260802181319_earnings_attribution_integrity_096.sql` and `20260802181403_harden_earnings_attribution_privileges_096.sql` are applied and verified; they create owner-only attribution decisions without rewriting weekly JSON or original snapshots.
+- Before publishing 0.9.6, require the normal Quality Gate plus attribution-specific totals, RLS, and cross-surface verification.
 - Configure the GitHub Actions `qa` environment with two isolated QA identities and the active public Supabase URL/publishable key, then run protected routes on desktop/mobile and the bidirectional read-only RLS check. Do not use the owner's personal account.
 - The Supabase security advisor reports leaked-password protection disabled. Treat enabling it as a separate Auth settings decision, not as a schema defect or a reason to re-run migrations.
 
@@ -295,9 +298,9 @@ Design rules:
 
 ### Planned Product Work
 
-- Latest public release: `Beta 0.9.4 - Operational Explorer & Driver Playbook`, owner-verified through more than one week of real work.
-- Current local candidate: `Beta 0.9.5 - Release Certification & Performance`.
-- Planned next after certification: `Beta 0.9.6 - Historical Data Import`, followed by `Beta 0.9.7 - Deep Insights Productivity`.
+- Latest public release: `Beta 0.9.5 - Release Certification & Performance`.
+- Current local candidate: `Beta 0.9.6 - Earnings Attribution Integrity`.
+- Planned next after stabilization: `Beta 0.9.7 - Historical Data Import`, followed by `Beta 0.9.8 - Deep Insights Productivity`.
 - Do not normalize the weekly JSON model merely for scale; first solve silent write conflicts, recovery, and visible sync state for the owner's personal workflow.
 - The version number can move if a patch or urgent fix ships first.
 
@@ -351,6 +354,8 @@ Read `docs/ROADMAP.md` for the complete preserved roadmap and guardrails.
 - iOS Safari/PWA process kills still create true cold launches; only short resumes can be made continuous.
 - PWA icon changes may be cached by iOS/Android and can require removing/reinstalling the home-screen app.
 - Beta 0.9.5 splits routes and defers image-export code. Keep monitoring generated chunk size instead of treating the JSON persistence model as the source of frontend bundle weight.
+- Beta 0.9.6 separates observed timestamps from earned-time attribution. Reported money stays in its original day/week record; operational hourly analytics use only resolved attribution and exclude pending late earnings.
+- Beta 0.9.6 also replaces separate small header shift buttons with one compact Quick Actions trigger. Large shift controls live inside the sheet, and single-flight locking prevents rapid repeated taps from issuing duplicate saves.
 - React Router 7.18.2 has one current npm advisory explicitly limited to unstable RSC APIs. Streex is a client-only Vite SPA and uses neither RSC nor server actions; this is a documented non-applicable exception until a compatible patched package is published.
 - Local `.env` may be stale. Vercel Production variables are the deployment source of truth.
 - The repository contains old local/remote branches. Do not merge or delete branches blindly; compare against `main` first.
@@ -483,8 +488,8 @@ Production variables live in Vercel. Do not print their values in chat or docs.
 
 ### Versioning
 
-- Current public baseline: `0.9.4`.
-- Current local candidate: `0.9.5`.
+- Current public baseline: `0.9.5`.
+- Current local candidate: `0.9.6`.
 - Patch: focused fix/refinement/polish.
 - Minor: meaningful new surface/system.
 - `1.0.0`: first stable public release only.
@@ -510,7 +515,7 @@ Production variables live in Vercel. Do not print their values in chat or docs.
 2. Run `git status --short --branch` and inspect the latest commit.
 3. Read this file, `AGENTS.md`, `docs/PRODUCT_STATUS.md`, and `docs/ROADMAP.md`.
 4. Do not assume Ask My Data, Edge Function secrets, or migrations are deployed merely because source exists.
-5. If 0.9.5 is not yet published, finish its release certification without modifying production data.
+5. If 0.9.6 is not yet published, verify its additive migration, owner-only RLS, unchanged reported totals, and attribution behavior before release.
 6. Otherwise ask what the owner wants to tackle next, or plan the explicitly named roadmap item.
 
-The expected next product item after 0.9.5 certification is the preview-first Historical Data Import (`0.9.6`), followed by Deep Insights Productivity (`0.9.7`). Bug stabilization or infrastructure work may still take priority and should renumber the roadmap honestly.
+The expected next product item after 0.9.6 stabilization is the preview-first Historical Data Import (`0.9.7`), followed by Deep Insights Productivity (`0.9.8`). Bug stabilization or infrastructure work may still take priority and should renumber the roadmap honestly.

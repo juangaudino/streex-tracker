@@ -1,4 +1,4 @@
-import type { WeekRecord, AppSettings, EarningsSnapshot, OperationalSnapshot, OperationalSnapshotDraft } from "@/lib/types";
+import type { WeekRecord, AppSettings, EarningsSnapshot, OperationalSnapshot, OperationalSnapshotDraft, EarningsAttribution, EarningsAttributionIntent } from "@/lib/types";
 import type { WeekRevision } from "@/lib/weekRevisions";
 import type { User } from "@supabase/supabase-js";
 
@@ -9,11 +9,13 @@ export interface StoreContext {
   settings: AppSettings;
   earningsSnapshots: EarningsSnapshot[];
   operationalSnapshots: OperationalSnapshot[];
+  earningsAttributions: EarningsAttribution[];
   loading: boolean;
   hasLocalData: boolean;
   addWeek: (w: WeekRecord) => void;
-  updateWeek: (w: WeekRecord) => Promise<boolean>;
+  updateWeek: (w: WeekRecord, attributionIntents?: EarningsAttributionIntent[]) => Promise<boolean>;
   recordOperationalSnapshot: (draft: OperationalSnapshotDraft) => Promise<boolean>;
+  saveEarningsAttribution: (snapshotId: string, intent: Omit<EarningsAttributionIntent, "dayDate" | "app" | "previousAmount" | "newAmount">) => Promise<boolean>;
   deleteWeek: (id: string) => void;
   updateSettings: (s: AppSettings) => Promise<boolean>;
   importLocalData: () => Promise<number | undefined>;

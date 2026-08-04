@@ -1,9 +1,10 @@
 import { dateRangeForPreset, type DeepInsightsFilters } from "./deepInsights";
-import { isRewardApp, operationalDayTotal } from "./rewardIncome";
+import { operationalDayTotal } from "./rewardIncome";
 import { getShiftBlocks, getShiftMiles, resolveShiftEarnings, shiftDurationHours } from "./shiftIntelligence";
-import type { DayEntry, EarningsSnapshot, OperationalSnapshot, ShiftSession, WeekRecord } from "./types";
+import { buildAttributedHourAmounts } from "./earningsAttributions";
+import type { DayEntry, EarningsAttribution, EarningsSnapshot, OperationalSnapshot, ShiftSession, WeekRecord } from "./types";
 
-export type OperationalSource = "Observed" | "Estimated" | "Mixed" | "Insufficient";
+export type OperationalSource = "Confirmed" | "Attributed" | "Estimated" | "Mixed" | "Insufficient";
 export type OperationalWindowPreset = "all" | "morning" | "afternoon" | "evening" | "late-night" | "custom";
 
 export interface OperationalExplorerFilters {
@@ -114,16 +115,6 @@ function blockSegments(shift: ShiftSession, window: ReturnType<typeof windowDefi
   return segments;
 }
 
-function positiveSnapshotEarnings(snapshots: EarningsSnapshot[], day: DayEntry, shift: ShiftSession, app: string | null) {
-  return snapshots.filter((snapshot) => {
-    if (snapshot.dayDate !== day.date || Number(snapshot.delta) <= 0 || isRewardApp(snapshot.app)) return false;
-    if (app && snapshot.app !== app) return false;
-    if (snapshot.shiftId) return snapshot.shiftId === shift.id;
-    const at = Date.parse(snapshot.createdAt);
-    return at >= Date.parse(shift.startTime) && at <= Date.parse(shift.endTime ?? shift.startTime);
-  });
-}
-
 function metricDeltas(snapshots: OperationalSnapshot[], day: DayEntry, shift: ShiftSession, app: string | null) {
   const allDay = snapshots.filter((snapshot) => snapshot.dayDate === day.date).sort((a, b) => a.recordedAt.localeCompare(b.recordedAt));
   const relevant = allDay.filter((snapshot) => snapshot.shiftId === shift.id);
@@ -144,12 +135,13 @@ function metricDeltas(snapshots: OperationalSnapshot[], day: DayEntry, shift: Sh
 export function buildOperationalExplorerData(args: {
   weeks: WeekRecord[];
   earningsSnapshots?: EarningsSnapshot[];
+  earningsAttributions?: EarningsAttribution[];
   operationalSnapshots?: OperationalSnapshot[];
   globalFilters: DeepInsightsFilters;
   operationalFilters: OperationalExplorerFilters;
   now?: Date;
 }): OperationalExplorerData {
-  const { weeks, earningsSnapshots = [], operationalSnapshots = [], globalFilters, operationalFilters, now = new Date() } = args;
+  const { weeks, earningsSnapshots = [], earningsAttributions = [], operationalSnapshots = [], globalFilters, operationalFilters, now = new Date() } = args;
   const range = dateRangeForPreset(globalFilters.timePreset, now, globalFilters.customStart, globalFilters.customEnd);
   const selectedDays = new Set(globalFilters.weekdays ?? []);
   const app = globalFilters.app === "all" ? null : globalFilters.app;
@@ -157,14 +149,16 @@ export function buildOperationalExplorerData(args: {
   const buckets = Array.from({ length: 24 }, (_, hour) => ({
     hour,
     label: new Date(2020, 0, 1, hour).toLocaleTimeString("en-US", { hour: "numeric" }),
-    hours: 0, earnings: 0, rides: 0, miles: 0, observed: 0, estimated: 0,
+    hours: 0, earnings: 0, rides: 0, miles: 0, confirmed: 0, attributed: 0, estimated: 0,
   }));
   const weekday = new Map(DAYS.map((name) => [name, { hours: 0, earnings: 0, dates: new Set<string>() }]));
   const heatmap = new Map(DAYS.map((name) => [name, Array.from({ length: 24 }, () => ({ hours: 0, earnings: 0 }))]));
   let shifts = 0;
   const dates = new Set<string>();
-  let observedWeight = 0;
+  let confirmedWeight = 0;
+  let attributedWeight = 0;
   let estimatedWeight = 0;
+  const attributedSegments = buildAttributedHourAmounts({ weeks, snapshots: earningsSnapshots, attributions: earningsAttributions });
 
   for (const week of weeks) for (const day of week.entries) {
     if ((range.start && day.date < range.start) || (range.end && day.date > range.end)) continue;
@@ -181,36 +175,42 @@ export function buildOperationalExplorerData(args: {
       weekdayRow.hours += includedHours;
       weekdayRow.dates.add(day.date);
 
-      const observedEarnings = positiveSnapshotEarnings(earningsSnapshots, day, shift, app);
+      const shiftAttributed = attributedSegments.filter((item) => item.dayDate === day.date && item.shiftId === shift.id && (!app || item.app === app));
+      const attributedTotal = shiftAttributed.reduce((sum, item) => sum + item.amount, 0);
+      const completedDayHours = (day.shifts ?? []).filter((item) => item.endTime).reduce((sum, item) => sum + shiftDurationHours(item), 0);
+      const appTotal = app ? Math.max(0, Number(day.apps[app]) || 0) : null;
+      const appPositiveSnapshots = app ? earningsSnapshots.reduce((sum, snapshot) => {
+        return snapshot.dayDate === day.date && snapshot.app === app && Number(snapshot.delta) > 0
+          ? sum + Number(snapshot.delta)
+          : sum;
+      }, 0) : 0;
+      const appBaseline = appTotal !== null ? Math.max(0, appTotal - appPositiveSnapshots) : 0;
+      const resolved = resolveShiftEarnings(day, shift, earningsSnapshots, earningsAttributions, weeks).earnings;
+      const proratedDayEarnings = completedDayHours > 0 ? operationalDayTotal(day) * (totalShiftHours / completedDayHours) : 0;
+      const shiftEarnings = appTotal !== null
+        ? attributedTotal + (completedDayHours > 0 ? appBaseline * (totalShiftHours / completedDayHours) : 0)
+        : resolved ?? proratedDayEarnings;
       let earnings = 0;
-      if (observedEarnings.length) {
-        for (const snapshot of observedEarnings) {
-          const date = new Date(snapshot.createdAt);
-          const minute = date.getHours() * 60 + date.getMinutes();
-          if (!includedMinute(minute, window)) continue;
-          const amount = Number(snapshot.delta) || 0;
-          buckets[date.getHours()].earnings += amount;
-          buckets[date.getHours()].observed += amount;
-          heatmap.get(day.dayName)![date.getHours()].earnings += amount;
-          earnings += amount;
-          observedWeight += amount;
-        }
-      } else {
-        const resolved = resolveShiftEarnings(day, shift, earningsSnapshots).earnings;
-        const appTotal = app ? Math.max(0, Number(day.apps[app]) || 0) : null;
-        const completedDayHours = (day.shifts ?? []).filter((item) => item.endTime).reduce((sum, item) => sum + shiftDurationHours(item), 0);
-        const proratedDayEarnings = completedDayHours > 0 ? operationalDayTotal(day) * (totalShiftHours / completedDayHours) : 0;
-        const shiftEarnings = appTotal !== null
-          ? (completedDayHours > 0 ? appTotal * (totalShiftHours / completedDayHours) : 0)
-          : resolved ?? proratedDayEarnings;
-        earnings = shiftEarnings * (includedHours / totalShiftHours);
+      for (const attributed of shiftAttributed) {
+        if (!includedMinute(attributed.hour * 60, window)) continue;
+        buckets[attributed.hour].earnings += attributed.amount;
+        if (attributed.confidence === "confirmed") buckets[attributed.hour].confirmed += attributed.amount;
+        else buckets[attributed.hour].attributed += attributed.amount;
+        heatmap.get(day.dayName)![attributed.hour].earnings += attributed.amount;
+        earnings += attributed.amount;
+        if (attributed.confidence === "confirmed") confirmedWeight += attributed.amount;
+        else attributedWeight += attributed.amount;
+      }
+      const residual = Math.max(0, shiftEarnings - attributedTotal);
+      if (residual > 0) {
         for (const segment of segments) {
-          const amount = shiftEarnings * (segment.hours / totalShiftHours);
+          const amount = residual * (segment.hours / totalShiftHours);
           buckets[segment.hour].earnings += amount;
           buckets[segment.hour].estimated += amount;
           heatmap.get(day.dayName)![segment.hour].earnings += amount;
+          earnings += amount;
+          estimatedWeight += amount;
         }
-        estimatedWeight += earnings;
       }
       weekdayRow.earnings += earnings;
 
@@ -248,14 +248,19 @@ export function buildOperationalExplorerData(args: {
     earningsPerHour: bucket.hours >= 0.5 ? round(bucket.earnings / bucket.hours) : null,
     ridesPerHour: bucket.hours >= 0.5 ? round(bucket.rides / bucket.hours) : null,
     milesPerHour: bucket.hours >= 0.5 ? round(bucket.miles / bucket.hours) : null,
-    source: bucket.observed && bucket.estimated ? "Mixed" : bucket.observed ? "Observed" : bucket.hours ? "Estimated" : "Insufficient",
+    source: [bucket.confirmed > 0, bucket.attributed > 0, bucket.estimated > 0].filter(Boolean).length > 1
+      ? "Mixed"
+      : bucket.confirmed ? "Confirmed" : bucket.attributed ? "Attributed" : bucket.hours ? "Estimated" : "Insufficient",
   }));
   const hours = buckets.reduce((sum, bucket) => sum + bucket.hours, 0);
   const earnings = buckets.reduce((sum, bucket) => sum + bucket.earnings, 0);
   const rides = buckets.reduce((sum, bucket) => sum + bucket.rides, 0);
   const miles = buckets.reduce((sum, bucket) => sum + bucket.miles, 0);
-  const source: OperationalSource = observedWeight && estimatedWeight ? "Mixed" : observedWeight ? "Observed" : hours ? "Estimated" : "Insufficient";
-  const coverage = earnings > 0 ? round((observedWeight / earnings) * 100) : 0;
+  const sourceSignals = [confirmedWeight > 0, attributedWeight > 0, estimatedWeight > 0].filter(Boolean).length;
+  const source: OperationalSource = sourceSignals > 1
+    ? "Mixed"
+    : confirmedWeight ? "Confirmed" : attributedWeight ? "Attributed" : hours ? "Estimated" : "Insufficient";
+  const coverage = earnings > 0 ? round(((confirmedWeight + attributedWeight) / earnings) * 100) : 0;
   const bestWindows = hourly.filter((bucket) => bucket.earningsPerHour !== null && bucket.hours >= 0.5)
     .sort((a, b) => (b.earningsPerHour ?? 0) - (a.earningsPerHour ?? 0)).slice(0, 5);
   const totals = {

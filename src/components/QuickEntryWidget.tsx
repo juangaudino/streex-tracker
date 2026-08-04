@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Zap, MoonStar, Lock, Clock, Route } from "lucide-react";
+import { useRef, useState } from "react";
+import { Zap, MoonStar, Lock, Clock, Route, Play, Pause, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,7 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { dayTotal, formatCurrency } from "@/lib/store";
-import type { WeekRecord, DayEntry, OperationalSnapshotDraft } from "@/lib/types";
+import type { WeekRecord, DayEntry, OperationalSnapshotDraft, EarningsAttributionIntent, EarningsSnapshot, ShiftSession } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
 import { triggerCelebration } from "@/components/RecordCelebration";
@@ -21,13 +21,17 @@ import { normalizeDecimalDraft, parseDecimalDraft } from "@/lib/decimalInput";
 import { getAppRideCount, updateShiftAppRideCount } from "@/lib/rideAttribution";
 import { applyAccumulatedDayMileage } from "@/lib/mileageAttribution";
 import { createOperationalEventKey } from "@/lib/operationalSnapshots";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { SingleFlight } from "@/lib/singleFlight";
 
 interface QuickEntryWidgetProps {  
   openWeek: WeekRecord;
   apps: string[];
   currencySymbol: string;
-  onSave: (updatedWeek: WeekRecord) => void | Promise<boolean>;
+  onSave: (updatedWeek: WeekRecord, attributionIntents?: EarningsAttributionIntent[]) => void | Promise<boolean>;
   weeks?: WeekRecord[];
+  earningsSnapshots?: EarningsSnapshot[];
   /** Optional End Day handler — when provided, renders End Day next to Quick Add. */
   onEndDay?: () => void;
   onQuickUpdateSaved?: (event: {
@@ -35,6 +39,8 @@ interface QuickEntryWidgetProps {
     rideDelta: number;
     snapshot: OperationalSnapshotDraft;
   }) => void | Promise<void>;
+  /** Header mode renders only one compact status trigger; actions remain inside the sheet. */
+  compactTrigger?: boolean;
 }
 
 function getTodayDayIdx(week: WeekRecord): number {
@@ -48,7 +54,8 @@ function getTodayDayIdx(week: WeekRecord): number {
   return idx;
 }
 
-export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSave, weeks, onEndDay, onQuickUpdateSaved }: QuickEntryWidgetProps) {
+export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSave, weeks, earningsSnapshots = [], onEndDay, onQuickUpdateSaved, compactTrigger = false }: QuickEntryWidgetProps) {
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"quick" | "full">("quick");
   const [quickApp, setQuickApp] = useState<string | null>(null);
@@ -62,6 +69,13 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
   const [localRideCount, setLocalRideCount] = useState("");
   // Store the resolved index at open time so save always targets the same day
   const [resolvedIdx, setResolvedIdx] = useState(todayIdx);
+  const [attributionChoice, setAttributionChoice] = useState<"automatic" | "shift" | "exact" | "pending">("pending");
+  const [attributionShiftId, setAttributionShiftId] = useState("");
+  const [attributionExactAt, setAttributionExactAt] = useState("");
+  const [shiftAction, setShiftAction] = useState<"starting" | "pausing" | "resuming" | "ending" | null>(null);
+  const [savingUpdate, setSavingUpdate] = useState(false);
+  const shiftFlight = useRef(new SingleFlight()).current;
+  const updateFlight = useRef(new SingleFlight()).current;
 
   function handleOpen(isOpen: boolean) {
     if (isOpen && today) {
@@ -75,13 +89,16 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
       setMode("quick");
       setQuickApp(null);
       setQuickAmountDraft("");
+      setAttributionChoice(active ? "automatic" : "pending");
+      setAttributionShiftId(active?.id ?? "");
+      setAttributionExactAt("");
     }
     setOpen(isOpen);
   }
 
-  async function persistQuickWeek(updatedWeek: WeekRecord): Promise<boolean> {
+  async function persistQuickWeek(updatedWeek: WeekRecord, attributionIntents: EarningsAttributionIntent[] = []): Promise<boolean> {
     try {
-      const result = await onSave(updatedWeek);
+      const result = await onSave(updatedWeek, attributionIntents);
       return result !== false;
     } catch (error) {
       console.error("[QuickEntryWidget] week update failed", { weekId: updatedWeek.id, error });
@@ -118,12 +135,17 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
   }
 
   async function handleQuickSave(app: string) {
-    if (!today || resolvedIdx < 0) return;
+    if (!today || resolvedIdx < 0 || updateFlight.running) return;
+    await updateFlight.run(async () => {
+      setSavingUpdate(true);
+      try {
     const appTotal = parseDecimalDraft(quickAmountDraft) ?? 0;
     const prevTotal = dayTotal(today);
     const mileage = localMileage.trim() === "" ? null : Math.max(0, parseFloat(localMileage) || 0);
     const rides = localRideCount.trim() === "" ? null : Math.max(0, Math.trunc(Number(localRideCount) || 0));
     const activeShift = getActiveShift(today);
+    const previousAmount = Number(today.apps?.[app]) || 0;
+    const positiveDelta = appTotal - previousAmount;
     const rideUpdate = activeShift && rides !== null
       ? updateShiftAppRideCount(activeShift, app, rides)
       : null;
@@ -163,7 +185,80 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
         });
       }
     }
-    const saved = await persistQuickWeek({ ...openWeek, entries });
+    const selectedShift = completedShiftOptions.find((option) => option.shift.id === attributionShiftId);
+    const now = new Date();
+    let attributionIntent: EarningsAttributionIntent | null = null;
+    if (positiveDelta > 0) {
+      if (attributionChoice === "automatic" && activeShift) {
+        const previousSnapshot = earningsSnapshots
+          .filter((snapshot) => snapshot.dayDate === today.date && snapshot.app === app && snapshot.shiftId === activeShift.id)
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+        attributionIntent = {
+          dayDate: today.date,
+          app,
+          previousAmount,
+          newAmount: appTotal,
+          status: "resolved",
+          mode: "update_interval",
+          attributedDayDate: today.date,
+          shiftId: activeShift.id,
+          effectiveStartAt: previousSnapshot?.createdAt ?? activeShift.startTime,
+          effectiveEndAt: now.toISOString(),
+          source: "automatic",
+          confidence: "estimated",
+          note: "Distributed across worked time since the previous same-app update.",
+        };
+      } else if (attributionChoice === "shift" && selectedShift) {
+        attributionIntent = {
+          dayDate: today.date,
+          app,
+          previousAmount,
+          newAmount: appTotal,
+          status: "resolved",
+          mode: "shift_distributed",
+          attributedDayDate: selectedShift.day.date,
+          shiftId: selectedShift.shift.id,
+          effectiveStartAt: selectedShift.shift.startTime,
+          effectiveEndAt: selectedShift.shift.endTime,
+          source: "user",
+          confidence: "estimated",
+          note: "User assigned the delta to this shift; amount is distributed across worked blocks.",
+        };
+      } else if (attributionChoice === "exact" && selectedShift && attributionExactAt) {
+        const exact = new Date(attributionExactAt);
+        if (!Number.isNaN(exact.getTime())) {
+          attributionIntent = {
+            dayDate: today.date,
+            app,
+            previousAmount,
+            newAmount: appTotal,
+            status: "resolved",
+            mode: "exact",
+            attributedDayDate: selectedShift.day.date,
+            shiftId: selectedShift.shift.id,
+            effectiveStartAt: exact.toISOString(),
+            effectiveEndAt: exact.toISOString(),
+            source: "user",
+            confidence: "confirmed",
+            note: "User supplied the exact earning time.",
+          };
+        }
+      }
+      if (!attributionIntent) {
+        attributionIntent = {
+          dayDate: today.date,
+          app,
+          previousAmount,
+          newAmount: appTotal,
+          status: "pending",
+          mode: "unassigned",
+          source: "user",
+          confidence: "unassigned",
+          note: "Saved safely for later attribution review.",
+        };
+      }
+    }
+    const saved = await persistQuickWeek({ ...openWeek, entries }, attributionIntent ? [attributionIntent] : []);
     if (saved) {
       const savedShift = nextDay?.shifts?.find((shift) => shift.id === activeShift?.id);
       await onQuickUpdateSaved?.({
@@ -181,6 +276,10 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
       });
       setOpen(false);
     }
+      } finally {
+        setSavingUpdate(false);
+      }
+    });
   }
 
   function selectQuickApp(app: string) {
@@ -188,6 +287,9 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     const currentAmount = Number(localApps[app]) || 0;
     setQuickAmountDraft(currentAmount > 0 ? String(currentAmount) : "");
     const active = today ? getActiveShift(today) : null;
+    setAttributionChoice(active ? "automatic" : "pending");
+    setAttributionShiftId(active?.id ?? "");
+    setAttributionExactAt("");
     const appRides = active ? getAppRideCount(active, app) : null;
     setLocalRideCount(appRides !== null && appRides > 0 ? String(appRides) : "");
   }
@@ -203,33 +305,61 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
   }
 
   async function handleStartShift() {
+    if (shiftFlight.running) return;
     const targetIdx = resolvedIdx >= 0 ? resolvedIdx : todayIdx;
     if (targetIdx < 0 || openWeek.entries.some(hasActiveShift)) return;
     const entries = openWeek.entries.map((d, i) => {
       if (i !== targetIdx) return d;
       return { ...d, shifts: [...(d.shifts ?? []), createShift(d.date)] };
     });
-    await persistQuickWeek({ ...openWeek, entries });
+    await shiftFlight.run(async () => {
+      setShiftAction("starting");
+      try {
+        const saved = await persistQuickWeek({ ...openWeek, entries });
+        if (saved) toast({ title: "Shift started." });
+      } finally {
+        setShiftAction(null);
+      }
+    });
   }
 
   async function handleEndShift() {
-    const targetIdx = resolvedIdx >= 0 ? resolvedIdx : todayIdx;
+    if (shiftFlight.running) return;
+    const targetIdx = openWeek.entries.findIndex(hasActiveShift);
     if (targetIdx < 0) return;
     const entries = openWeek.entries.map((d, i) => i === targetIdx ? endActiveShift(d) : d);
-    await persistQuickWeek({ ...openWeek, entries });
+    await shiftFlight.run(async () => {
+      setShiftAction("ending");
+      try {
+        const saved = await persistQuickWeek({ ...openWeek, entries });
+        if (saved) toast({ title: "Shift ended." });
+      } finally {
+        setShiftAction(null);
+      }
+    });
   }
 
   async function handlePauseResumeShift() {
-    const targetIdx = resolvedIdx >= 0 ? resolvedIdx : todayIdx;
+    if (shiftFlight.running) return;
+    const targetIdx = openWeek.entries.findIndex(hasActiveShift);
     if (targetIdx < 0) return;
     const targetDay = openWeek.entries[targetIdx];
     const openShift = getActiveShift(targetDay);
     if (!openShift) return;
+    const paused = isShiftPaused(openShift);
     const entries = openWeek.entries.map((d, i) => {
       if (i !== targetIdx) return d;
-      return isShiftPaused(openShift) ? resumePausedShift(d) : pauseActiveShift(d);
+      return paused ? resumePausedShift(d) : pauseActiveShift(d);
     });
-    await persistQuickWeek({ ...openWeek, entries });
+    await shiftFlight.run(async () => {
+      setShiftAction(paused ? "resuming" : "pausing");
+      try {
+        const saved = await persistQuickWeek({ ...openWeek, entries });
+        if (saved) toast({ title: paused ? "Shift resumed." : "Shift paused." });
+      } finally {
+        setShiftAction(null);
+      }
+    });
   }
 
   if (!today || todayIdx < 0) return null;
@@ -240,6 +370,8 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
   const isClosed = !!today.dayClosed;
   const todayHasActiveShift = hasActiveShift(today);
   const weekHasActiveShift = openWeek.entries.some(hasActiveShift);
+  const activeShiftDayIdx = openWeek.entries.findIndex(hasActiveShift);
+  const activeShiftDay = activeShiftDayIdx >= 0 ? openWeek.entries[activeShiftDayIdx] : today;
   const shiftHours = getDayShiftHours(today);
   const standardApps = apps.filter((app) => !isRewardApp(app));
   const preferredApps = ["Uber", "Lyft"].filter((app) => standardApps.includes(app));
@@ -247,11 +379,25 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     ...preferredApps,
     ...standardApps.filter((app) => !preferredApps.includes(app)),
   ].slice(0, 2);
-  const activeShift = getActiveShift(today);
+  const activeShift = getActiveShift(activeShiftDay);
+  const todayActiveShift = getActiveShift(today);
   const activeShiftPaused = activeShift ? isShiftPaused(activeShift) : false;
+  const completedShiftOptions = (weeks ?? [openWeek]).flatMap((week) => week.entries.flatMap((day) =>
+    (day.shifts ?? []).filter((shift): shift is ShiftSession & { endTime: string } => Boolean(shift.endTime)).map((shift) => ({ week, day, shift })),
+  )).sort((a, b) => b.shift.endTime.localeCompare(a.shift.endTime));
+  const quickDraftAmount = parseDecimalDraft(quickAmountDraft);
+  const quickPositiveDelta = quickApp && quickDraftAmount !== null
+    ? quickDraftAmount - (Number(today.apps?.[quickApp]) || 0)
+    : 0;
+  const attributionReady = quickPositiveDelta <= 0
+    || attributionChoice === "pending"
+    || (attributionChoice === "automatic" && Boolean(todayActiveShift))
+    || (attributionChoice === "shift" && Boolean(attributionShiftId))
+    || (attributionChoice === "exact" && Boolean(attributionShiftId) && Boolean(attributionExactAt));
 
   return (
-    <div className="bg-card rounded-xl border border-primary/20 p-4 space-y-3">
+    <div className={compactTrigger ? "shrink-0" : "bg-card rounded-xl border border-primary/20 p-4 space-y-3"}>
+      {!compactTrigger && (
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Today</p>
@@ -268,23 +414,41 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
           )}
         </div>
       </div>
+      )}
       {isClosed ? (
-        <p className="text-xs text-muted-foreground/80 leading-relaxed">
+        !compactTrigger && <p className="text-xs text-muted-foreground/80 leading-relaxed">
           Day finalized. Edit entries from the Entry screen if needed.
         </p>
       ) : (
       <div className={cn("grid gap-2", onEndDay ? "grid-cols-[1fr_auto]" : "grid-cols-1")}>
       <Sheet open={open} onOpenChange={handleOpen}>
         <SheetTrigger asChild>
-          <Button size="sm" className="w-full gap-2">
-            <Zap className="h-4 w-4" />
-            Quick Add
-          </Button>
+          {compactTrigger ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className={cn(
+                "h-10 min-w-[84px] max-w-[104px] gap-1.5 rounded-full px-2.5 text-[10px] font-bold uppercase tracking-wide",
+                weekHasActiveShift && !activeShiftPaused && "border-success/35 bg-success/10 text-success hover:bg-success/15",
+                weekHasActiveShift && activeShiftPaused && "border-warning/35 bg-warning/10 text-warning hover:bg-warning/15",
+              )}
+              aria-label="Open Quick Actions"
+            >
+              {shiftAction ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : weekHasActiveShift ? activeShiftPaused ? <Play className="h-3.5 w-3.5" /> : <span className="h-2 w-2 rounded-full bg-success" /> : <Play className="h-3.5 w-3.5" />}
+              <span className="truncate">{shiftAction ? "Saving" : weekHasActiveShift ? activeShiftPaused ? "Paused" : "Working" : "Start"}</span>
+            </Button>
+          ) : (
+            <Button size="sm" className="w-full gap-2">
+              <Zap className="h-4 w-4" />
+              Quick Actions
+            </Button>
+          )}
         </SheetTrigger>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="text-left">
-              {mode === "quick" ? "Quick Update" : dayLabel}
+              {mode === "quick" ? "Quick Actions" : dayLabel}
             </SheetTitle>
           </SheetHeader>
           <div className="space-y-3 mt-4">
@@ -292,6 +456,56 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
               <>
                 {!quickApp ? (
                   <div className="space-y-2">
+                    <div className="rounded-xl border border-border bg-background/60 p-3 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Current shift</p>
+                          <p className="truncate text-sm font-semibold">
+                            {weekHasActiveShift
+                              ? `${activeShiftDay.dayName} · ${activeShiftPaused ? "Paused" : "Working"}`
+                              : "No active shift"}
+                          </p>
+                        </div>
+                        {weekHasActiveShift && (
+                          <span className={cn(
+                            "rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
+                            activeShiftPaused ? "bg-warning/10 text-warning" : "bg-success/10 text-success",
+                          )}>
+                            {activeShiftPaused ? "Paused" : "Live"}
+                          </span>
+                        )}
+                      </div>
+                      {weekHasActiveShift ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            type="button"
+                            className="h-12 gap-2"
+                            variant={activeShiftPaused ? "default" : "secondary"}
+                            disabled={Boolean(shiftAction)}
+                            onClick={handlePauseResumeShift}
+                          >
+                            {shiftAction === "pausing" || shiftAction === "resuming" ? <Loader2 className="h-4 w-4 animate-spin" /> : activeShiftPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                            {shiftAction === "pausing" ? "Pausing…" : shiftAction === "resuming" ? "Resuming…" : activeShiftPaused ? "Resume" : "Pause"}
+                          </Button>
+                          <Button
+                            type="button"
+                            className="h-12 gap-2 border-destructive/35 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            variant="outline"
+                            disabled={Boolean(shiftAction)}
+                            onClick={handleEndShift}
+                          >
+                            {shiftAction === "ending" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
+                            {shiftAction === "ending" ? "Ending…" : "End Shift"}
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button type="button" className="h-12 w-full gap-2" disabled={Boolean(shiftAction)} onClick={handleStartShift}>
+                          {shiftAction === "starting" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                          {shiftAction === "starting" ? "Starting…" : "Start Shift"}
+                        </Button>
+                      )}
+                    </div>
+                    <p className="px-1 pt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Update earnings</p>
                     {primaryApps.map((app) => (
                       <Button
                         key={app}
@@ -339,7 +553,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                           type="text"
                           inputMode="decimal"
                           className="mt-1 h-10 text-right font-mono"
-                          placeholder={activeShift ? "optional" : "optional"}
+                          placeholder="optional"
                           value={localMileage}
                           onChange={(e) => setLocalMileage(e.target.value)}
                         />
@@ -350,34 +564,75 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                           type="text"
                           inputMode="numeric"
                           className="mt-1 h-10 text-right font-mono"
-                          placeholder={activeShift ? "optional" : "needs shift"}
+                          placeholder={todayActiveShift ? "optional" : "needs shift"}
                           value={localRideCount}
                           onChange={(e) => setLocalRideCount(e.target.value)}
-                          disabled={!activeShift}
+                          disabled={!todayActiveShift}
                         />
                       </label>
                     </div>
-                    {!activeShift && (
+                    {!todayActiveShift && (
                       <p className="text-xs text-muted-foreground">
                         Rides are saved to the active shift. Start a shift to track ride count.
                       </p>
                     )}
-                    {activeShift && (
+                    {todayActiveShift && (
                       <p className="text-xs text-muted-foreground">
                         Miles are today&apos;s accumulated total. Rides are the accumulated {quickApp} total only.
                       </p>
                     )}
-                    {activeShift && quickApp.toLowerCase() === "uber" && (
+                    {todayActiveShift && quickApp.toLowerCase() === "uber" && (
                       <p className="text-xs text-muted-foreground">
                         Uber ride changes also update Octopus reward progress.
                       </p>
+                    )}
+                    {quickPositiveDelta > 0 && (
+                      <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider">Earnings attribution</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatCurrency(quickPositiveDelta, currencySymbol)} was observed now. Choose where it was earned.
+                          </p>
+                        </div>
+                        <Select value={attributionChoice} onValueChange={(value) => {
+                          const next = value as typeof attributionChoice;
+                          setAttributionChoice(next);
+                          if (next === "automatic" && todayActiveShift) setAttributionShiftId(todayActiveShift.id);
+                        }}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {todayActiveShift && <SelectItem value="automatic">Since last update in this shift</SelectItem>}
+                            <SelectItem value="shift">Spread across a selected shift</SelectItem>
+                            <SelectItem value="exact">Assign exact ride time</SelectItem>
+                            <SelectItem value="pending">Review later in Data Health</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {(attributionChoice === "shift" || attributionChoice === "exact") && (
+                          <Select value={attributionShiftId} onValueChange={setAttributionShiftId}>
+                            <SelectTrigger><SelectValue placeholder="Select day and shift" /></SelectTrigger>
+                            <SelectContent>
+                              {completedShiftOptions.map(({ day, shift }) => (
+                                <SelectItem key={shift.id} value={shift.id}>
+                                  {day.date} · {new Date(shift.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}–{new Date(shift.endTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {attributionChoice === "exact" && (
+                          <Input type="datetime-local" value={attributionExactAt} onChange={(event) => setAttributionExactAt(event.target.value)} />
+                        )}
+                        {attributionChoice === "pending" && (
+                          <p className="text-xs text-muted-foreground">The money remains in your reported total but stays out of hourly rankings until reviewed.</p>
+                        )}
+                      </div>
                     )}
                     <div className="grid grid-cols-2 gap-2">
                       <Button type="button" variant="outline" onClick={() => setQuickApp(null)}>
                         Back
                       </Button>
-                      <Button type="button" onClick={() => handleQuickSave(quickApp)}>
-                        Save Update
+                      <Button type="button" disabled={!attributionReady || savingUpdate} onClick={() => handleQuickSave(quickApp)}>
+                        {savingUpdate ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</> : "Save Update"}
                       </Button>
                     </div>
                     <Button type="button" variant="ghost" className="w-full" onClick={openFullEntry}>
@@ -434,15 +689,15 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                   type="button"
                   size="sm"
                   variant={todayHasActiveShift ? "secondary" : "default"}
-                  disabled={!todayHasActiveShift && weekHasActiveShift}
+                  disabled={Boolean(shiftAction) || (!todayHasActiveShift && weekHasActiveShift)}
                   onClick={todayHasActiveShift ? handlePauseResumeShift : handleStartShift}
                 >
-                  {todayHasActiveShift ? activeShiftPaused ? "Resume" : "Pause" : "Start"}
+                  {shiftAction === "starting" ? "Starting…" : shiftAction === "pausing" ? "Pausing…" : shiftAction === "resuming" ? "Resuming…" : todayHasActiveShift ? activeShiftPaused ? "Resume" : "Pause" : "Start"}
                 </Button>
               </div>
               {todayHasActiveShift && (
-                <Button type="button" size="sm" variant="outline" className="w-full" onClick={handleEndShift}>
-                  End Shift
+                <Button type="button" size="sm" variant="outline" className="w-full" disabled={Boolean(shiftAction)} onClick={handleEndShift}>
+                  {shiftAction === "ending" ? "Ending…" : "End Shift"}
                 </Button>
               )}
               {(today.shifts ?? []).map((shift) => (

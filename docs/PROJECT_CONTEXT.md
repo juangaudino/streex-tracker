@@ -21,9 +21,9 @@ Streex is currently in public beta versioning.
 
 Current release:
 
-Public: `Beta 0.9.4 — Operational Explorer & Driver Playbook`
+Public: `Beta 0.9.5 — Release Certification & Performance`
 
-Local source candidate: `Beta 0.9.5 — Release Certification & Performance`
+Local source candidate: `Beta 0.9.6 — Earnings Attribution Integrity`
 
 Older `V3.x` through `V5.x` labels are Alpha Archive history. Keep them for continuity, but do not use the old Alpha sequence for new beta work.
 
@@ -95,6 +95,8 @@ Historical/optional tooling:
 ## Data Rules
 
 - Stored earnings remain raw numeric values.
+- Observed update timestamps are evidence of capture time, not automatic claims about earned time.
+- Operational timing uses explicit earnings attribution; unresolved adjustments remain in reported totals but outside hourly rankings.
 - Currency and regional formatting are display-only.
 - Exports must preserve raw numeric data.
 - User-scoped data must remain protected by auth and RLS.

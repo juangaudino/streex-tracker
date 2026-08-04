@@ -1,6 +1,6 @@
 # Streex Roadmap
 
-Last updated: 2026-07-30
+Last updated: 2026-08-02
 
 This is the living product roadmap for Streex Gig Earnings.
 
@@ -19,16 +19,16 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current public baseline after Operational Explorer & Driver Playbook:
+Current public baseline after Release Certification & Performance:
 
 ```text
-Beta 0.9.4 - Operational Explorer & Driver Playbook
+Beta 0.9.5 - Release Certification & Performance
 ```
 
 Current local source candidate:
 
 ```text
-Beta 0.9.5 - Release Certification & Performance
+Beta 0.9.6 - Earnings Attribution Integrity
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -173,7 +173,7 @@ Scope:
 
 ### Beta 0.9.5 - Release Certification & Performance
 
-Status: current local source candidate.
+Status: published; owner reports the normal workflow has remained stable.
 
 Scope:
 
@@ -192,9 +192,31 @@ Boundaries:
 - Automatic CI stays anonymous and uses placeholder-shaped public config.
 - Authenticated and RLS certification stays manual, protected, isolated, and read-only.
 
-### Beta 0.9.6 - Historical Data Import
+### Beta 0.9.6 - Earnings Attribution Integrity
 
-Status: planned next after 0.9.5 certification.
+Status: current local source candidate.
+
+Scope:
+
+- Separate when an earnings change was observed from when the money was earned.
+- Let Quick Update attribute positive deltas to the current work interval, a completed shift, an exact ride time, or a review queue.
+- Keep late or unresolved earnings out of hourly efficiency instead of assigning them to the save timestamp.
+- Add an owner-only Data Health review queue for ambiguous current and historical observations.
+- Reuse one attribution contract in Shift Intelligence, Operational Explorer, Deep Insights, Entry, History, Career, Daily Report, and Driver Playbook.
+- Preserve reported earnings totals and append-only evidence; attribution changes analytical timing only.
+- Replace the separate small header shift buttons with one compact status trigger and place large Start/Pause/Resume/End controls alongside primary-app updates in Quick Actions.
+- Prevent repeated shift and earnings writes with single-flight locking and immediate progress/success feedback.
+
+Boundaries:
+
+- Never rewrite or delete original earnings snapshots or week totals.
+- Never invent an exact hour for an ambiguous tip.
+- Retain pending items until the owner resolves or explicitly excludes them from hourly analysis.
+- Protect attribution rows with owner-scoped RLS and no authenticated delete privilege.
+
+### Beta 0.9.7 - Historical Data Import
+
+Status: planned next after 0.9.6 stabilization.
 
 Scope direction:
 
@@ -202,7 +224,7 @@ Scope direction:
 - Preserve existing days by default and never bulk-write production without a reversible evidence trail.
 - Label imported records honestly when historical hours, miles, rides, shifts, or app attribution are unavailable.
 
-### Beta 0.9.7 - Deep Insights Productivity
+### Beta 0.9.8 - Deep Insights Productivity
 
 Status: planned.
 
@@ -210,7 +232,7 @@ Scope direction:
 
 - Add saved Operational Explorer filter presets for recurring questions such as selected weekdays or time windows.
 - Improve filtered exports and comparison reuse without weakening Observed, Estimated, Mixed, or Insufficient evidence labels.
-- Evaluate only after 0.9.6 establishes the intended shape and trust rules for older data.
+- Evaluate only after 0.9.7 establishes the intended shape and trust rules for older data.
 
 ### Personal Context Tags - Market/Zone Candidate
 

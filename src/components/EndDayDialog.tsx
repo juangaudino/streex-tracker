@@ -1,10 +1,10 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { bestDay, dayTotal, formatCurrency, weekTotal } from "@/lib/store";
-import type { WeekRecord, DayEntry } from "@/lib/types";
+import type { WeekRecord, DayEntry, EarningsAttribution, EarningsSnapshot } from "@/lib/types";
 import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
 import { getWeeklyMomentumPreview } from "@/lib/career";
-import { getDayMiles, getDayRideCount, getDayShiftHours, getShiftMiles } from "@/lib/shiftIntelligence";
+import { getDayMiles, getDayRideCount, getDayShiftHours, getShiftMiles, resolveShiftEarnings } from "@/lib/shiftIntelligence";
 import { operationalDayTotal } from "@/lib/rewardIncome";
 import { exportNodeAsPng, shareNodeAsPng } from "@/lib/shareExport";
 import { Trophy, Flame, TrendingUp, Sparkles, Target, Clock, Route, Share2, Download, StickyNote } from "lucide-react";
@@ -17,18 +17,20 @@ interface Props {
   openWeek: WeekRecord;
   weeks: WeekRecord[];
   todayEntry: DayEntry;
+  earningsSnapshots: EarningsSnapshot[];
+  earningsAttributions: EarningsAttribution[];
   currencySymbol: string;
   onConfirm: () => void;
 }
 
 export default function EndDayDialog({
-  open, onOpenChange, openWeek, weeks, todayEntry, currencySymbol: sym, onConfirm,
+  open, onOpenChange, openWeek, weeks, todayEntry, earningsSnapshots, earningsAttributions, currencySymbol: sym, onConfirm,
 }: Props) {
   const { toast } = useToast();
   const reportRef = useRef<HTMLDivElement | null>(null);
   const [exporting, setExporting] = useState<"download" | "share" | null>(null);
   const todayT = dayTotal(todayEntry);
-  const operationalToday = operationalDayTotal(todayEntry);
+  const reportedOperationalToday = operationalDayTotal(todayEntry);
   const dayName = todayEntry.dayName;
   const dayRec = getDayOfWeekRecord(weeks, dayName, todayEntry.date);
   const recordBroken = dayRec.record > 0 && todayT > dayRec.record;
@@ -41,11 +43,19 @@ export default function EndDayDialog({
   const hours = getDayShiftHours(todayEntry);
   const miles = getDayMiles(todayEntry);
   const rides = getDayRideCount(todayEntry);
-  const earningsPerHour = hours > 0 ? operationalToday / hours : null;
-  const earningsPerMile = miles > 0 ? operationalToday / miles : null;
-  const earningsPerRide = rides > 0 ? operationalToday / rides : null;
   const shifts = todayEntry.shifts ?? [];
   const completedShifts = shifts.filter((shift) => shift.endTime);
+  const resolvedShiftEarnings = completedShifts.map((shift) =>
+    resolveShiftEarnings(todayEntry, shift, earningsSnapshots, earningsAttributions, weeks).earnings,
+  );
+  const operationalToday = completedShifts.length > 0 && resolvedShiftEarnings.every((value) => value !== null)
+    ? resolvedShiftEarnings.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+    : completedShifts.length === 0
+      ? reportedOperationalToday
+      : null;
+  const earningsPerHour = hours > 0 && operationalToday !== null ? operationalToday / hours : null;
+  const earningsPerMile = miles > 0 && operationalToday !== null ? operationalToday / miles : null;
+  const earningsPerRide = rides > 0 && operationalToday !== null ? operationalToday / rides : null;
 
   const vsAvg = dayRec.avg > 0 ? ((todayT - dayRec.avg) / dayRec.avg) * 100 : null;
 

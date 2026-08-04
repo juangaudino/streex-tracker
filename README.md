@@ -29,8 +29,8 @@ New contributors and new Codex chats should begin with:
 
 ## Current Production Status
 
-- Current public release: **Beta 0.9.4 — Operational Explorer & Driver Playbook**
-- Current local source candidate: **Beta 0.9.5 — Release Certification & Performance**
+- Current public release: **Beta 0.9.5 — Release Certification & Performance**
+- Current local source candidate: **Beta 0.9.6 — Earnings Attribution Integrity**
 - Production app: `https://gig.getstreex.com`
 - Hosting: **Vercel**
 - DNS/domain: **Cloudflare** for `getstreex.com`

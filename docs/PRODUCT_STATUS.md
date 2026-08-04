@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-07-30
+Last updated: 2026-08-02
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -21,13 +21,13 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.9.4 - Operational Explorer & Driver Playbook
+Beta 0.9.5 - Release Certification & Performance
 ```
 
 Current local source candidate:
 
 ```text
-Beta 0.9.5 - Release Certification & Performance
+Beta 0.9.6 - Earnings Attribution Integrity
 ```
 
 Source of truth:
@@ -121,11 +121,32 @@ timing precision. No historical week or snapshot was rewritten.
 
 ### 0.9.5 Release Certification & Performance
 
-Current local source candidate. It splits authenticated workspaces into
+Published source baseline. It splits authenticated workspaces into
 route-loaded bundles, defers image-export code until an export is requested,
 removes inherited Lovable social metadata, adds a public browser smoke to normal
 CI, and upgrades the manual release gate to desktop/mobile protected-route and
 bidirectional read-only RLS checks. It changes no stored data or calculations.
+
+### 0.9.6 Earnings Attribution Integrity
+
+Current local source candidate. It separates observation time from earned time
+for positive Quick Update deltas, adds explicit current-interval, completed-shift,
+exact-time, and review-later choices, and keeps unresolved late earnings out of
+hourly efficiency. An owner-only Data Health queue resolves ambiguous current or
+historical observations without altering reported totals or deleting the original
+append-only snapshot. One canonical attribution layer feeds Shift Intelligence,
+Operational Explorer, Deep Insights, Entry, History, Career, Daily Report, and
+Driver Playbook. The additive active-backend migration and production RLS
+verification are complete: `20260802181319_earnings_attribution_integrity_096.sql`
+creates the owner-scoped table and `20260802181403_harden_earnings_attribution_privileges_096.sql`
+explicitly removes anonymous access and authenticated delete/truncate privileges.
+The frontend remains a local candidate until normal commit/push/publication and
+owner workflow testing.
+
+The same candidate also hardens the live shift interaction: the header now uses
+one compact state trigger, while Quick Actions presents large Start, Pause,
+Resume, and End controls beside the two primary earnings updates. A synchronous
+single-flight guard prevents double taps before React can redraw the saving state.
 
 ## Backend Rules
 
@@ -464,9 +485,10 @@ Current planned sequence:
 - `Beta 0.9.2`: Personal Data Safety & Recovery - completed
 - `Beta 0.9.3`: Live Work Mode - withdrawn and source archived
 - `Beta 0.9.4`: Operational Explorer & Driver Playbook - published and owner-verified
-- `Beta 0.9.5`: Release Certification & Performance - current local candidate
-- `Beta 0.9.6`: Historical Data Import - planned next after certification
-- `Beta 0.9.7`: Deep Insights Productivity - planned
+- `Beta 0.9.5`: Release Certification & Performance - published
+- `Beta 0.9.6`: Earnings Attribution Integrity - current local candidate
+- `Beta 0.9.7`: Historical Data Import - planned next after stabilization
+- `Beta 0.9.8`: Deep Insights Productivity - planned
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
@@ -521,7 +543,7 @@ See `CHANGELOG.md` for full details.
 
 High priority:
 
-- Publish and certify Beta 0.9.5 through the automatic Quality Gate and the protected manual QA workflow.
+- Publish and certify Beta 0.9.6 only after attribution RLS, totals preservation, and cross-surface analytics agree.
 - Configure two isolated QA identities in the GitHub `qa` environment for bidirectional RLS certification.
 - Keep monitoring login/session and SMTP confirmation/recovery delivery.
 - Validate Daily Report export on an installed iOS PWA during a future export-affecting release.
@@ -529,9 +551,9 @@ High priority:
 Medium priority:
 
 - Replace or evolve Ask My Data away from the Lovable AI dependency only after a deliberate provider decision; external AI replacement is intentionally deferred for now.
-- Continue improving shift-level attribution from earnings snapshots.
-- Plan and build the preview-first historical CSV/Excel import workflow before importing multi-year data.
-- Add saved Operational Explorer filter presets and richer export only after import readiness.
+- Stabilize the 0.9.6 attribution review workflow with real late-tip observations.
+- Plan and build the 0.9.7 preview-first historical CSV/Excel import workflow before importing multi-year data.
+- Add 0.9.8 saved Operational Explorer filter presets and richer export only after import readiness.
 - Research aviation providers for Flight Reservation Tracker and Airport Pulse before building the next Utility Slot module.
 - Keep `docs/ASK_MY_DATA_CHALLENGE_SET.md` updated after Ask My Data fixes.
 

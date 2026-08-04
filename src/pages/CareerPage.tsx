@@ -19,7 +19,7 @@ import { buildPatternIntelligence } from "@/lib/shiftIntelligence";
 import { cn } from "@/lib/utils";
 
 export default function CareerPage() {
-  const { weeks, settings, earningsSnapshots } = useOutletContext<StoreContext>();
+  const { weeks, settings, earningsSnapshots, earningsAttributions } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
   const sym = settings.currencySymbol;
   const [drillDownDetail, setDrillDownDetail] = useState<MetricDrillDownDetail | null>(null);
@@ -28,8 +28,8 @@ export default function CareerPage() {
   const perf = useMemo(() => computePerformanceInsights(weeks), [weeks]);
   const careerDetails = useMemo(() => buildCareerDrillDownData(weeks), [weeks]);
   const careerIntelligence = useMemo(
-    () => buildPatternIntelligence(weeks, earningsSnapshots),
-    [weeks, earningsSnapshots],
+    () => buildPatternIntelligence(weeks, earningsSnapshots, earningsAttributions),
+    [weeks, earningsSnapshots, earningsAttributions],
   );
   const { performanceMode } = usePerformanceMode();
   const drillDowns = useMemo(
@@ -225,6 +225,7 @@ export default function CareerPage() {
       <ShiftIntelligencePanel
         weeks={weeks}
         earningsSnapshots={earningsSnapshots}
+        earningsAttributions={earningsAttributions}
         currencySymbol={sym}
         mode={performanceMode}
         heading="Career Shift Intelligence"

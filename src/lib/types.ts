@@ -87,6 +87,44 @@ export interface EarningsSnapshot {
   createdAt: string;
 }
 
+export type EarningsAttributionStatus = "pending" | "resolved" | "excluded";
+export type EarningsAttributionMode = "exact" | "update_interval" | "shift_distributed" | "day_only" | "unassigned";
+export type EarningsAttributionConfidence = "confirmed" | "estimated" | "unassigned";
+
+export interface EarningsAttribution {
+  id: string;
+  userId: string;
+  snapshotId: string;
+  amount: number;
+  status: EarningsAttributionStatus;
+  mode: EarningsAttributionMode;
+  attributedDayDate?: string | null;
+  shiftId?: string | null;
+  effectiveStartAt?: string | null;
+  effectiveEndAt?: string | null;
+  source: "automatic" | "user" | "retroactive";
+  confidence: EarningsAttributionConfidence;
+  note?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EarningsAttributionIntent {
+  dayDate: string;
+  app: string;
+  previousAmount: number;
+  newAmount: number;
+  mode: EarningsAttributionMode;
+  attributedDayDate?: string | null;
+  shiftId?: string | null;
+  effectiveStartAt?: string | null;
+  effectiveEndAt?: string | null;
+  source?: "automatic" | "user" | "retroactive";
+  confidence: EarningsAttributionConfidence;
+  status: EarningsAttributionStatus;
+  note?: string | null;
+}
+
 export interface OperationalSnapshot {
   id: string;
   userId: string;

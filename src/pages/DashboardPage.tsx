@@ -198,7 +198,7 @@ function getWeekRankWindow(weeks: WeekRecord[], weekId: string, currencySymbol: 
 }
 
 export default function DashboardPage() {
-  const { user, openWeek, weeks, settings, earningsSnapshots, hasLocalData, importLocalData, updateWeek, updateSettings, recordOperationalSnapshot } = useOutletContext<StoreContext>();
+  const { user, openWeek, weeks, settings, earningsSnapshots, earningsAttributions, hasLocalData, importLocalData, updateWeek, updateSettings, recordOperationalSnapshot } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [importing, setImporting] = useState(false);
@@ -788,7 +788,8 @@ export default function DashboardPage() {
           openWeek={openWeek}
           apps={settings.activeApps}
           currencySymbol={sym}
-          onSave={(updated) => updateWeek(updated)}
+          onSave={(updated, attributionIntents) => updateWeek(updated, attributionIntents)}
+          earningsSnapshots={earningsSnapshots}
           onQuickUpdateSaved={handleQuickUpdateSaved}
           weeks={weeks}
           onEndDay={todayEntry && !isDayClosed ? () => setEndDayOpen(true) : undefined}
@@ -797,6 +798,7 @@ export default function DashboardPage() {
         <ShiftIntelligencePanel
           weeks={[openWeek]}
           earningsSnapshots={currentWeekSnapshots}
+          earningsAttributions={earningsAttributions}
           currencySymbol={sym}
           mode="advanced"
           heading="This Week Operations"
@@ -844,6 +846,8 @@ export default function DashboardPage() {
             openWeek={openWeek}
             weeks={weeks}
             todayEntry={todayEntry}
+            earningsSnapshots={earningsSnapshots}
+            earningsAttributions={earningsAttributions}
             currencySymbol={sym}
             onConfirm={() => {
               const entries = openWeek.entries.map((d) =>
@@ -976,7 +980,8 @@ export default function DashboardPage() {
           openWeek={openWeek}
           apps={settings.activeApps}
           currencySymbol={sym}
-          onSave={(updated) => updateWeek(updated)}
+          onSave={(updated, attributionIntents) => updateWeek(updated, attributionIntents)}
+          earningsSnapshots={earningsSnapshots}
           onQuickUpdateSaved={handleQuickUpdateSaved}
           weeks={weeks}
           onEndDay={todayEntry && !isDayClosed ? () => setEndDayOpen(true) : undefined}
@@ -1011,6 +1016,7 @@ export default function DashboardPage() {
       <ShiftIntelligencePanel
         weeks={[openWeek]}
         earningsSnapshots={currentWeekSnapshots}
+        earningsAttributions={earningsAttributions}
         currencySymbol={sym}
         mode="advanced"
         heading="This Week Operations"
@@ -1028,6 +1034,8 @@ export default function DashboardPage() {
           openWeek={openWeek}
           weeks={weeks}
           todayEntry={todayEntry}
+          earningsSnapshots={earningsSnapshots}
+          earningsAttributions={earningsAttributions}
           currencySymbol={sym}
           onConfirm={() => {
             const entries = openWeek.entries.map((d) =>

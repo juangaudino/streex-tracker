@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildOperationalExplorerData } from "./operationalExplorer";
-import type { WeekRecord } from "./types";
+import type { EarningsAttribution, EarningsSnapshot, WeekRecord } from "./types";
 
 const week: WeekRecord = {
   id: "11111111-1111-1111-1111-111111111111",
@@ -46,5 +46,37 @@ describe("operational explorer", () => {
     const data = buildOperationalExplorerData({ weeks: [multi], globalFilters: { timePreset: "all", app: "Uber", weekdays: [] }, operationalFilters: { windowPreset: "all" } });
     expect(data.totals.earnings).toBe(120);
     expect(data.totals.earningsPerHour).toBe(30);
+  });
+
+  it("keeps a post-shift update out of hourly performance until it is attributed", () => {
+    const closedAtEighty: WeekRecord = {
+      ...week,
+      entries: [{
+        ...week.entries[0],
+        shifts: [{ ...week.entries[0].shifts![0], earnings: 80 }],
+      }],
+    };
+    const snapshot: EarningsSnapshot = {
+      id: "late", userId: "u1", weekId: closedAtEighty.id, dayDate: "2026-07-13", app: "Uber",
+      previousAmount: 80, newAmount: 100, delta: 20, shiftId: null, createdAt: "2026-07-13T20:00:00",
+    };
+    const pending = buildOperationalExplorerData({
+      weeks: [closedAtEighty], earningsSnapshots: [snapshot],
+      globalFilters: { timePreset: "all", app: "all", weekdays: [] }, operationalFilters: { windowPreset: "all" },
+    });
+    expect(pending.totals.earnings).toBe(80);
+    expect(pending.hourly.find((item) => item.hour === 20)?.earnings).toBe(0);
+
+    const attribution: EarningsAttribution = {
+      id: "a1", userId: "u1", snapshotId: snapshot.id, amount: 20, status: "resolved", mode: "shift_distributed",
+      attributedDayDate: "2026-07-13", shiftId: "s1", effectiveStartAt: "2026-07-13T09:00:00", effectiveEndAt: "2026-07-13T13:00:00",
+      source: "user", confidence: "estimated", createdAt: "2026-07-14T00:00:00Z", updatedAt: "2026-07-14T00:00:00Z",
+    };
+    const resolved = buildOperationalExplorerData({
+      weeks: [closedAtEighty], earningsSnapshots: [snapshot], earningsAttributions: [attribution],
+      globalFilters: { timePreset: "all", app: "all", weekdays: [] }, operationalFilters: { windowPreset: "all" },
+    });
+    expect(resolved.totals.earnings).toBe(100);
+    expect(resolved.hourly.find((item) => item.hour === 20)?.earnings).toBe(0);
   });
 });

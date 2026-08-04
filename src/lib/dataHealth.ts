@@ -1,7 +1,8 @@
 import { earningsSnapshotTransitionKey } from "./earningsSnapshots";
-import type { EarningsSnapshot, OperationalSnapshot, WeekRecord } from "./types";
+import type { EarningsAttribution, EarningsSnapshot, OperationalSnapshot, WeekRecord } from "./types";
 import { inspectSnapshotIntegrity, inspectWeekIntegrity, type IntegrityIssue, type IntegritySeverity } from "./weekIntegrity";
 import { inspectOperationalSnapshot } from "./operationalSnapshots";
+import { buildAttributionReviewItems } from "./earningsAttributions";
 
 export type DataHealthStatus = "healthy" | "warning" | "critical";
 
@@ -18,6 +19,8 @@ export interface DataHealthSummary {
   weeksChecked: number;
   snapshotsChecked: number;
   operationalSnapshotsChecked: number;
+  attributionsChecked: number;
+  pendingAttributions: number;
   issueCount: number;
   criticalIssueCount: number;
   warningIssueCount: number;
@@ -60,9 +63,10 @@ export function summarizeDataHealth(params: {
   weeks: WeekRecord[];
   snapshots?: EarningsSnapshot[];
   operationalSnapshots?: OperationalSnapshot[];
+  earningsAttributions?: EarningsAttribution[];
   checkedAt?: string;
 }): DataHealthSummary {
-  const { weeks, snapshots = [], operationalSnapshots = [] } = params;
+  const { weeks, snapshots = [], operationalSnapshots = [], earningsAttributions = [] } = params;
   const weekById = new Map(weeks.map((week) => [week.id, week]));
   const issues: IntegrityIssue[] = [];
 
@@ -98,6 +102,13 @@ export function summarizeDataHealth(params: {
     if (operationalKeys.has(snapshot.eventKey)) issues.push(issue(`operational:${snapshot.id}`, "DUPLICATE_OPERATIONAL_EVENT", "Operational event key is duplicated."));
     operationalKeys.add(snapshot.eventKey);
   }
+  const attributionReview = buildAttributionReviewItems({ weeks, snapshots, attributions: earningsAttributions });
+  issues.push(...attributionReview.map((item) => issue(
+    `snapshot:${item.snapshot.id}`,
+    "EARNINGS_ATTRIBUTION_PENDING",
+    "Earnings event has no safe operational time and is excluded from hourly rankings until reviewed.",
+    "P2",
+  )));
 
   const countsBySeverity = issues.reduce<Record<IntegritySeverity, number>>((counts, item) => {
     counts[item.severity] += 1;
@@ -128,6 +139,9 @@ export function summarizeDataHealth(params: {
     contract("operational-snapshots", "Operational observations", "Quick Update observations stay append-only, non-negative, timestamped, and idempotent.", issues, new Set([
       "OPERATIONAL_SNAPSHOT_IDENTITY", "OPERATIONAL_SNAPSHOT_MILEAGE", "OPERATIONAL_SNAPSHOT_TIME", "OPERATIONAL_SNAPSHOT_VALUE", "OPERATIONAL_SNAPSHOT_WEEK", "DUPLICATE_OPERATIONAL_EVENT",
     ])),
+    contract("earnings-attribution", "Earnings attribution", "Observed timestamps never become earned-time claims without a shift-safe or user-confirmed target.", issues, new Set([
+      "EARNINGS_ATTRIBUTION_PENDING",
+    ])),
   ];
 
   return {
@@ -135,6 +149,8 @@ export function summarizeDataHealth(params: {
     weeksChecked: weeks.length,
     snapshotsChecked: snapshots.length,
     operationalSnapshotsChecked: operationalSnapshots.length,
+    attributionsChecked: earningsAttributions.length,
+    pendingAttributions: attributionReview.length,
     issueCount: issues.length,
     criticalIssueCount,
     warningIssueCount,

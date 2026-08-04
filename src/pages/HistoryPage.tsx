@@ -43,7 +43,7 @@ function formatShiftTime(value?: string): string {
 }
 
 export default function HistoryPage() {
-  const { weeks, settings, earningsSnapshots, deleteWeek, addWeek, getWeekRevisions, restoreRevision, updateWeek } =
+  const { weeks, settings, earningsSnapshots, earningsAttributions, deleteWeek, addWeek, getWeekRevisions, restoreRevision, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -450,6 +450,8 @@ export default function HistoryPage() {
                                 day={day}
                                 shift={shift}
                                 earningsSnapshots={earningsSnapshots}
+                                earningsAttributions={earningsAttributions}
+                                weeks={weeks}
                                 currencySymbol={sym}
                                 expanded={expandedShiftIds.has(shift.id)}
                                 onToggle={() => toggleShiftExpanded(shift.id)}
@@ -479,6 +481,8 @@ function HistoricalShiftRow({
   day,
   shift,
   earningsSnapshots,
+  earningsAttributions,
+  weeks,
   currencySymbol,
   expanded,
   onToggle,
@@ -491,6 +495,8 @@ function HistoricalShiftRow({
   day: DayEntry;
   shift: ShiftSession;
   earningsSnapshots: EarningsSnapshot[];
+  earningsAttributions: import("@/lib/types").EarningsAttribution[];
+  weeks: WeekRecord[];
   currencySymbol: string;
   expanded: boolean;
   onToggle: () => void;
@@ -501,7 +507,7 @@ function HistoricalShiftRow({
   onDelete: () => void;
 }) {
   const hours = shiftDurationHours(shift);
-  const rate = resolveShiftRate(day, shift, earningsSnapshots).rate;
+  const rate = resolveShiftRate(day, shift, earningsSnapshots, earningsAttributions, weeks).rate;
 
   return (
     <div className="rounded-lg border border-border bg-background/60 px-3 py-2">

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildPatternIntelligence, classifyWeeklyGoalOutcome, createHistoricalShift, getDayRideCount, getDayMiles, getWeekMiles, getWeekRideCount, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours, updateShiftBoundaryTime } from "./shiftIntelligence";
-import type { DayEntry, EarningsSnapshot, WeekRecord } from "./types";
+import type { DayEntry, EarningsAttribution, EarningsSnapshot, WeekRecord } from "./types";
 import { DAY_NAMES } from "./types";
 
 function day(index: number, total: number, shifts: DayEntry["shifts"] = [], mileage?: number): DayEntry {
@@ -141,6 +141,19 @@ describe("shift intelligence", () => {
     expect(resolveShiftRate(d, secondShift).rate).toBe(60);
   });
 
+  it("does not add a late attribution twice after manual shift earnings already match the reported day", () => {
+    const shift = { id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00", earnings: 100 };
+    const d = day(0, 100, [shift]);
+    const late = { ...snapshot("late", d.date, "Uber", 20, `${d.date}T20:00:00`), previousAmount: 80, newAmount: 100 };
+    const attribution: EarningsAttribution = {
+      id: "a1", userId: "u1", snapshotId: late.id, amount: 20, status: "resolved", mode: "shift_distributed",
+      attributedDayDate: d.date, shiftId: shift.id, effectiveStartAt: shift.startTime, effectiveEndAt: shift.endTime,
+      source: "user", confidence: "estimated", createdAt: `${d.date}T20:01:00`, updatedAt: `${d.date}T20:01:00`,
+    };
+
+    expect(resolveShiftRate(d, shift, [late], [attribution], [week([d])])).toMatchObject({ earnings: 100, rate: 50 });
+  });
+
   it("resolves shift rates from same-shift earnings snapshots", () => {
     const firstShift = { id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00" };
     const secondShift = { id: "s2", startTime: "2026-05-04T12:00:00", endTime: "2026-05-04T14:00:00" };
@@ -211,7 +224,7 @@ describe("shift intelligence", () => {
     expect(classifyWeeklyGoalOutcome({ earnings: 1250, earningsGoal: 1000, hours: 56, hoursGoal: 50 }).outcome).toBe("elite-week");
   });
 
-  it("uses earnings snapshots for observed update timing when enough updates exist", () => {
+  it("uses shift-safe update intervals instead of treating save time as earned time", () => {
     const weeks = [
       week([
         day(0, 240, [{ id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00", miles: 24 }]),
@@ -224,18 +237,17 @@ describe("shift intelligence", () => {
       ]),
     ];
     const snapshots: EarningsSnapshot[] = [
-      snapshot("snap1", "2026-05-04", "Uber", 50, "2026-05-04T18:05:00"),
-      snapshot("snap2", "2026-05-04", "Uber", 20, "2026-05-04T18:45:00"),
-      snapshot("snap3", "2026-05-05", "Spark Driver", 15, "2026-05-05T17:15:00"),
+      { ...snapshot("snap1", "2026-05-04", "Uber", 50, "2026-05-04T08:30:00"), shiftId: "s1" },
+      { ...snapshot("snap2", "2026-05-04", "Uber", 20, "2026-05-04T09:15:00"), previousAmount: 50, newAmount: 70, shiftId: "s1" },
+      { ...snapshot("snap3", "2026-05-05", "Spark Driver", 15, "2026-05-05T18:15:00"), shiftId: "s2" },
     ];
 
     const result = buildPatternIntelligence(weeks, snapshots);
 
     expect(result.timingSource).toBe("snapshot");
-    expect(result.timingSourceLabel).toBe("Observed from earnings updates");
-    expect(result.strongestHours[0].hour).toBe(18);
-    expect(result.strongestHours[0].earnings).toBe(70);
-    expect(result.strongestHours[0].observations).toBe(2);
+    expect(result.timingSourceLabel).toBe("Attributed earnings timing");
+    expect(result.hourlyHeatmap.find((item) => item.hour === 20)?.earnings).toBe(0);
+    expect(result.hourlyHeatmap.find((item) => item.hour === 8)?.observations).toBe(2);
     expect(result.bestAppsByHour[0].app).toBe("Uber");
   });
 
@@ -252,18 +264,16 @@ describe("shift intelligence", () => {
       ]),
     ];
     const snapshots: EarningsSnapshot[] = [
-      { ...snapshot("snap1", "2026-05-04", "Uber", 29.93, "2026-05-04T18:05:00"), previousAmount: 0, newAmount: 29.93, shiftId: "shift1" },
-      { ...snapshot("snap2", "2026-05-04", "Uber", 29.93, "2026-05-04T18:05:01"), previousAmount: 0, newAmount: 29.93, shiftId: "shift1" },
-      snapshot("snap3", "2026-05-04", "Uber", 20, "2026-05-04T18:45:00"),
-      snapshot("snap4", "2026-05-05", "Spark Driver", 15, "2026-05-05T17:15:00"),
+      { ...snapshot("snap1", "2026-05-04", "Uber", 29.93, "2026-05-04T08:05:00"), previousAmount: 0, newAmount: 29.93, shiftId: "s1" },
+      { ...snapshot("snap2", "2026-05-04", "Uber", 29.93, "2026-05-04T08:05:01"), previousAmount: 0, newAmount: 29.93, shiftId: "s1" },
+      { ...snapshot("snap3", "2026-05-04", "Uber", 20, "2026-05-04T08:45:00"), previousAmount: 29.93, newAmount: 49.93, shiftId: "s1" },
+      { ...snapshot("snap4", "2026-05-05", "Spark Driver", 15, "2026-05-05T18:15:00"), shiftId: "s2" },
     ];
 
     const result = buildPatternIntelligence(weeks, snapshots);
 
     expect(result.timingSource).toBe("snapshot");
-    expect(result.strongestHours[0].hour).toBe(18);
-    expect(result.strongestHours[0].earnings).toBeCloseTo(49.93);
-    expect(result.strongestHours[0].observations).toBe(2);
+    expect(result.hourlyHeatmap.find((item) => item.hour === 8)?.observations).toBe(2);
   });
 
   it("excludes late earning adjustments from observed update timing", () => {
@@ -288,7 +298,7 @@ describe("shift intelligence", () => {
 
     expect(result.timingSource).toBe("estimated");
     expect(result.timingCopy).toContain("spreading operational earnings");
-    expect(result.summary.earningsPerHour).toBeCloseTo(113.33);
+    expect(result.summary.earningsPerHour).toBeCloseTo(100.83);
   });
 
   it("excludes Octopus reward income from operational shift efficiency", () => {
@@ -308,10 +318,10 @@ describe("shift intelligence", () => {
       ]),
     ];
     const snapshots: EarningsSnapshot[] = [
-      snapshot("snap1", "2026-05-04", "Octopus", 25, "2026-05-04T18:05:00"),
-      { ...snapshot("snap2", "2026-05-04", "Uber", 40, "2026-05-04T18:15:00"), previousAmount: 0, newAmount: 40 },
-      { ...snapshot("snap3", "2026-05-04", "Uber", 30, "2026-05-04T18:45:00"), previousAmount: 40, newAmount: 70 },
-      { ...snapshot("snap4", "2026-05-04", "Uber", 30, "2026-05-04T19:00:00"), previousAmount: 70, newAmount: 100 },
+      snapshot("snap1", "2026-05-04", "Octopus", 25, "2026-05-04T08:05:00"),
+      { ...snapshot("snap2", "2026-05-04", "Uber", 40, "2026-05-04T08:15:00"), previousAmount: 0, newAmount: 40, shiftId: "s1" },
+      { ...snapshot("snap3", "2026-05-04", "Uber", 30, "2026-05-04T08:45:00"), previousAmount: 40, newAmount: 70, shiftId: "s1" },
+      { ...snapshot("snap4", "2026-05-04", "Uber", 30, "2026-05-04T09:00:00"), previousAmount: 70, newAmount: 100, shiftId: "s1" },
     ];
 
     const result = buildPatternIntelligence(weeks, snapshots);
@@ -319,7 +329,7 @@ describe("shift intelligence", () => {
     expect(result.summary.earningsPerHour).toBe(50);
     expect(result.summary.earningsPerMile).toBeCloseTo(4.17);
     expect(result.timingSource).toBe("snapshot");
-    expect(result.strongestHours[0].earnings).toBe(70);
+    expect(result.hourlyHeatmap.find((item) => item.hour === 8)?.earnings).toBe(100);
     expect(result.bestAppsByHour[0].app).toBe("Uber");
   });
 });

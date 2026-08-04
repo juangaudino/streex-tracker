@@ -18,9 +18,6 @@ import {
   BookOpen,
   FlaskConical,
   Gauge,
-  Play,
-  Pause,
-  Square,
   MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
@@ -31,9 +28,10 @@ import ChangelogDialog from "@/components/ChangelogDialog";
 import StreexLogo from "@/components/StreexLogo";
 import { useDashboardExperience } from "@/hooks/useDashboardExperience";
 import { cn } from "@/lib/utils";
-import { createShift, endActiveShift, getActiveShift, hasActiveShift, isShiftPaused, pauseActiveShift, resumePausedShift } from "@/lib/shiftIntelligence";
-import { formatDate } from "@/lib/store";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import QuickEntryWidget from "@/components/QuickEntryWidget";
+import { adjustOctopusPoints } from "@/lib/octopusRewards";
+import type { OperationalSnapshotDraft } from "@/lib/types";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -70,15 +68,7 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
   const onDashboard = location.pathname === "/";
   const fullFocusShell = onDashboard && isFullFocus;
   const openWeek = store.openWeek;
-  const activeShiftDayIdx = openWeek?.entries.findIndex(hasActiveShift) ?? -1;
-  const hasActiveGlobalShift = activeShiftDayIdx >= 0;
-  const activeShift = hasActiveGlobalShift && openWeek ? getActiveShift(openWeek.entries[activeShiftDayIdx]) : null;
-  const activeShiftPaused = activeShift ? isShiftPaused(activeShift) : false;
   const progressActive = progressRoutes.has(location.pathname);
-  const currentLocalDate = formatDate(new Date());
-  const currentDayIdx = openWeek?.entries.findIndex((day) => day.date === currentLocalDate) ?? -1;
-  const canStartShift = Boolean(openWeek && currentDayIdx >= 0 && !hasActiveGlobalShift);
-  const canUseShiftControl = Boolean(openWeek && (hasActiveGlobalShift || canStartShift));
   const syncLabel = store.syncStatus === "saving"
     ? "Saving"
     : store.syncStatus === "conflict"
@@ -87,22 +77,14 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
         ? "Retry save"
         : "Saved";
 
-  async function handleShiftToggle() {
-    if (!openWeek || !canUseShiftControl) return;
-    const targetIdx = hasActiveGlobalShift ? activeShiftDayIdx : currentDayIdx;
-    if (targetIdx < 0) return;
-    const entries = openWeek.entries.map((day, idx) => {
-      if (idx !== targetIdx) return day;
-      if (!hasActiveGlobalShift) return { ...day, shifts: [...(day.shifts ?? []), createShift(day.date)] };
-      return activeShiftPaused ? resumePausedShift(day) : pauseActiveShift(day);
+  async function handleGlobalQuickUpdateSaved(event: { app: string; rideDelta: number; snapshot: OperationalSnapshotDraft }) {
+    await store.recordOperationalSnapshot(event.snapshot);
+    if (event.app.toLowerCase() !== "uber" || event.rideDelta === 0) return;
+    await store.updateSettings({
+      ...store.settings,
+      octopusPoints: Math.max(0, Math.round(adjustOctopusPoints(store.settings.octopusPoints, event.rideDelta) * 2) / 2),
+      octopusUpdatedAt: new Date().toISOString(),
     });
-    await store.updateWeek({ ...openWeek, entries });
-  }
-
-  async function handleEndShift() {
-    if (!openWeek || !hasActiveGlobalShift || activeShiftDayIdx < 0) return;
-    const entries = openWeek.entries.map((day, idx) => idx === activeShiftDayIdx ? endActiveShift(day) : day);
-    await store.updateWeek({ ...openWeek, entries });
   }
 
   return (
@@ -198,36 +180,17 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
             <span className={cn("h-1.5 w-1.5 rounded-full", store.syncStatus === "saved" ? "bg-success" : store.syncStatus === "saving" ? "bg-primary animate-pulse" : store.syncStatus === "conflict" ? "bg-warning" : "bg-destructive")} />
             {syncLabel}
           </span>
-          <button
-            type="button"
-            onClick={handleShiftToggle}
-            disabled={!canUseShiftControl}
-            className={cn(
-              "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors disabled:pointer-events-none disabled:opacity-45 sm:px-2.5",
-              activeShiftPaused
-                ? "border-success bg-success text-success-foreground shadow-[0_0_0_3px_hsl(var(--success)/0.14),0_10px_22px_hsl(var(--success)/0.18)] hover:bg-success/90"
-                : hasActiveGlobalShift
-                  ? "border-success/35 bg-success/10 text-success shadow-sm hover:bg-success/15"
-                  : "border-primary/25 bg-primary/5 text-primary hover:bg-primary/10",
-            )}
-            aria-label={hasActiveGlobalShift ? (activeShiftPaused ? "Resume active shift" : "Pause active shift") : "Start shift"}
-            title={!openWeek ? "Start a week before starting a shift" : currentDayIdx < 0 && !hasActiveGlobalShift ? "Today is outside the open week" : undefined}
-          >
-            {hasActiveGlobalShift ? activeShiftPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-            <span className="md:hidden">{hasActiveGlobalShift ? activeShiftPaused ? "Resume" : "Pause" : "Start"}</span>
-            <span className="hidden md:inline">{hasActiveGlobalShift ? activeShiftPaused ? "Resume Shift" : "Pause Shift" : "Start Shift"}</span>
-          </button>
-          {hasActiveGlobalShift && (
-            <button
-              type="button"
-              onClick={handleEndShift}
-              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-success/35 bg-success/10 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-success shadow-sm transition-colors hover:bg-success/15 sm:px-2.5"
-              aria-label="End active shift"
-            >
-              <Square className="h-3.5 w-3.5" />
-              <span className="hidden min-[520px]:inline">End Shift</span>
-              <span className="min-[520px]:hidden">End</span>
-            </button>
+          {openWeek && (
+            <QuickEntryWidget
+              compactTrigger
+              openWeek={openWeek}
+              apps={store.settings.activeApps}
+              currencySymbol={store.settings.currencySymbol}
+              onSave={store.updateWeek}
+              weeks={store.weeks}
+              earningsSnapshots={store.earningsSnapshots}
+              onQuickUpdateSaved={handleGlobalQuickUpdateSaved}
+            />
           )}
           <button
             type="button"

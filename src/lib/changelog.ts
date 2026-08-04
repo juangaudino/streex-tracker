@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.9.5";
+export const CURRENT_VERSION = "0.9.6";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,21 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.6",
+    date: "2026-08",
+    title: "Earnings Attribution Integrity",
+    tags: ["new", "fix"],
+    items: [
+      "Observed update time is now separated from earned time so late tips and historical adjustments cannot create fictional work hours",
+      "Quick Update can distribute an increase across the active interval, assign it to a selected shift, record an exact ride time, or leave it safely pending",
+      "Data Health includes an Earnings Attribution review queue with suggested single-shift resolution, exact-time assignment, and intentional hourly exclusion",
+      "Quick Actions now combines shift controls and primary-app updates, while the header uses one compact Working, Paused, or Start control instead of separate small buttons",
+      "Start, pause, resume, end, and earnings saves now block repeated taps and show immediate saving and success feedback",
+      "Shift Intelligence, Deep Insights, Operational Explorer, and Driver Playbook now share one attribution layer with Confirmed, Attributed, Estimated, Mixed, or Insufficient evidence",
+      "Original earnings snapshots, accumulated app totals, stored weeks, and all-time money remain unchanged; attribution is an additive owner-only interpretation layer",
+    ],
+  },
   {
     version: "0.9.5",
     date: "2026-07",

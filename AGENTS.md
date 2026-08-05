@@ -66,7 +66,7 @@ For meaningful user-facing or architectural changes, update both:
 
 Streex is in public beta versioning.
 
-- Current public beta baseline: `0.9.5`; the local source candidate is `0.9.6` Earnings Attribution Integrity until owner-managed publication and QA.
+- Current public beta baseline: `0.9.6` Earnings Attribution Integrity; local `0.9.6` QA refinements may remain unpublished until owner commit/push and workflow verification.
 - Preserve older `V3.x` through `V5.x` entries as Alpha Archive history.
 - Increment the patch number for small bug fixes, QA fixes, and focused polish.
 - Increment the minor number for meaningful beta features or new product surfaces.

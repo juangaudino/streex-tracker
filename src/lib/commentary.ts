@@ -1,6 +1,7 @@
 import { WeekRecord, DayEntry } from "@/lib/types";
 import { weekTotal, dayTotal, formatCurrency, getLoggedDays } from "@/lib/store";
 import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
+import type { DayPerformanceComparison } from "@/lib/weekdayPerformance";
 
 export type MomentumState = "low" | "medium" | "high";
 
@@ -49,6 +50,7 @@ export function getDashboardMood(
   todayEntry: DayEntry | null,
   dayRecord: { record: number; avg: number; count: number },
   sym: string,
+  performanceSignal?: DayPerformanceComparison["signal"],
 ): DashboardMood {
   // Empty / no week
   if (!openWeek || !todayEntry) {
@@ -123,6 +125,7 @@ export function getDashboardMood(
     // Not enough data to judge — default to steady/startup energy
     tone = todayT === 0 ? "prerun" : "steady";
   }
+  if (performanceSignal === "short-efficient" && (tone === "recovery" || tone === "steady")) tone = "strong";
 
   // Headlines per tone
   let headline: string;
@@ -163,6 +166,7 @@ export function getDashboardMood(
     default:
       headline = "Let's Get It 💪";
   }
+  if (performanceSignal === "short-efficient") headline = "Short Day, Strong Efficiency";
 
   // Pace chip — must agree with tone
   let paceChip: PaceChip | null = null;
@@ -186,6 +190,7 @@ export function getDashboardMood(
       paceChip = { text: "Build Back", variant: "streak" };
       break;
   }
+  if (performanceSignal === "short-efficient") paceChip = { text: "Efficient Pace ⚡", variant: "fire" };
 
   // Momentum label / state
   let momentumState: MomentumState = "low";
@@ -215,9 +220,15 @@ export function getDashboardMood(
         : (activeDays.length >= 1 ? "Opening Pace" : "Rolling In");
       break;
   }
+  if (performanceSignal === "short-efficient") {
+    momentumState = "high";
+    momentumLabel = "Strong Efficiency";
+  }
 
   // Commentary — coherent with tone
-  const commentary = buildCommentary(tone, {
+  const commentary = performanceSignal === "short-efficient"
+    ? `Today's total is lighter, but your hourly efficiency is above your normal ${dayName}.`
+    : buildCommentary(tone, {
     weeks,
     openWeek,
     todayEntry,
@@ -228,7 +239,7 @@ export function getDashboardMood(
     sym,
     seed,
     activeDaysCount: activeDays.length,
-  });
+      });
 
   return { tone, headline, paceChip, momentumLabel, momentumState, commentary };
 }

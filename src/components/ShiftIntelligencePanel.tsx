@@ -5,6 +5,7 @@ import type { PerformanceMode } from "@/lib/performanceMode";
 import type { EarningsAttribution, EarningsSnapshot, WeekRecord } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { buildActiveDayAverageComparison } from "@/lib/weeklyOperations";
+import { useEffect, useState } from "react";
 
 interface ShiftIntelligencePanelProps {
   weeks: WeekRecord[];
@@ -100,8 +101,22 @@ export default function ShiftIntelligencePanel({
   intelligenceData,
   onOpenEarningsPerHour,
 }: ShiftIntelligencePanelProps) {
-  const intelligence = intelligenceData ?? buildPatternIntelligence(weeks, earningsSnapshots, earningsAttributions);
+  const hasActiveShift = weeks.some((week) => week.entries.some((day) => day.shifts?.some((shift) => !shift.endTime)));
+  const [liveNow, setLiveNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!hasActiveShift) return undefined;
+    const timer = window.setInterval(() => setLiveNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, [hasActiveShift]);
+  const intelligence = intelligenceData ?? buildPatternIntelligence(weeks, earningsSnapshots, earningsAttributions, new Date(liveNow));
   const { summary } = intelligence;
+  const activeShiftIds = new Set(weeks.flatMap((week) => week.entries.flatMap((day) => (day.shifts ?? []).filter((shift) => !shift.endTime).map((shift) => shift.id))));
+  const latestActiveUpdate = [...earningsSnapshots]
+    .filter((snapshot) => snapshot.shiftId && activeShiftIds.has(snapshot.shiftId))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  const liveEarningsSub = latestActiveUpdate
+    ? `earned through ${new Date(latestActiveUpdate.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+    : "live efficiency";
   const maxEph = Math.max(1, ...intelligence.hourlyHeatmap.map((bucket) => bucket.earningsPerHour));
   const isAdvanced = mode === "advanced";
   const strongWindowLabel = intelligence.timingSource === "snapshot" ? "Attributed Work Window" : "Estimated Window";
@@ -117,8 +132,8 @@ export default function ShiftIntelligencePanel({
         <p className="text-sm font-semibold">{snapshotTitle}</p>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <Metric icon={<Clock className="h-3.5 w-3.5" />} label="Duration" value={`${summary.totalHours.toFixed(1)}h`} sub={`${summary.completedShifts} completed`} tone="primary" />
-        <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Earnings/Hr" value={formatNullableCurrency(summary.earningsPerHour, currencySymbol)} sub="efficiency" tone="primary" onOpen={onOpenEarningsPerHour} />
+        <Metric icon={<Clock className="h-3.5 w-3.5" />} label="Duration" value={`${summary.totalHours.toFixed(1)}h`} sub={hasActiveShift ? `live · ${summary.completedShifts} completed` : `${summary.completedShifts} completed`} tone="primary" />
+        <Metric icon={<Activity className="h-3.5 w-3.5" />} label="Earnings/Hr" value={formatNullableCurrency(summary.earningsPerHour, currencySymbol)} sub={hasActiveShift ? liveEarningsSub : "efficiency"} tone="primary" onOpen={onOpenEarningsPerHour} />
         <Metric icon={<Route className="h-3.5 w-3.5" />} label="Miles" value={`${summary.totalMiles.toFixed(1)}`} sub={`${summary.workDays} work day${summary.workDays === 1 ? "" : "s"}`} tone="primary" />
         <Metric icon={<Gauge className="h-3.5 w-3.5" />} label="Earnings/Mi" value={formatNullableCurrency(summary.earningsPerMile, currencySymbol)} sub={formatNullableNumber(summary.milesPerHour, " mi/hr")} tone="primary" />
       </div>

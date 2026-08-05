@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attributedHoursForSnapshot, buildAttributionReviewItems } from "./earningsAttributions";
+import { attributedHoursForSnapshot, buildAttributionReviewItems, isExactTimeInsideWorkedShift, resolveDayPerformanceEarnings } from "./earningsAttributions";
 import { resolveShiftRate } from "./shiftIntelligence";
 import type { EarningsAttribution, EarningsSnapshot, WeekRecord } from "./types";
 
@@ -106,5 +106,57 @@ describe("earnings attribution integrity", () => {
     const rate = resolveShiftRate(targetWeek.entries[0], manualShift, [nextDaySnapshot], [resolved], [targetWeek]);
     expect(rate.earnings).toBe(120);
     expect(targetWeek.entries[0].apps.Uber).toBe(100);
+  });
+
+  it("attributes a live update interval before the shift is closed", () => {
+    const activeShift = {
+      id: "shift-live",
+      startTime: "2026-07-10T13:00:00",
+      blocks: [{ id: "live-block", startTime: "2026-07-10T13:00:00" }],
+    };
+    const activeWeek: WeekRecord = {
+      ...week,
+      entries: [{ ...week.entries[0], apps: { Uber: 20 }, shifts: [activeShift] }],
+    };
+    const liveSnapshot: EarningsSnapshot = {
+      ...lateSnapshot,
+      id: "snapshot-live",
+      previousAmount: 0,
+      newAmount: 20,
+      delta: 20,
+      shiftId: activeShift.id,
+      createdAt: "2026-07-10T14:30:00",
+    };
+    const liveAttribution = attribution({
+      snapshotId: liveSnapshot.id,
+      mode: "update_interval",
+      attributedDayDate: "2026-07-10",
+      shiftId: activeShift.id,
+      effectiveStartAt: activeShift.startTime,
+      effectiveEndAt: liveSnapshot.createdAt,
+      source: "automatic",
+    });
+
+    const segments = attributedHoursForSnapshot({ snapshot: liveSnapshot, attribution: liveAttribution, weeks: [activeWeek], snapshots: [liveSnapshot] });
+    const performance = resolveDayPerformanceEarnings({ day: activeWeek.entries[0], weeks: [activeWeek], snapshots: [liveSnapshot], attributions: [liveAttribution] });
+
+    expect(segments.map((item) => item.hour)).toEqual([13, 14]);
+    expect(segments.reduce((sum, item) => sum + item.amount, 0)).toBeCloseTo(20);
+    expect(performance).toMatchObject({ earnings: 20, excludedFromEfficiency: 0 });
+  });
+
+  it("rejects exact attribution during a pause", () => {
+    expect(isExactTimeInsideWorkedShift(shift, "2026-07-10T14:15:00")).toBe(false);
+    expect(isExactTimeInsideWorkedShift(shift, "2026-07-10T14:45:00")).toBe(true);
+    const exactDuringPause = attribution({
+      mode: "exact",
+      confidence: "confirmed",
+      effectiveStartAt: "2026-07-10T14:15:00",
+      effectiveEndAt: "2026-07-10T14:15:00",
+    });
+    expect(attributedHoursForSnapshot({ snapshot: lateSnapshot, attribution: exactDuringPause, weeks: [week], snapshots: [lateSnapshot] })).toEqual([]);
+    expect(buildAttributionReviewItems({ weeks: [week], snapshots: [lateSnapshot], attributions: [exactDuringPause] })).toEqual([
+      expect.objectContaining({ reason: "invalid_exact", suggestedShiftId: shift.id }),
+    ]);
   });
 });

@@ -17,8 +17,8 @@ Also read:
 ## 1. Current Snapshot
 
 - Product: Streex Gig Earnings App.
-- Current public release: `Beta 0.9.5 - Release Certification & Performance`.
-- Current local source candidate: `Beta 0.9.6 - Earnings Attribution Integrity`.
+- Current public release: `Beta 0.9.6 - Earnings Attribution Integrity`.
+- Current local source candidate: `Beta 0.9.6 - live attribution and weekday-efficiency QA refinement`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.
@@ -285,9 +285,8 @@ Design rules:
 
 ### Highest Priority Operations
 
-- Beta 0.9.5 is the current public certification/performance baseline.
-- Beta 0.9.6 is the local Earnings Attribution Integrity candidate. Active-project migrations `20260802181319_earnings_attribution_integrity_096.sql` and `20260802181403_harden_earnings_attribution_privileges_096.sql` are applied and verified; they create owner-only attribution decisions without rewriting weekly JSON or original snapshots.
-- Before publishing 0.9.6, require the normal Quality Gate plus attribution-specific totals, RLS, and cross-surface verification.
+- Beta 0.9.6 is the current public Earnings Attribution Integrity baseline and is under real-work owner testing. Active-project migrations `20260802181319_earnings_attribution_integrity_096.sql` and `20260802181403_harden_earnings_attribution_privileges_096.sql` are applied and verified; they create owner-only attribution decisions without rewriting weekly JSON or original snapshots.
+- The current local 0.9.6 QA refinement adds live active-shift attribution, worked-block exact-time validation, and separate same-weekday output/efficiency interpretation. Require the normal Quality Gate before publishing it.
 - Configure the GitHub Actions `qa` environment with two isolated QA identities and the active public Supabase URL/publishable key, then run protected routes on desktop/mobile and the bidirectional read-only RLS check. Do not use the owner's personal account.
 - The Supabase security advisor reports leaked-password protection disabled. Treat enabling it as a separate Auth settings decision, not as a schema defect or a reason to re-run migrations.
 
@@ -298,8 +297,8 @@ Design rules:
 
 ### Planned Product Work
 
-- Latest public release: `Beta 0.9.5 - Release Certification & Performance`.
-- Current local candidate: `Beta 0.9.6 - Earnings Attribution Integrity`.
+- Latest public release: `Beta 0.9.6 - Earnings Attribution Integrity`.
+- Current local candidate: `Beta 0.9.6 - live attribution and weekday-efficiency QA refinement`.
 - Planned next after stabilization: `Beta 0.9.7 - Historical Data Import`, followed by `Beta 0.9.8 - Deep Insights Productivity`.
 - Do not normalize the weekly JSON model merely for scale; first solve silent write conflicts, recovery, and visible sync state for the owner's personal workflow.
 - The version number can move if a patch or urgent fix ships first.
@@ -488,7 +487,7 @@ Production variables live in Vercel. Do not print their values in chat or docs.
 
 ### Versioning
 
-- Current public baseline: `0.9.5`.
+- Current public baseline: `0.9.6`.
 - Current local candidate: `0.9.6`.
 - Patch: focused fix/refinement/polish.
 - Minor: meaningful new surface/system.

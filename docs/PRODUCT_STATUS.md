@@ -21,13 +21,13 @@ Do not place secrets, private keys, service-role keys, passwords, or production 
 Current public app version:
 
 ```text
-Beta 0.9.5 - Release Certification & Performance
+Beta 0.9.6 - Earnings Attribution Integrity
 ```
 
 Current local source candidate:
 
 ```text
-Beta 0.9.6 - Earnings Attribution Integrity
+Beta 0.9.6 - Live Attribution & Weekday Efficiency QA Refinement
 ```
 
 Source of truth:
@@ -129,7 +129,7 @@ bidirectional read-only RLS checks. It changes no stored data or calculations.
 
 ### 0.9.6 Earnings Attribution Integrity
 
-Current local source candidate. It separates observation time from earned time
+Published and under real-work owner testing. It separates observation time from earned time
 for positive Quick Update deltas, adds explicit current-interval, completed-shift,
 exact-time, and review-later choices, and keeps unresolved late earnings out of
 hourly efficiency. An owner-only Data Health queue resolves ambiguous current or
@@ -140,8 +140,10 @@ Driver Playbook. The additive active-backend migration and production RLS
 verification are complete: `20260802181319_earnings_attribution_integrity_096.sql`
 creates the owner-scoped table and `20260802181403_harden_earnings_attribution_privileges_096.sql`
 explicitly removes anonymous access and authenticated delete/truncate privileges.
-The frontend remains a local candidate until normal commit/push/publication and
-owner workflow testing.
+The initial frontend is published. The current local QA refinement lets active-shift
+intervals update Operations Snapshot before End Shift, validates exact time against
+worked blocks and pauses, and separates same-weekday output from weighted hourly
+efficiency without changing any reported total or stored snapshot.
 
 The same candidate also hardens the live shift interaction: the header now uses
 one compact state trigger, while Quick Actions presents large Start, Pause,
@@ -486,7 +488,7 @@ Current planned sequence:
 - `Beta 0.9.3`: Live Work Mode - withdrawn and source archived
 - `Beta 0.9.4`: Operational Explorer & Driver Playbook - published and owner-verified
 - `Beta 0.9.5`: Release Certification & Performance - published
-- `Beta 0.9.6`: Earnings Attribution Integrity - current local candidate
+- `Beta 0.9.6`: Earnings Attribution Integrity - published and in real-work stabilization; local QA refinement pending publication
 - `Beta 0.9.7`: Historical Data Import - planned next after stabilization
 - `Beta 0.9.8`: Deep Insights Productivity - planned
 

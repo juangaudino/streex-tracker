@@ -50,6 +50,7 @@ import FocusUtilitySlot, { type FocusUtilityEvent } from "@/components/FocusUtil
 import { adjustOctopusPoints } from "@/lib/octopusRewards";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
+import { buildDayPerformanceComparison, dayPerformanceSignalLabel } from "@/lib/weekdayPerformance";
 
 type PulseState = "calm" | "steady" | "strong" | "record" | "streak";
 
@@ -394,11 +395,21 @@ export default function DashboardPage() {
   const todayEntry = openWeek.entries.find((d) => d.date === todayStr) ?? null;
   const todayTotal = todayEntry ? dayTotal(todayEntry) : 0;
   const dayRec = getDayOfWeekRecord(weeks, todayName, todayStr);
+  const dayPerformance = todayEntry
+    ? buildDayPerformanceComparison({
+        day: todayEntry,
+        weeks,
+        snapshots: earningsSnapshots,
+        attributions: earningsAttributions,
+        historicalAverageTotal: dayRec.avg,
+        now,
+      })
+    : null;
   const weeklyChase = getWeeklyRecordChase(weeks, openWeek, sym);
   const dailyChase = getDailyRecordChase(todayTotal, dayRec.record, todayName, sym);
 
   // Unified mood engine — headline, pace chip, and momentum all coherent
-  const mood = getDashboardMood(weeks, openWeek, todayEntry, dayRec, sym);
+  const mood = getDashboardMood(weeks, openWeek, todayEntry, dayRec, sym, dayPerformance?.signal);
   const smartHeader = mood.headline;
   const pace = mood.paceChip;
   const growthStats = mood.tone === "prerun" || mood.tone === "closed"
@@ -504,20 +515,29 @@ export default function DashboardPage() {
     ],
   };
   const dayVsAverageDetail: MetricDrillDownDetail = {
-    eyebrow: "Day vs Average",
-    title: `Today against your normal ${todayName}`,
+    eyebrow: "Output + Efficiency",
+    title: `Today against your typical ${todayName}`,
     summary: dayVsAvg === null
       ? `Streex needs more ${todayName} history before this comparison becomes reliable.`
-      : `This compares today's earnings with your usual ${todayName} earnings from your own history.`,
+      : dayPerformance && dayPerformance.signal !== "building"
+        ? `${dayPerformanceSignalLabel(dayPerformance.signal)}. Total earnings and hourly efficiency are separate signals.`
+        : `This compares today's total earnings with your usual ${todayName}; hourly efficiency appears when reliable shift history exists.`,
     stats: [
-      { label: "Today", value: formatCurrency(todayTotal, sym), helper: "Current earnings for today" },
-      { label: `Avg ${todayName}`, value: dayRec.avg > 0 ? formatCurrency(dayRec.avg, sym) : "Building", helper: "Your same-weekday benchmark" },
-      { label: "Difference", value: dayVsAvg === null ? "—" : `${dayVsAvg >= 0 ? "+" : ""}${formatCurrency(dayVsAvg, sym)}`, helper: "Today compared with normal" },
-      { label: "Pace", value: dayVsAvgPct === null ? "—" : `${dayVsAvgPct.toFixed(0)}%`, helper: `Percent of normal ${todayName}` },
+      { label: "Today total", value: formatCurrency(todayTotal, sym), helper: "Current output for today" },
+      { label: `Typical ${todayName}`, value: dayRec.avg > 0 ? formatCurrency(dayRec.avg, sym) : "Building", helper: "Average earnings on active same-weekday days" },
+      { label: "Output difference", value: dayVsAvg === null ? "—" : `${dayVsAvg >= 0 ? "+" : ""}${formatCurrency(dayVsAvg, sym)}`, helper: dayVsAvgPct === null ? "More history needed" : `${dayVsAvgPct.toFixed(0)}% of typical output` },
+      { label: "Today / hour", value: dayPerformance?.currentEarningsPerHour !== null && dayPerformance?.currentEarningsPerHour !== undefined ? `${formatCurrency(dayPerformance.currentEarningsPerHour, sym)}/hr` : "Building", helper: "Attributable operational earnings per worked hour" },
+      { label: `Typical ${todayName} / hour`, value: dayPerformance?.historicalEarningsPerHour !== null && dayPerformance?.historicalEarningsPerHour !== undefined ? `${formatCurrency(dayPerformance.historicalEarningsPerHour, sym)}/hr` : "Building", helper: "Weighted by all represented worked hours" },
+      { label: "Efficiency difference", value: dayPerformance?.difference !== null && dayPerformance?.difference !== undefined ? `${dayPerformance.difference >= 0 ? "+" : ""}${formatCurrency(dayPerformance.difference, sym)}/hr` : "—", helper: dayPerformance?.percentDifference !== null && dayPerformance?.percentDifference !== undefined ? `${dayPerformance.percentDifference >= 0 ? "+" : ""}${dayPerformance.percentDifference.toFixed(0)}% vs typical efficiency` : "Reliable hour history required" },
     ],
     notes: [
       "The benchmark is your own history, not a market average.",
-      "Days off and lower days are part of the record; Streex uses them without shame scoring.",
+      dayPerformance
+        ? `${dayPerformance.representedHistoricalDays} of ${dayPerformance.historicalEarningDays} earning ${todayName}s have reliable completed-shift hours for the efficiency benchmark.`
+        : "Hourly coverage is still building.",
+      dayPerformance && dayPerformance.excludedFromEfficiency > 0
+        ? `${formatCurrency(dayPerformance.excludedFromEfficiency, sym)} remains in reported earnings but outside efficiency until its timing is resolved.`
+        : "Days without earnings do not lower your typical-output benchmark.",
     ],
   };
   const rankDetail: MetricDrillDownDetail = {
@@ -719,10 +739,10 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 gap-2">
             <FocusMetric
               icon={<Activity className="h-3.5 w-3.5" />}
-              label="Day vs Avg"
+              label="Output vs Avg"
               value={dayVsAvg === null ? "—" : `${dayVsAvg >= 0 ? "+" : ""}${formatCurrency(dayVsAvg, sym)}`}
-              sub={dayVsAvgPct === null ? "more history needed" : `${dayVsAvgPct.toFixed(0)}% of normal ${todayName}`}
-              tone={dayVsAvg !== null && dayVsAvg >= 0 ? "success" : dayVsAvg !== null ? "warning" : "default"}
+              sub={dayPerformance && dayPerformance.signal !== "building" ? dayPerformanceSignalLabel(dayPerformance.signal) : dayVsAvgPct === null ? "more history needed" : `${dayVsAvgPct.toFixed(0)}% of typical ${todayName}`}
+              tone={dayPerformance?.signal === "short-efficient" || (dayVsAvg !== null && dayVsAvg >= 0) ? "success" : dayVsAvg !== null ? "warning" : "default"}
               onOpen={() => setDrillDownDetail(dayVsAverageDetail)}
             />
             <FocusMetric

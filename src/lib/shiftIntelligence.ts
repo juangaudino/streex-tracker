@@ -189,9 +189,9 @@ export function getWeekRideCount(week: WeekRecord): number {
   return week.entries.reduce((sum, day) => sum + getDayRideCount(day), 0);
 }
 
-export function getDayShiftHours(day: DayEntry): number {
+export function getDayShiftHours(day: DayEntry, now = new Date()): number {
   return round((day.shifts ?? []).reduce((sum, shift) => {
-    return sum + (shift.endTime ? shiftDurationHours(shift) : activeShiftDurationHours(shift));
+    return sum + (shift.endTime ? shiftDurationHours(shift) : activeShiftDurationHours(shift, now));
   }, 0));
 }
 
@@ -474,9 +474,11 @@ export function buildPatternIntelligence(
   weeks: WeekRecord[],
   earningsSnapshots: EarningsSnapshot[] = [],
   earningsAttributions: EarningsAttribution[] = [],
+  now = new Date(),
 ): PatternIntelligence {
   const hourMap = new Map<number, { earnings: number; hours: number; appTotals: Record<string, number> }>();
   let totalHours = 0;
+  let completedHours = 0;
   let totalMiles = 0;
   let totalRides = 0;
   let totalShiftEarnings = 0;
@@ -494,7 +496,7 @@ export function buildPatternIntelligence(
       if (!shifts.length) continue;
       workDays += 1;
       if (shifts.length > 1) multiShiftDays += 1;
-      const workedHours = getDayShiftHours(day);
+      const workedHours = getDayShiftHours(day, now);
       const earnings = operationalDayTotal(day);
       const miles = getDayMiles(day);
       const rides = getDayRideCount(day);
@@ -503,23 +505,28 @@ export function buildPatternIntelligence(
       totalShifts += shifts.length;
       activeShifts += shifts.filter((shift) => !shift.endTime).length;
       completedShifts += shifts.filter((shift) => Boolean(shift.endTime)).length;
-      if (workedHours <= 0 || earnings <= 0) continue;
+      completedHours += shifts.filter((shift) => shift.endTime).reduce((sum, shift) => sum + shiftDurationHours(shift), 0);
+      if (workedHours <= 0) continue;
       totalHours += workedHours;
       totalShiftEarnings += earnings;
 
-      const sortedShifts = shifts.filter((shift) => shift.endTime).sort((a, b) => a.startTime.localeCompare(b.startTime));
-      sortedShifts.forEach((shift, index) => {
-        const duration = shiftDurationHours(shift);
-        if (duration <= 0 || !shift.endTime) return;
+      const sortedShifts = [...shifts].sort((a, b) => a.startTime.localeCompare(b.startTime));
+      const completedForDay = sortedShifts.filter((shift) => shift.endTime);
+      sortedShifts.forEach((shift) => {
+        const duration = shift.endTime ? shiftDurationHours(shift) : activeShiftDurationHours(shift, now);
+        if (duration <= 0) return;
         const shiftShare = duration / workedHours;
         const shiftEarnings = earnings * shiftShare;
-        if (index < sortedShifts.length / 2) firstHalf.push(shiftEarnings / duration);
-        else secondHalf.push(shiftEarnings / duration);
+        if (shift.endTime) {
+          const completedIndex = completedForDay.findIndex((candidate) => candidate.id === shift.id);
+          if (completedIndex < completedForDay.length / 2) firstHalf.push(shiftEarnings / duration);
+          else secondHalf.push(shiftEarnings / duration);
+        }
 
         for (const block of getShiftBlocks(shift)) {
-          if (!block.endTime) continue;
           const startMs = Date.parse(block.startTime);
-          const endMs = Date.parse(block.endTime);
+          const endMs = Date.parse(block.endTime ?? `${localDateKey(now)}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:00`);
+          if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) continue;
           for (let hour = 0; hour < 24; hour++) {
             const hours = overlapHours(startMs, endMs, hour, day.date);
             if (hours <= 0) continue;
@@ -618,7 +625,7 @@ export function buildPatternIntelligence(
     workDays,
     multiShiftDays,
     totalHours: round(totalHours),
-    averageShiftHours: completedShifts > 0 ? round(totalHours / completedShifts) : null,
+    averageShiftHours: completedShifts > 0 ? round(completedHours / completedShifts) : null,
     totalMiles: round(totalMiles),
     totalRides,
     earningsPerHour: totalHours > 0 ? round(performanceEarnings / totalHours) : null,

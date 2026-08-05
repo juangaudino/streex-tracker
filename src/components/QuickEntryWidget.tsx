@@ -14,6 +14,7 @@ import { dayTotal, formatCurrency } from "@/lib/store";
 import type { WeekRecord, DayEntry, OperationalSnapshotDraft, EarningsAttributionIntent, EarningsSnapshot, ShiftSession } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
+import { isExactTimeInsideWorkedShift } from "@/lib/earningsAttributions";
 import { triggerCelebration } from "@/components/RecordCelebration";
 import { createShift, endActiveShift, getActiveShift, getDayMiles, getDayShiftHours, getShiftMiles, hasActiveShift, isShiftPaused, pauseActiveShift, resumePausedShift, shiftDurationHours } from "@/lib/shiftIntelligence";
 import { isRewardApp } from "@/lib/rewardIncome";
@@ -224,7 +225,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
           confidence: "estimated",
           note: "User assigned the delta to this shift; amount is distributed across worked blocks.",
         };
-      } else if (attributionChoice === "exact" && selectedShift && attributionExactAt) {
+      } else if (attributionChoice === "exact" && selectedShift && attributionExactAt && isExactTimeInsideWorkedShift(selectedShift.shift, attributionExactAt)) {
         const exact = new Date(attributionExactAt);
         if (!Number.isNaN(exact.getTime())) {
           attributionIntent = {
@@ -389,11 +390,17 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
   const quickPositiveDelta = quickApp && quickDraftAmount !== null
     ? quickDraftAmount - (Number(today.apps?.[quickApp]) || 0)
     : 0;
+  const selectedAttributionShift = completedShiftOptions.find((option) => option.shift.id === attributionShiftId);
+  const exactAttributionValid = Boolean(
+    selectedAttributionShift
+    && attributionExactAt
+    && isExactTimeInsideWorkedShift(selectedAttributionShift.shift, attributionExactAt),
+  );
   const attributionReady = quickPositiveDelta <= 0
     || attributionChoice === "pending"
     || (attributionChoice === "automatic" && Boolean(todayActiveShift))
     || (attributionChoice === "shift" && Boolean(attributionShiftId))
-    || (attributionChoice === "exact" && Boolean(attributionShiftId) && Boolean(attributionExactAt));
+    || (attributionChoice === "exact" && exactAttributionValid);
 
   return (
     <div className={compactTrigger ? "shrink-0" : "bg-card rounded-xl border border-primary/20 p-4 space-y-3"}>
@@ -620,7 +627,12 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                           </Select>
                         )}
                         {attributionChoice === "exact" && (
-                          <Input type="datetime-local" value={attributionExactAt} onChange={(event) => setAttributionExactAt(event.target.value)} />
+                          <div className="space-y-1.5">
+                            <Input type="datetime-local" value={attributionExactAt} onChange={(event) => setAttributionExactAt(event.target.value)} />
+                            {attributionExactAt && !exactAttributionValid && (
+                              <p className="text-xs text-destructive">Exact time must fall inside worked time, not during a pause.</p>
+                            )}
+                          </div>
                         )}
                         {attributionChoice === "pending" && (
                           <p className="text-xs text-muted-foreground">The money remains in your reported total but stays out of hourly rankings until reviewed.</p>

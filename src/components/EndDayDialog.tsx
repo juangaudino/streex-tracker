@@ -7,9 +7,10 @@ import { getWeeklyMomentumPreview } from "@/lib/career";
 import { getDayMiles, getDayRideCount, getDayShiftHours, getShiftMiles, resolveShiftEarnings } from "@/lib/shiftIntelligence";
 import { operationalDayTotal } from "@/lib/rewardIncome";
 import { exportNodeAsPng, shareNodeAsPng } from "@/lib/shareExport";
-import { Trophy, Flame, TrendingUp, Sparkles, Target, Clock, Route, Share2, Download, StickyNote } from "lucide-react";
+import { Activity, Trophy, Flame, TrendingUp, Sparkles, Target, Clock, Route, Share2, Download, StickyNote } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { buildDayPerformanceComparison, dayPerformanceSignalLabel } from "@/lib/weekdayPerformance";
 
 interface Props {
   open: boolean;
@@ -56,11 +57,20 @@ export default function EndDayDialog({
   const earningsPerHour = hours > 0 && operationalToday !== null ? operationalToday / hours : null;
   const earningsPerMile = miles > 0 && operationalToday !== null ? operationalToday / miles : null;
   const earningsPerRide = rides > 0 && operationalToday !== null ? operationalToday / rides : null;
+  const dayPerformance = buildDayPerformanceComparison({
+    day: todayEntry,
+    weeks,
+    snapshots: earningsSnapshots,
+    attributions: earningsAttributions,
+    historicalAverageTotal: dayRec.avg,
+  });
 
   const vsAvg = dayRec.avg > 0 ? ((todayT - dayRec.avg) / dayRec.avg) * 100 : null;
 
   const commentary = (() => {
     if (recordBroken) return `History updated — new ${dayName} record.`;
+    if (dayPerformance.signal === "short-efficient") return "Short day, strong efficiency. Your hourly rate beat your normal pace.";
+    if (dayPerformance.signal === "high-output-longer") return "High output from a longer day. Total and efficiency tell different parts of the story.";
     if (vsAvg !== null && vsAvg >= 25) return `Strong ${dayName} energy. Above your average.`;
     if (vsAvg !== null && vsAvg >= 0) return "Consistency building. Current you is outperforming past you.";
     if (todayT > 0) return `${dayName} closed. Tomorrow is another rep.`;
@@ -72,6 +82,8 @@ export default function EndDayDialog({
   const insights = useMemo(() => {
     const items: string[] = [];
     if (recordBroken) items.push(`New ${dayName} record. Your history just moved.`);
+    else if (dayPerformance.signal === "short-efficient") items.push(`Short day, strong efficiency. Your hourly rate finished above a typical ${dayName}.`);
+    else if (dayPerformance.signal === "high-output-longer") items.push(`High output, longer day. Your total beat a typical ${dayName}, while hourly efficiency was softer.`);
     else if (vsAvg !== null && vsAvg >= 25) items.push(`Strong ${dayName}. You finished well above your normal ${dayName}.`);
     else if (vsAvg !== null && vsAvg >= 0) items.push(`Solid ${dayName}. You stayed above your usual pace.`);
     else if (todayT > 0) items.push(`${dayName} is closed. The week still has room to build.`);
@@ -80,7 +92,7 @@ export default function EndDayDialog({
     if (hours > 0 && earningsPerHour !== null) items.push(`You worked ${hours.toFixed(1)}h at ${formatCurrency(earningsPerHour, sym)}/hr.`);
     if (nextDayMilestone && nextDayMilestone.remaining <= 50) items.push(`${nextDayMilestone.label} is within ${formatCurrency(nextDayMilestone.remaining, sym)}.`);
     return items.slice(0, 4);
-  }, [dayName, earningsPerHour, hours, isBestDayOfWeek, nextDayMilestone, recordBroken, sym, todayContribution, todayT, vsAvg]);
+  }, [dayName, dayPerformance.signal, earningsPerHour, hours, isBestDayOfWeek, nextDayMilestone, recordBroken, sym, todayContribution, todayT, vsAvg]);
 
   async function handleDownloadReport() {
     if (!reportRef.current) return;
@@ -167,6 +179,14 @@ export default function EndDayDialog({
                   accent={vsAvg >= 0 ? "success" : "warning"}
                 />
               )}
+              {dayPerformance.difference !== null && (
+                <Chip
+                  icon={<Activity className="h-3.5 w-3.5" />}
+                  label={`vs avg ${dayName} / hr`}
+                  value={`${dayPerformance.difference >= 0 ? "+" : ""}${formatCurrency(dayPerformance.difference, sym)}/hr`}
+                  accent={dayPerformance.difference >= 0 ? "success" : "warning"}
+                />
+              )}
               <Chip
                 icon={<Target className="h-3.5 w-3.5" />}
                 label="Week Pace"
@@ -178,6 +198,16 @@ export default function EndDayDialog({
                 <Chip icon={<Target className="h-3.5 w-3.5" />} label="Week Share" value={`${todayContribution.toFixed(0)}%`} accent="primary" />
               )}
             </div>
+
+            {dayPerformance.signal !== "building" && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Output + Efficiency</p>
+                <p className="mt-1 text-sm font-semibold">{dayPerformanceSignalLabel(dayPerformance.signal)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {formatCurrency(todayT, sym)} total versus {formatCurrency(dayRec.avg, sym)} typical · {dayPerformance.currentEarningsPerHour !== null ? `${formatCurrency(dayPerformance.currentEarningsPerHour, sym)}/hr` : "rate building"} versus {dayPerformance.historicalEarningsPerHour !== null ? `${formatCurrency(dayPerformance.historicalEarningsPerHour, sym)}/hr typical` : "hourly benchmark building"}.
+                </p>
+              </div>
+            )}
 
             {completedShifts.length > 0 && (
               <div className="space-y-2">

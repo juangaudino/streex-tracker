@@ -19,16 +19,16 @@ Streex is in Beta.
 
 ## Current Baseline
 
-Current public baseline after Release Certification & Performance:
+Current public baseline after Earnings Attribution Integrity publication:
 
 ```text
-Beta 0.9.5 - Release Certification & Performance
+Beta 0.9.6 - Earnings Attribution Integrity
 ```
 
 Current local source candidate:
 
 ```text
-Beta 0.9.6 - Earnings Attribution Integrity
+Beta 0.9.6 - Live Attribution & Weekday Efficiency QA Refinement
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -194,7 +194,7 @@ Boundaries:
 
 ### Beta 0.9.6 - Earnings Attribution Integrity
 
-Status: current local source candidate.
+Status: published and in real-work stabilization; the current QA refinement remains local until owner publication.
 
 Scope:
 
@@ -206,6 +206,9 @@ Scope:
 - Preserve reported earnings totals and append-only evidence; attribution changes analytical timing only.
 - Replace the separate small header shift buttons with one compact status trigger and place large Start/Pause/Resume/End controls alongside primary-app updates in Quick Actions.
 - Prevent repeated shift and earnings writes with single-flight locking and immediate progress/success feedback.
+- Update Operations Snapshot from attributed intervals while the shift is open, with open work blocks capped at the saved update time and pauses excluded.
+- Separate same-weekday total output from weighted hourly efficiency so short, highly productive days are not mislabeled.
+- Validate exact earning time against actual worked blocks, including pause exclusion.
 
 Boundaries:
 

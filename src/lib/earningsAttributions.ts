@@ -1,5 +1,5 @@
 import type { Database } from "@/integrations/supabase/types";
-import { isRewardApp } from "./rewardIncome";
+import { isRewardApp, operationalDayTotal } from "./rewardIncome";
 import { earningsSnapshotTransitionKey } from "./earningsSnapshots";
 import type {
   DayEntry,
@@ -26,7 +26,7 @@ export interface AttributedHourAmount {
 export interface AttributionReviewItem {
   snapshot: EarningsSnapshot;
   attribution?: EarningsAttribution;
-  reason: "after_shift" | "different_day" | "outside_shift" | "historical_edit" | "unassigned";
+  reason: "after_shift" | "different_day" | "outside_shift" | "historical_edit" | "unassigned" | "invalid_exact";
   suggestedDayDate?: string;
   suggestedShiftId?: string;
 }
@@ -146,9 +146,10 @@ function overlapByHour(startAt: string, endAt: string, shift: ShiftSession): Arr
   if (!Number.isFinite(rangeStart) || !Number.isFinite(rangeEnd) || rangeEnd <= rangeStart) return [];
   const result = new Map<number, number>();
   for (const block of shiftBlocks(shift)) {
-    if (!block.endTime) continue;
     let cursor = Math.max(rangeStart, Date.parse(block.startTime));
-    const blockEnd = Math.min(rangeEnd, Date.parse(block.endTime));
+    const rawBlockEnd = block.endTime ? Date.parse(block.endTime) : rangeEnd;
+    const blockEnd = Math.min(rangeEnd, rawBlockEnd);
+    if (!Number.isFinite(cursor) || !Number.isFinite(blockEnd) || blockEnd <= cursor) continue;
     while (cursor < blockEnd) {
       const date = new Date(cursor);
       const hourEnd = new Date(date);
@@ -160,6 +161,20 @@ function overlapByHour(startAt: string, endAt: string, shift: ShiftSession): Arr
     }
   }
   return [...result.entries()].map(([hour, hours]) => ({ hour, hours }));
+}
+
+export function isExactTimeInsideWorkedShift(shift: ShiftSession, value: string | Date): boolean {
+  if (!shift.endTime) return false;
+  const at = value instanceof Date ? value.getTime() : Date.parse(value);
+  const shiftStart = Date.parse(shift.startTime);
+  const shiftEnd = Date.parse(shift.endTime);
+  if (!Number.isFinite(at) || !Number.isFinite(shiftStart) || !Number.isFinite(shiftEnd) || at < shiftStart || at > shiftEnd) return false;
+  return shiftBlocks(shift).some((block) => {
+    if (!block.endTime) return false;
+    const start = Date.parse(block.startTime);
+    const end = Date.parse(block.endTime);
+    return Number.isFinite(start) && Number.isFinite(end) && at >= start && at <= end;
+  });
 }
 
 function previousSafeSnapshot(
@@ -188,16 +203,22 @@ export function attributedHoursForSnapshot(args: {
   if (!shiftId) return [];
   const dayDate = attribution?.attributedDayDate ?? snapshot.dayDate;
   const shift = findShift(weeks, dayDate, shiftId);
-  if (!shift?.endTime) return [];
+  if (!shift) return [];
+  const activeUpdateInterval = !shift.endTime
+    && attribution?.status === "resolved"
+    && attribution.mode === "update_interval"
+    && Boolean(attribution.effectiveEndAt);
+  if (!shift.endTime && !activeUpdateInterval) return [];
 
   if (attribution?.status === "resolved" && attribution.mode === "exact" && attribution.effectiveStartAt) {
+    if (!isExactTimeInsideWorkedShift(shift, attribution.effectiveStartAt)) return [];
     const at = new Date(attribution.effectiveStartAt);
     if (Number.isNaN(at.getTime())) return [];
     return [{ snapshotId: snapshot.id, app: snapshot.app, dayDate, shiftId, hour: at.getHours(), amount: round(attribution.amount), confidence: "confirmed" }];
   }
 
   let startAt = shift.startTime;
-  let endAt = shift.endTime;
+  let endAt = shift.endTime ?? snapshot.createdAt;
   let confidence: "confirmed" | "estimated" = "estimated";
   if (attribution?.status === "resolved") {
     if (attribution.mode === "day_only" || attribution.mode === "unassigned") return [];
@@ -228,6 +249,41 @@ export function attributedHoursForSnapshot(args: {
   }));
 }
 
+export function resolveDayPerformanceEarnings(args: {
+  day: DayEntry;
+  weeks: WeekRecord[];
+  snapshots?: EarningsSnapshot[];
+  attributions?: EarningsAttribution[];
+  attributedSegments?: AttributedHourAmount[];
+}): { earnings: number; reportedOperationalEarnings: number; excludedFromEfficiency: number } {
+  const snapshots = args.snapshots ?? [];
+  const attributions = args.attributions ?? [];
+  const seenObserved = new Set<string>();
+  const observedPositive = snapshots.reduce((sum, snapshot) => {
+    if (snapshot.dayDate !== args.day.date || Number(snapshot.delta) <= 0 || isRewardApp(snapshot.app)) return sum;
+    const key = earningsSnapshotTransitionKey(snapshot);
+    if (seenObserved.has(key)) return sum;
+    seenObserved.add(key);
+    return sum + Number(snapshot.delta);
+  }, 0);
+  const attributedSegments = args.attributedSegments ?? buildAttributedHourAmounts({ weeks: args.weeks, snapshots, attributions });
+  const safeSnapshotIds = new Set(
+    attributedSegments.filter((segment) => segment.dayDate === args.day.date).map((segment) => segment.snapshotId),
+  );
+  const safeAttributed = snapshots.reduce((sum, snapshot) => {
+    if (!safeSnapshotIds.has(snapshot.id)) return sum;
+    return sum + Math.max(0, Number(snapshot.delta) || 0);
+  }, 0);
+  const reportedOperationalEarnings = operationalDayTotal(args.day);
+  const legacyBaseline = Math.max(0, reportedOperationalEarnings - observedPositive);
+  const earnings = round(legacyBaseline + safeAttributed);
+  return {
+    earnings,
+    reportedOperationalEarnings: round(reportedOperationalEarnings),
+    excludedFromEfficiency: round(Math.max(0, reportedOperationalEarnings - earnings)),
+  };
+}
+
 export function buildAttributedHourAmounts(args: {
   weeks: WeekRecord[];
   snapshots: EarningsSnapshot[];
@@ -252,7 +308,21 @@ export function buildAttributionReviewItems(args: {
   return args.snapshots.flatMap((snapshot) => {
     if (Number(snapshot.delta) <= 0 || isRewardApp(snapshot.app)) return [];
     const attribution = bySnapshot.get(snapshot.id);
-    if (attribution?.status === "resolved" || attribution?.status === "excluded") return [];
+    if (attribution?.status === "excluded") return [];
+    if (attribution?.status === "resolved") {
+      const attributedDayDate = attribution.attributedDayDate ?? snapshot.dayDate;
+      const attributedShift = findShift(args.weeks, attributedDayDate, attribution.shiftId);
+      const invalidExact = attribution.mode === "exact"
+        && (!attributedShift || !attribution.effectiveStartAt || !isExactTimeInsideWorkedShift(attributedShift, attribution.effectiveStartAt));
+      if (!invalidExact) return [];
+      return [{
+        snapshot,
+        attribution,
+        reason: "invalid_exact",
+        suggestedDayDate: attributedDayDate,
+        suggestedShiftId: attributedShift?.id,
+      }];
+    }
     const observed = new Date(snapshot.createdAt);
     const day = findDay(args.weeks, snapshot.dayDate);
     const completed = (day?.shifts ?? []).filter((shift) => shift.endTime);

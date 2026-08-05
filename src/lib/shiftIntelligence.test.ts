@@ -251,6 +251,26 @@ describe("shift intelligence", () => {
     expect(result.bestAppsByHour[0].app).toBe("Uber");
   });
 
+  it("updates operations metrics while an attributed shift remains open", () => {
+    const active = { id: "live", startTime: "2026-05-04T08:00:00", blocks: [{ id: "live-block", startTime: "2026-05-04T08:00:00" }] };
+    const liveDay = day(0, 110, [active]);
+    const liveWeek = week([liveDay]);
+    const liveSnapshot = { ...snapshot("live-snapshot", liveDay.date, "Uber", 110, "2026-05-04T11:00:00"), shiftId: active.id };
+    const liveAttribution: EarningsAttribution = {
+      id: "live-attribution", userId: "u1", snapshotId: liveSnapshot.id, amount: 110, status: "resolved", mode: "update_interval",
+      attributedDayDate: liveDay.date, shiftId: active.id, effectiveStartAt: active.startTime, effectiveEndAt: liveSnapshot.createdAt,
+      source: "automatic", confidence: "estimated", createdAt: liveSnapshot.createdAt, updatedAt: liveSnapshot.createdAt,
+    };
+
+    const result = buildPatternIntelligence([liveWeek], [liveSnapshot], [liveAttribution], new Date("2026-05-04T11:00:00"));
+
+    expect(result.summary.activeShifts).toBe(1);
+    expect(result.summary.completedShifts).toBe(0);
+    expect(result.summary.totalHours).toBe(3);
+    expect(result.summary.earningsPerHour).toBeCloseTo(36.67);
+    expect(result.hourlyHeatmap.find((item) => item.hour === 10)?.earnings).toBeGreaterThan(0);
+  });
+
   it("deduplicates repeated earning snapshot transitions in observed timing", () => {
     const weeks = [
       week([

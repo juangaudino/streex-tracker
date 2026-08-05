@@ -19,6 +19,10 @@
 - Shift Intelligence, Deep Insights, Operational Explorer, and Driver Playbook consume the same canonical attribution rules.
 - Original earnings snapshots, accumulated app totals, stored week JSON, and all-time money are never rewritten or duplicated.
 - Shift actions and earnings saves use single-flight guards, immediate progress labels, disabled repeat actions, and explicit success feedback so rapid taps cannot create duplicate writes.
+- Active-shift interval attribution now reaches Operations Snapshot immediately after Quick Update instead of waiting for End Shift; open work blocks are capped at the saved update time and pauses remain excluded.
+- Same-weekday performance now separates total output from weighted hourly efficiency, so a short high-rate day is recognized without changing its lower earnings total.
+- Exact-time attribution must fall inside a worked block of the selected completed shift and can no longer land during a pause.
+- Live Operations Snapshot refreshes active duration each minute, identifies the latest earnings update, and calculates average shift length from completed shifts only.
 
 ### Backend / Migration
 

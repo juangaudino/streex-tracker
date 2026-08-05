@@ -3,7 +3,7 @@ import { AlertTriangle, CheckCircle2, Clock3, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { buildAttributionReviewItems } from "@/lib/earningsAttributions";
+import { buildAttributionReviewItems, isExactTimeInsideWorkedShift } from "@/lib/earningsAttributions";
 import { formatCurrency } from "@/lib/store";
 import type { EarningsAttribution, EarningsAttributionIntent, EarningsSnapshot, ShiftSession, WeekRecord } from "@/lib/types";
 
@@ -18,6 +18,7 @@ interface Props {
 type ShiftOption = { dayDate: string; dayName: string; shift: ShiftSession & { endTime: string } };
 
 function reasonLabel(reason: ReturnType<typeof buildAttributionReviewItems>[number]["reason"]): string {
+  if (reason === "invalid_exact") return "Exact time is outside worked time";
   if (reason === "after_shift") return "Observed after the last shift";
   if (reason === "different_day") return "Captured on a different calendar day";
   if (reason === "historical_edit") return "Historical edit without a shift target";
@@ -53,7 +54,7 @@ export default function EarningsAttributionReview({ weeks, snapshots, attributio
 
   async function saveExact(snapshotId: string, option: ShiftOption, value: string) {
     const exact = new Date(value);
-    if (Number.isNaN(exact.getTime())) return;
+    if (Number.isNaN(exact.getTime()) || !isExactTimeInsideWorkedShift(option.shift, exact)) return;
     setWorking(snapshotId);
     await onSave(snapshotId, {
       status: "resolved",
@@ -123,8 +124,7 @@ export default function EarningsAttributionReview({ weeks, snapshots, attributio
             const exactValue = exactAt[item.snapshot.id] ?? "";
             const exactDate = exactValue ? new Date(exactValue) : null;
             const exactValid = Boolean(option && exactDate && !Number.isNaN(exactDate.getTime())
-              && exactDate.getTime() >= Date.parse(option.shift.startTime)
-              && exactDate.getTime() <= Date.parse(option.shift.endTime));
+              && isExactTimeInsideWorkedShift(option.shift, exactDate));
             return (
               <div key={item.snapshot.id} className="rounded-lg border border-border bg-card p-3 space-y-2">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -156,7 +156,7 @@ export default function EarningsAttributionReview({ weeks, snapshots, attributio
                       <Button variant="outline" disabled={!option || working === item.snapshot.id} onClick={() => option && void saveShift(item.snapshot.id, option)}>Spread across shift</Button>
                       <Button disabled={!option || !exactValid || working === item.snapshot.id} onClick={() => option && void saveExact(item.snapshot.id, option, exactValue)}>Use exact time</Button>
                     </div>
-                    {exactValue && !exactValid && <p className="text-xs text-destructive flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" /> Exact time must fall inside the selected shift.</p>}
+                    {exactValue && !exactValid && <p className="text-xs text-destructive flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" /> Exact time must fall inside worked time, not during a pause.</p>}
                   </div>
                 )}
               </div>

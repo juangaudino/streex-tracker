@@ -21,9 +21,9 @@ Streex is currently in public beta versioning.
 
 Current release:
 
-Public: `Beta 0.9.5 — Release Certification & Performance`
+Public: `Beta 0.9.6 — Earnings Attribution Integrity`
 
-Local source candidate: `Beta 0.9.6 — Earnings Attribution Integrity`
+Local source candidate: `Beta 0.9.6 — live attribution and weekday-efficiency QA refinement`
 
 Older `V3.x` through `V5.x` labels are Alpha Archive history. Keep them for continuity, but do not use the old Alpha sequence for new beta work.
 

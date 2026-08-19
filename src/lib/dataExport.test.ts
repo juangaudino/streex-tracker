@@ -34,6 +34,6 @@ describe("buildEarningsCsv", () => {
     expect(csv).toContain("date,weekStartDate,dayName,totalEarnings");
     expect(csv).toContain('"Custom, App"');
     expect(csv).toContain("2026-05-04,2026-05-04,Monday,160.75,120.5,0,30.25");
-    expect(csv).toContain("14.75,true");
+    expect(csv).toContain("14.75,0,0,true");
   });
 });

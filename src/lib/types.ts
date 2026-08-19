@@ -58,6 +58,10 @@ export interface DayEntry {
   /** Day finalized via "End Day". Distinct from `logged` (which auto-flags on any earnings entry). */
   dayClosed?: boolean;
   shifts?: ShiftSession[];
+  /** Reliable day-level worked hours when no precise shift boundaries exist (usually historical imports). */
+  workedHours?: number;
+  /** Day-level ride total used only when no shift-level ride counts exist. */
+  rideCount?: number;
   mileage?: number;
   notes?: string;
 }

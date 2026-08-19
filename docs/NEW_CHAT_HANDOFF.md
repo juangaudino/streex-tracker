@@ -1,6 +1,6 @@
 # Streex New Chat Handoff
 
-Last audited: 2026-07-30
+Last audited: 2026-08-17
 
 This is the operational handoff for a new Codex, Claude, ChatGPT, or Lovable conversation. It describes the current repository state and the product decisions that must survive chat resets. Read it before proposing or implementing work.
 
@@ -18,7 +18,7 @@ Also read:
 
 - Product: Streex Gig Earnings App.
 - Current public release: `Beta 0.9.6 - Earnings Attribution Integrity`.
-- Current local source candidate: `Beta 0.9.6 - live attribution and weekday-efficiency QA refinement`.
+- Current local source candidate: `Beta 0.9.7 - Historical Data Import (implemented locally; pending owner QA)`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.
@@ -30,7 +30,7 @@ Also read:
 - Legacy backend: Lovable-managed Supabase project `mnwymfyvvdhekzvipjmp`.
 - Never deploy active work to the legacy project unless the owner explicitly requests legacy inspection.
 
-At the time of this audit, local `main` and `origin/main` point to the same commit and the worktree is clean before this documentation update.
+The 0.9.7 historical-import implementation is currently local on `main` and pending owner QA; do not assume it has been committed, pushed, or published until the owner confirms those steps.
 
 ## 2. Architecture
 
@@ -298,8 +298,8 @@ Design rules:
 ### Planned Product Work
 
 - Latest public release: `Beta 0.9.6 - Earnings Attribution Integrity`.
-- Current local candidate: `Beta 0.9.6 - live attribution and weekday-efficiency QA refinement`.
-- Planned next after stabilization: `Beta 0.9.7 - Historical Data Import`, followed by `Beta 0.9.8 - Deep Insights Productivity`.
+- Current local candidate: `Beta 0.9.7 - Historical Data Import (implemented locally; pending owner QA)`.
+- The next release gate is a small-sample import, reload, cross-surface totals check, no-new-snapshots check, and gradual backfill review before publication; `Beta 0.9.8 - Deep Insights Productivity` follows after that gate.
 - Do not normalize the weekly JSON model merely for scale; first solve silent write conflicts, recovery, and visible sync state for the owner's personal workflow.
 - The version number can move if a patch or urgent fix ships first.
 
@@ -313,7 +313,7 @@ Design rules:
 
 ### Data and Analytics
 
-- Build a safe historical CSV/Excel import workflow before importing roughly three additional years of history.
+- The local 0.9.7 History importer now accepts the structured Excel template (Daily Earnings, Optional Shifts, Pauses, Bonuses) plus normalized CSV, previews warnings/conflicts, preserves existing values, and suppresses historical snapshot creation. Import the multi-year archive only in small reversible batches after owner QA.
 - Import must validate dates, apps, numeric values, conflicts, and existing days; never bulk-write production without dry-run/preview.
 - Continue improving shift-level earnings attribution from snapshots.
 - Historical weather, traffic, market, vehicle, GPS, and ride-level time analysis are blocked until reliable source data is stored.
@@ -488,7 +488,7 @@ Production variables live in Vercel. Do not print their values in chat or docs.
 ### Versioning
 
 - Current public baseline: `0.9.6`.
-- Current local candidate: `0.9.6`.
+- Current local candidate: `0.9.7 Historical Data Import (pending owner QA)`.
 - Patch: focused fix/refinement/polish.
 - Minor: meaningful new surface/system.
 - `1.0.0`: first stable public release only.
@@ -514,7 +514,7 @@ Production variables live in Vercel. Do not print their values in chat or docs.
 2. Run `git status --short --branch` and inspect the latest commit.
 3. Read this file, `AGENTS.md`, `docs/PRODUCT_STATUS.md`, and `docs/ROADMAP.md`.
 4. Do not assume Ask My Data, Edge Function secrets, or migrations are deployed merely because source exists.
-5. If 0.9.6 is not yet published, verify its additive migration, owner-only RLS, unchanged reported totals, and attribution behavior before release.
+5. If the local 0.9.7 importer is still pending, verify its preview, conflict gate, no-snapshot save path, and cross-surface totals before publication.
 6. Otherwise ask what the owner wants to tackle next, or plan the explicitly named roadmap item.
 
-The expected next product item after 0.9.6 stabilization is the preview-first Historical Data Import (`0.9.7`), followed by Deep Insights Productivity (`0.9.8`). Bug stabilization or infrastructure work may still take priority and should renumber the roadmap honestly.
+The expected next product item after 0.9.6 stabilization is the owner QA/publication gate for the local Historical Data Import (`0.9.7`), followed by Deep Insights Productivity (`0.9.8`). Bug stabilization or infrastructure work may still take priority and should renumber the roadmap honestly.

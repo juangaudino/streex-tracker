@@ -18,6 +18,19 @@ export function formatVersionLabel(version: string): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.9.7",
+    date: "2026-08",
+    title: "Historical Data Import (Local Candidate)",
+    tags: ["new", "fix"],
+    items: [
+      "History can now download a structured Excel template and preview historical earnings, hours, miles, rides, shifts, pauses, and bonuses before saving",
+      "Import validation catches invalid dates and numbers, duplicate or overlapping shifts and pauses, conflicting day metadata, and source totals below their app detail",
+      "Existing non-empty values are preserved by default; conflicting History values block confirmation instead of being silently overwritten",
+      "Historical day-level hours and total rides remain usable without fabricating shift timestamps, while precise shift timing remains available when real boundaries are supplied",
+      "Historical imports do not create current-time earnings snapshots, so old data cannot masquerade as a new observation",
+    ],
+  },
+  {
     version: "0.9.6",
     date: "2026-08",
     title: "Earnings Attribution Integrity",

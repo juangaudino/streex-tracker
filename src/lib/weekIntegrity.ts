@@ -47,6 +47,8 @@ const daySchema = z.object({
   logged: z.boolean().optional(),
   dayClosed: z.boolean().optional(),
   shifts: z.array(shiftSchema).optional(),
+  workedHours: finiteNonNegative.optional(),
+  rideCount: finiteNonNegative.optional(),
   mileage: finiteNonNegative.optional(),
   notes: z.string().optional(),
 }).passthrough();

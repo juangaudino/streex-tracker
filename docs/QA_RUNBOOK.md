@@ -30,6 +30,8 @@ The target is zero applicable production dependency vulnerabilities. Any remaini
 
 Beta 0.9.5 currently uses React Router 7.18.2. The remaining production audit advisory, `GHSA-qwww-vcr4-c8h2`, is explicitly limited by its maintainer to unstable React Server Components APIs. Streex is a client-only Vite SPA using declarative `BrowserRouter` routes and does not use RSC or server actions. Keep the exception visible until a compatible patched package is published; do not downgrade to a release with broader SPA redirect advisories merely to make the audit counter disappear.
 
+Beta 0.9.7 adds `exceljs` as a lazy-loaded browser parser for the owner-controlled historical import. Its transitive `uuid` advisory is currently visible in `npm audit --omit=dev`; this is a documented P3 dependency follow-up, not a reason to bypass the preview/conflict gate or to treat workbook contents as trusted code. Re-evaluate a maintained lighter parser before a broad multi-user release or 1.0.0.
+
 ## Local browser smoke
 
 After a production build, run:
@@ -101,6 +103,20 @@ Beta 0.9.5 certification is complete only when:
 - the manual **Manual QA E2E** workflow passes with two isolated identities;
 - the production bundle and public metadata match the committed release;
 - no unexplained Supabase migration, function, Auth, or RLS drift remains.
+
+## Beta 0.9.7 historical-import gate
+
+Before publishing Historical Data Import:
+
+- Download the workbook from History and keep the input template unchanged as the control file.
+- Import a small sample with one single-shift day, one paused multi-shift day, one day with only day-level hours/rides, a bonus, an unknown value, and an intentional conflict.
+- Confirm malformed dates/numbers, overlapping timing, duplicate app rows, source-total gaps, and existing-data conflicts block the write or are clearly labeled as warnings.
+- Confirm blank means unknown and zero remains an intentional known zero; do not fill missing historical timing with guessed timestamps.
+- Confirm a successful import preserves existing non-empty values, creates or updates only the intended weeks, and creates no earnings snapshots or operational observations for the import timestamp.
+- Reload History and verify money, day/week totals, miles, rides, worked hours, records, Compare, Deep Insights, Operational Explorer, Driver Playbook, and CSV/JSON exports.
+- Backfill older weeks in small batches and inspect Data Health after each batch. Keep the original workbook and revision restore points until the batch is verified.
+
+The release remains local until the owner completes this gate, commits the reviewed source, and verifies the published deployment.
 
 ## Beta 0.9.6 earnings-attribution gate
 

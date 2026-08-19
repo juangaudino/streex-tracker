@@ -13,12 +13,13 @@ import {
 } from "@/lib/store";
 import type { StoreContext } from "./types";
 import type { DayEntry, EarningsSnapshot, ShiftSession, WeekRecord } from "@/lib/types";
-import { Copy, Eye, Pencil, Plus, RotateCcw, ShieldCheck, Trash2, Trophy } from "lucide-react";
+import { Copy, Eye, FileSpreadsheet, Pencil, Plus, RotateCcw, ShieldCheck, Trash2, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createHistoricalShift, getShiftMiles, resolveShiftRate, shiftDurationHours, updateShiftBoundaryTime } from "@/lib/shiftIntelligence";
 import { replaceShiftMileage } from "@/lib/mileageAttribution";
 import { replaceShiftTotalRideCount } from "@/lib/rideAttribution";
 import { isRewardApp } from "@/lib/rewardIncome";
+import HistoricalImportDialog from "@/components/HistoricalImportDialog";
 
 function timeInputValue(value?: string): string {
   if (!value) return "";
@@ -43,7 +44,7 @@ function formatShiftTime(value?: string): string {
 }
 
 export default function HistoryPage() {
-  const { weeks, settings, earningsSnapshots, earningsAttributions, deleteWeek, addWeek, getWeekRevisions, restoreRevision, updateWeek } =
+  const { weeks, settings, earningsSnapshots, earningsAttributions, deleteWeek, addWeek, getWeekRevisions, restoreRevision, updateWeek, reload } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -54,6 +55,7 @@ export default function HistoryPage() {
   const [recoveryWeekId, setRecoveryWeekId] = useState<string | null>(null);
   const [revisionsByWeek, setRevisionsByWeek] = useState<Record<string, Awaited<ReturnType<typeof getWeekRevisions>>>>({});
   const [loadingRevisions, setLoadingRevisions] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const sorted = [...weeks].sort(
     (a, b) => b.startDate.localeCompare(a.startDate)
@@ -187,15 +189,40 @@ export default function HistoryPage() {
 
   if (sorted.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground">No saved weeks yet.</p>
+      <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold">History</h1>
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+            <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Import historical data
+          </Button>
+        </div>
+        <div className="flex min-h-[45vh] items-center justify-center rounded-xl border border-dashed border-border">
+          <p className="text-muted-foreground">No saved weeks yet. Download the template to add your history.</p>
+        </div>
+        <HistoricalImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          weeks={weeks}
+          settings={settings}
+          addWeek={addWeek}
+          updateWeek={updateWeek}
+          reload={reload}
+        />
       </div>
     );
   }
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4">
-      <h1 className="text-2xl font-bold">History</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">History</h1>
+          <p className="text-xs text-muted-foreground">Review, repair, or add historical weeks without touching the current Entry flow.</p>
+        </div>
+        <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+          <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Import historical data
+        </Button>
+      </div>
       <div className="space-y-3">
         {sorted.map((w) => {
           const total = weekTotal(w);
@@ -473,6 +500,15 @@ export default function HistoryPage() {
           );
         })}
       </div>
+      <HistoricalImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        weeks={weeks}
+        settings={settings}
+        addWeek={addWeek}
+        updateWeek={updateWeek}
+        reload={reload}
+      />
     </div>
   );
 }

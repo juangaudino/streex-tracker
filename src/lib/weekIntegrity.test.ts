@@ -19,7 +19,7 @@ describe("canonical data integrity contracts", () => {
     expect(getWeekShiftHours(representativeAuditWeek)).toBe(8.5);
     const csv = buildEarningsCsv([representativeAuditWeek]);
     expect(csv).toContain("2026-06-29,2026-06-29,Monday,156.75,135.5,21.25");
-    expect(csv).toContain(",48.5,true,");
+    expect(csv).toContain(",48.5,3.5,6,true,");
   });
 
   it("detects corrupt attribution, mileage, overlap and snapshot transitions", () => {

@@ -6,6 +6,7 @@ import { dayTotal, weekTotal } from "@/lib/store";
 import { appBonusTotal } from "@/lib/rewardIncome";
 import { syncStoredLetters } from "@/lib/letterStore";
 import type { AppSettings, DayEntry, WeekRecord } from "@/lib/types";
+import { getDayRideCount, getDayShiftHours } from "@/lib/shiftIntelligence";
 
 export const EXPORT_VERSION = "5.3B.2";
 
@@ -211,6 +212,8 @@ export function buildEarningsCsv(weeks: WeekRecord[]): string {
     ...appColumns.map((column) => column.header),
     ...customApps,
     "businessMiles",
+    "workedHours",
+    "dailyRides",
     "isClosed",
     "notes",
   ];
@@ -228,6 +231,8 @@ export function buildEarningsCsv(weeks: WeekRecord[]): string {
           ...appColumns.map((column) => decimal(appValue(day, column.labels))),
           ...customApps.map((app) => decimal(safeNumber(day.apps?.[app]) + appBonusTotal(day, app))),
           decimal(safeNumber(day.mileage)),
+          decimal(getDayShiftHours(day)),
+          String(getDayRideCount(day)),
           Boolean(day.dayClosed),
           notes,
         ];

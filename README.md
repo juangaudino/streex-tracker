@@ -30,7 +30,7 @@ New contributors and new Codex chats should begin with:
 ## Current Production Status
 
 - Current public release: **Beta 0.9.6 — Earnings Attribution Integrity**
-- Current local source candidate: **Beta 0.9.6 — live attribution and weekday-efficiency QA refinement**
+- Current local source candidate: **Beta 0.9.7 — Historical Data Import (pending owner QA)**
 - Production app: `https://gig.getstreex.com`
 - Hosting: **Vercel**
 - DNS/domain: **Cloudflare** for `getstreex.com`

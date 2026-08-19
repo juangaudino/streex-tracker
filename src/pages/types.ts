@@ -12,8 +12,8 @@ export interface StoreContext {
   earningsAttributions: EarningsAttribution[];
   loading: boolean;
   hasLocalData: boolean;
-  addWeek: (w: WeekRecord) => void;
-  updateWeek: (w: WeekRecord, attributionIntents?: EarningsAttributionIntent[]) => Promise<boolean>;
+  addWeek: (w: WeekRecord) => Promise<boolean>;
+  updateWeek: (w: WeekRecord, attributionIntents?: EarningsAttributionIntent[], options?: { recordSnapshots?: boolean }) => Promise<boolean>;
   recordOperationalSnapshot: (draft: OperationalSnapshotDraft) => Promise<boolean>;
   saveEarningsAttribution: (snapshotId: string, intent: Omit<EarningsAttributionIntent, "dayDate" | "app" | "previousAmount" | "newAmount">) => Promise<boolean>;
   deleteWeek: (id: string) => void;

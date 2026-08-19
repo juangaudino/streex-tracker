@@ -2,6 +2,22 @@
 
 ## Beta Releases
 
+### Beta 0.9.7 — Historical Data Import (Local Candidate)
+
+### Added
+
+- History now offers a structured Excel template and a preview-first import flow for older earnings, daily hours, miles, rides, shifts, pauses, and bonuses.
+- The importer accepts the normalized Daily Earnings workbook plus CSV input, validates dates/numbers/turning points, and summarizes new and changed weeks before saving.
+- Historical day-level `worked_hours` and `daily_rides` are preserved when exact shift timing is unavailable; real shift boundaries and pauses remain available for precise operational metrics.
+
+### Data Integrity
+
+- Existing non-empty values are preserved by default; conflicts stop confirmation instead of silently overwriting History.
+- Source-total gaps are kept explicitly as `Unattributed` with a warning; unsupported values are never invented.
+- Historical imports suppress earnings-snapshot creation so old records do not appear to have been observed at import time.
+
+Status: local implementation pending owner QA, commit, and publication. Public version remains Beta 0.9.6.
+
 ### Beta 0.9.6 — Earnings Attribution Integrity
 
 ### Added

@@ -182,8 +182,8 @@ export function useWeekStore(user: User | null) {
 
   useEffect(() => { reload(); }, [reload]);
 
-  const addWeek = useCallback(async (w: WeekRecord) => {
-    if (!user) return;
+  const addWeek = useCallback(async (w: WeekRecord): Promise<boolean> => {
+    if (!user) return false;
     const normalizedWeek = normalizeLegacyBonusWeek(w);
     const integrityIssues = inspectWeekIntegrity(normalizedWeek);
     if (integrityIssues.length) {
@@ -204,12 +204,17 @@ export function useWeekStore(user: User | null) {
     if (error) {
       console.error("Save failed:", error);
       alert("Error saving week: " + error.message);
-      return;
+      return false;
     }
     await reload();
+    return true;
   }, [user, reload]);
 
-  const updateWeek = useCallback(async (w: WeekRecord, attributionIntents: EarningsAttributionIntent[] = []): Promise<boolean> => {
+  const updateWeek = useCallback(async (
+    w: WeekRecord,
+    attributionIntents: EarningsAttributionIntent[] = [],
+    options: { recordSnapshots?: boolean } = {},
+  ): Promise<boolean> => {
     if (!user) {
       console.warn("[weeks.updateWeek] skipped: no authenticated user", { weekId: w.id });
       return false;
@@ -265,7 +270,7 @@ export function useWeekStore(user: User | null) {
       const existingSnapshotKeys = new Set(
         earningsSnapshots.map((snapshot) => earningsSnapshotTransitionKey(snapshot)),
       );
-      const snapshotRows = buildEarningsSnapshotRows({
+      const snapshotRows = options.recordSnapshots === false ? [] : buildEarningsSnapshotRows({
         userId: user.id,
         previousWeek,
         nextWeek: normalizedWeek,

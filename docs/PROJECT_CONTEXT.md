@@ -23,7 +23,7 @@ Current release:
 
 Public: `Beta 0.9.6 — Earnings Attribution Integrity`
 
-Local source candidate: `Beta 0.9.6 — live attribution and weekday-efficiency QA refinement`
+Local source candidate: `Beta 0.9.7 — Historical Data Import (implemented locally; pending owner QA)`
 
 Older `V3.x` through `V5.x` labels are Alpha Archive history. Keep them for continuity, but do not use the old Alpha sequence for new beta work.
 

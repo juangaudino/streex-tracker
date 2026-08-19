@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-08-02
+Last updated: 2026-08-17
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -27,7 +27,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.9.6 - Live Attribution & Weekday Efficiency QA Refinement
+Beta 0.9.7 - Historical Data Import (implemented locally; pending owner QA)
 ```
 
 Source of truth:
@@ -149,6 +149,21 @@ The same candidate also hardens the live shift interaction: the header now uses
 one compact state trigger, while Quick Actions presents large Start, Pause,
 Resume, and End controls beside the two primary earnings updates. A synchronous
 single-flight guard prevents double taps before React can redraw the saving state.
+
+### 0.9.7 Historical Data Import (Local Candidate)
+
+Implemented locally on `main`; not yet committed or published. History now includes
+a downloadable Excel template and a preview-first import flow for Daily Earnings,
+Optional Shifts, Pauses, and Bonuses, with CSV compatibility for the normalized daily
+format. Validation catches malformed dates/numbers, duplicate or overlapping timing,
+conflicting metadata, mismatched ride/hour detail, and source totals below known detail.
+Existing non-empty values are preserved by default and conflicts block confirmation.
+Historical day-level `worked_hours` and `daily_rides` are retained when exact shift
+timing is unavailable; real shift boundaries and pauses create precise work blocks.
+The save path explicitly suppresses earnings snapshots for imported history, so an old
+record cannot appear to have been observed at import time. Owner QA should import a
+small historical sample, reload it, verify totals and metrics, then gradually backfill
+older weeks before publication.
 
 ## Backend Rules
 
@@ -488,9 +503,9 @@ Current planned sequence:
 - `Beta 0.9.3`: Live Work Mode - withdrawn and source archived
 - `Beta 0.9.4`: Operational Explorer & Driver Playbook - published and owner-verified
 - `Beta 0.9.5`: Release Certification & Performance - published
-- `Beta 0.9.6`: Earnings Attribution Integrity - published and in real-work stabilization; local QA refinement pending publication
-- `Beta 0.9.7`: Historical Data Import - planned next after stabilization
-- `Beta 0.9.8`: Deep Insights Productivity - planned
+- `Beta 0.9.6`: Earnings Attribution Integrity - published and in real-work stabilization
+- `Beta 0.9.7`: Historical Data Import - implemented locally; pending owner QA and publication
+- `Beta 0.9.8`: Deep Insights Productivity - planned next after 0.9.7 release
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
@@ -545,7 +560,7 @@ See `CHANGELOG.md` for full details.
 
 High priority:
 
-- Publish and certify Beta 0.9.6 only after attribution RLS, totals preservation, and cross-surface analytics agree.
+- Complete owner QA and publish Beta 0.9.7 only after import safety, totals preservation, no-snapshot behavior, and cross-surface analytics agree.
 - Configure two isolated QA identities in the GitHub `qa` environment for bidirectional RLS certification.
 - Keep monitoring login/session and SMTP confirmation/recovery delivery.
 - Validate Daily Report export on an installed iOS PWA during a future export-affecting release.
@@ -554,7 +569,7 @@ Medium priority:
 
 - Replace or evolve Ask My Data away from the Lovable AI dependency only after a deliberate provider decision; external AI replacement is intentionally deferred for now.
 - Stabilize the 0.9.6 attribution review workflow with real late-tip observations.
-- Plan and build the 0.9.7 preview-first historical CSV/Excel import workflow before importing multi-year data.
+- Run the 0.9.7 preview-first historical CSV/Excel import with a small known sample, then backfill multi-year data in reversible weekly batches.
 - Add 0.9.8 saved Operational Explorer filter presets and richer export only after import readiness.
 - Research aviation providers for Flight Reservation Tracker and Airport Pulse before building the next Utility Slot module.
 - Keep `docs/ASK_MY_DATA_CHALLENGE_SET.md` updated after Ask My Data fixes.

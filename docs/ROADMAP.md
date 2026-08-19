@@ -1,6 +1,6 @@
 # Streex Roadmap
 
-Last updated: 2026-08-02
+Last updated: 2026-08-17
 
 This is the living product roadmap for Streex Gig Earnings.
 
@@ -28,7 +28,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.9.6 - Live Attribution & Weekday Efficiency QA Refinement
+Beta 0.9.7 - Historical Data Import (implemented locally; pending owner QA)
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -219,17 +219,27 @@ Boundaries:
 
 ### Beta 0.9.7 - Historical Data Import
 
-Status: planned next after 0.9.6 stabilization.
+Status: implemented locally on `main`; pending owner QA, commit, and publication.
 
-Scope direction:
+Delivered locally:
 
-- Import historical CSV/Excel earnings through mapping, validation, dry-run preview, conflict detection, and an explicit final confirmation.
-- Preserve existing days by default and never bulk-write production without a reversible evidence trail.
-- Label imported records honestly when historical hours, miles, rides, shifts, or app attribution are unavailable.
+- Downloadable Excel workbook template with Daily Earnings, Optional Shifts, Pauses, Bonuses, App Names, and Example Rows sheets.
+- History import dialog with file parsing, dry-run preview, error/warning counts, week/change counts, and explicit final confirmation.
+- Validation for dates, numeric values, source totals, duplicate/overlapping shifts and pauses, day metadata, and app ride attribution.
+- Safe merge that preserves existing non-empty values, blocks conflicting values, deduplicates matching shifts/bonuses, and saves week-by-week through the existing revision-aware store.
+- Historical day-level worked hours and total rides when precise shift timing is unavailable; real boundaries and pauses become canonical work blocks.
+- Historical imports suppress earnings snapshot creation so import time is never presented as observation time.
+
+Owner QA gate before publication:
+
+- Import a small workbook containing one single-shift day, one multi-shift day with a pause, one day with only daily hours/rides, a bonus, an unknown field, and an intentional conflict.
+- Confirm preview errors block writes, warnings are understandable, existing values are preserved, and no new earnings snapshots appear.
+- Reload History and verify money, day/week totals, miles, rides, hours, records, Compare, Deep Insights, Operational Explorer, and exports.
+- Backfill older weeks in small batches and inspect Data Health after each batch; do not import the full multi-year archive in one click.
 
 ### Beta 0.9.8 - Deep Insights Productivity
 
-Status: planned.
+Status: planned next after 0.9.7 publication and initial historical-data QA.
 
 Scope direction:
 

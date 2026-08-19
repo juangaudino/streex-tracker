@@ -182,7 +182,9 @@ export function getWeekMiles(week: WeekRecord): number {
 }
 
 export function getDayRideCount(day: DayEntry): number {
-  return (day.shifts ?? []).reduce((sum, shift) => sum + Math.max(0, Math.trunc(Number(shift.rideCount) || 0)), 0);
+  const shiftTotal = (day.shifts ?? []).reduce((sum, shift) => sum + Math.max(0, Math.trunc(Number(shift.rideCount) || 0)), 0);
+  if (shiftTotal > 0) return shiftTotal;
+  return Math.max(0, Math.trunc(Number(day.rideCount) || 0));
 }
 
 export function getWeekRideCount(week: WeekRecord): number {
@@ -190,9 +192,11 @@ export function getWeekRideCount(week: WeekRecord): number {
 }
 
 export function getDayShiftHours(day: DayEntry, now = new Date()): number {
-  return round((day.shifts ?? []).reduce((sum, shift) => {
+  const shiftHours = round((day.shifts ?? []).reduce((sum, shift) => {
     return sum + (shift.endTime ? shiftDurationHours(shift) : activeShiftDurationHours(shift, now));
   }, 0));
+  if (shiftHours > 0) return shiftHours;
+  return Number.isFinite(day.workedHours) ? Math.max(0, Number(day.workedHours)) : 0;
 }
 
 export function getWeekShiftHours(week: WeekRecord): number {

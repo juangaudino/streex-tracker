@@ -2,6 +2,18 @@
 
 ## Beta Releases
 
+### Beta 0.9.11 — Deep Insights Productivity (Local Candidate)
+
+### Added
+
+- Operational Explorer can save and reapply recurring period, app, weekday, and operating-window views in the current browser for the signed-in account.
+- Operational Explorer can export its filtered summary, hourly profile, weekday profile, filters, and evidence coverage to CSV.
+
+### Data Integrity
+
+- Saved views are local browser convenience only: they never alter financial data, weeks, snapshots, attributions, or Supabase.
+- CSV exports retain the evidence source and timestamp-observed coverage so estimates remain distinguishable from confirmed observations.
+
 ### Beta 0.9.10 — Route Bundle Performance (Local Candidate)
 
 ### Performance

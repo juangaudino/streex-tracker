@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.9.10";
+export const CURRENT_VERSION = "0.9.11";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.11",
+    date: "2026-08",
+    title: "Deep Insights Productivity (Local Candidate)",
+    tags: ["new", "feature"],
+    items: [
+      "Operational Explorer can save and reapply recurring combinations of period, app, weekdays, and operating window from the current browser",
+      "Saved views remain scoped to the signed-in account locally and are never written into financial data or sent to Supabase",
+      "Operational Explorer can export its filtered summary, hourly profile, weekday profile, filters, and evidence coverage to CSV",
+      "Exports preserve Confirmed, Attributed, Estimated, Mixed, or Insufficient evidence context so spreadsheet review does not overstate precision",
+    ],
+  },
   {
     version: "0.9.10",
     date: "2026-08",

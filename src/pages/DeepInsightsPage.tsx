@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
 import {
@@ -41,6 +41,8 @@ import { cn } from "@/lib/utils";
 import type { StoreContext } from "./types";
 import OperationalExplorerPanel from "@/components/insights/OperationalExplorerPanel";
 import { buildOperationalExplorerData, type OperationalExplorerFilters } from "@/lib/operationalExplorer";
+import { buildOperationalExplorerCsv, downloadOperationalExplorerCsv } from "@/lib/operationalExplorerExport";
+import { addOperationalExplorerPreset, createOperationalExplorerPreset, readOperationalExplorerPresets, writeOperationalExplorerPresets, type OperationalExplorerPreset } from "@/lib/operationalExplorerPresets";
 
 const TIME_OPTIONS: Array<{ value: DeepInsightsTimePreset; label: string }> = [
   { value: "all", label: "All time" },
@@ -486,7 +488,7 @@ function Filters({
 }
 
 export default function DeepInsightsPage() {
-  const { weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, settings } = useOutletContext<StoreContext>();
+  const { weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, settings, user } = useOutletContext<StoreContext>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isDark } = useTheme();
   const ui = useMemo(() => getVisual(isDark), [isDark]);
@@ -502,6 +504,7 @@ export default function DeepInsightsPage() {
     windowStart: searchParams.get("windowStart") || "09:00",
     windowEnd: searchParams.get("windowEnd") || "17:00",
   }));
+  const [operationalPresets, setOperationalPresets] = useState<OperationalExplorerPreset[]>([]);
   const sym = settings.currencySymbol || "$";
   const data = useMemo(
     () => buildDeepInsightsData({ weeks, earningsSnapshots, earningsAttributions, filters, currencySymbol: sym }),
@@ -511,6 +514,9 @@ export default function DeepInsightsPage() {
     () => buildOperationalExplorerData({ weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, globalFilters: filters, operationalFilters }),
     [weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, filters, operationalFilters],
   );
+  useEffect(() => {
+    setOperationalPresets(readOperationalExplorerPresets(user?.id));
+  }, [user?.id]);
 
   function updateFilterUrl(nextFilters: DeepInsightsFilters, nextOperational = operationalFilters) {
     const next = new URLSearchParams(searchParams);
@@ -528,6 +534,19 @@ export default function DeepInsightsPage() {
 
   function changeFilters(next: DeepInsightsFilters) { setFilters(next); updateFilterUrl(next); }
   function changeOperationalFilters(next: OperationalExplorerFilters) { setOperationalFilters(next); updateFilterUrl(filters, next); }
+  function persistOperationalPresets(next: OperationalExplorerPreset[]) { setOperationalPresets(next); writeOperationalExplorerPresets(user?.id, next); }
+  function saveOperationalPreset(label: string) {
+    persistOperationalPresets(addOperationalExplorerPreset(operationalPresets, createOperationalExplorerPreset({ label, globalFilters: filters, operationalFilters })));
+  }
+  function applyOperationalPreset(preset: OperationalExplorerPreset) {
+    setFilters(preset.globalFilters);
+    setOperationalFilters(preset.operationalFilters);
+    updateFilterUrl(preset.globalFilters, preset.operationalFilters);
+  }
+  function deleteOperationalPreset(id: string) { persistOperationalPresets(operationalPresets.filter((preset) => preset.id !== id)); }
+  function exportOperationalExplorer() {
+    downloadOperationalExplorerCsv(buildOperationalExplorerCsv({ data: operationalData, globalFilters: filters, operationalFilters }));
+  }
 
   const trendData = data.days.filter((day) => day.earnings > 0);
   const hourlyWeeks = data.weeks.filter((week) => week.earningsPerHour !== null);
@@ -640,6 +659,11 @@ export default function DeepInsightsPage() {
           data={operationalData}
           filters={operationalFilters}
           onChange={changeOperationalFilters}
+          presets={operationalPresets}
+          onSavePreset={saveOperationalPreset}
+          onApplyPreset={applyOperationalPreset}
+          onDeletePreset={deleteOperationalPreset}
+          onExport={exportOperationalExplorer}
           playbook={{
             scope: data.rangeLabel,
             app: filters.app === "all" ? "All apps" : `${filters.app} contribution / worked hour`,

@@ -27,7 +27,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.9.10 - Route Bundle Performance (pending owner QA)
+Beta 0.9.11 - Deep Insights Productivity (pending owner QA)
 ```
 
 Source of truth:
@@ -176,6 +176,10 @@ The weekly Operations Snapshot headline now derives its operational `$ / hour`, 
 ### 0.9.10 Route Bundle Performance (Local Candidate)
 
 Route-only UI primitives and icons no longer inflate the shared authenticated entry bundle. Compare renders its small cumulative preview without the charting library and loads its detailed interactive chart only after the user opens it. Cumulative reference trends remain visible before the first current-week day is logged. Historical Excel import and image export remain on-demand actions. No app data, analytics logic, backend, or persisted values change.
+
+### 0.9.11 Deep Insights Productivity (Local Candidate)
+
+Operational Explorer now saves recurring filter combinations locally per signed-in account and browser, covering the selected period, app, weekdays, and operating window. Its CSV export includes the active filters, evidence source, timestamp-observed coverage, summary metrics, hourly profile, and weekday profile. These are convenience and analysis outputs only: no week, financial value, snapshot, attribution, or Supabase row is changed.
 
 ## Backend Rules
 
@@ -520,7 +524,7 @@ Current planned sequence:
 - `Beta 0.9.8`: Snapshot Correction Reconciliation - local candidate, pending owner QA
 - `Beta 0.9.9`: Operations Snapshot Integrity & Performance - local candidate, pending owner QA
 - `Beta 0.9.10`: Route Bundle Performance - local candidate, pending owner QA
-- `Beta 0.9.11`: Deep Insights Productivity - planned after import, correction, and bundle-release QA
+- `Beta 0.9.11`: Deep Insights Productivity - local candidate, pending owner QA
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
@@ -585,7 +589,7 @@ Medium priority:
 - Replace or evolve Ask My Data away from the Lovable AI dependency only after a deliberate provider decision; external AI replacement is intentionally deferred for now.
 - Stabilize the 0.9.6 attribution review workflow with real late-tip observations.
 - Run the 0.9.7 preview-first historical CSV/Excel import with a small known sample, then backfill multi-year data in reversible weekly batches.
-- Add 0.9.11 saved Operational Explorer filter presets and richer export only after import readiness.
+- Review 0.9.11 saved Operational Explorer views and CSV output alongside historical-import readiness; both preserve evidence labels and source data.
 - Research aviation providers for Flight Reservation Tracker and Airport Pulse before building the next Utility Slot module.
 - Keep `docs/ASK_MY_DATA_CHALLENGE_SET.md` updated after Ask My Data fixes.
 

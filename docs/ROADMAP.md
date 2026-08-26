@@ -28,7 +28,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.9.10 - Route Bundle Performance (pending owner QA)
+Beta 0.9.11 - Deep Insights Productivity (pending owner QA)
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -271,13 +271,13 @@ Delivered locally:
 
 ### Beta 0.9.11 - Deep Insights Productivity
 
-Status: planned after 0.9.7 historical-import and 0.9.8-0.9.10 correction-release QA.
+Status: local candidate; pending owner QA.
 
-Scope direction:
+Delivered locally:
 
-- Add saved Operational Explorer filter presets for recurring questions such as selected weekdays or time windows.
-- Improve filtered exports and comparison reuse without weakening Observed, Estimated, Mixed, or Insufficient evidence labels.
-- Evaluate only after 0.9.7 establishes the intended shape and trust rules for older data.
+- Save and reuse Operational Explorer views for recurring questions such as selected weekdays or time windows, scoped to the local browser and signed-in account.
+- Export the filtered operational summary, hourly profile, weekday profile, filters, evidence source, and observed coverage to CSV.
+- Preserve Confirmed, Attributed, Estimated, Mixed, or Insufficient evidence labels; saved views and exports never alter source data.
 
 ### Personal Context Tags - Market/Zone Candidate
 

@@ -23,7 +23,7 @@ Current release:
 
 Public: `Beta 0.9.6 — Earnings Attribution Integrity`
 
-Local source candidate: `Beta 0.9.8 — Snapshot Correction Reconciliation (pending owner QA)`
+Local source candidate: `Beta 0.9.9 — Operations Snapshot Integrity & Performance (pending owner QA)`
 
 Older `V3.x` through `V5.x` labels are Alpha Archive history. Keep them for continuity, but do not use the old Alpha sequence for new beta work.
 

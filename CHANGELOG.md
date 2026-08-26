@@ -2,6 +2,18 @@
 
 ## Beta Releases
 
+### Beta 0.9.9 — Operations Snapshot Integrity & Performance (Local Candidate)
+
+### Fixed
+
+- The Operations Snapshot weekly `$ / hour`, `$ / mile`, and `$ / ride` headline now uses the authoritative final operational total and actual worked duration, matching the rest of the app after a corrected accumulated Quick Update.
+- Exact-time earnings attribution now uses the reconciled net amount rather than an unreconciled raw snapshot delta.
+
+### Performance
+
+- Snapshot reconciliation and hourly attribution now run once per intelligence calculation instead of being rebuilt for each snapshot and then built a second time for the hourly map.
+- This removes unnecessary growing-history work from Quick Actions saves and route changes without altering earnings, shifts, or the append-only snapshot ledger.
+
 ### Beta 0.9.8 — Snapshot Correction Reconciliation (Local Candidate)
 
 ### Fixed

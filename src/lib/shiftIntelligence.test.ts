@@ -202,6 +202,22 @@ describe("shift intelligence", () => {
     });
   });
 
+  it("keeps the operations headline tied to the final weekly operational total after corrections", () => {
+    const shift = { id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00" };
+    const d = { ...day(0, 160, [shift]), apps: { Uber: 160 } };
+    const base = { userId: "u1", weekId: "w1", dayDate: d.date, app: "Uber", shiftId: shift.id };
+    const snapshots: EarningsSnapshot[] = [
+      { ...base, id: "first", previousAmount: 0, newAmount: 100, delta: 100, createdAt: "2026-05-04T08:30:00" },
+      { ...base, id: "mistake", previousAmount: 100, newAmount: 0, delta: -100, createdAt: "2026-05-04T09:00:00" },
+      { ...base, id: "recovery", previousAmount: 0, newAmount: 160, delta: 160, createdAt: "2026-05-04T09:30:00" },
+    ];
+
+    const intelligence = buildPatternIntelligence([week([d])], snapshots);
+
+    expect(intelligence.summary.earningsPerHour).toBe(80);
+    expect(intelligence.summary.earningsPerMile).toBeNull();
+  });
+
   it("builds pattern intelligence from completed shifts", () => {
     const weeks = [
       week([
@@ -314,7 +330,7 @@ describe("shift intelligence", () => {
     expect(result.hourlyHeatmap.find((item) => item.hour === 8)?.observations).toBe(2);
   });
 
-  it("excludes late earning adjustments from observed update timing", () => {
+  it("keeps late earning adjustments out of observed timing while the headline uses the final operational total", () => {
     const weeks = [
       week([
         day(0, 240, [{ id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00", miles: 24 }]),
@@ -336,7 +352,7 @@ describe("shift intelligence", () => {
 
     expect(result.timingSource).toBe("estimated");
     expect(result.timingCopy).toContain("spreading operational earnings");
-    expect(result.summary.earningsPerHour).toBeCloseTo(100.83);
+    expect(result.summary.earningsPerHour).toBeCloseTo(113.33);
   });
 
   it("excludes Octopus reward income from operational shift efficiency", () => {

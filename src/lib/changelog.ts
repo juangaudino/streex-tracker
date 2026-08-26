@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.9.8";
+export const CURRENT_VERSION = "0.9.9";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,17 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.9",
+    date: "2026-08",
+    title: "Operations Snapshot Integrity & Performance (Local Candidate)",
+    tags: ["fix", "polish"],
+    items: [
+      "Weekly Operations Snapshot rates now use the authoritative final operational earnings total and actual worked duration, so the headline agrees with Dashboard and Entry totals after a corrected Quick Update",
+      "Snapshot correction reconciliation and hourly attribution are calculated once per analytics pass instead of repeatedly for every saved observation, reducing Quick Actions and navigation work as snapshot history grows",
+      "Exact-time attributions now use their reconciled net earning amount; raw append-only snapshots and reported earnings remain unchanged",
+    ],
+  },
   {
     version: "0.9.8",
     date: "2026-08",

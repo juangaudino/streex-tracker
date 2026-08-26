@@ -27,7 +27,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.9.8 - Snapshot Correction Reconciliation (pending owner QA)
+Beta 0.9.9 - Operations Snapshot Integrity & Performance (pending owner QA)
 ```
 
 Source of truth:
@@ -168,6 +168,10 @@ older weeks before publication.
 ### 0.9.8 Snapshot Correction Reconciliation (Local Candidate)
 
 Temporary reductions in a Quick Update accumulated total, followed by a correction, are preserved in the append-only snapshot ledger but no longer become extra earnings in shift rates or hourly intelligence. The analytical layer nets the recovery against the earlier reduction before Shift Intelligence, Deep Insights, Operational Explorer, Driver Playbook, and Data Health consume it. The authoritative day total remains the control for completed single-shift days. No row, source amount, week JSON, or historical snapshot is rewritten; Data Health separately counts reconciled corrections and only warns when a correction remains unrecovered.
+
+### 0.9.9 Operations Snapshot Integrity & Performance (Local Candidate)
+
+The weekly Operations Snapshot headline now derives its operational `$ / hour`, `$ / mile`, and `$ / ride` directly from the authoritative final operational total and actual worked duration. Snapshot observations remain the evidence for timing and hourly rankings, but cannot lower or inflate the weekly headline after a temporary accumulated-total correction. Reconciliation and hourly attribution are shared across a single intelligence pass rather than rebuilt per snapshot, removing the growing-history performance cost from Quick Actions and navigation. Original snapshots, stored week JSON, and reported earnings are unchanged.
 
 ## Backend Rules
 
@@ -510,7 +514,8 @@ Current planned sequence:
 - `Beta 0.9.6`: Earnings Attribution Integrity - published and in real-work stabilization
 - `Beta 0.9.7`: Historical Data Import - implemented locally; pending owner QA and publication
 - `Beta 0.9.8`: Snapshot Correction Reconciliation - local candidate, pending owner QA
-- `Beta 0.9.9`: Deep Insights Productivity - planned after import and correction-release QA
+- `Beta 0.9.9`: Operations Snapshot Integrity & Performance - local candidate, pending owner QA
+- `Beta 0.9.10`: Deep Insights Productivity - planned after import and correction-release QA
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
@@ -575,7 +580,7 @@ Medium priority:
 - Replace or evolve Ask My Data away from the Lovable AI dependency only after a deliberate provider decision; external AI replacement is intentionally deferred for now.
 - Stabilize the 0.9.6 attribution review workflow with real late-tip observations.
 - Run the 0.9.7 preview-first historical CSV/Excel import with a small known sample, then backfill multi-year data in reversible weekly batches.
-- Add 0.9.9 saved Operational Explorer filter presets and richer export only after import readiness.
+- Add 0.9.10 saved Operational Explorer filter presets and richer export only after import readiness.
 - Research aviation providers for Flight Reservation Tracker and Airport Pulse before building the next Utility Slot module.
 - Keep `docs/ASK_MY_DATA_CHALLENGE_SET.md` updated after Ask My Data fixes.
 

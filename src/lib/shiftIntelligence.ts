@@ -462,10 +462,10 @@ function localDateKey(value: Date): string {
   ].join("-");
 }
 
-function buildSnapshotHourMap(weeks: WeekRecord[], earningsSnapshots: EarningsSnapshot[], earningsAttributions: EarningsAttribution[]) {
+function buildSnapshotHourMap(segments: ReturnType<typeof buildAttributedHourAmounts>) {
   const hourMap = new Map<number, { earnings: number; observations: number; appTotals: Record<string, number> }>();
   const seenByHour = new Set<string>();
-  for (const segment of buildAttributedHourAmounts({ weeks, snapshots: earningsSnapshots, attributions: earningsAttributions })) {
+  for (const segment of segments) {
     const hour = segment.hour;
     const current = hourMap.get(hour) ?? { earnings: 0, observations: 0, appTotals: {} };
     current.earnings += segment.amount;
@@ -564,22 +564,26 @@ export function buildPatternIntelligence(
     };
   });
   const attributedSegments = buildAttributedHourAmounts({ weeks, snapshots: earningsSnapshots, attributions: earningsAttributions });
-  const snapshotHourMap = buildSnapshotHourMap(weeks, earningsSnapshots, earningsAttributions);
+  const snapshotHourMap = buildSnapshotHourMap(attributedSegments);
   const snapshotObservationCount = [...snapshotHourMap.values()].reduce((sum, value) => sum + value.observations, 0);
   const hasSnapshotTimingData = snapshotObservationCount > 0;
   const timingSource = hasSnapshotTimingData ? "snapshot" : "estimated";
+  const reconciledSnapshotDeltas = reconcileEarningsSnapshotDeltas(earningsSnapshots).bySnapshotId;
   const seenPositive = new Set<string>();
   const positiveSnapshotTotal = earningsSnapshots.reduce((sum, snapshot) => {
-    if (Number(snapshot.delta) <= 0 || isRewardApp(snapshot.app)) return sum;
+    const effectiveDelta = reconciledSnapshotDeltas.get(snapshot.id)?.effectiveDelta ?? 0;
+    if (effectiveDelta <= 0 || isRewardApp(snapshot.app)) return sum;
     const key = earningsSnapshotTransitionKey(snapshot);
     if (seenPositive.has(key)) return sum;
     seenPositive.add(key);
-    return sum + Number(snapshot.delta);
+    return sum + effectiveDelta;
   }, 0);
   const safeSnapshotIds = new Set(attributedSegments.map((segment) => segment.snapshotId));
-  const safeSnapshotTotal = earningsSnapshots.reduce((sum, snapshot) => safeSnapshotIds.has(snapshot.id) ? sum + Math.max(0, Number(snapshot.delta) || 0) : sum, 0);
+  const safeSnapshotTotal = earningsSnapshots.reduce((sum, snapshot) => {
+    if (!safeSnapshotIds.has(snapshot.id)) return sum;
+    return sum + (reconciledSnapshotDeltas.get(snapshot.id)?.effectiveDelta ?? 0);
+  }, 0);
   const legacyBaseline = Math.max(0, totalShiftEarnings - positiveSnapshotTotal);
-  const performanceEarnings = positiveSnapshotTotal > 0 ? legacyBaseline + safeSnapshotTotal : totalShiftEarnings;
   const estimatedTotal = [...hourMap.values()].reduce((sum, value) => sum + value.earnings, 0);
   const estimatedScale = estimatedTotal > 0 ? legacyBaseline / estimatedTotal : 0;
   const hourlyHeatmap = hasSnapshotTimingData
@@ -637,9 +641,12 @@ export function buildPatternIntelligence(
     averageShiftHours: completedShifts > 0 ? round(completedHours / completedShifts) : null,
     totalMiles: round(totalMiles),
     totalRides,
-    earningsPerHour: totalHours > 0 ? round(performanceEarnings / totalHours) : null,
-    earningsPerMile: totalMiles > 0 ? round(performanceEarnings / totalMiles) : null,
-    earningsPerRide: totalRides > 0 ? round(performanceEarnings / totalRides) : null,
+    // This is the weekly operations headline, so it must reconcile to the
+    // authoritative operational total shown elsewhere in the app. Snapshot
+    // timing only determines hourly ranking detail, never the reported rate.
+    earningsPerHour: totalHours > 0 ? round(totalShiftEarnings / totalHours) : null,
+    earningsPerMile: totalMiles > 0 ? round(totalShiftEarnings / totalMiles) : null,
+    earningsPerRide: totalRides > 0 ? round(totalShiftEarnings / totalRides) : null,
     ridesPerHour: totalHours > 0 && totalRides > 0 ? round(totalRides / totalHours) : null,
     milesPerRide: totalRides > 0 ? round(totalMiles / totalRides) : null,
     minutesPerRide: totalRides > 0 && totalHours > 0 ? round((totalHours * 60) / totalRides) : null,

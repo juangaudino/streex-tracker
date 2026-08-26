@@ -28,7 +28,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.9.8 - Snapshot Correction Reconciliation (pending owner QA)
+Beta 0.9.9 - Operations Snapshot Integrity & Performance (pending owner QA)
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -248,9 +248,19 @@ Delivered locally:
 - Show recovered corrections as an informational Data Health count and retain a warning only when a correction remains unrecovered.
 - Add regression coverage for a decrease, recovery, reset to zero, and completed single-shift control total.
 
-### Beta 0.9.9 - Deep Insights Productivity
+### Beta 0.9.9 - Operations Snapshot Integrity & Performance
 
-Status: planned after 0.9.7 historical-import and 0.9.8 correction-reconciliation QA.
+Status: local candidate; pending owner QA.
+
+Delivered locally:
+
+- Make weekly Operations Snapshot `$ / hour`, `$ / mile`, and `$ / ride` agree with final operational earnings and actual worked duration after accumulated-total corrections.
+- Share reconciliation and attributed-hour work within each intelligence calculation to remove repeated snapshot scans during Quick Actions and navigation.
+- Keep raw snapshots, stored weeks, and reported totals unchanged.
+
+### Beta 0.9.10 - Deep Insights Productivity
+
+Status: planned after 0.9.7 historical-import and 0.9.8-0.9.9 correction-release QA.
 
 Scope direction:
 

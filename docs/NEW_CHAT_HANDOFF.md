@@ -18,7 +18,7 @@ Also read:
 
 - Product: Streex Gig Earnings App.
 - Current public release: `Beta 0.9.6 - Earnings Attribution Integrity`.
-- Current local source candidate: `Beta 0.9.7 - Historical Data Import (implemented locally; pending owner QA)`.
+- Current local source candidate: `Beta 0.9.9 - Operations Snapshot Integrity & Performance (pending owner QA)`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.
@@ -299,7 +299,7 @@ Design rules:
 
 - Latest public release: `Beta 0.9.6 - Earnings Attribution Integrity`.
 - Current local candidate: `Beta 0.9.7 - Historical Data Import (implemented locally; pending owner QA)`.
-- The next release gate is a small-sample import, reload, cross-surface totals check, no-new-snapshots check, and gradual backfill review before publication; `Beta 0.9.8 - Deep Insights Productivity` follows after that gate.
+- The next release gate is a small-sample import, reload, cross-surface totals check, no-new-snapshots check, and gradual backfill review before publication; `Beta 0.9.10 - Deep Insights Productivity` follows after current correction-release QA.
 - Do not normalize the weekly JSON model merely for scale; first solve silent write conflicts, recovery, and visible sync state for the owner's personal workflow.
 - The version number can move if a patch or urgent fix ships first.
 
@@ -517,4 +517,4 @@ Production variables live in Vercel. Do not print their values in chat or docs.
 5. If the local 0.9.7 importer is still pending, verify its preview, conflict gate, no-snapshot save path, and cross-surface totals before publication.
 6. Otherwise ask what the owner wants to tackle next, or plan the explicitly named roadmap item.
 
-The expected next product item after 0.9.6 stabilization is the owner QA/publication gate for the local Historical Data Import (`0.9.7`), followed by Deep Insights Productivity (`0.9.8`). Bug stabilization or infrastructure work may still take priority and should renumber the roadmap honestly.
+The expected next product item after the current correction-release QA is the owner QA/publication gate for the local Historical Data Import (`0.9.7`), followed by Deep Insights Productivity (`0.9.10`). Bug stabilization or infrastructure work may still take priority and should renumber the roadmap honestly.

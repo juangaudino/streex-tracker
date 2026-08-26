@@ -1,6 +1,6 @@
 import type { Database } from "@/integrations/supabase/types";
 import { isRewardApp, operationalDayTotal } from "./rewardIncome";
-import { earningsSnapshotTransitionKey, reconcileEarningsSnapshotDeltas } from "./earningsSnapshots";
+import { earningsSnapshotTransitionKey, reconcileEarningsSnapshotDeltas, type ReconciledEarningsSnapshot } from "./earningsSnapshots";
 import type {
   DayEntry,
   EarningsAttribution,
@@ -196,9 +196,10 @@ export function attributedHoursForSnapshot(args: {
   attribution?: EarningsAttribution;
   weeks: WeekRecord[];
   snapshots: EarningsSnapshot[];
+  reconciledDeltas?: Map<string, ReconciledEarningsSnapshot>;
 }): AttributedHourAmount[] {
-  const { snapshot, attribution, weeks, snapshots } = args;
-  const reconciled = reconcileEarningsSnapshotDeltas(snapshots).bySnapshotId;
+  const { snapshot, attribution, weeks, snapshots, reconciledDeltas } = args;
+  const reconciled = reconciledDeltas ?? reconcileEarningsSnapshotDeltas(snapshots).bySnapshotId;
   const effectiveDelta = reconciled.get(snapshot.id)?.effectiveDelta ?? 0;
   if (effectiveDelta <= 0 || isRewardApp(snapshot.app)) return [];
   const shiftId = effectiveShiftId(snapshot, attribution, weeks);
@@ -216,7 +217,7 @@ export function attributedHoursForSnapshot(args: {
     if (!isExactTimeInsideWorkedShift(shift, attribution.effectiveStartAt)) return [];
     const at = new Date(attribution.effectiveStartAt);
     if (Number.isNaN(at.getTime())) return [];
-    return [{ snapshotId: snapshot.id, app: snapshot.app, dayDate, shiftId, hour: at.getHours(), amount: round(attribution.amount), confidence: "confirmed" }];
+    return [{ snapshotId: snapshot.id, app: snapshot.app, dayDate, shiftId, hour: at.getHours(), amount: round(effectiveDelta), confidence: "confirmed" }];
   }
 
   let startAt = shift.startTime;
@@ -297,12 +298,19 @@ export function buildAttributedHourAmounts(args: {
   attributions?: EarningsAttribution[];
 }): AttributedHourAmount[] {
   const bySnapshot = new Map((args.attributions ?? []).map((item) => [item.snapshotId, item]));
+  const reconciledDeltas = reconcileEarningsSnapshotDeltas(args.snapshots).bySnapshotId;
   const seen = new Set<string>();
   return args.snapshots.flatMap((snapshot) => {
     const transition = earningsSnapshotTransitionKey(snapshot);
     if (seen.has(transition)) return [];
     seen.add(transition);
-    return attributedHoursForSnapshot({ snapshot, attribution: bySnapshot.get(snapshot.id), weeks: args.weeks, snapshots: args.snapshots });
+    return attributedHoursForSnapshot({
+      snapshot,
+      attribution: bySnapshot.get(snapshot.id),
+      weeks: args.weeks,
+      snapshots: args.snapshots,
+      reconciledDeltas,
+    });
   });
 }
 

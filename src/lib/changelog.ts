@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.9.6";
+export const CURRENT_VERSION = "0.9.8";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,17 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.8",
+    date: "2026-08",
+    title: "Snapshot Correction Reconciliation (Local Candidate)",
+    tags: ["fix"],
+    items: [
+      "Temporary downward corrections in accumulated app totals no longer turn their recovery into fictional new earnings",
+      "Shift rates, hourly intelligence, Deep Insights, Operational Explorer, and Data Health now reconcile the append-only snapshot history before using it analytically",
+      "The original snapshots, reported day totals, week JSON, and source earnings stay unchanged; recovered corrections are visible as a non-blocking Data Health count",
+    ],
+  },
   {
     version: "0.9.7",
     date: "2026-08",

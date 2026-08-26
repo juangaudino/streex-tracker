@@ -28,7 +28,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.9.7 - Historical Data Import (implemented locally; pending owner QA)
+Beta 0.9.8 - Snapshot Correction Reconciliation (pending owner QA)
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -237,9 +237,20 @@ Owner QA gate before publication:
 - Reload History and verify money, day/week totals, miles, rides, hours, records, Compare, Deep Insights, Operational Explorer, and exports.
 - Backfill older weeks in small batches and inspect Data Health after each batch; do not import the full multi-year archive in one click.
 
-### Beta 0.9.8 - Deep Insights Productivity
+### Beta 0.9.8 - Snapshot Correction Reconciliation
 
-Status: planned next after 0.9.7 publication and initial historical-data QA.
+Status: local candidate; pending owner QA.
+
+Delivered locally:
+
+- Preserve append-only snapshot rows while reconciling a temporary negative accumulated-total correction against its later recovery.
+- Keep recovered amounts from inflating Shift Intelligence, Deep Insights, Operational Explorer, Driver Playbook, or day performance calculations.
+- Show recovered corrections as an informational Data Health count and retain a warning only when a correction remains unrecovered.
+- Add regression coverage for a decrease, recovery, reset to zero, and completed single-shift control total.
+
+### Beta 0.9.9 - Deep Insights Productivity
+
+Status: planned after 0.9.7 historical-import and 0.9.8 correction-reconciliation QA.
 
 Scope direction:
 

@@ -1,4 +1,4 @@
-import { earningsSnapshotTransitionKey } from "./earningsSnapshots";
+import { earningsSnapshotTransitionKey, reconcileEarningsSnapshotDeltas } from "./earningsSnapshots";
 import type { EarningsAttribution, EarningsSnapshot, OperationalSnapshot, WeekRecord } from "./types";
 import { inspectSnapshotIntegrity, inspectWeekIntegrity, type IntegrityIssue, type IntegritySeverity } from "./weekIntegrity";
 import { inspectOperationalSnapshot } from "./operationalSnapshots";
@@ -21,6 +21,7 @@ export interface DataHealthSummary {
   operationalSnapshotsChecked: number;
   attributionsChecked: number;
   pendingAttributions: number;
+  reconciledSnapshotCorrections: number;
   issueCount: number;
   criticalIssueCount: number;
   warningIssueCount: number;
@@ -109,6 +110,14 @@ export function summarizeDataHealth(params: {
     "Earnings event has no safe operational time and is excluded from hourly rankings until reviewed.",
     "P2",
   )));
+  const snapshotReconciliation = reconcileEarningsSnapshotDeltas(snapshots);
+  const unresolvedCorrections = snapshotReconciliation.corrections.filter((item) => item.outstandingAmount > 0.009);
+  issues.push(...unresolvedCorrections.map((item) => issue(
+    `snapshot-correction:${item.key}`,
+    "SNAPSHOT_CORRECTION_UNRESOLVED",
+    "An accumulated-total decrease has not been recovered yet. Reported earnings remain authoritative; timing metrics exclude the unresolved correction.",
+    "P2",
+  )));
 
   const countsBySeverity = issues.reduce<Record<IntegritySeverity, number>>((counts, item) => {
     counts[item.severity] += 1;
@@ -134,7 +143,7 @@ export function summarizeDataHealth(params: {
       "SHIFT_OUTSIDE_DAY", "INVERTED_SHIFT", "BLOCK_OUTSIDE_SHIFT", "INVERTED_BLOCK", "OVERLAPPING_SHIFTS",
     ])),
     contract("snapshots", "Snapshot integrity", "Earnings snapshots remain arithmetic-correct, in-range, and non-duplicated.", issues, new Set([
-      "SNAPSHOT_DELTA_MISMATCH", "SNAPSHOT_OUTSIDE_WEEK", "DUPLICATE_SNAPSHOT_TRANSITION",
+      "SNAPSHOT_DELTA_MISMATCH", "SNAPSHOT_OUTSIDE_WEEK", "DUPLICATE_SNAPSHOT_TRANSITION", "SNAPSHOT_CORRECTION_UNRESOLVED",
     ])),
     contract("operational-snapshots", "Operational observations", "Quick Update observations stay append-only, non-negative, timestamped, and idempotent.", issues, new Set([
       "OPERATIONAL_SNAPSHOT_IDENTITY", "OPERATIONAL_SNAPSHOT_MILEAGE", "OPERATIONAL_SNAPSHOT_TIME", "OPERATIONAL_SNAPSHOT_VALUE", "OPERATIONAL_SNAPSHOT_WEEK", "DUPLICATE_OPERATIONAL_EVENT",
@@ -151,6 +160,7 @@ export function summarizeDataHealth(params: {
     operationalSnapshotsChecked: operationalSnapshots.length,
     attributionsChecked: earningsAttributions.length,
     pendingAttributions: attributionReview.length,
+    reconciledSnapshotCorrections: snapshotReconciliation.corrections.filter((item) => item.recoveredAmount > 0.009 && item.outstandingAmount <= 0.009).length,
     issueCount: issues.length,
     criticalIssueCount,
     warningIssueCount,

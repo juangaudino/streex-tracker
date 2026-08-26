@@ -145,6 +145,42 @@ describe("earnings attribution integrity", () => {
     expect(performance).toMatchObject({ earnings: 20, excludedFromEfficiency: 0 });
   });
 
+  it("keeps a correction recovery out of hourly earnings inflation", () => {
+    const correctionSnapshots: EarningsSnapshot[] = [
+      { ...lateSnapshot, id: "initial", previousAmount: 0, newAmount: 100, delta: 100, shiftId: shift.id, createdAt: "2026-07-10T13:30:00" },
+      { ...lateSnapshot, id: "mistake", previousAmount: 100, newAmount: 35, delta: -65, shiftId: shift.id, createdAt: "2026-07-10T14:00:00" },
+      { ...lateSnapshot, id: "recovery", previousAmount: 35, newAmount: 135, delta: 100, shiftId: shift.id, createdAt: "2026-07-10T14:30:00" },
+      { ...lateSnapshot, id: "new-income", previousAmount: 135, newAmount: 160, delta: 25, shiftId: shift.id, createdAt: "2026-07-10T15:00:00" },
+    ];
+    const correctionAttributions = correctionSnapshots
+      .filter((snapshot) => snapshot.delta > 0)
+      .map((snapshot) => attribution({
+        id: `attribution-${snapshot.id}`,
+        snapshotId: snapshot.id,
+        amount: snapshot.delta,
+        mode: "update_interval",
+        effectiveStartAt: shift.startTime,
+        effectiveEndAt: snapshot.createdAt,
+      }));
+    const correctedWeek: WeekRecord = { ...week, entries: [{ ...week.entries[0], apps: { Uber: 160 } }] };
+
+    const segments = correctionSnapshots.flatMap((snapshot) => attributedHoursForSnapshot({
+      snapshot,
+      attribution: correctionAttributions.find((item) => item.snapshotId === snapshot.id),
+      weeks: [correctedWeek],
+      snapshots: correctionSnapshots,
+    }));
+    const performance = resolveDayPerformanceEarnings({
+      day: correctedWeek.entries[0],
+      weeks: [correctedWeek],
+      snapshots: correctionSnapshots,
+      attributions: correctionAttributions,
+    });
+
+    expect(segments.reduce((sum, item) => sum + item.amount, 0)).toBeCloseTo(160);
+    expect(performance).toMatchObject({ earnings: 160, reportedOperationalEarnings: 160, excludedFromEfficiency: 0 });
+  });
+
   it("rejects exact attribution during a pause", () => {
     expect(isExactTimeInsideWorkedShift(shift, "2026-07-10T14:15:00")).toBe(false);
     expect(isExactTimeInsideWorkedShift(shift, "2026-07-10T14:45:00")).toBe(true);

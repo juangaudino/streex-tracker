@@ -1,5 +1,5 @@
 import { isRewardApp, operationalDayTotal } from "./rewardIncome";
-import { earningsSnapshotTransitionKey } from "./earningsSnapshots";
+import { earningsSnapshotTransitionKey, reconcileEarningsSnapshotDeltas } from "./earningsSnapshots";
 import { buildAttributedHourAmounts, effectiveShiftId } from "./earningsAttributions";
 import type { DayEntry, EarningsAttribution, EarningsSnapshot, ShiftSession, ShiftWorkBlock, WeekRecord } from "./types";
 import { getAccumulatedDayMileage, getEffectiveShiftMileage } from "./mileageAttribution";
@@ -247,6 +247,7 @@ function isSnapshotInsideShift(snapshot: EarningsSnapshot, shift: ShiftSession):
 
 function snapshotShiftEarnings(shift: ShiftSession, snapshots: EarningsSnapshot[] = [], attributions: EarningsAttribution[] = [], weeks: WeekRecord[] = []): ShiftEarningsResolution {
   const seen = new Set<string>();
+  const reconciled = reconcileEarningsSnapshotDeltas(snapshots).bySnapshotId;
   let total = 0;
   let count = 0;
 
@@ -263,7 +264,7 @@ function snapshotShiftEarnings(shift: ShiftSession, snapshots: EarningsSnapshot[
   });
 
   for (const snapshot of relevant) {
-    const delta = Number(snapshot.delta) || 0;
+    const delta = reconciled.get(snapshot.id)?.effectiveDelta ?? 0;
     if (delta <= 0) continue;
     const transitionKey = earningsSnapshotTransitionKey(snapshot);
     if (seen.has(transitionKey)) continue;
@@ -285,6 +286,7 @@ export function resolveShiftEarnings(
 ): ShiftEarningsResolution {
   const manual = money(shift.earnings);
   if (manual !== null) {
+    const reconciled = reconcileEarningsSnapshotDeltas(snapshots).bySnapshotId;
     const attributionBySnapshot = new Map(attributions.map((item) => [item.snapshotId, item]));
     const completedManualTotal = (day.shifts ?? []).filter((item) => item.endTime).reduce<number | null>((sum, item) => {
       const value = money(item.earnings);
@@ -298,12 +300,13 @@ export function resolveShiftEarnings(
     for (const snapshot of snapshots) {
       const attribution = attributionBySnapshot.get(snapshot.id);
       if (!attribution || attribution.status !== "resolved" || attribution.shiftId !== shift.id) continue;
-      if (Number(snapshot.delta) <= 0 || isRewardApp(snapshot.app) || isSnapshotInsideShift(snapshot, shift)) continue;
+      const effectiveDelta = reconciled.get(snapshot.id)?.effectiveDelta ?? 0;
+      if (effectiveDelta <= 0 || isRewardApp(snapshot.app) || isSnapshotInsideShift(snapshot, shift)) continue;
       if (snapshot.dayDate === day.date && manualAssignmentsAlreadyReconcileDay) continue;
       const key = earningsSnapshotTransitionKey(snapshot);
       if (seen.has(key)) continue;
       seen.add(key);
-      lateAttributed += Number(snapshot.delta);
+      lateAttributed += effectiveDelta;
       snapshotCount += 1;
     }
     return {
@@ -316,18 +319,20 @@ export function resolveShiftEarnings(
   const fromSnapshots = snapshotShiftEarnings(shift, snapshots, attributions, weeks);
   const completedShiftsForDay = (day.shifts ?? []).filter((item) => item.endTime).length;
   if (completedShiftsForDay === 1) {
+    const reconciled = reconcileEarningsSnapshotDeltas(snapshots).bySnapshotId;
     const seen = new Set<string>();
-    const positiveSnapshotTotal = snapshots.reduce((sum, snapshot) => {
-      if (snapshot.dayDate !== day.date || Number(snapshot.delta) <= 0 || isRewardApp(snapshot.app)) return sum;
+    const effectiveSnapshotTotal = snapshots.reduce((sum, snapshot) => {
+      const effectiveDelta = reconciled.get(snapshot.id)?.effectiveDelta ?? 0;
+      if (snapshot.dayDate !== day.date || effectiveDelta <= 0 || isRewardApp(snapshot.app)) return sum;
       const key = earningsSnapshotTransitionKey(snapshot);
       if (seen.has(key)) return sum;
       seen.add(key);
-      return sum + Number(snapshot.delta);
+      return sum + effectiveDelta;
     }, 0);
-    const baseline = Math.max(0, operationalDayTotal(day) - positiveSnapshotTotal);
+    const baseline = Math.max(0, operationalDayTotal(day) - effectiveSnapshotTotal);
     const attributed = fromSnapshots.earnings ?? 0;
     const earnings = round(baseline + attributed);
-    if (positiveSnapshotTotal > 0) {
+    if (effectiveSnapshotTotal > 0) {
       return earnings > 0
         ? { earnings, source: fromSnapshots.earnings !== null ? "snapshot" : "single-shift-day", snapshotCount: fromSnapshots.snapshotCount }
         : { earnings: null, source: "unavailable", snapshotCount: fromSnapshots.snapshotCount };

@@ -2,6 +2,19 @@
 
 ## Beta Releases
 
+### Beta 0.9.8 — Snapshot Correction Reconciliation (Local Candidate)
+
+### Fixed
+
+- A temporary lower accumulated app total followed by a correction can no longer inflate shift earnings, `$ / hour`, or hourly analytics.
+- Snapshot consumers now reconcile the net change within an app/day before treating any observation as new operational earnings.
+
+### Data Integrity
+
+- Original append-only snapshots, daily app totals, week JSON, and historical source data remain unchanged for audit.
+- Completed one-shift days reconcile their derived earnings against the authoritative final operational day total.
+- Data Health shows recovered corrections as an informational count and flags only corrections that remain unrecovered for timing review.
+
 ### Beta 0.9.7 — Historical Data Import (Local Candidate)
 
 ### Added

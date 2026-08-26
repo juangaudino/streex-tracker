@@ -387,6 +387,7 @@ export default function AdminPage() {
           <Metric label="Operational observations" value={dataHealth.operationalSnapshotsChecked} />
           <Metric label="Attributions" value={dataHealth.attributionsChecked} />
           <Metric label="Attribution pending" value={dataHealth.pendingAttributions} />
+          <Metric label="Corrections reconciled" value={dataHealth.reconciledSnapshotCorrections} />
           <Metric label="Critical Issues" value={dataHealth.criticalIssueCount} />
           <Metric label="Warnings" value={dataHealth.warningIssueCount} />
         </div>

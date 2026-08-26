@@ -57,4 +57,47 @@ describe("data health summary", () => {
     expect(summary.contracts.find((contract) => contract.id === "rides")?.status).toBe("fail");
     expect(summary.contracts.find((contract) => contract.id === "snapshots")?.status).toBe("fail");
   });
+
+  it("reports recovered snapshot corrections without treating them as data failures", () => {
+    const week = structuredClone(representativeAuditWeek);
+    const snapshots = [
+      { id: "before", previousAmount: 0, newAmount: 100, delta: 100, createdAt: "2026-06-29T09:00:00.000Z" },
+      { id: "correction", previousAmount: 100, newAmount: 35, delta: -65, createdAt: "2026-06-29T09:05:00.000Z" },
+      { id: "recovered", previousAmount: 35, newAmount: 135, delta: 100, createdAt: "2026-06-29T09:06:00.000Z" },
+    ].map((snapshot) => ({
+      ...snapshot,
+      userId: "user-1",
+      weekId: week.id,
+      dayDate: week.entries[0].date,
+      app: "Uber",
+      shiftId: week.entries[0].shifts?.[0]?.id ?? null,
+    }));
+
+    const summary = summarizeDataHealth({ weeks: [week], snapshots });
+
+    expect(summary.reconciledSnapshotCorrections).toBe(1);
+    expect(summary.issues.some((item) => item.code === "SNAPSHOT_CORRECTION_UNRESOLVED")).toBe(false);
+  });
+
+  it("flags a correction that remains unrecovered for timing review", () => {
+    const week = structuredClone(representativeAuditWeek);
+    const snapshots = [
+      { id: "before", previousAmount: 0, newAmount: 100, delta: 100, createdAt: "2026-06-29T09:00:00.000Z" },
+      { id: "correction", previousAmount: 100, newAmount: 35, delta: -65, createdAt: "2026-06-29T09:05:00.000Z" },
+    ].map((snapshot) => ({
+      ...snapshot,
+      userId: "user-1",
+      weekId: week.id,
+      dayDate: week.entries[0].date,
+      app: "Uber",
+      shiftId: week.entries[0].shifts?.[0]?.id ?? null,
+    }));
+
+    const summary = summarizeDataHealth({ weeks: [week], snapshots });
+
+    expect(summary.status).toBe("warning");
+    expect(summary.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "SNAPSHOT_CORRECTION_UNRESOLVED", severity: "P2" }),
+    ]));
+  });
 });

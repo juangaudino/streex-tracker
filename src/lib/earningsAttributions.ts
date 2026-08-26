@@ -1,6 +1,6 @@
 import type { Database } from "@/integrations/supabase/types";
 import { isRewardApp, operationalDayTotal } from "./rewardIncome";
-import { earningsSnapshotTransitionKey } from "./earningsSnapshots";
+import { earningsSnapshotTransitionKey, reconcileEarningsSnapshotDeltas } from "./earningsSnapshots";
 import type {
   DayEntry,
   EarningsAttribution,
@@ -198,7 +198,9 @@ export function attributedHoursForSnapshot(args: {
   snapshots: EarningsSnapshot[];
 }): AttributedHourAmount[] {
   const { snapshot, attribution, weeks, snapshots } = args;
-  if (Number(snapshot.delta) <= 0 || isRewardApp(snapshot.app)) return [];
+  const reconciled = reconcileEarningsSnapshotDeltas(snapshots).bySnapshotId;
+  const effectiveDelta = reconciled.get(snapshot.id)?.effectiveDelta ?? 0;
+  if (effectiveDelta <= 0 || isRewardApp(snapshot.app)) return [];
   const shiftId = effectiveShiftId(snapshot, attribution, weeks);
   if (!shiftId) return [];
   const dayDate = attribution?.attributedDayDate ?? snapshot.dayDate;
@@ -237,7 +239,10 @@ export function attributedHoursForSnapshot(args: {
   }
   const totalHours = overlaps.reduce((sum, item) => sum + item.hours, 0);
   if (totalHours <= 0) return [];
-  const amount = attribution?.status === "resolved" ? attribution.amount : Number(snapshot.delta);
+  // Attribution rows preserve the original positive transition for audit.
+  // Use the reconciled amount for analytics so a correction recovery cannot
+  // become a second earned interval.
+  const amount = effectiveDelta;
   return overlaps.map((item) => ({
     snapshotId: snapshot.id,
     app: snapshot.app,
@@ -258,13 +263,15 @@ export function resolveDayPerformanceEarnings(args: {
 }): { earnings: number; reportedOperationalEarnings: number; excludedFromEfficiency: number } {
   const snapshots = args.snapshots ?? [];
   const attributions = args.attributions ?? [];
+  const reconciled = reconcileEarningsSnapshotDeltas(snapshots).bySnapshotId;
   const seenObserved = new Set<string>();
   const observedPositive = snapshots.reduce((sum, snapshot) => {
-    if (snapshot.dayDate !== args.day.date || Number(snapshot.delta) <= 0 || isRewardApp(snapshot.app)) return sum;
+    const effectiveDelta = reconciled.get(snapshot.id)?.effectiveDelta ?? 0;
+    if (snapshot.dayDate !== args.day.date || effectiveDelta <= 0 || isRewardApp(snapshot.app)) return sum;
     const key = earningsSnapshotTransitionKey(snapshot);
     if (seenObserved.has(key)) return sum;
     seenObserved.add(key);
-    return sum + Number(snapshot.delta);
+    return sum + effectiveDelta;
   }, 0);
   const attributedSegments = args.attributedSegments ?? buildAttributedHourAmounts({ weeks: args.weeks, snapshots, attributions });
   const safeSnapshotIds = new Set(
@@ -272,7 +279,7 @@ export function resolveDayPerformanceEarnings(args: {
   );
   const safeAttributed = snapshots.reduce((sum, snapshot) => {
     if (!safeSnapshotIds.has(snapshot.id)) return sum;
-    return sum + Math.max(0, Number(snapshot.delta) || 0);
+    return sum + (reconciled.get(snapshot.id)?.effectiveDelta ?? 0);
   }, 0);
   const reportedOperationalEarnings = operationalDayTotal(args.day);
   const legacyBaseline = Math.max(0, reportedOperationalEarnings - observedPositive);

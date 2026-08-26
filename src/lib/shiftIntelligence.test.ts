@@ -184,6 +184,24 @@ describe("shift intelligence", () => {
     expect(resolveShiftRate(d, shift)).toMatchObject({ rate: 50, earnings: 100, source: "single-shift-day" });
   });
 
+  it("reconciles a corrected accumulated total before resolving a single-shift rate", () => {
+    const shift = { id: "s1", startTime: "2026-05-04T08:00:00", endTime: "2026-05-04T10:00:00" };
+    const d = { ...day(0, 160, [shift]), apps: { Uber: 160 } };
+    const base = { userId: "u1", weekId: "w1", dayDate: d.date, app: "Uber", shiftId: shift.id };
+    const snapshots: EarningsSnapshot[] = [
+      { ...base, id: "first", previousAmount: 0, newAmount: 100, delta: 100, createdAt: "2026-05-04T08:30:00" },
+      { ...base, id: "mistake", previousAmount: 100, newAmount: 35, delta: -65, createdAt: "2026-05-04T09:00:00" },
+      { ...base, id: "recovery", previousAmount: 35, newAmount: 135, delta: 100, createdAt: "2026-05-04T09:01:00" },
+      { ...base, id: "new-income", previousAmount: 135, newAmount: 160, delta: 25, createdAt: "2026-05-04T09:30:00" },
+    ];
+
+    expect(resolveShiftRate(d, shift, snapshots, [], [week([d])])).toMatchObject({
+      earnings: 160,
+      rate: 80,
+      source: "snapshot",
+    });
+  });
+
   it("builds pattern intelligence from completed shifts", () => {
     const weeks = [
       week([

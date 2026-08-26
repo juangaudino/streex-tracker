@@ -12,6 +12,28 @@ export interface EarningsSnapshotInsert {
   event_key: string;
 }
 
+export interface ReconciledEarningsSnapshot {
+  /** The original append-only observation. It is never rewritten. */
+  snapshotId: string;
+  /** The raw stored transition amount. It may be negative for a correction. */
+  rawDelta: number;
+  /**
+   * The net new earnings represented by this observation after a temporary
+   * downward correction has been recovered. This is safe to use in timing and
+   * shift-performance calculations.
+   */
+  effectiveDelta: number;
+  /** Portion of a positive transition that only restores an earlier total. */
+  recoveryAmount: number;
+}
+
+export interface SnapshotCorrectionSummary {
+  key: string;
+  snapshotIds: string[];
+  recoveredAmount: number;
+  outstandingAmount: number;
+}
+
 function money(value: unknown): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 0;
@@ -46,6 +68,73 @@ export function earningsSnapshotTransitionKey(snapshot: {
   const delta = money(snapshot.delta);
   const shiftId = snapshot.shift_id ?? snapshot.shiftId ?? "";
   return [userId, weekId, dayDate, snapshot.app, previousAmount, newAmount, delta, shiftId].join("|");
+}
+
+function correctionGroupKey(snapshot: EarningsSnapshot): string {
+  return [snapshot.userId, snapshot.weekId, snapshot.dayDate, snapshot.app].join("|");
+}
+
+/**
+ * Converts an append-only accumulated-total history into safe analytical
+ * increments. A temporary correction such as 100 -> 35 -> 135 contains a
+ * -65 and then +100 raw transition, but only +35 is genuinely new after the
+ * prior 100 total. We keep both raw rows for audit, while preventing the +65
+ * recovery from becoming fictional earnings.
+ */
+export function reconcileEarningsSnapshotDeltas(snapshots: EarningsSnapshot[]): {
+  bySnapshotId: Map<string, ReconciledEarningsSnapshot>;
+  corrections: SnapshotCorrectionSummary[];
+} {
+  const bySnapshotId = new Map<string, ReconciledEarningsSnapshot>();
+  const grouped = new Map<string, EarningsSnapshot[]>();
+  const seenTransitions = new Set<string>();
+
+  for (const snapshot of snapshots) {
+    const transition = earningsSnapshotTransitionKey(snapshot);
+    if (seenTransitions.has(transition)) continue;
+    seenTransitions.add(transition);
+    const key = correctionGroupKey(snapshot);
+    grouped.set(key, [...(grouped.get(key) ?? []), snapshot]);
+  }
+
+  const corrections: SnapshotCorrectionSummary[] = [];
+  for (const [key, group] of grouped) {
+    const ordered = [...group].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+    let correctionDebt = 0;
+    let recoveredAmount = 0;
+    const snapshotIds: string[] = [];
+
+    for (const snapshot of ordered) {
+      const rawDelta = money(snapshot.delta);
+      snapshotIds.push(snapshot.id);
+      if (rawDelta < 0) {
+        correctionDebt += Math.abs(rawDelta);
+        bySnapshotId.set(snapshot.id, {
+          snapshotId: snapshot.id,
+          rawDelta,
+          effectiveDelta: 0,
+          recoveryAmount: 0,
+        });
+        continue;
+      }
+
+      const recoveryAmount = Math.min(correctionDebt, rawDelta);
+      correctionDebt = money(correctionDebt - recoveryAmount);
+      recoveredAmount = money(recoveredAmount + recoveryAmount);
+      bySnapshotId.set(snapshot.id, {
+        snapshotId: snapshot.id,
+        rawDelta,
+        effectiveDelta: money(rawDelta - recoveryAmount),
+        recoveryAmount,
+      });
+    }
+
+    if (recoveredAmount > 0 || correctionDebt > 0) {
+      corrections.push({ key, snapshotIds, recoveredAmount, outstandingAmount: correctionDebt });
+    }
+  }
+
+  return { bySnapshotId, corrections };
 }
 
 export function dbToEarningsSnapshot(row: {

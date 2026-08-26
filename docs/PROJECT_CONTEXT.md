@@ -23,7 +23,7 @@ Current release:
 
 Public: `Beta 0.9.6 — Earnings Attribution Integrity`
 
-Local source candidate: `Beta 0.9.7 — Historical Data Import (implemented locally; pending owner QA)`
+Local source candidate: `Beta 0.9.8 — Snapshot Correction Reconciliation (pending owner QA)`
 
 Older `V3.x` through `V5.x` labels are Alpha Archive history. Keep them for continuity, but do not use the old Alpha sequence for new beta work.
 
@@ -95,7 +95,7 @@ Historical/optional tooling:
 ## Data Rules
 
 - Stored earnings remain raw numeric values.
-- Observed update timestamps are evidence of capture time, not automatic claims about earned time.
+- Observed update timestamps are evidence of capture time, not automatic claims about earned time. Temporary accumulated-total corrections are reconciled before analytics uses them as new earnings.
 - Operational timing uses explicit earnings attribution; unresolved adjustments remain in reported totals but outside hourly rankings.
 - Currency and regional formatting are display-only.
 - Exports must preserve raw numeric data.

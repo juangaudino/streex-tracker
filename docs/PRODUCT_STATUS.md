@@ -27,7 +27,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.9.9 - Operations Snapshot Integrity & Performance (pending owner QA)
+Beta 0.9.10 - Route Bundle Performance (pending owner QA)
 ```
 
 Source of truth:
@@ -172,6 +172,10 @@ Temporary reductions in a Quick Update accumulated total, followed by a correcti
 ### 0.9.9 Operations Snapshot Integrity & Performance (Local Candidate)
 
 The weekly Operations Snapshot headline now derives its operational `$ / hour`, `$ / mile`, and `$ / ride` directly from the authoritative final operational total and actual worked duration. Snapshot observations remain the evidence for timing and hourly rankings, but cannot lower or inflate the weekly headline after a temporary accumulated-total correction. Reconciliation and hourly attribution are shared across a single intelligence pass rather than rebuilt per snapshot, removing the growing-history performance cost from Quick Actions and navigation. Original snapshots, stored week JSON, and reported earnings are unchanged.
+
+### 0.9.10 Route Bundle Performance (Local Candidate)
+
+Route-only UI primitives and icons no longer inflate the shared authenticated entry bundle. Compare renders its small cumulative preview without the charting library and loads its detailed interactive chart only after the user opens it. Historical Excel import and image export remain on-demand actions. No app data, analytics logic, backend, or persisted values change.
 
 ## Backend Rules
 
@@ -515,7 +519,8 @@ Current planned sequence:
 - `Beta 0.9.7`: Historical Data Import - implemented locally; pending owner QA and publication
 - `Beta 0.9.8`: Snapshot Correction Reconciliation - local candidate, pending owner QA
 - `Beta 0.9.9`: Operations Snapshot Integrity & Performance - local candidate, pending owner QA
-- `Beta 0.9.10`: Deep Insights Productivity - planned after import and correction-release QA
+- `Beta 0.9.10`: Route Bundle Performance - local candidate, pending owner QA
+- `Beta 0.9.11`: Deep Insights Productivity - planned after import, correction, and bundle-release QA
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 
@@ -580,7 +585,7 @@ Medium priority:
 - Replace or evolve Ask My Data away from the Lovable AI dependency only after a deliberate provider decision; external AI replacement is intentionally deferred for now.
 - Stabilize the 0.9.6 attribution review workflow with real late-tip observations.
 - Run the 0.9.7 preview-first historical CSV/Excel import with a small known sample, then backfill multi-year data in reversible weekly batches.
-- Add 0.9.10 saved Operational Explorer filter presets and richer export only after import readiness.
+- Add 0.9.11 saved Operational Explorer filter presets and richer export only after import readiness.
 - Research aviation providers for Flight Reservation Tracker and Airport Pulse before building the next Utility Slot module.
 - Keep `docs/ASK_MY_DATA_CHALLENGE_SET.md` updated after Ask My Data fixes.
 

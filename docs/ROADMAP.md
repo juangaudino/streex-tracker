@@ -28,7 +28,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.9.9 - Operations Snapshot Integrity & Performance (pending owner QA)
+Beta 0.9.10 - Route Bundle Performance (pending owner QA)
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -258,9 +258,19 @@ Delivered locally:
 - Share reconciliation and attributed-hour work within each intelligence calculation to remove repeated snapshot scans during Quick Actions and navigation.
 - Keep raw snapshots, stored weeks, and reported totals unchanged.
 
-### Beta 0.9.10 - Deep Insights Productivity
+### Beta 0.9.10 - Route Bundle Performance
 
-Status: planned after 0.9.7 historical-import and 0.9.8-0.9.9 correction-release QA.
+Status: local candidate; pending owner QA.
+
+Delivered locally:
+
+- Stop forcing route-only Radix primitives and Lucide icons into the authenticated entry bundle.
+- Replace Compare's always-loaded Recharts preview with a lightweight SVG and load the detailed chart only on demand.
+- Preserve lazy Excel import and image export so normal Dashboard and Quick Actions flows do not download those actions.
+
+### Beta 0.9.11 - Deep Insights Productivity
+
+Status: planned after 0.9.7 historical-import and 0.9.8-0.9.10 correction-release QA.
 
 Scope direction:
 

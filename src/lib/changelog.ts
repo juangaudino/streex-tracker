@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.9.9";
+export const CURRENT_VERSION = "0.9.10";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,17 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.10",
+    date: "2026-08",
+    title: "Route Bundle Performance (Local Candidate)",
+    tags: ["fix", "polish"],
+    items: [
+      "Route-only icons and Radix primitives are no longer forced into the shared authenticated entry bundle; each workspace loads the UI it needs",
+      "Compare now renders its compact cumulative preview without the charting library and loads the detailed interactive chart only when opened",
+      "Historical Excel import and image export remain lazy actions, so their heavy dependencies stay outside normal Dashboard and Quick Actions loading",
+    ],
+  },
   {
     version: "0.9.9",
     date: "2026-08",

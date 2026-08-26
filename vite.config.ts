@@ -26,7 +26,10 @@ export default defineConfig(({ mode }) => ({
           if (!id.includes("node_modules")) return undefined;
           if (/node_modules\/(react|react-dom|react-router|react-router-dom|scheduler)\//.test(id)) return "react-vendor";
           if (id.includes("@supabase") || id.includes("@tanstack")) return "data-vendor";
-          if (id.includes("@radix-ui") || id.includes("lucide-react")) return "ui-vendor";
+          // Do not force every Radix primitive and icon used anywhere in the
+          // app into the authenticated entry bundle. Let Rollup keep these
+          // modules with the route that needs them, while still sharing any
+          // genuinely common UI code automatically.
           return undefined;
         },
       },

@@ -1,19 +1,11 @@
+import { lazy, Suspense, useState } from "react";
 import { ChevronRight, TrendingUp } from "lucide-react";
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import DiffValue from "@/components/DiffValue";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { formatCurrency } from "@/lib/store";
 import type { WeeklyComparisonPoint } from "@/lib/weeklyComparison";
+
+const WeeklyComparisonTrendDetail = lazy(() => import("./WeeklyComparisonTrendDetail"));
 
 interface WeeklyComparisonSectionProps {
   title: string;
@@ -52,29 +44,34 @@ const TONE_STYLES = {
   },
 } as const;
 
-function ComparisonTooltip({
-  active,
-  payload,
-  label,
-  symbol,
-}: {
-  active?: boolean;
-  payload?: Array<{ name: string; value: number; color: string }>;
-  label?: string;
-  symbol: string;
-}) {
-  if (!active || !payload?.length) return null;
+function previewPath(points: WeeklyComparisonPoint[], key: "currentCumulative" | "projectedCumulative" | "referenceCumulative") {
+  const values = points.flatMap((point) => [point.currentCumulative, point.projectedCumulative, point.referenceCumulative]).filter((value): value is number => value !== null);
+  if (!values.length) return "";
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(1, max - min);
+  let started = false;
+  return points.map((point, index) => {
+    const value = point[key];
+    if (value === null) {
+      started = false;
+      return "";
+    }
+    const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
+    const y = 92 - ((value - min) / range) * 84;
+    const command = started ? "L" : "M";
+    started = true;
+    return `${command}${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(" ");
+}
 
+function ComparisonTrendPreview({ points, referenceStroke }: { points: WeeklyComparisonPoint[]; referenceStroke: string }) {
   return (
-    <div className="rounded-lg border border-border bg-background/95 p-3 shadow-xl backdrop-blur">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      {payload.map((item) => (
-        <div key={item.name} className="flex items-center justify-between gap-5 text-sm">
-          <span style={{ color: item.color }}>{item.name}</span>
-          <span className="font-mono font-semibold">{formatCurrency(item.value, symbol)}</span>
-        </div>
-      ))}
-    </div>
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full" role="img" aria-label="Cumulative comparison trend preview">
+      <path d={previewPath(points, "referenceCumulative")} fill="none" stroke={referenceStroke} strokeWidth="2" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+      <path d={previewPath(points, "projectedCumulative")} fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+      <path d={previewPath(points, "currentCumulative")} fill="none" stroke="hsl(var(--primary))" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }
 
@@ -87,6 +84,7 @@ export default function WeeklyComparisonSection({
   symbol,
   tone = "previous",
 }: WeeklyComparisonSectionProps) {
+  const [trendOpen, setTrendOpen] = useState(false);
   const style = TONE_STYLES[tone];
   const trackedPoints = points.filter((point) => point.isTracked);
   const futurePoints = points.filter((point) => point.isFuture);
@@ -160,7 +158,7 @@ export default function WeeklyComparisonSection({
         )}
       </div>
 
-      {trackedPoints.length ? <Sheet>
+      {trackedPoints.length ? <Sheet open={trendOpen} onOpenChange={setTrendOpen}>
         <SheetTrigger asChild>
           <button
             type="button"
@@ -178,13 +176,7 @@ export default function WeeklyComparisonSection({
               </span>
             </div>
             <div className="h-20 w-full" aria-hidden="true">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={points} margin={{ top: 6, right: 4, bottom: 2, left: 4 }}>
-                  <Line type="monotone" dataKey="currentCumulative" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} connectNulls={false} />
-                  <Line type="monotone" dataKey="projectedCumulative" stroke="hsl(var(--primary))" strokeWidth={2} strokeDasharray="5 4" dot={false} connectNulls={false} />
-                  <Line type="monotone" dataKey="referenceCumulative" stroke={style.referenceStroke} strokeWidth={2} strokeDasharray="4 4" dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
+              <ComparisonTrendPreview points={points} referenceStroke={style.referenceStroke} />
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-4 rounded bg-primary" />This week</span>
@@ -198,27 +190,17 @@ export default function WeeklyComparisonSection({
             <SheetTitle>{title}</SheetTitle>
             <SheetDescription>Actual earnings, historical reference, and an estimated finish at your current tracked-day pace.</SheetDescription>
           </SheetHeader>
-          <div className="mt-6 h-72 w-full sm:h-96">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={points} margin={{ top: 10, right: 10, bottom: 4, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                <YAxis
-                  width={54}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value: number) => `${symbol}${Math.round(value)}`}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                />
-                <Tooltip content={<ComparisonTooltip symbol={symbol} />} />
-                <Legend verticalAlign="top" height={36} />
-                {lastTrackedDay ? <ReferenceLine x={lastTrackedDay} stroke="hsl(var(--border))" strokeDasharray="3 3" label={{ value: "Today", position: "insideTopRight", fill: "hsl(var(--muted-foreground))", fontSize: 11 }} /> : null}
-                <Line name="This week" type="monotone" dataKey="currentCumulative" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls={false} />
-                <Line name="Projected pace" type="monotone" dataKey="projectedCumulative" stroke="hsl(var(--primary))" strokeWidth={2.5} strokeDasharray="7 5" dot={false} connectNulls={false} />
-                <Line name={referenceLabel} type="monotone" dataKey="referenceCumulative" stroke={style.referenceStroke} strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 3 }} activeDot={{ r: 5 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {trendOpen ? (
+            <Suspense fallback={<div className="mt-6 grid h-72 w-full place-items-center text-sm text-muted-foreground sm:h-96">Loading chart…</div>}>
+              <WeeklyComparisonTrendDetail
+                points={points}
+                symbol={symbol}
+                referenceLabel={referenceLabel}
+                referenceStroke={style.referenceStroke}
+                lastTrackedDay={lastTrackedDay}
+              />
+            </Suspense>
+          ) : null}
           <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-4">
             <div className="flex items-center justify-between gap-4">
               <span className="text-sm font-medium">Difference at the current point</span>

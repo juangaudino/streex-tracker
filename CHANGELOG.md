@@ -2,6 +2,19 @@
 
 ## Beta Releases
 
+### Beta 0.9.10 — Route Bundle Performance (Local Candidate)
+
+### Performance
+
+- Route-only Radix primitives and Lucide icons are no longer forced into the common authenticated bundle; a workspace downloads the UI code it actually uses.
+- Compare now uses a lightweight SVG cumulative preview and loads the detailed Recharts view only after its “Cumulative trend” sheet opens.
+- Excel import and image export remain on-demand actions; neither dependency is part of normal Dashboard or Quick Actions loading.
+
+### Preserved Behavior
+
+- Comparison values, projections, detailed interactive charts, History import, and JPG export retain their existing behavior.
+- No earnings, snapshots, weeks, authentication, backend, or stored data changed.
+
 ### Beta 0.9.9 — Operations Snapshot Integrity & Performance (Local Candidate)
 
 ### Fixed

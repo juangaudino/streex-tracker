@@ -25,6 +25,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     items: [
       "Route-only icons and Radix primitives are no longer forced into the shared authenticated entry bundle; each workspace loads the UI it needs",
       "Compare now renders its compact cumulative preview without the charting library and loads the detailed interactive chart only when opened",
+      "Cumulative trends stay available before the first current-week entry whenever a historical reference exists",
       "Historical Excel import and image export remain lazy actions, so their heavy dependencies stay outside normal Dashboard and Quick Actions loading",
     ],
   },

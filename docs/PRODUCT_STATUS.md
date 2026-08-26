@@ -175,7 +175,7 @@ The weekly Operations Snapshot headline now derives its operational `$ / hour`, 
 
 ### 0.9.10 Route Bundle Performance (Local Candidate)
 
-Route-only UI primitives and icons no longer inflate the shared authenticated entry bundle. Compare renders its small cumulative preview without the charting library and loads its detailed interactive chart only after the user opens it. Historical Excel import and image export remain on-demand actions. No app data, analytics logic, backend, or persisted values change.
+Route-only UI primitives and icons no longer inflate the shared authenticated entry bundle. Compare renders its small cumulative preview without the charting library and loads its detailed interactive chart only after the user opens it. Cumulative reference trends remain visible before the first current-week day is logged. Historical Excel import and image export remain on-demand actions. No app data, analytics logic, backend, or persisted values change.
 
 ## Backend Rules
 

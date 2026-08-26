@@ -266,6 +266,7 @@ Delivered locally:
 
 - Stop forcing route-only Radix primitives and Lucide icons into the authenticated entry bundle.
 - Replace Compare's always-loaded Recharts preview with a lightweight SVG and load the detailed chart only on demand.
+- Keep cumulative reference trends visible before the first current-week day is logged.
 - Preserve lazy Excel import and image export so normal Dashboard and Quick Actions flows do not download those actions.
 
 ### Beta 0.9.11 - Deep Insights Productivity

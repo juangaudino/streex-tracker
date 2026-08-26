@@ -94,6 +94,7 @@ export default function WeeklyComparisonSection({
   const remainingToMatch = Math.max(0, referenceTotal - currentTotal);
   const requiredPerDay = futurePoints.length ? remainingToMatch / futurePoints.length : 0;
   const lastTrackedDay = trackedPoints.at(-1)?.day;
+  const hasTrend = points.some((point) => point.referenceCumulative > 0 || point.currentCumulative !== null);
 
   return (
     <section className={`overflow-hidden rounded-2xl border bg-card ${style.section}`}>
@@ -158,7 +159,7 @@ export default function WeeklyComparisonSection({
         )}
       </div>
 
-      {trackedPoints.length ? <Sheet open={trendOpen} onOpenChange={setTrendOpen}>
+      {hasTrend ? <Sheet open={trendOpen} onOpenChange={setTrendOpen}>
         <SheetTrigger asChild>
           <button
             type="button"
@@ -188,7 +189,7 @@ export default function WeeklyComparisonSection({
         <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-2xl pb-[max(env(safe-area-inset-bottom),1.25rem)] sm:inset-x-auto sm:left-1/2 sm:w-[min(48rem,calc(100vw-2rem))] sm:-translate-x-1/2">
           <SheetHeader className="pr-8 text-left">
             <SheetTitle>{title}</SheetTitle>
-            <SheetDescription>Actual earnings, historical reference, and an estimated finish at your current tracked-day pace.</SheetDescription>
+            <SheetDescription>{trackedPoints.length ? "Actual earnings, historical reference, and an estimated finish at your current tracked-day pace." : `Historical ${referenceLabel.toLowerCase()} reference. Log a day to begin your current-week trend and projection.`}</SheetDescription>
           </SheetHeader>
           {trendOpen ? (
             <Suspense fallback={<div className="mt-6 grid h-72 w-full place-items-center text-sm text-muted-foreground sm:h-96">Loading chart…</div>}>

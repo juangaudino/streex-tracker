@@ -8,6 +8,7 @@
 
 - Route-only Radix primitives and Lucide icons are no longer forced into the common authenticated bundle; a workspace downloads the UI code it actually uses.
 - Compare now uses a lightweight SVG cumulative preview and loads the detailed Recharts view only after its “Cumulative trend” sheet opens.
+- Cumulative trend remains available at the start of a week when historical comparison data exists, with clear copy until the first current-week entry creates a pace projection.
 - Excel import and image export remain on-demand actions; neither dependency is part of normal Dashboard or Quick Actions loading.
 
 ### Preserved Behavior

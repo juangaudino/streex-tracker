@@ -1,17 +1,25 @@
 import { describe, expect, it } from "vitest";
-import type { ShiftSession } from "./types";
+import type { DayEntry, ShiftSession } from "./types";
 import {
+  applyAccumulatedDayAppRideCount,
   formatRideAttribution,
+  getDayAppRideCount,
+  getDayUnattributedRideCount,
   getUnattributedRideCount,
   replaceShiftTotalRideCount,
   updateShiftAppRideCount,
 } from "./rideAttribution";
+import { getDayRideCount } from "./shiftIntelligence";
 
 const shift = (rides: number = 0): ShiftSession => ({
   id: "shift-1",
   startTime: "2026-07-03T08:00:00",
   rideCount: rides,
 });
+
+function dayWithShifts(shifts: ShiftSession[]): DayEntry {
+  return { dayName: "Friday", date: "2026-07-03", apps: { Uber: 0, Lyft: 0 }, shifts };
+}
 
 describe("ride attribution", () => {
   it("combines app-specific accumulated counts into the shift total", () => {
@@ -54,5 +62,63 @@ describe("ride attribution", () => {
     expect(replaced.rideCount).toBe(6);
     expect(replaced.ridesByApp).toBeUndefined();
     expect(replaced.legacyRideCount).toBe(6);
+  });
+
+  it("assigns only a daily app-total delta to a second shift", () => {
+    const first = updateShiftAppRideCount({ ...shift(), id: "first", startTime: "2026-07-03T08:00:00" }, "Uber", 10).shift;
+    const second = { ...shift(), id: "second", startTime: "2026-07-03T13:00:00" };
+    const update = applyAccumulatedDayAppRideCount(dayWithShifts([first, second]), "second", "Uber", 11);
+
+    expect(update.appRideDelta).toBe(1);
+    expect(getDayAppRideCount(update.day, "Uber")).toBe(11);
+    expect(update.day.shifts?.[0].ridesByApp).toEqual({ Uber: 10 });
+    expect(update.day.shifts?.[1].ridesByApp).toEqual({ Uber: 1 });
+    expect(getDayRideCount(update.day)).toBe(11);
+  });
+
+  it("keeps app totals independent across multiple shifts", () => {
+    const first = updateShiftAppRideCount({ ...shift(), id: "first", startTime: "2026-07-03T08:00:00" }, "Uber", 10).shift;
+    const withLyft = updateShiftAppRideCount(first, "Lyft", 2).shift;
+    const second = { ...shift(), id: "second", startTime: "2026-07-03T13:00:00" };
+    const uberUpdate = applyAccumulatedDayAppRideCount(dayWithShifts([withLyft, second]), "second", "Uber", 11);
+    const lyftUpdate = applyAccumulatedDayAppRideCount(uberUpdate.day, "second", "Lyft", 3);
+
+    expect(getDayAppRideCount(lyftUpdate.day, "Uber")).toBe(11);
+    expect(getDayAppRideCount(lyftUpdate.day, "Lyft")).toBe(3);
+    expect(lyftUpdate.day.shifts?.[1].ridesByApp).toEqual({ Uber: 1, Lyft: 1 });
+    expect(getDayRideCount(lyftUpdate.day)).toBe(14);
+  });
+
+  it("does not create a new ride delta when the daily total is repeated", () => {
+    const first = updateShiftAppRideCount({ ...shift(), id: "first", startTime: "2026-07-03T08:00:00" }, "Uber", 10).shift;
+    const second = updateShiftAppRideCount({ ...shift(), id: "second", startTime: "2026-07-03T13:00:00" }, "Uber", 1).shift;
+    const day = dayWithShifts([first, second]);
+    const update = applyAccumulatedDayAppRideCount(day, "second", "Uber", 11);
+
+    expect(update.appRideDelta).toBe(0);
+    expect(update.day).toBe(day);
+  });
+
+  it("removes a downward correction from the most recent known app rides first", () => {
+    const first = updateShiftAppRideCount({ ...shift(), id: "first", startTime: "2026-07-03T08:00:00" }, "Uber", 10).shift;
+    const second = updateShiftAppRideCount({ ...shift(), id: "second", startTime: "2026-07-03T13:00:00" }, "Uber", 2).shift;
+    const update = applyAccumulatedDayAppRideCount(dayWithShifts([first, second]), "second", "Uber", 11);
+
+    expect(update.appRideDelta).toBe(-1);
+    expect(update.day.shifts?.[0].ridesByApp).toEqual({ Uber: 10 });
+    expect(update.day.shifts?.[1].ridesByApp).toEqual({ Uber: 1 });
+    expect(getDayRideCount(update.day)).toBe(11);
+  });
+
+  it("refuses to guess an app total when a prior shift has unattributed rides", () => {
+    const legacy = { ...shift(10), id: "legacy", startTime: "2026-07-03T08:00:00" };
+    const active = { ...shift(), id: "active", startTime: "2026-07-03T13:00:00" };
+    const day = dayWithShifts([legacy, active]);
+    const update = applyAccumulatedDayAppRideCount(day, "active", "Uber", 11);
+
+    expect(getDayUnattributedRideCount(day)).toBe(10);
+    expect(update.appRideDelta).toBe(0);
+    expect(update.unattributedRideCount).toBe(10);
+    expect(update.day).toBe(day);
   });
 });

@@ -27,7 +27,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.9.11 - Deep Insights Productivity (pending owner QA)
+Beta 0.9.12 - Multi-Shift Ride Accumulation Integrity (pending owner QA)
 ```
 
 Source of truth:
@@ -180,6 +180,10 @@ Route-only UI primitives and icons no longer inflate the shared authenticated en
 ### 0.9.11 Deep Insights Productivity (Local Candidate)
 
 Operational Explorer now saves recurring filter combinations locally per signed-in account and browser, covering the selected period, app, weekdays, and operating window. Its CSV export includes the active filters, evidence source, timestamp-observed coverage, summary metrics, hourly profile, and weekday profile. These are convenience and analysis outputs only: no week, financial value, snapshot, attribution, or Supabase row is changed.
+
+### 0.9.12 Multi-Shift Ride Accumulation Integrity (Local Candidate)
+
+Quick Actions now accepts rides as each app's accumulated total for the day, matching the established earnings and mileage workflow. It calculates only the difference and assigns that delta to the active shift, so a second shift cannot duplicate rides already recorded in the first. Corrections reduce recent known app rides first. Existing rides without app ownership are preserved and block a risky app-total update rather than being guessed or rewritten. No historical record, earnings, mileage, snapshot, attribution, or Supabase row is automatically changed.
 
 ## Backend Rules
 
@@ -525,6 +529,7 @@ Current planned sequence:
 - `Beta 0.9.9`: Operations Snapshot Integrity & Performance - local candidate, pending owner QA
 - `Beta 0.9.10`: Route Bundle Performance - local candidate, pending owner QA
 - `Beta 0.9.11`: Deep Insights Productivity - local candidate, pending owner QA
+- `Beta 0.9.12`: Multi-Shift Ride Accumulation Integrity - local candidate, pending owner QA
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 

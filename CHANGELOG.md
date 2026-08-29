@@ -2,6 +2,19 @@
 
 ## Beta Releases
 
+### Beta 0.9.12 — Multi-Shift Ride Accumulation Integrity (Local Candidate)
+
+### Fixed
+
+- Quick Actions now treats rides like earnings and mileage: enter the accumulated app total for today, and only the difference is assigned to the active shift.
+- Starting a second shift no longer turns a daily Uber total such as `10 → 11` into `10 + 11 = 21` rides.
+- Downward corrections reduce the most recent known app rides first without creating negative values.
+
+### Data Integrity
+
+- Existing rides with no app assignment are not guessed or rewritten. Quick Actions asks the driver to leave rides blank for that save rather than duplicate an uncertain app total.
+- No historical week, ride, mileage, earnings, snapshot, attribution, or Supabase row is automatically rewritten.
+
 ### Beta 0.9.11 — Deep Insights Productivity (Local Candidate)
 
 ### Added

@@ -19,7 +19,7 @@ import { triggerCelebration } from "@/components/RecordCelebration";
 import { createShift, endActiveShift, getActiveShift, getDayMiles, getDayShiftHours, getShiftMiles, hasActiveShift, isShiftPaused, pauseActiveShift, resumePausedShift, shiftDurationHours } from "@/lib/shiftIntelligence";
 import { isRewardApp } from "@/lib/rewardIncome";
 import { normalizeDecimalDraft, parseDecimalDraft } from "@/lib/decimalInput";
-import { getAppRideCount, updateShiftAppRideCount } from "@/lib/rideAttribution";
+import { applyAccumulatedDayAppRideCount, getAppRideCount, getDayAppRideCount, getDayUnattributedRideCount } from "@/lib/rideAttribution";
 import { applyAccumulatedDayMileage } from "@/lib/mileageAttribution";
 import { createOperationalEventKey } from "@/lib/operationalSnapshots";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -148,15 +148,12 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     const previousAmount = Number(today.apps?.[app]) || 0;
     const positiveDelta = appTotal - previousAmount;
     const rideUpdate = activeShift && rides !== null
-      ? updateShiftAppRideCount(activeShift, app, rides)
+      ? applyAccumulatedDayAppRideCount(today, activeShift.id, app, rides)
       : null;
     const entries = openWeek.entries.map((d, i) => {
       if (i !== resolvedIdx) return d;
       const nextApps = { ...d.apps, [app]: appTotal };
-      const shifts = (d.shifts ?? []).map((shift) => {
-        if (!activeShift || shift.id !== activeShift.id) return shift;
-        return rideUpdate?.shift ?? shift;
-      });
+      const shifts = rideUpdate?.day.shifts ?? d.shifts ?? [];
       let nextDay: DayEntry = {
         ...d,
         apps: nextApps,
@@ -291,8 +288,8 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     setAttributionChoice(active ? "automatic" : "pending");
     setAttributionShiftId(active?.id ?? "");
     setAttributionExactAt("");
-    const appRides = active ? getAppRideCount(active, app) : null;
-    setLocalRideCount(appRides !== null && appRides > 0 ? String(appRides) : "");
+    const appRidesToday = getDayAppRideCount(today, app);
+    setLocalRideCount(appRidesToday > 0 ? String(appRidesToday) : "");
   }
 
   function openFullEntry() {
@@ -401,6 +398,10 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     || (attributionChoice === "automatic" && Boolean(todayActiveShift))
     || (attributionChoice === "shift" && Boolean(attributionShiftId))
     || (attributionChoice === "exact" && exactAttributionValid);
+  const selectedAppDayRides = quickApp ? getDayAppRideCount(today, quickApp) : 0;
+  const selectedAppShiftRides = quickApp && todayActiveShift ? getAppRideCount(todayActiveShift, quickApp) ?? 0 : 0;
+  const dayUnattributedRides = getDayUnattributedRideCount(today);
+  const rideUpdateReady = localRideCount.trim() === "" || dayUnattributedRides === 0;
 
   return (
     <div className={compactTrigger ? "shrink-0" : "bg-card rounded-xl border border-primary/20 p-4 space-y-3"}>
@@ -566,7 +567,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                         />
                       </label>
                       <label className="rounded-xl border border-border bg-background/60 p-3">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{quickApp} rides</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{quickApp} rides today</span>
                         <Input
                           type="text"
                           inputMode="numeric"
@@ -585,7 +586,17 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                     )}
                     {todayActiveShift && (
                       <p className="text-xs text-muted-foreground">
-                        Miles are today&apos;s accumulated total. Rides are the accumulated {quickApp} total only.
+                        Miles and rides are today&apos;s accumulated totals. Streex assigns only the ride change to this shift.
+                      </p>
+                    )}
+                    {todayActiveShift && (
+                      <p className="text-xs text-muted-foreground">
+                        Recorded: {selectedAppDayRides} {quickApp} rides today · {selectedAppShiftRides} in this shift.
+                      </p>
+                    )}
+                    {!rideUpdateReady && (
+                      <p className="text-xs text-destructive">
+                        Earlier rides have no app assignment. Leave rides blank for this save so Streex does not guess or duplicate them.
                       </p>
                     )}
                     {todayActiveShift && quickApp.toLowerCase() === "uber" && (
@@ -643,7 +654,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                       <Button type="button" variant="outline" onClick={() => setQuickApp(null)}>
                         Back
                       </Button>
-                      <Button type="button" disabled={!attributionReady || savingUpdate} onClick={() => handleQuickSave(quickApp)}>
+                      <Button type="button" disabled={!attributionReady || !rideUpdateReady || savingUpdate} onClick={() => handleQuickSave(quickApp)}>
                         {savingUpdate ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</> : "Save Update"}
                       </Button>
                     </div>

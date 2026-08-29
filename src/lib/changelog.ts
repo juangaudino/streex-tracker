@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.9.11";
+export const CURRENT_VERSION = "0.9.12";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.12",
+    date: "2026-08",
+    title: "Multi-Shift Ride Accumulation Integrity (Local Candidate)",
+    tags: ["fix"],
+    items: [
+      "Quick Actions now accepts an accumulated daily ride total for each app and assigns only its change to the active shift",
+      "A second shift no longer duplicates earlier same-app rides when a driver enters the current daily total",
+      "Downward ride corrections reduce the most recent known app rides first, without creating negative values",
+      "When older rides have no app assignment, Quick Actions leaves them untouched instead of guessing or duplicating app ownership",
+    ],
+  },
   {
     version: "0.9.11",
     date: "2026-08",

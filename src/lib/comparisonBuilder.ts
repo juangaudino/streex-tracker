@@ -1,6 +1,6 @@
 import { appBonusTotal, operationalDayTotal } from "./rewardIncome";
 import { dayTotal, formatCurrency } from "./store";
-import { getDayMiles, getDayRideCount, getDayShiftHours } from "./shiftIntelligence";
+import { buildPatternIntelligence, getDayMiles, getDayRideCount, getDayShiftHours, shiftDurationHours } from "./shiftIntelligence";
 import type { DayEntry, WeekRecord } from "./types";
 
 export type ComparisonBlockType = "day" | "week" | "month" | "year" | "custom";
@@ -36,6 +36,22 @@ export interface ComparisonMetrics {
   lowestActiveDay: ComparisonDayMetric | null;
   earningsGoalProgress: number | null;
   hoursGoalProgress: number | null;
+  /** Operational snapshot structure. These remain unavailable for app-only comparisons. */
+  totalShifts: number | null;
+  completedShifts: number | null;
+  activeShifts: number | null;
+  multiShiftDays: number | null;
+  averageShiftHours: number | null;
+  milesPerHour: number | null;
+  /** Exact Dashboard Operations Snapshot semantics, based only on work blocks. */
+  operationalHours: number | null;
+  operationalMiles: number | null;
+  operationalRides: number | null;
+  operationalWorkDays: number | null;
+  operationalEarningsPerHour: number | null;
+  operationalEarningsPerMile: number | null;
+  operationalEarningsPerRide: number | null;
+  operationalMilesPerHour: number | null;
 }
 
 export interface ComparisonResult {
@@ -51,6 +67,23 @@ export interface ComparisonData {
   appOptions: string[];
   insights: string[];
   appFilterActive: boolean;
+}
+
+export type OperationsRankingScope = "day" | "week" | "month";
+export type OperationsRankingMetric = "earningsPerHour" | "earningsPerMile" | "earningsPerRide" | "averagePerActiveDay" | "milesPerHour" | "earnings";
+
+export interface OperationsLeaderboardEntry {
+  result: ComparisonResult;
+  rank: number;
+  value: number;
+}
+
+function operationsRankingValue(metrics: ComparisonMetrics, metric: OperationsRankingMetric): number | null {
+  if (metric === "earningsPerHour") return metrics.operationalEarningsPerHour;
+  if (metric === "earningsPerMile") return metrics.operationalEarningsPerMile;
+  if (metric === "earningsPerRide") return metrics.operationalEarningsPerRide;
+  if (metric === "milesPerHour") return metrics.operationalMilesPerHour;
+  return metrics[metric];
 }
 
 const DAY_MS = 86_400_000;
@@ -154,6 +187,7 @@ export function buildComparisonResult(args: {
   block: ComparisonBlock;
   weeks: WeekRecord[];
   appFilter?: string;
+  includeOperations?: boolean;
 }): ComparisonResult {
   const { block, weeks } = args;
   const selectedApp = args.appFilter && args.appFilter !== "all" ? args.appFilter : null;
@@ -182,6 +216,24 @@ export function buildComparisonResult(args: {
   const rides = selectedApp ? null : dayRows.reduce((sum, row) => sum + (row.rides ?? 0), 0);
   const calendarDays = inclusiveDays(block.startDate, block.endDate);
   const trackedWeek = selectedApp ? null : matchingTrackedWeek(weeks, block);
+  const shifts = selectedApp ? [] : days.flatMap((day) => day.shifts ?? []);
+  const completedShifts = selectedApp ? null : shifts.filter((shift) => Boolean(shift.endTime));
+  const completedShiftHours = completedShifts === null
+    ? null
+    : completedShifts.reduce((sum, shift) => sum + shiftDurationHours(shift), 0);
+  const totalShifts = selectedApp ? null : shifts.length;
+  const activeShifts = selectedApp ? null : shifts.filter((shift) => !shift.endTime).length;
+  const multiShiftDays = selectedApp ? null : days.filter((day) => (day.shifts?.length ?? 0) > 1).length;
+  const operationSummary = selectedApp || args.includeOperations === false ? null : buildPatternIntelligence([{
+    id: `comparison-${block.id}`,
+    startDate: block.startDate,
+    endDate: block.endDate,
+    weeklyGoal: 0,
+    status: "closed",
+    entries: days,
+    createdAt: `${block.startDate}T00:00:00.000Z`,
+    updatedAt: `${block.endDate}T23:59:59.999Z`,
+  }]).summary;
   const bestRow = activeRows.length ? [...activeRows].sort((a, b) => b.earnings - a.earnings || a.day.date.localeCompare(b.day.date))[0] : null;
   const lowRow = activeRows.length ? [...activeRows].sort((a, b) => a.earnings - b.earnings || a.day.date.localeCompare(b.day.date))[0] : null;
 
@@ -213,6 +265,22 @@ export function buildComparisonResult(args: {
       lowestActiveDay: toDayMetric(lowRow),
       earningsGoalProgress: trackedWeek && trackedWeek.weeklyGoal > 0 ? money((earnings / trackedWeek.weeklyGoal) * 100) : null,
       hoursGoalProgress: trackedWeek && (trackedWeek.weeklyHoursGoal ?? 0) > 0 && hours !== null ? money((hours / (trackedWeek.weeklyHoursGoal ?? 0)) * 100) : null,
+      totalShifts,
+      completedShifts: completedShifts?.length ?? null,
+      activeShifts,
+      multiShiftDays,
+      averageShiftHours: completedShifts !== null && completedShifts.length > 0 && completedShiftHours !== null
+        ? money(completedShiftHours / completedShifts.length)
+        : null,
+      milesPerHour: miles !== null && hours !== null && hours > 0 ? money(miles / hours) : null,
+      operationalHours: operationSummary?.totalHours ?? null,
+      operationalMiles: operationSummary?.totalMiles ?? null,
+      operationalRides: operationSummary?.totalRides ?? null,
+      operationalWorkDays: operationSummary?.workDays ?? null,
+      operationalEarningsPerHour: operationSummary?.earningsPerHour ?? null,
+      operationalEarningsPerMile: operationSummary?.earningsPerMile ?? null,
+      operationalEarningsPerRide: operationSummary?.earningsPerRide ?? null,
+      operationalMilesPerHour: operationSummary?.milesPerHour ?? null,
     },
   };
 }
@@ -257,15 +325,64 @@ export function buildComparisonData(args: {
   weeks: WeekRecord[];
   appFilter?: string;
   currencySymbol?: string;
+  includeOperations?: boolean;
 }): ComparisonData {
   const appFilter = args.appFilter ?? "all";
-  const results = args.blocks.slice(0, 4).map((block) => buildComparisonResult({ block, weeks: args.weeks, appFilter }));
+  const results = args.blocks.slice(0, 4).map((block) => buildComparisonResult({ block, weeks: args.weeks, appFilter, includeOperations: args.includeOperations }));
   return {
     results,
     appOptions: allAppNames(args.weeks),
     appFilterActive: appFilter !== "all",
     insights: buildComparisonInsights(results, args.currencySymbol ?? "$", appFilter !== "all"),
   };
+}
+
+function operationRankingBlocks(weeks: WeekRecord[], scope: OperationsRankingScope, now: Date): ComparisonBlock[] {
+  const today = formatComparisonDate(now);
+  if (scope === "week") {
+    return weeks
+      .filter((week) => week.status === "closed" && week.endDate < today)
+      .sort((a, b) => b.startDate.localeCompare(a.startDate))
+      .map((week) => ({ id: `operation-week-${week.id}`, type: "week" as const, startDate: week.startDate, endDate: week.endDate }));
+  }
+
+  const days = [...normalizedDayIndex(weeks).values()];
+  if (scope === "day") {
+    return days
+      .filter((day) => day.date < today)
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .map((day) => ({ id: `operation-day-${day.date}`, type: "day" as const, startDate: day.date, endDate: day.date }));
+  }
+
+  const months = new Set(days.map((day) => day.date.slice(0, 7)).filter((month) => month < today.slice(0, 7)));
+  return [...months]
+    .sort((a, b) => b.localeCompare(a))
+    .map((month) => {
+      const range = comparisonRangeForType("month", `${month}-01`);
+      return { id: `operation-month-${month}`, type: "month" as const, ...range };
+    });
+}
+
+/**
+ * A ranked historical view of the same operational metrics shown in the
+ * Dashboard snapshot. Only completed historical periods participate so a
+ * building day/week/month is never presented as an apples-to-apples rank.
+ */
+export function buildOperationsLeaderboard(args: {
+  weeks: WeekRecord[];
+  scope: OperationsRankingScope;
+  metric: OperationsRankingMetric;
+  now?: Date;
+  limit?: number;
+}): OperationsLeaderboardEntry[] {
+  const blocks = operationRankingBlocks(args.weeks, args.scope, args.now ?? new Date());
+  const entries = blocks
+    .map((block) => buildComparisonResult({ block, weeks: args.weeks }))
+    .map((result) => ({ result, value: operationsRankingValue(result.metrics, args.metric) }))
+    .filter((entry): entry is { result: ComparisonResult; value: number } => typeof entry.value === "number" && Number.isFinite(entry.value) && entry.value > 0)
+    .sort((a, b) => b.value - a.value || a.result.block.startDate.localeCompare(b.result.block.startDate));
+
+  return entries.slice(0, args.limit ?? 5).map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
 export function buildDefaultComparisonBlocks(weeks: WeekRecord[], now = new Date()): ComparisonBlock[] {

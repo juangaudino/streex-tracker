@@ -27,7 +27,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.9.12 - Multi-Shift Ride Accumulation Integrity (pending owner QA)
+Beta 0.9.13 - Deep Insights Operations Snapshot Comparison (pending owner QA)
 ```
 
 Source of truth:
@@ -184,6 +184,10 @@ Operational Explorer now saves recurring filter combinations locally per signed-
 ### 0.9.12 Multi-Shift Ride Accumulation Integrity (Local Candidate)
 
 Quick Actions now accepts rides as each app's accumulated total for the day, matching the established earnings and mileage workflow. It calculates only the difference and assigns that delta to the active shift, so a second shift cannot duplicate rides already recorded in the first. Corrections reduce recent known app rides first. Existing rides without app ownership are preserved and block a risky app-total update rather than being guessed or rewritten. No historical record, earnings, mileage, snapshot, attribution, or Supabase row is automatically changed.
+
+### 0.9.13 Deep Insights Operations Snapshot Comparison (Local Candidate)
+
+Deep Insights → Compare now has an Operations Snapshot lens alongside the existing Performance lens. It compares the same duration, earnings-per-hour, mileage, rides, efficiency, shift-structure, and active-day metrics used by the Dashboard snapshot across two to four selected periods. A historical Operations Leaderboard can rank completed days, weeks, or months by a selected operational measure. The lens is intentionally all-app only, excludes building periods from full-period ranks, and calculates hourly efficiency with the Dashboard's canonical work-block rules so earnings without recorded work time do not distort the result. No persisted data, snapshots, or historical records are changed.
 
 ## Backend Rules
 
@@ -530,6 +534,7 @@ Current planned sequence:
 - `Beta 0.9.10`: Route Bundle Performance - local candidate, pending owner QA
 - `Beta 0.9.11`: Deep Insights Productivity - local candidate, pending owner QA
 - `Beta 0.9.12`: Multi-Shift Ride Accumulation Integrity - local candidate, pending owner QA
+- `Beta 0.9.13`: Deep Insights Operations Snapshot Comparison - local candidate, pending owner QA
 
 These numbers are planning labels, not immovable promises. If a bugfix, production patch, or smaller feature ships first, renumber the planned items while preserving the roadmap intent.
 

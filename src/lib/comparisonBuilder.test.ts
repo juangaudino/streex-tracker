@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildComparisonData, buildComparisonResult, buildDefaultComparisonBlocks, comparisonRangeForType } from "./comparisonBuilder";
+import { buildComparisonData, buildComparisonResult, buildDefaultComparisonBlocks, buildOperationsLeaderboard, comparisonRangeForType } from "./comparisonBuilder";
 import type { DayEntry, WeekRecord } from "./types";
 
 function day(date: string, dayName: DayEntry["dayName"], earnings: number, extras: Partial<DayEntry> = {}): DayEntry {
@@ -99,5 +99,35 @@ describe("advanced comparison builder", () => {
     });
     expect(data.results).toHaveLength(2);
     expect(data.insights[0]).toContain("Prior earned the most");
+  });
+
+  it("derives the dashboard-style operations structure without treating historical hours as a completed shift", () => {
+    const result = buildComparisonResult({
+      block: { id: "operations", type: "custom", startDate: "2026-06-15", endDate: "2026-06-17" },
+      weeks: [currentWeek],
+    });
+
+    expect(result.metrics.totalShifts).toBe(1);
+    expect(result.metrics.completedShifts).toBe(1);
+    expect(result.metrics.activeShifts).toBe(0);
+    expect(result.metrics.multiShiftDays).toBe(0);
+    expect(result.metrics.averageShiftHours).toBe(5);
+    expect(result.metrics.milesPerHour).toBe(20);
+    expect(result.metrics.operationalHours).toBe(5);
+    expect(result.metrics.operationalEarningsPerHour).toBe(30);
+    expect(result.metrics.operationalMilesPerHour).toBe(20);
+  });
+
+  it("ranks only closed historical weekly operation snapshots", () => {
+    const entries = buildOperationsLeaderboard({
+      weeks: [priorWeek, currentWeek],
+      scope: "week",
+      metric: "earningsPerHour",
+      now: new Date(2026, 5, 22, 12),
+    });
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({ rank: 1, value: 25 });
+    expect(entries[0].result.block.startDate).toBe("2026-06-08");
   });
 });

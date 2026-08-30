@@ -28,7 +28,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.9.12 - Multi-Shift Ride Accumulation Integrity (pending owner QA)
+Beta 0.9.13 - Deep Insights Operations Snapshot Comparison (pending owner QA)
 ```
 
 Deep Insights V1 added the first desktop-first analytics cockpit with:
@@ -289,6 +289,17 @@ Delivered locally:
 - Assign only the new daily app-ride delta to the active shift so multi-shift days retain correct total and per-shift counts.
 - Apply downward corrections from the most recent known app rides first, without negative values.
 - Preserve rides with unknown app ownership and block an unsafe app-total update rather than guessing historical attribution.
+
+### Beta 0.9.13 - Deep Insights Operations Snapshot Comparison
+
+Status: local candidate; pending owner QA.
+
+Delivered locally:
+
+- Add an Operations Snapshot lens to Deep Insights → Compare while preserving the existing earnings-focused Performance lens.
+- Compare Dashboard-consistent duration, hourly and mileage efficiency, rides, average shift, blocks, split days, and average active-day output across two to four periods.
+- Add a completed-period Operations Leaderboard for historical days, weeks, and months, with selectable operational metrics.
+- Keep the lens all-app only and prevent building periods or days without work-block evidence from creating misleading operational ranks.
 
 ### Personal Context Tags - Market/Zone Candidate
 

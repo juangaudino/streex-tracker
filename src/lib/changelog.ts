@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.9.12";
+export const CURRENT_VERSION = "0.9.13";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.13",
+    date: "2026-08",
+    title: "Deep Insights Operations Snapshot Comparison (Local Candidate)",
+    tags: ["new", "feature"],
+    items: [
+      "Deep Insights Compare now offers an Operations Snapshot lens with the same work, mileage, rides, efficiency, and shift-structure metrics used by the Dashboard snapshot",
+      "Two to four selected day, week, month, year, or custom periods can be compared without replacing the existing Performance lens",
+      "An Operations Leaderboard ranks completed historical days, weeks, or months by a selected operational metric while building periods stay out of full-period ranks",
+      "Operations Snapshot comparisons are all-app only and use canonical work-block semantics, so earnings without recorded work time do not inflate hourly efficiency",
+    ],
+  },
   {
     version: "0.9.12",
     date: "2026-08",

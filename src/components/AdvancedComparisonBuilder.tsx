@@ -1,19 +1,22 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { CalendarRange, Filter, Layers, Plus, RefreshCw, Scale, Trash2 } from "lucide-react";
+import { Activity, BarChart3, CalendarRange, Clock, Filter, Gauge, Layers, Plus, RefreshCw, Route, Scale, Trophy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   buildComparisonData,
   buildDefaultComparisonBlocks,
+  buildOperationsLeaderboard,
   comparisonRangeForType,
   formatComparisonDate,
   type ComparisonBlock,
   type ComparisonBlockType,
   type ComparisonMetrics,
   type ComparisonResult,
+  type OperationsRankingMetric,
+  type OperationsRankingScope,
 } from "@/lib/comparisonBuilder";
 import { formatCurrency } from "@/lib/store";
 import type { WeekRecord } from "@/lib/types";
@@ -34,6 +37,8 @@ interface MetricDefinition {
   highlight?: boolean;
   detail?: (result: ComparisonResult) => string | undefined;
 }
+
+type ComparisonLens = "performance" | "operations";
 
 const BLOCK_TYPES: Array<{ value: ComparisonBlockType; label: string }> = [
   { value: "day", label: "Day" },
@@ -133,8 +138,115 @@ function metricDefinitions(symbol: string): MetricDefinition[] {
   ];
 }
 
+function operationsMetricDefinitions(symbol: string): MetricDefinition[] {
+  const money = (value: number) => formatCurrency(value, symbol);
+  const compactMoney = (value: number) => `${symbol}${compactNumber(value)}`;
+  return [
+    { id: "operationalHours", label: "Duration", read: (m: ComparisonMetrics) => m.operationalHours, format: (v: number) => `${v.toFixed(1)}h`, axisFormat: (v: number) => `${compactNumber(v)}h` },
+    { id: "operationalEarningsPerHour", label: "Earnings / hour", read: (m: ComparisonMetrics) => m.operationalEarningsPerHour, format: (v: number) => `${money(v)}/hr`, axisFormat: compactMoney, highlight: true },
+    { id: "operationalMiles", label: "Miles", read: (m: ComparisonMetrics) => m.operationalMiles, format: (v: number) => v.toFixed(1), axisFormat: (v: number) => `${compactNumber(v)}mi` },
+    { id: "operationalEarningsPerMile", label: "Earnings / mile", read: (m: ComparisonMetrics) => m.operationalEarningsPerMile, format: (v: number) => `${money(v)}/mi`, axisFormat: compactMoney, highlight: true },
+    { id: "operationalRides", label: "Rides", read: (m: ComparisonMetrics) => m.operationalRides, format: (v: number) => String(Math.round(v)), axisFormat: compactNumber },
+    { id: "operationalEarningsPerRide", label: "Earnings / ride", read: (m: ComparisonMetrics) => m.operationalEarningsPerRide, format: money, axisFormat: compactMoney, highlight: true },
+    { id: "completedShifts", label: "Completed shifts", read: (m: ComparisonMetrics) => m.completedShifts, format: (v: number) => String(Math.round(v)), axisFormat: compactNumber },
+    { id: "averageShiftHours", label: "Average shift", read: (m: ComparisonMetrics) => m.averageShiftHours, format: (v: number) => `${v.toFixed(1)}h`, axisFormat: (v: number) => `${compactNumber(v)}h` },
+    { id: "totalShifts", label: "Blocks", read: (m: ComparisonMetrics) => m.totalShifts, format: (v: number) => String(Math.round(v)), axisFormat: compactNumber },
+    { id: "multiShiftDays", label: "Split days", read: (m: ComparisonMetrics) => m.multiShiftDays, format: (v: number) => String(Math.round(v)), axisFormat: compactNumber },
+    { id: "operationalMilesPerHour", label: "Miles / hour", read: (m: ComparisonMetrics) => m.operationalMilesPerHour, format: (v: number) => v.toFixed(1), axisFormat: compactNumber, highlight: true },
+    { id: "averagePerActiveDay", label: "Average / active day", read: (m: ComparisonMetrics) => m.averagePerActiveDay, format: money, axisFormat: compactMoney, highlight: true },
+    { id: "earnings", label: "Reported earnings", read: (m: ComparisonMetrics) => m.earnings, format: money, axisFormat: compactMoney },
+  ];
+}
+
+const RANKING_METRICS: Array<{ value: OperationsRankingMetric; label: string }> = [
+  { value: "earningsPerHour", label: "Earnings / hour" },
+  { value: "earningsPerMile", label: "Earnings / mile" },
+  { value: "earningsPerRide", label: "Earnings / ride" },
+  { value: "averagePerActiveDay", label: "Average / active day" },
+  { value: "milesPerHour", label: "Miles / hour" },
+  { value: "earnings", label: "Reported earnings" },
+];
+
 function compactNumber(value: number): string {
   return new Intl.NumberFormat("en-US", { notation: Math.abs(value) >= 10000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(value);
+}
+
+function OperationMetric({ icon, label, value, sub, primary = false }: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  sub: string;
+  primary?: boolean;
+}) {
+  return (
+    <div className={cn("min-w-0 rounded-xl border p-3", primary ? "border-primary/25 bg-primary/5" : "border-border bg-card/75")}>
+      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+        {icon}<span className="truncate">{label}</span>
+      </div>
+      <p className="mt-1 truncate font-mono text-lg font-bold">{value}</p>
+      <p className="truncate text-[11px] text-muted-foreground">{sub}</p>
+    </div>
+  );
+}
+
+function nullable(value: number | null | undefined, format: (value: number) => string): string {
+  return typeof value === "number" && Number.isFinite(value) ? format(value) : "—";
+}
+
+function OperationsSnapshotCards({ results, currencySymbol }: { results: ComparisonResult[]; currencySymbol: string }) {
+  return (
+    <section className="space-y-3">
+      <div>
+        <h3 className="text-sm font-bold tracking-wide">Operations Snapshot comparison</h3>
+        <p className="mt-1 text-xs text-muted-foreground">The same work, mileage, and efficiency view used by your weekly Operations Snapshot.</p>
+      </div>
+      <div className={cn("grid gap-3", results.length >= 3 ? "xl:grid-cols-3" : "xl:grid-cols-2")}>
+        {results.map((result, index) => {
+          const m = result.metrics;
+          const accent = accentFor(index);
+          const isLive = (m.activeShifts ?? 0) > 0;
+          return (
+            <article key={result.block.id} className="overflow-hidden rounded-2xl border border-primary/20 bg-primary/[0.045] p-4" style={{ borderTopColor: accent.color, borderTopWidth: 3 }}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: accent.darker }}>Operations snapshot</p>
+                  <h4 className="mt-1 truncate text-base font-bold">{result.displayLabel}</h4>
+                </div>
+                <span className={cn("shrink-0 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider", isLive ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300" : "bg-muted text-muted-foreground")}>
+                  {isLive ? `${m.activeShifts} live` : "Closed"}
+                </span>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <OperationMetric primary icon={<Clock className="h-3.5 w-3.5" />} label="Duration" value={nullable(m.operationalHours, (v) => `${v.toFixed(1)}h`)} sub={`${m.completedShifts ?? 0} completed`} />
+                <OperationMetric primary icon={<Activity className="h-3.5 w-3.5" />} label="Earnings/Hr" value={nullable(m.operationalEarningsPerHour, (v) => formatCurrency(v, currencySymbol))} sub="operational efficiency" />
+                <OperationMetric primary icon={<Route className="h-3.5 w-3.5" />} label="Miles" value={nullable(m.operationalMiles, (v) => v.toFixed(1))} sub={`${m.operationalWorkDays ?? 0} work day${m.operationalWorkDays === 1 ? "" : "s"}`} />
+                <OperationMetric primary icon={<Gauge className="h-3.5 w-3.5" />} label="Earnings/Mi" value={nullable(m.operationalEarningsPerMile, (v) => formatCurrency(v, currencySymbol))} sub={nullable(m.operationalMilesPerHour, (v) => `${v.toFixed(1)} mi/hr`)} />
+                <OperationMetric icon={<BarChart3 className="h-3.5 w-3.5" />} label="Rides" value={nullable(m.operationalRides, (v) => String(Math.round(v)))} sub={nullable(m.operationalEarningsPerRide, (v) => `${formatCurrency(v, currencySymbol)}/ride`)} />
+                <OperationMetric icon={<Clock className="h-3.5 w-3.5" />} label="Avg Shift" value={nullable(m.averageShiftHours, (v) => `${v.toFixed(1)}h`)} sub="completed only" />
+                <OperationMetric icon={<BarChart3 className="h-3.5 w-3.5" />} label="Blocks" value={nullable(m.totalShifts, (v) => String(Math.round(v)))} sub={`${m.multiShiftDays ?? 0} split day${m.multiShiftDays === 1 ? "" : "s"}`} />
+                <OperationMetric icon={<Activity className="h-3.5 w-3.5" />} label="Avg / Active Day" value={nullable(m.averagePerActiveDay, (v) => formatCurrency(v, currencySymbol))} sub="reported earnings" />
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function buildOperationsInsights(results: ComparisonResult[], currencySymbol: string): string[] {
+  if (results.length < 2) return [];
+  const withHourlyRate = results.filter((result) => (result.metrics.operationalEarningsPerHour ?? 0) > 0);
+  const hourlyLeader = [...withHourlyRate].sort((a, b) => (b.metrics.operationalEarningsPerHour ?? 0) - (a.metrics.operationalEarningsPerHour ?? 0))[0];
+  const mileageLeader = [...results].filter((result) => (result.metrics.operationalEarningsPerMile ?? 0) > 0)
+    .sort((a, b) => (b.metrics.operationalEarningsPerMile ?? 0) - (a.metrics.operationalEarningsPerMile ?? 0))[0];
+  const mostStructured = [...results].filter((result) => (result.metrics.totalShifts ?? 0) > 0)
+    .sort((a, b) => (b.metrics.totalShifts ?? 0) - (a.metrics.totalShifts ?? 0))[0];
+  return [
+    hourlyLeader && `${hourlyLeader.displayLabel} has the strongest measured hourly efficiency at ${formatCurrency(hourlyLeader.metrics.operationalEarningsPerHour ?? 0, currencySymbol)}/hr.`,
+    mileageLeader && `${mileageLeader.displayLabel} has the strongest measured mileage efficiency at ${formatCurrency(mileageLeader.metrics.operationalEarningsPerMile ?? 0, currencySymbol)}/mi.`,
+    mostStructured && `${mostStructured.displayLabel} contains the most recorded work blocks (${mostStructured.metrics.totalShifts}).`,
+  ].filter((insight): insight is string => Boolean(insight));
 }
 
 export default function AdvancedComparisonBuilder({ weeks, currencySymbol, viewTabs }: Props) {
@@ -146,10 +258,24 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol, viewT
     { id: "block-b", type: "day", startDate: todayString(), endDate: todayString() },
   ]);
   const [appFilter, setAppFilter] = useState(() => searchParams.get("compareApp") || "all");
+  const [lens, setLens] = useState<ComparisonLens>(() => searchParams.get("compareLens") === "operations" ? "operations" : "performance");
   const [chartMetric, setChartMetric] = useState("earnings");
+  const [rankingScope, setRankingScope] = useState<OperationsRankingScope>(() => {
+    const stored = searchParams.get("operationsRankScope");
+    return stored === "day" || stored === "month" ? stored : "week";
+  });
+  const [rankingMetric, setRankingMetric] = useState<OperationsRankingMetric>(() => {
+    const stored = searchParams.get("operationsRankMetric");
+    return RANKING_METRICS.some((item) => item.value === stored) ? stored as OperationsRankingMetric : "earningsPerHour";
+  });
 
-  const data = useMemo(() => buildComparisonData({ blocks, weeks, appFilter, currencySymbol }), [appFilter, blocks, currencySymbol, weeks]);
-  const metrics = useMemo(() => metricDefinitions(currencySymbol).filter((metric) => data.results.some((result) => metric.read(result.metrics) !== null)), [currencySymbol, data.results]);
+  const data = useMemo(() => buildComparisonData({ blocks, weeks, appFilter, currencySymbol, includeOperations: lens === "operations" }), [appFilter, blocks, currencySymbol, lens, weeks]);
+  const metrics = useMemo(() => (lens === "operations" ? operationsMetricDefinitions(currencySymbol) : metricDefinitions(currencySymbol))
+    .filter((metric) => data.results.some((result) => metric.read(result.metrics) !== null)), [currencySymbol, data.results, lens]);
+  const leaderboard = useMemo(() => lens === "operations"
+    ? buildOperationsLeaderboard({ weeks, scope: rankingScope, metric: rankingMetric })
+    : [], [lens, rankingMetric, rankingScope, weeks]);
+  const insights = useMemo(() => lens === "operations" ? buildOperationsInsights(data.results, currencySymbol) : data.insights, [currencySymbol, data.insights, data.results, lens]);
   const selectedChartMetric = metrics.find((metric) => metric.id === chartMetric) ?? metrics[0];
   const chartData = selectedChartMetric ? data.results.map((result, index) => ({
     label: result.displayLabel,
@@ -176,7 +302,7 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol, viewT
   const gridStroke = isDark ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.10)";
   const axisStroke = isDark ? "rgba(255,255,255,0.42)" : "rgba(15,23,42,0.48)";
 
-  function persist(nextBlocks: ComparisonBlock[], nextApp = appFilter) {
+  function persist(nextBlocks: ComparisonBlock[], nextApp = appFilter, nextLens = lens, nextRankingScope = rankingScope, nextRankingMetric = rankingMetric) {
     setBlocks(nextBlocks);
     setAppFilter(nextApp);
     const next = new URLSearchParams(searchParams);
@@ -184,7 +310,30 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol, viewT
     next.set("blocks", JSON.stringify(nextBlocks));
     if (nextApp === "all") next.delete("compareApp");
     else next.set("compareApp", nextApp);
+    if (nextLens === "operations") next.set("compareLens", "operations");
+    else next.delete("compareLens");
+    if (nextRankingScope === "week") next.delete("operationsRankScope");
+    else next.set("operationsRankScope", nextRankingScope);
+    if (nextRankingMetric === "earningsPerHour") next.delete("operationsRankMetric");
+    else next.set("operationsRankMetric", nextRankingMetric);
     setSearchParams(next, { replace: true });
+  }
+
+  function changeLens(nextLens: ComparisonLens) {
+    const nextApp = nextLens === "operations" ? "all" : appFilter;
+    setLens(nextLens);
+    if (nextLens === "operations") setAppFilter("all");
+    persist(blocks, nextApp, nextLens);
+  }
+
+  function changeRankingScope(nextScope: OperationsRankingScope) {
+    setRankingScope(nextScope);
+    persist(blocks, appFilter, lens, nextScope, rankingMetric);
+  }
+
+  function changeRankingMetric(nextMetric: OperationsRankingMetric) {
+    setRankingMetric(nextMetric);
+    persist(blocks, appFilter, lens, rankingScope, nextMetric);
   }
 
   function updateBlock(id: string, patch: Partial<ComparisonBlock>) {
@@ -253,8 +402,12 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol, viewT
                 <h2 className={cn("text-sm font-bold tracking-wide", text)}>Explore your data</h2>
               </div>
               <p className={cn("mt-1 text-xs leading-relaxed", muted)}>
-                Compare performance across two to four selected periods.
+                Compare two to four selected periods through earnings or operations.
               </p>
+            </div>
+            <div className={cn("inline-flex w-fit rounded-xl border p-1", isDark ? "border-white/10 bg-black/20" : "border-slate-200 bg-slate-50")}>
+              <button type="button" aria-pressed={lens === "performance"} onClick={() => changeLens("performance")} className={cn("rounded-lg px-3 py-1.5 text-xs font-bold transition", lens === "performance" ? "bg-primary text-primary-foreground" : muted)}>Performance</button>
+              <button type="button" aria-pressed={lens === "operations"} onClick={() => changeLens("operations")} className={cn("rounded-lg px-3 py-1.5 text-xs font-bold transition", lens === "operations" ? "bg-primary text-primary-foreground" : muted)}>Operations Snapshot</button>
             </div>
             {viewTabs}
           </div>
@@ -264,7 +417,8 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol, viewT
               <select
                 value={appFilter}
                 onChange={(event) => persist(blocks, event.target.value)}
-                className={cn("h-10 min-w-[10rem] rounded-xl border px-3 text-sm font-semibold outline-none transition", input)}
+                disabled={lens === "operations"}
+                className={cn("h-10 min-w-[10rem] rounded-xl border px-3 text-sm font-semibold outline-none transition disabled:cursor-not-allowed disabled:opacity-60", input)}
               >
                 <option value="all">All apps</option>
                 {data.appOptions.map((app) => <option key={app} value={app}>{app}</option>)}
@@ -284,6 +438,11 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol, viewT
             isDark ? "bg-[#E6CE20]/8 text-[#F8E875]" : "bg-[#FFF8B7]/60 text-slate-800",
           )}>
             App-only mode compares earnings. Hours, miles, rides, and efficiency stay hidden because they cannot be attributed reliably to one platform.
+          </div>
+        )}
+        {lens === "operations" && (
+          <div className={cn("mt-3 rounded-xl border px-3 py-2 text-xs leading-relaxed", isDark ? "border-sky-400/25 bg-sky-400/10 text-sky-100" : "border-sky-300 bg-sky-50 text-slate-700")}>
+            Operations Snapshot uses all apps. Streex does not assign hours, miles, rides, or efficiency to a single app unless that evidence exists reliably.
           </div>
         )}
       </section>
@@ -370,16 +529,22 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol, viewT
               </div>
 
               <div className={cn("mt-4 grid grid-cols-3 gap-2 rounded-xl border p-2", isDark ? "border-white/10 bg-black/20" : "border-slate-200 bg-slate-50/60")}>
-                <Summary label="Earnings" value={formatCurrency(result?.metrics.earnings ?? 0, currencySymbol)} muted={label} text={text} />
-                <Summary label="Active days" value={`${result?.metrics.activeDays ?? 0}`} muted={label} text={text} />
-                <Summary
-                  label="Per active day"
-                  value={result?.metrics.averagePerActiveDay !== null && result?.metrics.averagePerActiveDay !== undefined
-                    ? formatCurrency(result.metrics.averagePerActiveDay, currencySymbol)
-                    : "—"}
-                  muted={label}
-                  text={text}
-                />
+                {lens === "operations" ? <>
+                  <Summary label="Duration" value={nullable(result?.metrics.operationalHours, (v) => `${v.toFixed(1)}h`)} muted={label} text={text} />
+                  <Summary label="Earnings/hr" value={nullable(result?.metrics.operationalEarningsPerHour, (v) => formatCurrency(v, currencySymbol))} muted={label} text={text} />
+                  <Summary label="Blocks" value={nullable(result?.metrics.totalShifts, (v) => String(Math.round(v)))} muted={label} text={text} />
+                </> : <>
+                  <Summary label="Earnings" value={formatCurrency(result?.metrics.earnings ?? 0, currencySymbol)} muted={label} text={text} />
+                  <Summary label="Active days" value={`${result?.metrics.activeDays ?? 0}`} muted={label} text={text} />
+                  <Summary
+                    label="Per active day"
+                    value={result?.metrics.averagePerActiveDay !== null && result?.metrics.averagePerActiveDay !== undefined
+                      ? formatCurrency(result.metrics.averagePerActiveDay, currencySymbol)
+                      : "—"}
+                    muted={label}
+                    text={text}
+                  />
+                </>}
               </div>
 
               <p className={cn("mt-3 text-[10px] font-mono", quiet)}>
@@ -390,6 +555,8 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol, viewT
         })}
         </div>
       </section>
+
+      {lens === "operations" && <OperationsSnapshotCards results={data.results} currencySymbol={currencySymbol} />}
 
       {/* Chart panel */}
       <section className={cn("rounded-2xl border p-4 md:p-5 backdrop-blur", panel)}>
@@ -503,15 +670,66 @@ export default function AdvancedComparisonBuilder({ weeks, currencySymbol, viewT
         </div>
       </section>
 
+      {lens === "operations" && (
+        <section className={cn("rounded-2xl border p-4 md:p-5 backdrop-blur", panel)}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-[#E6CE20]" />
+              <div>
+                <h3 className={cn("text-sm font-bold tracking-wide", text)}>Operations leaderboard</h3>
+                <p className={cn("text-xs", muted)}>Completed historical periods only. A building period never receives a full-period rank.</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <select value={rankingScope} onChange={(event) => changeRankingScope(event.target.value as OperationsRankingScope)} className={cn("h-9 rounded-lg border px-3 text-xs outline-none", input)}>
+                <option value="day">Days</option>
+                <option value="week">Weeks</option>
+                <option value="month">Months</option>
+              </select>
+              <select value={rankingMetric} onChange={(event) => changeRankingMetric(event.target.value as OperationsRankingMetric)} className={cn("h-9 rounded-lg border px-3 text-xs outline-none", input)}>
+                {RANKING_METRICS.map((metric) => <option key={metric.value} value={metric.value}>{metric.label}</option>)}
+              </select>
+            </div>
+          </div>
+          {leaderboard.length ? (
+            <ol className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+              {leaderboard.map((entry) => {
+                const metric = RANKING_METRICS.find((item) => item.value === rankingMetric)?.label ?? "Metric";
+                const unit = rankingMetric === "earningsPerHour" ? "/hr" : rankingMetric === "earningsPerMile" ? "/mi" : rankingMetric === "earningsPerRide" ? "/ride" : rankingMetric === "milesPerHour" ? " mi/hr" : "";
+                const value = rankingMetric === "milesPerHour"
+                  ? entry.value.toFixed(1)
+                  : rankingMetric === "earnings" || rankingMetric === "averagePerActiveDay" || rankingMetric === "earningsPerHour" || rankingMetric === "earningsPerMile" || rankingMetric === "earningsPerRide"
+                    ? formatCurrency(entry.value, currencySymbol)
+                    : String(entry.value);
+                return (
+                  <li key={entry.result.block.id} className={cn("flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5", isDark ? "border-white/10 bg-black/20" : "border-slate-200 bg-slate-50/65")}>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="font-mono text-lg font-bold text-[#D8BD00]">#{entry.rank}</span>
+                      <div className="min-w-0">
+                        <p className={cn("truncate text-sm font-semibold", text)}>{entry.result.displayLabel}</p>
+                        <p className={cn("text-[10px] uppercase tracking-wider", quiet)}>{metric}</p>
+                      </div>
+                    </div>
+                    <span className={cn("shrink-0 font-mono text-sm font-bold", text)}>{value}{unit}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <p className={cn("mt-3 rounded-xl border p-3 text-sm", isDark ? "border-white/10 bg-black/20" : "border-slate-200 bg-slate-50/65", muted)}>No completed {rankingScope}s have enough recorded operational data for this metric yet.</p>
+          )}
+        </section>
+      )}
+
       {/* Narrative */}
       <section className={cn("rounded-2xl border p-4 md:p-5 backdrop-blur", panel)}>
         <div className="flex items-center gap-2">
           <CalendarRange className="h-4 w-4 text-[#E6CE20]" />
           <h3 className={cn("text-sm font-bold tracking-wide", text)}>What changed</h3>
         </div>
-        {data.insights.length > 0 ? (
+        {insights.length > 0 ? (
           <div className="mt-3 grid gap-2 md:grid-cols-2">
-            {data.insights.map((insight) => (
+            {insights.map((insight) => (
               <p
                 key={insight}
                 className={cn(

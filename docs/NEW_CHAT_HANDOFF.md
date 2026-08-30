@@ -18,7 +18,7 @@ Also read:
 
 - Product: Streex Gig Earnings App.
 - Current public release: `Beta 0.9.6 - Earnings Attribution Integrity`.
-- Current local source candidate: `Beta 0.9.12 - Multi-Shift Ride Accumulation Integrity (pending owner QA)`.
+- Current local source candidate: `Beta 0.9.13 - Deep Insights Operations Snapshot Comparison (pending owner QA)`.
 - Production: `https://gig.getstreex.com`.
 - Repository: `https://github.com/juangaudino/streex-tracker`.
 - Default branch: `main`.
@@ -299,7 +299,7 @@ Design rules:
 
 - Latest public release: `Beta 0.9.6 - Earnings Attribution Integrity`.
 - Current local candidate: `Beta 0.9.7 - Historical Data Import (implemented locally; pending owner QA)`.
-- The next release gate includes a small-sample import, reload, cross-surface totals check, no-new-snapshots check, gradual backfill review, and owner QA of the local `Beta 0.9.11` saved views/CSV plus `Beta 0.9.12` multi-shift ride totals.
+- The next release gate includes a small-sample import, reload, cross-surface totals check, no-new-snapshots check, gradual backfill review, and owner QA of local saved views, accumulated multi-shift ride totals, and the new Operations Snapshot comparison lens.
 - Do not normalize the weekly JSON model merely for scale; first solve silent write conflicts, recovery, and visible sync state for the owner's personal workflow.
 - The version number can move if a patch or urgent fix ships first.
 
@@ -517,4 +517,4 @@ Production variables live in Vercel. Do not print their values in chat or docs.
 5. If the local 0.9.7 importer is still pending, verify its preview, conflict gate, no-snapshot save path, and cross-surface totals before publication.
 6. Otherwise ask what the owner wants to tackle next, or plan the explicitly named roadmap item.
 
-The local source also contains `0.9.11 - Deep Insights Productivity` and `0.9.12 - Multi-Shift Ride Accumulation Integrity`; saved views are browser-local, CSV retains evidence context, and daily app-ride totals now assign only their delta to the active shift. The next product step remains owner QA/publication gates and historical-import review before another feature. Bug stabilization or infrastructure work may still take priority and should renumber the roadmap honestly.
+The local source also contains `0.9.11 - Deep Insights Productivity`, `0.9.12 - Multi-Shift Ride Accumulation Integrity`, and `0.9.13 - Deep Insights Operations Snapshot Comparison`; saved views are browser-local, CSV retains evidence context, daily app-ride totals now assign only their delta to the active shift, and Operations Snapshot comparisons use canonical work-block efficiency. The next product step remains owner QA/publication gates and historical-import review before another feature. Bug stabilization or infrastructure work may still take priority and should renumber the roadmap honestly.

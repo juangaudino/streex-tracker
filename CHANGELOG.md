@@ -2,6 +2,20 @@
 
 ## Beta Releases
 
+### Beta 0.9.13 — Deep Insights Operations Snapshot Comparison (Local Candidate)
+
+### Added
+
+- Deep Insights → Compare now has an Operations Snapshot lens that presents the same duration, efficiency, mileage, rides, shift structure, and active-day metrics used by the Dashboard snapshot.
+- Drivers can compare two to four selected day, week, month, year, or custom periods without replacing the existing Performance lens.
+- The new Operations Leaderboard ranks completed historical days, weeks, or months by a chosen operational measure such as earnings per hour, earnings per mile, earnings per ride, miles per hour, active-day output, or reported earnings.
+
+### Data Integrity
+
+- Snapshot comparisons use the Dashboard's work-block semantics: earnings from a day without recorded work time do not inflate operational `$ / hour`.
+- Building periods remain visible in direct comparisons, but are excluded from full-period leaderboard ranks.
+- Operations comparisons are intentionally all-app only because Streex cannot reliably assign shared hours, mileage, rides, or efficiency to an individual platform.
+
 ### Beta 0.9.12 — Multi-Shift Ride Accumulation Integrity (Local Candidate)
 
 ### Fixed

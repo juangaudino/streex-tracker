@@ -1,6 +1,6 @@
 # Movement Capture & Zone Context — Technical Design
 
-Status: approved product and interaction architecture; foreground capture implementation is in progress locally. The local migration, generated client contract, and UI work have not been applied to the active Supabase project or deployed to production.
+Status: foreground capture migration is applied; post-shift/manual-payment migration is local and pending application. Code is a local candidate on `main`; deployment and authenticated owner QA remain unverified.
 
 Target: `Beta 0.10.0 - Movement Capture & Zone Context`.
 

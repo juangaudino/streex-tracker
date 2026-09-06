@@ -16,9 +16,10 @@ export interface StoreContext {
   addWeek: (w: WeekRecord) => Promise<boolean>;
   updateWeek: (w: WeekRecord, attributionIntents?: EarningsAttributionIntent[], options?: { recordSnapshots?: boolean; onSnapshotsRecorded?: (snapshots: EarningsSnapshot[]) => Promise<void> | void }) => Promise<boolean>;
   recordOperationalSnapshot: (draft: OperationalSnapshotDraft) => Promise<boolean>;
-  startRideEvent: (draft: { weekId: string; dayDate: string; shiftId?: string | null; app?: string | null; startedAt: string; capture: RideCaptureResult }) => Promise<RideEvent | null>;
+  startRideEvent: (draft: { weekId: string; dayDate: string; shiftId?: string | null; app?: string | null; startedAt: string; capture: RideCaptureResult; source?: "foreground_browser" | "manual_after_shift" }) => Promise<RideEvent | null>;
   finishRideEvent: (id: string, endedAt: string, capture: RideCaptureResult) => Promise<RideEvent | null>;
   linkRideEvents: (draft: { app: string; earningsSnapshotId: string; operationalEventKey?: string | null; rideEventIds: string[] }) => Promise<boolean>;
+  recordRidePayment: (draft: { rideEventId: string; earningsSnapshotId: string; kind: "manual_base" | "late_tip" | "adjustment"; observedAt: string }) => Promise<boolean>;
   saveEarningsAttribution: (snapshotId: string, intent: Omit<EarningsAttributionIntent, "dayDate" | "app" | "previousAmount" | "newAmount">) => Promise<boolean>;
   deleteWeek: (id: string) => void;
   updateSettings: (s: AppSettings) => Promise<boolean>;

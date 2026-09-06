@@ -2,6 +2,21 @@
 
 ## Beta Releases
 
+### Beta 0.10.0 — Movement Capture & Post-Shift Correction (Local Candidate)
+
+### Added
+
+- Movement now reports whether its start/end zone was saved, unavailable, or denied; completing a ride is no longer presented as proof that GPS succeeded.
+- Entry can explicitly correct a finished shift's accumulated app total, app rides, and mileage, with a preview of the change and an explanation required for reductions.
+- A known ride can be entered after a shift with its amount, provider miles, and exact worked time. It remains manual context and never claims a retroactive GPS zone.
+- A late tip can be recorded on the day it is observed and associated with its original recorded ride once the supporting migration is applied.
+
+### Data Integrity
+
+- The pickup zone is the canonical zone for future ride-income analysis. A dropoff remains destination context and never receives a duplicate income allocation.
+- Earnings snapshots remain append-only. Late tips do not rewrite the original ride day.
+- The new owner-scoped payment-link migration is local and pending application to the active backend.
+
 ### Beta 0.9.13 — Deep Insights Operations Snapshot Comparison (Local Candidate)
 
 ### Added

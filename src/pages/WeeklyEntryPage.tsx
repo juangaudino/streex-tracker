@@ -14,7 +14,7 @@ import {
   weekTotal,
   appTotal,
 } from "@/lib/store";
-import { DAY_NAMES, type BonusEntry, type DayEntry, type ShiftSession, type WeekRecord } from "@/lib/types";
+import { DAY_NAMES, type BonusEntry, type DayEntry, type EarningsAttributionIntent, type ShiftSession, type WeekRecord } from "@/lib/types";
 import type { StoreContext } from "./types";
 import { CalendarPlus, Save, Lock, Trash2, AlertTriangle, CheckCircle2, History, ChevronDown, ChevronRight, StickyNote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -32,9 +32,10 @@ import MobileDayDetail from "@/components/MobileDayDetail";
 import WeekClosingDialog from "@/components/WeekClosingDialog";
 import { activeShiftDurationHours, createShift, endActiveShift, getDayShiftHours, getShiftMiles, getWeekMiles, getWeekRideCount, getWeekShiftHours, hasActiveShift, isShiftPaused, pauseActiveShift, resolveShiftRate, resumePausedShift, shiftBreakHours, shiftDurationHours, updateShiftBoundaryTime } from "@/lib/shiftIntelligence";
 import { isRewardApp, operationalWeekTotal } from "@/lib/rewardIncome";
-import { formatRideAttribution, replaceShiftTotalRideCount } from "@/lib/rideAttribution";
+import { formatRideAttribution, getAppRideCount, replaceShiftTotalRideCount, updateShiftAppRideCount } from "@/lib/rideAttribution";
 import { replaceShiftMileage } from "@/lib/mileageAttribution";
 import RideCaptureControl from "@/components/RideCaptureControl";
+import { isExactTimeInsideWorkedShift } from "@/lib/earningsAttributions";
 
 function timeInputValue(value?: string): string {
   if (!value) return "";
@@ -62,8 +63,13 @@ function formatShiftTime(value?: string): string {
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+function localDateValue(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 export default function WeeklyEntryPage() {
-  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, startRideEvent, finishRideEvent, addWeek, updateWeek } =
+  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, startRideEvent, finishRideEvent, recordRidePayment, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -86,6 +92,19 @@ export default function WeeklyEntryPage() {
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [expandedShiftIds, setExpandedShiftIds] = useState<Set<string>>(new Set());
+  const [correctionShiftId, setCorrectionShiftId] = useState<string | null>(null);
+  const [correctionApp, setCorrectionApp] = useState("Uber");
+  const [correctionTotal, setCorrectionTotal] = useState("");
+  const [correctionRides, setCorrectionRides] = useState("");
+  const [correctionMiles, setCorrectionMiles] = useState("");
+  const [correctionReason, setCorrectionReason] = useState("");
+  const [lateTipOpen, setLateTipOpen] = useState(false);
+  const [lateTipRideId, setLateTipRideId] = useState("");
+  const [lateTipAmount, setLateTipAmount] = useState("");
+  const [knownRideShiftId, setKnownRideShiftId] = useState<string | null>(null);
+  const [knownRideAmount, setKnownRideAmount] = useState("");
+  const [knownRideTime, setKnownRideTime] = useState("");
+  const [knownRideMiles, setKnownRideMiles] = useState("");
 
   useEffect(() => {
     if (requestedWeekId && requestedWeek?.status === "closed") {
@@ -457,6 +476,103 @@ export default function WeeklyEntryPage() {
     });
   }
 
+  function openClosedShiftCorrection(day: DayEntry, shift: ShiftSession) {
+    const app = standardApps.includes("Uber") ? "Uber" : standardApps[0] ?? "";
+    setCorrectionShiftId(shift.id);
+    setCorrectionApp(app);
+    setCorrectionTotal(String(Number(day.apps?.[app]) || 0));
+    setCorrectionRides(String(getAppRideCount(shift, app) ?? 0));
+    setCorrectionMiles(String(getShiftMiles(day, shift) || 0));
+    setCorrectionReason("");
+  }
+
+  async function saveClosedShiftCorrection(dayIdx: number, shift: ShiftSession) {
+    if (!editWeek || !correctionApp || correctionShiftId !== shift.id || !shift.endTime) return;
+    const day = editWeek.entries[dayIdx];
+    const previousTotal = Number(day.apps?.[correctionApp]) || 0;
+    const nextTotal = Math.max(0, Number(correctionTotal) || 0);
+    const previousRides = getAppRideCount(shift, correctionApp) ?? 0;
+    const nextRides = Math.max(0, Math.trunc(Number(correctionRides) || 0));
+    const previousMiles = getShiftMiles(day, shift);
+    const nextMiles = Math.max(0, Number(correctionMiles) || 0);
+    const decreases = nextTotal < previousTotal || nextRides < previousRides || nextMiles < previousMiles;
+    if (decreases && !correctionReason.trim()) {
+      toast({ title: "Explain the correction", description: "A note is required before reducing recorded totals.", variant: "destructive" });
+      return;
+    }
+    const entries = editWeek.entries.map((entry, index) => {
+      if (index !== dayIdx) return entry;
+      const nextShift = updateShiftAppRideCount(shift, correctionApp, nextRides).shift;
+      const withShift = { ...entry, apps: { ...entry.apps, [correctionApp]: nextTotal }, shifts: (entry.shifts ?? []).map((item) => item.id === shift.id ? nextShift : item), logged: nextTotal > 0 || entry.logged };
+      return replaceShiftMileage(withShift, shift.id, nextMiles);
+    });
+    const intent: EarningsAttributionIntent[] = nextTotal > previousTotal ? [{
+      dayDate: day.date, app: correctionApp, previousAmount: previousTotal, newAmount: nextTotal,
+      status: "resolved", mode: "shift_distributed", attributedDayDate: day.date, shiftId: shift.id,
+      effectiveStartAt: shift.startTime, effectiveEndAt: shift.endTime, source: "user", confidence: "estimated",
+      note: "User corrected a finished shift from Entry.",
+    }] : [];
+    const updated = { ...editWeek, entries };
+    setEditWeek(updated);
+    const saved = await updateWeek(updated, intent);
+    if (!saved) { setEditWeek(editWeek); return; }
+    setCorrectionShiftId(null);
+    toast({ title: "Finished shift corrected", description: `Updated ${correctionApp} totals for this shift only.` });
+  }
+
+  async function saveLateTip() {
+    if (!editWeek || !lateTipRideId) return;
+    const amount = Math.max(0, Number(lateTipAmount) || 0);
+    const ride = rideEvents.find((item) => item.id === lateTipRideId);
+    const dayIdx = editWeek.entries.findIndex((day) => day.date === localDateValue());
+    if (!ride || !ride.app || amount <= 0 || dayIdx < 0) { toast({ title: "Choose a ride and a valid amount", variant: "destructive" }); return; }
+    const day = editWeek.entries[dayIdx];
+    const previousAmount = Number(day.apps?.[ride.app]) || 0;
+    const nextAmount = +(previousAmount + amount).toFixed(2);
+    const entries = editWeek.entries.map((entry, index) => index === dayIdx ? { ...entry, apps: { ...entry.apps, [ride.app!]: nextAmount }, logged: true } : entry);
+    let linked = false;
+    const updated = { ...editWeek, entries };
+    setEditWeek(updated);
+    const saved = await updateWeek(updated, [], { onSnapshotsRecorded: async (snapshots) => {
+      const snapshot = snapshots.find((item) => item.dayDate === day.date && item.app === ride.app && Number(item.previousAmount) === previousAmount && Number(item.newAmount) === nextAmount);
+      if (snapshot) linked = await recordRidePayment({ rideEventId: ride.id, earningsSnapshotId: snapshot.id, kind: "late_tip", observedAt: new Date().toISOString() });
+    }});
+    if (!saved) { setEditWeek(editWeek); return; }
+    setLateTipOpen(false); setLateTipAmount("");
+    toast({ title: linked ? "Late tip linked" : "Tip saved", description: linked ? "Income is recorded today and linked to the original ride." : "Income was saved, but the ride link needs a retry after the migration is applied." });
+  }
+
+  async function saveKnownRide(dayIdx: number, shift: ShiftSession) {
+    if (!editWeek || !shift.endTime || knownRideShiftId !== shift.id || !correctionApp) return;
+    const amount = Math.max(0, Number(knownRideAmount) || 0);
+    const miles = Math.max(0, Number(knownRideMiles) || 0);
+    const occurredAt = applyTimeToShiftDate(editWeek.entries[dayIdx].date, knownRideTime);
+    if (amount <= 0 || !isValidTimeInput(knownRideTime) || !isExactTimeInsideWorkedShift(shift, occurredAt)) {
+      toast({ title: "Enter a valid amount and ride time", description: "The time must be inside worked time, not during a pause.", variant: "destructive" }); return;
+    }
+    const day = editWeek.entries[dayIdx];
+    const event = await startRideEvent({ weekId: editWeek.id, dayDate: day.date, shiftId: shift.id, app: correctionApp, startedAt: occurredAt, source: "manual_after_shift", capture: { status: "unavailable" } });
+    if (!event) { toast({ title: "Could not save the known ride", variant: "destructive" }); return; }
+    await finishRideEvent(event.id, occurredAt, { status: "unavailable" });
+    const previousAmount = Number(day.apps?.[correctionApp]) || 0;
+    const nextAmount = +(previousAmount + amount).toFixed(2);
+    const entries = editWeek.entries.map((entry, index) => {
+      if (index !== dayIdx) return entry;
+      const updatedShift = updateShiftAppRideCount(shift, correctionApp, (getAppRideCount(shift, correctionApp) ?? 0) + 1).shift;
+      return replaceShiftMileage({ ...entry, apps: { ...entry.apps, [correctionApp]: nextAmount }, shifts: (entry.shifts ?? []).map((item) => item.id === shift.id ? updatedShift : item), logged: true }, shift.id, getShiftMiles(day, shift) + miles);
+    });
+    const updated = { ...editWeek, entries };
+    let linked = false;
+    setEditWeek(updated);
+    const saved = await updateWeek(updated, [{ dayDate: day.date, app: correctionApp, previousAmount, newAmount: nextAmount, status: "resolved", mode: "exact", attributedDayDate: day.date, shiftId: shift.id, effectiveStartAt: occurredAt, effectiveEndAt: occurredAt, source: "user", confidence: "confirmed", note: "Manual known ride entered after shift close." }], { onSnapshotsRecorded: async (snapshots) => {
+      const snapshot = snapshots.find((item) => item.dayDate === day.date && item.app === correctionApp && Number(item.previousAmount) === previousAmount && Number(item.newAmount) === nextAmount);
+      if (snapshot) linked = await recordRidePayment({ rideEventId: event.id, earningsSnapshotId: snapshot.id, kind: "manual_base", observedAt: new Date().toISOString() });
+    }});
+    if (!saved) { setEditWeek(editWeek); return; }
+    setKnownRideShiftId(null); setKnownRideAmount(""); setKnownRideMiles(""); setKnownRideTime("");
+    toast({ title: linked ? "Known ride recorded" : "Known ride saved", description: linked ? "Its amount and exact time are linked without GPS zones." : "The ride was saved; apply the migration to enable its payment link." });
+  }
+
   if (!editWeek) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
@@ -686,14 +802,31 @@ export default function WeeklyEntryPage() {
       </div>
 
       {!isHistoricalEdit && openWeek && editWeek.id === openWeek.id && (
-        <RideCaptureControl
-          openWeek={openWeek}
-          apps={apps}
-          rideEvents={rideEvents}
-          onStart={startRideEvent}
-          onFinish={finishRideEvent}
-          compact
-        />
+        <>
+          <RideCaptureControl
+            openWeek={openWeek}
+            apps={apps}
+            rideEvents={rideEvents}
+            onStart={startRideEvent}
+            onFinish={finishRideEvent}
+            compact
+          />
+          {rideEvents.some((event) => event.status !== "active" && event.app) && (
+            <section className="rounded-xl border border-border bg-card p-3">
+              {!lateTipOpen ? <Button type="button" size="sm" variant="outline" onClick={() => setLateTipOpen(true)}>Add late tip to a recorded ride</Button> : (
+                <div className="space-y-3">
+                  <div><p className="text-sm font-semibold">Add late tip</p><p className="text-xs text-muted-foreground">The income is saved today and linked to the original ride. It does not rewrite the original day.</p></div>
+                  <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={lateTipRideId} onChange={(event) => setLateTipRideId(event.target.value)}>
+                    <option value="">Choose the original ride</option>
+                    {rideEvents.filter((event) => event.status !== "active" && event.app).sort((a, b) => (b.endedAt ?? b.startedAt).localeCompare(a.endedAt ?? a.startedAt)).map((event) => <option value={event.id} key={event.id}>{event.app} · {event.dayDate} · {formatShiftTime(event.endedAt ?? event.startedAt)}</option>)}
+                  </select>
+                  <Input type="number" min="0" step="0.01" placeholder="Late tip amount" value={lateTipAmount} onChange={(event) => setLateTipAmount(event.target.value)} />
+                  <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setLateTipOpen(false)}>Cancel</Button><Button type="button" size="sm" onClick={saveLateTip}>Save late tip</Button></div>
+                </div>
+              )}
+            </section>
+          )}
+        </>
       )}
 
       <section className="rounded-xl border border-border bg-card p-4 space-y-3">
@@ -829,6 +962,7 @@ export default function WeeklyEntryPage() {
                 </button>
 
                 {expanded && (
+                  <>
                   <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 md:grid-cols-[minmax(0,7rem)_minmax(0,7rem)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
                     <label className="space-y-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Start</span>
@@ -918,6 +1052,40 @@ export default function WeeklyEntryPage() {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
+                  <div className="mt-3 border-t border-border pt-3">
+                    {correctionShiftId !== shift.id ? (
+                      <Button type="button" size="sm" variant="outline" onClick={() => openClosedShiftCorrection(day, shift)}>
+                        Correct finished shift
+                      </Button>
+                    ) : (
+                      <div className="space-y-3 rounded-lg border border-primary/25 bg-primary/5 p-3">
+                        <div>
+                          <p className="text-xs font-bold">Correct finished shift</p>
+                          <p className="text-[11px] text-muted-foreground">Changes apply only to {formatShiftTime(shift.startTime)}–{formatShiftTime(shift.endTime)}. Review the deltas before saving.</p>
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">App</span><select className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={correctionApp} onChange={(event) => setCorrectionApp(event.target.value)}>{standardApps.map((app) => <option key={app} value={app}>{app}</option>)}</select></label>
+                          <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{correctionApp} total today</span><Input type="number" min="0" step="0.01" value={correctionTotal} onChange={(event) => setCorrectionTotal(event.target.value)} /></label>
+                          <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{correctionApp} rides in this shift</span><Input type="number" min="0" step="1" value={correctionRides} onChange={(event) => setCorrectionRides(event.target.value)} /></label>
+                          <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Miles in this shift</span><Input type="number" min="0" step="0.1" value={correctionMiles} onChange={(event) => setCorrectionMiles(event.target.value)} /></label>
+                        </div>
+                        {(Number(correctionTotal) < (Number(day.apps?.[correctionApp]) || 0) || Number(correctionRides) < (getAppRideCount(shift, correctionApp) ?? 0) || Number(correctionMiles) < getShiftMiles(day, shift)) && <label className="block space-y-1"><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Why is this lower?</span><Textarea value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} placeholder="Required for a downward correction" maxLength={180} /></label>}
+                        <p className="text-xs text-muted-foreground">Preview: {Number(correctionRides || 0) - (getAppRideCount(shift, correctionApp) ?? 0) >= 0 ? "+" : ""}{Number(correctionRides || 0) - (getAppRideCount(shift, correctionApp) ?? 0)} rides · {(Number(correctionMiles || 0) - getShiftMiles(day, shift)).toFixed(1)} mi · {formatCurrency((Number(correctionTotal || 0) - (Number(day.apps?.[correctionApp]) || 0)), sym)} today.</p>
+                        <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setCorrectionShiftId(null)}>Cancel</Button><Button type="button" size="sm" onClick={() => saveClosedShiftCorrection(dayIdx, shift)}>Save correction</Button></div>
+                        <div className="border-t border-primary/15 pt-3">
+                          {knownRideShiftId !== shift.id ? <Button type="button" size="sm" variant="secondary" onClick={() => { setKnownRideShiftId(shift.id); setKnownRideTime(timeInputValue(shift.endTime)); }}>Add known ride</Button> : (
+                            <div className="space-y-2">
+                              <p className="text-xs font-semibold">Add known ride after shift</p>
+                              <p className="text-[11px] text-muted-foreground">Adds one {correctionApp} ride, its amount, optional provider miles, and exact worked time. It has no retroactive GPS zone.</p>
+                              <div className="grid gap-2 sm:grid-cols-3"><Input type="number" min="0" step="0.01" placeholder="Amount" value={knownRideAmount} onChange={(event) => setKnownRideAmount(event.target.value)} /><Input type="text" inputMode="numeric" maxLength={5} placeholder="HH:mm" value={knownRideTime} onChange={(event) => setKnownRideTime(event.target.value)} /><Input type="number" min="0" step="0.1" placeholder="Provider miles (optional)" value={knownRideMiles} onChange={(event) => setKnownRideMiles(event.target.value)} /></div>
+                              <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setKnownRideShiftId(null)}>Cancel</Button><Button type="button" size="sm" onClick={() => saveKnownRide(dayIdx, shift)}>Save known ride</Button></div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  </>
                 )}
               </div>
             );

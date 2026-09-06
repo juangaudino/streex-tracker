@@ -429,12 +429,12 @@ export function useWeekStore(user: User | null) {
   }, [earningsAttributions, earningsSnapshots, hasLocalData, rideEvents, settings, user, weeks]);
 
   const startRideEvent = useCallback(async (draft: {
-    weekId: string; dayDate: string; shiftId?: string | null; app?: string | null; startedAt: string; capture: RideCaptureResult;
+    weekId: string; dayDate: string; shiftId?: string | null; app?: string | null; startedAt: string; capture: RideCaptureResult; source?: "foreground_browser" | "manual_after_shift";
   }): Promise<RideEvent | null> => {
     if (!user) return null;
     const { data, error } = await supabase.from("ride_events").insert({
       user_id: user.id, week_id: draft.weekId, day_date: draft.dayDate, shift_id: draft.shiftId ?? null,
-      app: draft.app ?? null, started_at: draft.startedAt, start_zone_key: draft.capture.zoneKey ?? null,
+      app: draft.app ?? null, started_at: draft.startedAt, source: draft.source ?? "foreground_browser", start_zone_key: draft.capture.zoneKey ?? null,
       start_capture_status: draft.capture.status, start_accuracy_class: draft.capture.accuracyClass ?? null,
     }).select("*").single();
     if (error) { console.warn("[rideEvents] start failed", error); return null; }
@@ -469,6 +469,16 @@ export function useWeekStore(user: User | null) {
     const { error: rideError } = await supabase.from("ride_events").update({ status: linkedStatus, updated_at: new Date().toISOString() }).in("id", draft.rideEventIds).eq("user_id", user.id);
     if (rideError) { console.warn("[rideEvents] status link failed", rideError); return false; }
     setRideEvents((previous) => previous.map((event) => draft.rideEventIds.includes(event.id) ? { ...event, status: linkedStatus } : event));
+    return true;
+  }, [user]);
+
+  const recordRidePayment = useCallback(async (draft: { rideEventId: string; earningsSnapshotId: string; kind: "manual_base" | "late_tip" | "adjustment"; observedAt: string }): Promise<boolean> => {
+    if (!user) return false;
+    const { error } = await supabase.from("ride_payments").insert({
+      user_id: user.id, ride_event_id: draft.rideEventId, earnings_snapshot_id: draft.earningsSnapshotId,
+      kind: draft.kind, observed_at: draft.observedAt,
+    });
+    if (error) { console.warn("[ridePayments] save failed", error); return false; }
     return true;
   }, [user]);
 
@@ -613,6 +623,7 @@ export function useWeekStore(user: User | null) {
     startRideEvent,
     finishRideEvent,
     linkRideEvents,
+    recordRidePayment,
     saveEarningsAttribution,
     deleteWeek,
     updateSettings,

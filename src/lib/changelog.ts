@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.9.13";
+export const CURRENT_VERSION = "0.10.0";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,19 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.10.0",
+    date: "2026-09",
+    title: "Movement Capture & Post-Shift Correction (Local Candidate)",
+    tags: ["new", "feature"],
+    items: [
+      "Movement now reports whether the start or end zone was saved, unavailable, or denied instead of treating a completed ride as GPS proof",
+      "Entry can explicitly correct a finished shift's app total, app rides, and mileage with a reviewed delta and a required note for reductions",
+      "Known rides can be added after a shift with a confirmed amount, provider miles, and exact worked time, without inventing GPS zones",
+      "Late tips can be recorded on the day observed and linked to their original recorded ride after the supporting migration is applied",
+      "Pickup zones are the sole canonical zone for future ride-income analysis; dropoff zones remain destination context",
+    ],
+  },
   {
     version: "0.9.13",
     date: "2026-08",

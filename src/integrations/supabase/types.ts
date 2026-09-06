@@ -435,6 +435,15 @@ export type Database = {
           { foreignKeyName: "ride_update_batches_earnings_snapshot_id_fkey"; columns: ["earnings_snapshot_id"]; isOneToOne: true; referencedRelation: "earnings_snapshots"; referencedColumns: ["id"] },
         ]
       }
+      ride_payments: {
+        Row: { created_at: string; earnings_snapshot_id: string; id: string; kind: string; observed_at: string; ride_event_id: string; user_id: string }
+        Insert: { created_at?: string; earnings_snapshot_id: string; id?: string; kind: string; observed_at: string; ride_event_id: string; user_id: string }
+        Update: { created_at?: string; earnings_snapshot_id?: string; id?: string; kind?: string; observed_at?: string; ride_event_id?: string; user_id?: string }
+        Relationships: [
+          { foreignKeyName: "ride_payments_earnings_snapshot_id_fkey"; columns: ["earnings_snapshot_id"]; isOneToOne: true; referencedRelation: "earnings_snapshots"; referencedColumns: ["id"] },
+          { foreignKeyName: "ride_payments_ride_event_id_fkey"; columns: ["ride_event_id"]; isOneToOne: false; referencedRelation: "ride_events"; referencedColumns: ["id"] },
+        ]
+      }
       email_campaign_recipients: {
         Row: {
           campaign_id: string

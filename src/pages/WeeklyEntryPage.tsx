@@ -108,12 +108,6 @@ export default function WeeklyEntryPage() {
   const [knownRideMiles, setKnownRideMiles] = useState("");
 
   useEffect(() => {
-    if (requestedWeekId && requestedWeek?.status === "closed") {
-      navigate("/history", { replace: true });
-    }
-  }, [navigate, requestedWeek?.status, requestedWeekId]);
-
-  useEffect(() => {
     const target = requestedWeekId ? requestedWeek : openWeek;
     if (!target) {
       if (!requestedWeekId) setEditWeek(null);

@@ -364,10 +364,17 @@ export default function HistoryPage() {
               {editingWeekId === w.id && w.status === "closed" && (
                 <div className="mt-3 rounded-xl border border-border bg-background/45 p-3">
                   <div className="mb-3">
-                    <p className="text-sm font-bold">Historical week editor</p>
-                    <p className="text-xs text-muted-foreground">
-                      Edit earnings first, then add old shifts and assign their earnings, miles, and rides from your notes.
-                    </p>
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-bold">Historical week editor</p>
+                        <p className="text-xs text-muted-foreground">
+                          Edit earnings first, then add old shifts and assign their earnings, miles, and rides from your notes.
+                        </p>
+                      </div>
+                      <Button type="button" size="sm" variant="outline" onClick={() => navigate(`/entry?weekId=${w.id}`)}>
+                        Review ride earnings
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="mb-4 overflow-x-auto rounded-xl border border-border">

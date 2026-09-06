@@ -2,6 +2,13 @@
 
 ## Beta Releases
 
+### Beta 0.10.5 — Closed-Week Allocation Access (Local Candidate)
+
+### Fixed
+
+- Opening a closed week from Entry no longer redirects to History before the ride allocation review can load.
+- The historical-week editor now provides an explicit **Review ride earnings** action that opens the same week in Entry.
+
 ### Beta 0.10.4 — Weekly Ride Allocation Review (Local Candidate)
 
 ### Fixed

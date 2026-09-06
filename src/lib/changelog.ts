@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.10.4";
+export const CURRENT_VERSION = "0.10.5";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,16 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.10.5",
+    date: "2026-09",
+    title: "Closed-Week Allocation Access (Local Candidate)",
+    tags: ["fix", "polish"],
+    items: [
+      "A closed week requested from Entry remains in Entry instead of being redirected away before its ride allocation review can load",
+      "History provides a clear Review ride earnings action that opens the selected closed week in Entry's allocation review",
+    ],
+  },
   {
     version: "0.10.4",
     date: "2026-09",

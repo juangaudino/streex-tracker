@@ -27,7 +27,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.10.4 - Weekly Ride Allocation Review (local candidate; not yet published)
+Beta 0.10.5 - Closed-Week Allocation Access (local candidate; not yet published)
 ```
 
 Next approved product sequence:
@@ -38,6 +38,7 @@ Beta 0.10.1 - Zone Intelligence & Evidence (implemented on main; authenticated o
 Beta 0.10.2 - Ride Allocation Integrity & Quick Actions Stability (implemented on main; active-backend migration applied)
 Beta 0.10.3 - Zone Map & Confirmed Labels (implemented on main; active-backend migration applied)
 Beta 0.10.4 - Weekly Ride Allocation Review (local candidate; no new migration required)
+Beta 0.10.5 - Closed-Week Allocation Access (local candidate; no new migration required)
 ```
 
 Source of truth:
@@ -604,6 +605,7 @@ High priority:
 - Beta 0.10.2 is implemented on `main` and its active-backend migration `20260906212214_ride_snapshot_allocations_0102.sql` is applied. It consumes a Quick Actions request only once, uses a keyboard-safe mobile sheet, keeps live interval attribution as the compact default, and adds an owner-scoped editable allocation ledger. An observed snapshot and reported total remain immutable; an explicit known ride portion and any residual are stored separately.
 - Beta 0.10.3 is implemented on `main` and its active-backend migration `20260906213306_user_zone_labels_0103.sql` is applied. It replaces the conceptual private-cell board with an interactive approximate base map and owner-confirmed broad labels. Map tiles and optional suggestions use only the existing coarse cell, never raw GPS or routes.
 - Beta 0.10.4 is the unpublished Weekly Ride Allocation Review candidate. Entry will show every positive observed update for the week, even before it has a ride-level allocation, and permits a deliberate closed-week review without changing financial history.
+- Beta 0.10.5 is the unpublished access correction: a closed week intentionally opened in Entry stays there, and History offers a direct route into that week’s ride-earnings review.
 - Complete owner QA and publish Beta 0.9.7 only after import safety, totals preservation, no-snapshot behavior, and cross-surface analytics agree.
 - Configure two isolated QA identities in the GitHub `qa` environment for bidirectional RLS certification.
 - Keep monitoring login/session and SMTP confirmation/recovery delivery.

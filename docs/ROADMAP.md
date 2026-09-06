@@ -132,6 +132,15 @@ Boundaries:
 
 Technical design: `docs/ZONE_INTELLIGENCE_TECHNICAL_DESIGN.md`.
 
+### Beta 0.10.5 - Closed-Week Allocation Access
+
+Status: local candidate; no new migration required.
+
+Purpose:
+
+- Keep a deliberately selected closed week in Entry so its ride allocation review can load.
+- Provide a direct Review ride earnings action from its History editor.
+
 ### Beta 0.10.4 - Weekly Ride Allocation Review
 
 Status: local candidate; no new migration required.

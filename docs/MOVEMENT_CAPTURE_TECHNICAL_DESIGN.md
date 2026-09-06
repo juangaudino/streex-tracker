@@ -219,6 +219,23 @@ Future zone income or efficiency analysis requires all of the following:
 
 No zone, time, app, weather, or route conclusion is shown when this evidence is missing. Batch links cannot become per-ride earnings by division.
 
+### Canonical pickup-zone attribution
+
+When a confirmed single-event earnings link exists, its eligible effective earnings are attributed **only to the ride's captured pickup zone** (`start_zone_key`). The dropoff zone is retained as operational destination context and may support destination, flow, or coverage reporting, but never receives a second copy of the ride's earnings.
+
+For example, an Airport → Park City ride is one income event attributed to the Airport pickup zone. A Park City destination view may count the completed dropoff, but cannot claim that same earnings total. This prevents zone-income totals from being duplicated or inflated.
+
+### Late tips and ride adjustments
+
+A completed ride can receive one or more later payments, such as a tip that Uber reports hours or days later. The future model must not force the later payment into the original ride-day total or overwrite the original earnings snapshot.
+
+1. The driver records the amount on the day it is observed, preserving the current append-only accumulated-total snapshot and financial history.
+2. The driver explicitly selects the original completed ride as the payment's context, with a payment type of `late_tip` or `adjustment` and an observed timestamp.
+3. The ride's pickup-zone lifetime view can include that linked later payment, labelled as a late tip; the daily earnings view continues to report it on the observed/payment day.
+4. A future one-to-many payment-link table or equivalent owner-scoped relation is required. The current single snapshot-to-ride link is insufficient and must not be stretched to guess a tip association.
+
+The driver may leave a late payment unlinked. In that case it remains ordinary reported income and creates no zone claim.
+
 ## Validation Plan Before Release
 
 Automated coverage:

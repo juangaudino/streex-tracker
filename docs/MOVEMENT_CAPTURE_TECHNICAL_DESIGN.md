@@ -77,6 +77,16 @@ The only direct Full Focus controls are the one-tap `Start ride` or `Finish ride
 3. `Update totals now` opens the existing Quick Actions sheet directly in the app-specific accumulated Quick Update, with the ride app and one pending ride-context notice already selected. It does not ask for a per-ride amount and does not create a second form.
 4. `Do this later` preserves the completed event as pending financial context without claiming any money, miles, or individual efficiency. The next relevant Quick Actions update presents the same pending-context notice.
 
+### Capture-result visibility
+
+Saving a ride and capturing a zone are distinct outcomes. The UI must state both directly after each action; a completed ride must never imply that location was captured.
+
+- After Start: `Start zone saved`, `Start zone unavailable`, or `Location denied — ride started without zone`.
+- After Finish: `End zone saved`, `End zone unavailable`, or `Location denied — ride finished without zone`.
+- The completed/pending-financial state appears separately, for example `Ride completed · update totals when ready`.
+
+These confirmations must remain visible long enough to verify the action and persist in the recent-ride summary until the user dismisses or links the event. They do not reveal the zone name, coordinates, address, or route.
+
 ### Linking rules
 
 - If exactly one compatible completed event has no financial context and the next Quick Update is for the same app, the driver may confirm that the resulting increase belongs to that ride. The save creates a `single event` link to the newly created earnings and operational observations.

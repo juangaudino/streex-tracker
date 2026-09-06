@@ -107,6 +107,7 @@ Status: approved for technical design; not implemented.
 - An optional known-ride sequence will support manual amount/time evidence inside an existing worked block, without pretending to recover GPS zones or route mileage.
 - Zone income is canonical at the captured pickup zone only. Dropoff zones remain destination context and never receive a duplicate earnings allocation.
 - A later tip or adjustment will remain income on the day it is observed while an explicit one-to-many payment link can associate it with the original ride and its pickup zone.
+- Movement must visibly distinguish `ride saved` from `start/end zone saved`, unavailable, or denied; a completed ride status alone is not GPS proof.
 - See `docs/MOVEMENT_CAPTURE_TECHNICAL_DESIGN.md` for the data and safety contract.
 
 ### Beta 0.9.1 - Reliability & Release Safety

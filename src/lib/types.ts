@@ -200,6 +200,50 @@ export interface RidePayment {
   createdAt: string;
 }
 
+/** A portion of an immutable observed snapshot. It can be revised without changing the snapshot or daily total. */
+export type RideSnapshotAllocationKind = "ride_base" | "late_tip" | "adjustment" | "update_interval" | "unassigned";
+
+export interface RideSnapshotAllocation {
+  id: string;
+  userId: string;
+  earningsSnapshotId: string;
+  rideEventId?: string | null;
+  allocationSetId: string;
+  kind: RideSnapshotAllocationKind;
+  amount: number;
+  observedAt: string;
+  attributedDayDate?: string | null;
+  shiftId?: string | null;
+  effectiveStartAt?: string | null;
+  effectiveEndAt?: string | null;
+  note?: string | null;
+  isCurrent: boolean;
+  replacedAt?: string | null;
+  createdAt: string;
+}
+
+export interface RideSnapshotAllocationDraft {
+  rideEventId?: string | null;
+  kind: RideSnapshotAllocationKind;
+  amount: number;
+  observedAt: string;
+  attributedDayDate?: string | null;
+  shiftId?: string | null;
+  effectiveStartAt?: string | null;
+  effectiveEndAt?: string | null;
+  note?: string | null;
+}
+
+export interface ZoneLabel {
+  id: string;
+  userId: string;
+  zoneKey: string;
+  label: string;
+  source: "user" | "suggested";
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface RideCaptureResult {
   zoneKey?: string | null;
   status: RideCaptureStatus;

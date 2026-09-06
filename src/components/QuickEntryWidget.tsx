@@ -11,7 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { dayTotal, formatCurrency } from "@/lib/store";
-import type { WeekRecord, DayEntry, OperationalSnapshotDraft, EarningsAttributionIntent, EarningsSnapshot, ShiftSession, RideEvent } from "@/lib/types";
+import type { WeekRecord, DayEntry, OperationalSnapshotDraft, EarningsAttributionIntent, EarningsSnapshot, RideSnapshotAllocationDraft, ShiftSession, RideEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getDayOfWeekRecord } from "@/components/ActiveMomentum";
 import { isExactTimeInsideWorkedShift } from "@/lib/earningsAttributions";
@@ -41,11 +41,14 @@ interface QuickEntryWidgetProps {
     snapshot: OperationalSnapshotDraft;
     earningsSnapshotId?: string;
     rideEventIds?: string[];
+    snapshotAllocations?: RideSnapshotAllocationDraft[];
   }) => void | Promise<void>;
   rideEvents?: RideEvent[];
   /** Header mode renders only one compact status trigger; actions remain inside the sheet. */
   compactTrigger?: boolean;
   quickActionRequest?: { id: number; app?: string | null } | null;
+  /** A dashboard-only request is consumed once, so later background refreshes cannot reopen this sheet. */
+  onQuickActionRequestHandled?: (id: number) => void;
 }
 
 function getTodayDayIdx(week: WeekRecord): number {
@@ -59,7 +62,7 @@ function getTodayDayIdx(week: WeekRecord): number {
   return idx;
 }
 
-export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSave, weeks, earningsSnapshots = [], onEndDay, onQuickUpdateSaved, rideEvents = [], compactTrigger = false, quickActionRequest = null }: QuickEntryWidgetProps) {
+export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSave, weeks, earningsSnapshots = [], onEndDay, onQuickUpdateSaved, rideEvents = [], compactTrigger = false, quickActionRequest = null, onQuickActionRequestHandled }: QuickEntryWidgetProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"quick" | "full">("quick");
@@ -80,11 +83,16 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
   const [shiftAction, setShiftAction] = useState<"starting" | "pausing" | "resuming" | "ending" | null>(null);
   const [savingUpdate, setSavingUpdate] = useState(false);
   const [linkClosedRides, setLinkClosedRides] = useState(false);
+  const [rideAmountDraft, setRideAmountDraft] = useState("");
+  const [showAttributionOptions, setShowAttributionOptions] = useState(false);
   const shiftFlight = useRef(new SingleFlight()).current;
   const updateFlight = useRef(new SingleFlight()).current;
+  const handledQuickActionRequestId = useRef<number | null>(null);
 
   useEffect(() => {
     if (!quickActionRequest || !today) return;
+    if (handledQuickActionRequestId.current === quickActionRequest.id) return;
+    handledQuickActionRequestId.current = quickActionRequest.id;
     const requestedApp = quickActionRequest.app && apps.includes(quickActionRequest.app) ? quickActionRequest.app : null;
     setOpen(true);
     setMode("quick");
@@ -94,9 +102,16 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
       setQuickApp(requestedApp);
       setQuickAmountDraft((Number(today.apps?.[requestedApp]) || 0) > 0 ? String(Number(today.apps?.[requestedApp]) || 0) : "");
       setLocalRideCount(getDayAppRideCount(today, requestedApp) > 0 ? String(getDayAppRideCount(today, requestedApp)) : "");
+      const active = getActiveShift(today);
+      setAttributionChoice(active ? "automatic" : "pending");
+      setAttributionShiftId(active?.id ?? "");
+      setAttributionExactAt("");
       setLinkClosedRides(false);
+      setRideAmountDraft("");
+      setShowAttributionOptions(false);
     }
-  }, [apps, quickActionRequest, today, todayIdx]);
+    onQuickActionRequestHandled?.(quickActionRequest.id);
+  }, [apps, onQuickActionRequestHandled, quickActionRequest, today, todayIdx]);
 
   function handleOpen(isOpen: boolean) {
     if (isOpen && today) {
@@ -114,6 +129,8 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
       setAttributionShiftId(active?.id ?? "");
       setAttributionExactAt("");
       setLinkClosedRides(false);
+      setRideAmountDraft("");
+      setShowAttributionOptions(false);
     }
     setOpen(isOpen);
   }
@@ -280,6 +297,33 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     const rideEventsToLink = linkClosedRides && positiveDelta > 0
       ? rideEvents.filter((event) => event.status === "completed" && event.dayDate === today.date && event.app === app).map((event) => event.id)
       : [];
+    const linkedRideAmount = parseDecimalDraft(rideAmountDraft) ?? 0;
+    const singleRideForAllocation = rideEventsToLink.length === 1 ? rideEvents.find((event) => event.id === rideEventsToLink[0]) : null;
+    const snapshotAllocations: RideSnapshotAllocationDraft[] = singleRideForAllocation && linkedRideAmount > 0 && linkedRideAmount <= positiveDelta
+      ? [
+        {
+          rideEventId: singleRideForAllocation.id,
+          kind: "ride_base",
+          amount: linkedRideAmount,
+          observedAt: now.toISOString(),
+          attributedDayDate: singleRideForAllocation.dayDate,
+          shiftId: singleRideForAllocation.shiftId ?? null,
+          effectiveStartAt: singleRideForAllocation.startedAt,
+          effectiveEndAt: singleRideForAllocation.endedAt ?? null,
+          note: "Confirmed base amount for this ride.",
+        },
+        ...(positiveDelta - linkedRideAmount > 0.004 ? [{
+          kind: attributionChoice === "pending" ? "unassigned" as const : "update_interval" as const,
+          amount: +(positiveDelta - linkedRideAmount).toFixed(2),
+          observedAt: now.toISOString(),
+          attributedDayDate: attributionIntent?.attributedDayDate ?? today.date,
+          shiftId: attributionIntent?.shiftId ?? null,
+          effectiveStartAt: attributionIntent?.effectiveStartAt ?? null,
+          effectiveEndAt: attributionIntent?.effectiveEndAt ?? null,
+          note: "Remaining observed amount kept separate from the confirmed ride amount.",
+        }] : []),
+      ]
+      : [];
     let earningsSnapshotId: string | undefined;
     const saved = await persistQuickWeek({ ...openWeek, entries }, attributionIntent ? [attributionIntent] : [], {
       onSnapshotsRecorded: (snapshots) => {
@@ -303,6 +347,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
         },
         earningsSnapshotId,
         rideEventIds: earningsSnapshotId ? rideEventsToLink : [],
+        snapshotAllocations: earningsSnapshotId ? snapshotAllocations : [],
       });
       setOpen(false);
     }
@@ -321,6 +366,8 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     setAttributionShiftId(active?.id ?? "");
     setAttributionExactAt("");
     setLinkClosedRides(false);
+    setRideAmountDraft("");
+    setShowAttributionOptions(false);
     const appRidesToday = getDayAppRideCount(today, app);
     setLocalRideCount(appRidesToday > 0 ? String(appRidesToday) : "");
   }
@@ -439,6 +486,8 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
     ? rideEvents.filter((event) => event.status === "completed" && event.dayDate === today.date && event.app === quickApp)
     : [];
   const isBatchRideLink = linkClosedRides && completedRidesForQuickApp.length > 1;
+  const linkedRideAmount = parseDecimalDraft(rideAmountDraft);
+  const rideAllocationReady = !linkClosedRides || completedRidesForQuickApp.length !== 1 || linkedRideAmount === null || (linkedRideAmount >= 0 && linkedRideAmount <= quickPositiveDelta);
 
   return (
     <div className={compactTrigger ? "shrink-0" : "bg-card rounded-xl border border-primary/20 p-4 space-y-3"}>
@@ -490,7 +539,10 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
             </Button>
           )}
         </SheetTrigger>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
+        <SheetContent
+          side="bottom"
+          className="max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))]"
+        >
           <SheetHeader>
             <SheetTitle className="text-left">
               {mode === "quick" ? "Quick Actions" : dayLabel}
@@ -645,11 +697,15 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                       <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
                         <div>
                           <p className="text-xs font-bold uppercase tracking-wider">Earnings attribution</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatCurrency(quickPositiveDelta, currencySymbol)} was observed now. Choose where it was earned.
-                          </p>
+                          <p className="text-xs text-muted-foreground">{formatCurrency(quickPositiveDelta, currencySymbol)} was observed now.</p>
                         </div>
-                        <Select value={attributionChoice} onValueChange={(value) => {
+                        {!showAttributionOptions && (
+                          <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/15 bg-background/70 px-3 py-2">
+                            <p className="text-xs font-medium">{attributionChoice === "automatic" ? "Since last update in this shift" : "Review later in Data Health"}</p>
+                            <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setShowAttributionOptions(true)}>Change</Button>
+                          </div>
+                        )}
+                        {showAttributionOptions && <Select value={attributionChoice} onValueChange={(value) => {
                           const next = value as typeof attributionChoice;
                           setAttributionChoice(next);
                           if (next === "automatic" && todayActiveShift) setAttributionShiftId(todayActiveShift.id);
@@ -661,7 +717,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                             {!isBatchRideLink && <SelectItem value="exact">Assign exact ride time</SelectItem>}
                             <SelectItem value="pending">Review later in Data Health</SelectItem>
                           </SelectContent>
-                        </Select>
+                        </Select>}
                         {(attributionChoice === "shift" || attributionChoice === "exact") && (
                           <Select value={attributionShiftId} onValueChange={setAttributionShiftId}>
                             <SelectTrigger><SelectValue placeholder="Select day and shift" /></SelectTrigger>
@@ -688,25 +744,37 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                       </div>
                     )}
                     {quickPositiveDelta > 0 && completedRidesForQuickApp.length > 0 && (
-                      <label className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3 cursor-pointer">
-                        <Checkbox checked={linkClosedRides} onCheckedChange={(checked) => {
-                          const linking = checked === true;
-                          setLinkClosedRides(linking);
-                          if (linking && completedRidesForQuickApp.length > 1 && attributionChoice === "exact") {
-                            setAttributionChoice(todayActiveShift ? "automatic" : "pending");
-                          }
-                        }} />
-                        <span className="space-y-0.5">
-                          <span className="block text-xs font-semibold">{completedRidesForQuickApp.length === 1 ? "Link this update to the ride just closed" : `Link this update to ${completedRidesForQuickApp.length} closed rides`}</span>
-                          <span className="block text-xs text-muted-foreground">This records the confirmed ride interval and zone context. It does not split the money across rides.</span>
-                        </span>
-                      </label>
+                      <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-3">
+                        <label className="flex cursor-pointer items-start gap-3">
+                          <Checkbox checked={linkClosedRides} onCheckedChange={(checked) => {
+                            const linking = checked === true;
+                            setLinkClosedRides(linking);
+                            if (linking && todayActiveShift && attributionChoice === "pending") setAttributionChoice("automatic");
+                            if (linking && completedRidesForQuickApp.length > 1 && attributionChoice === "exact") setAttributionChoice(todayActiveShift ? "automatic" : "pending");
+                          }} />
+                          <span className="space-y-0.5">
+                            <span className="block text-xs font-semibold">{completedRidesForQuickApp.length === 1 ? "Link this update to the ride just closed" : `Link this update to ${completedRidesForQuickApp.length} closed rides`}</span>
+                            <span className="block text-xs text-muted-foreground">This records confirmed ride and zone context. It never splits a batch automatically.</span>
+                          </span>
+                        </label>
+                        {linkClosedRides && completedRidesForQuickApp.length === 1 && (
+                          <div className="rounded-lg border border-border bg-background/70 p-2.5">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Known amount for this ride</label>
+                            <Input type="text" inputMode="decimal" className="mt-1 h-10 text-right font-mono" placeholder="optional" value={rideAmountDraft} onChange={(event) => {
+                              const nextDraft = normalizeDecimalDraft(event.target.value);
+                              if (nextDraft !== null) setRideAmountDraft(nextDraft);
+                            }} />
+                            <p className="mt-1.5 text-xs text-muted-foreground">Leave blank if you only want the ride context. If known, the remainder stays separate from this ride.</p>
+                            {linkedRideAmount !== null && (linkedRideAmount < 0 || linkedRideAmount > quickPositiveDelta) && <p className="mt-1.5 text-xs text-destructive">This amount must be between 0 and {formatCurrency(quickPositiveDelta, currencySymbol)}.</p>}
+                          </div>
+                        )}
+                      </div>
                     )}
                     <div className="grid grid-cols-2 gap-2">
                       <Button type="button" variant="outline" onClick={() => setQuickApp(null)}>
                         Back
                       </Button>
-                      <Button type="button" disabled={!attributionReady || !rideUpdateReady || savingUpdate} onClick={() => handleQuickSave(quickApp)}>
+                      <Button type="button" disabled={!attributionReady || !rideUpdateReady || !rideAllocationReady || savingUpdate} onClick={() => handleQuickSave(quickApp)}>
                         {savingUpdate ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</> : "Save Update"}
                       </Button>
                     </div>

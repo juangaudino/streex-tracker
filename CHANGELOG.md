@@ -2,6 +2,36 @@
 
 ## Beta Releases
 
+### Beta 0.10.3 — Zone Map & Confirmed Labels (Local Candidate)
+
+### Added
+
+- Zone Intelligence replaces the private-cell board with an interactive approximate map. Cells remain deliberately coarse and selectable.
+- Selecting an unlabeled cell can request one broad place suggestion, which the owner confirms or edits before it is stored as a personal label.
+
+### Privacy
+
+- Map tiles and the optional label suggestion receive only the existing coarse-cell viewport or centre; Streex never sends raw GPS, routes, addresses, or background history.
+- The owner-defined label table stores only the private zone key and chosen broad name, not provider payloads or geographic coordinates.
+
+### Beta 0.10.2 — Ride Allocation Integrity & Quick Actions Stability (Local Candidate)
+
+### Fixed
+
+- A dashboard request to update totals is now consumed once, so a later ride or week refresh cannot reopen Quick Actions or replace an in-progress numeric draft.
+- Quick Actions keeps the normal `Since last update in this shift` choice compact and defaulted for live work; advanced timing choices are available only when intentionally changed.
+- The mobile sheet uses the dynamic viewport and safe-area padding so the numeric form remains reachable above the iOS keyboard.
+
+### Added
+
+- A confirmed single ride can receive a known portion of a new accumulated-total delta. Any remainder is kept separately as an interval or unassigned amount instead of being falsely assigned to that ride.
+- Entry includes a Ride allocation ledger where an owner can split, move, or review current allocation portions without rewriting the observed snapshot.
+
+### Data Integrity
+
+- The allocation ledger is owner-scoped and revision-based. It preserves the immutable daily snapshot and reported total while replacing only the current interpretive allocation set.
+- Zone earnings use confirmed ledger amounts when present; they never substitute a whole snapshot for a partial ride amount.
+
 ### Beta 0.10.1 — Zone Intelligence & Evidence (Local Candidate)
 
 ### Added

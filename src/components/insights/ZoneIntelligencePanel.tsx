@@ -1,7 +1,11 @@
 import { AlertTriangle, CircleDollarSign, Layers3, MapPinned, Route, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/store";
-import { type ZoneIntelligenceData, type ZoneIntelligenceMode, zoneCellCoordinates } from "@/lib/zoneIntelligence";
+import { type ZoneIntelligenceData, type ZoneIntelligenceMode } from "@/lib/zoneIntelligence";
+import { suggestBroadZoneLabel } from "@/lib/zoneLabelSuggestion";
+import type { ZoneLabel } from "@/lib/types";
+import InteractiveZoneMap from "@/components/insights/InteractiveZoneMap";
 
 interface ZoneIntelligencePanelProps {
   data: ZoneIntelligenceData;
@@ -9,38 +13,45 @@ interface ZoneIntelligencePanelProps {
   mode: ZoneIntelligenceMode;
   selectedZoneKey?: string | null;
   isDark: boolean;
+  zoneLabels: ZoneLabel[];
   onModeChange: (mode: ZoneIntelligenceMode) => void;
   onSelectZone: (zoneKey: string) => void;
+  onSaveZoneLabel: (draft: { zoneKey: string; label: string; source?: "user" | "suggested" }) => Promise<boolean>;
 }
 
-function zoneName(index: number) {
-  return `Private zone ${index + 1}`;
+function fallbackZoneName(index: number) {
+  return `Approximate zone ${index + 1}`;
 }
 
 function percentage(part: number, total: number) {
   return total ? Math.round((part / total) * 100) : 0;
 }
 
-function intensity(value: number, maximum: number) {
-  if (!value || !maximum) return 0.12;
-  return 0.22 + (value / maximum) * 0.78;
-}
-
-export default function ZoneIntelligencePanel({ data, currencySymbol, mode, selectedZoneKey, isDark, onModeChange, onSelectZone }: ZoneIntelligencePanelProps) {
+export default function ZoneIntelligencePanel({ data, currencySymbol, mode, selectedZoneKey, isDark, zoneLabels, onModeChange, onSelectZone, onSaveZoneLabel }: ZoneIntelligencePanelProps) {
   const selected = data.zones.find((zone) => zone.zoneKey === selectedZoneKey) ?? data.zones[0] ?? null;
   const selectedIndex = selected ? data.zones.findIndex((zone) => zone.zoneKey === selected.zoneKey) : -1;
   const flows = selected ? data.flows.filter((flow) => flow.fromZoneKey === selected.zoneKey) : [];
   const zoneByKey = new Map(data.zones.map((zone, index) => [zone.zoneKey, { zone, index }]));
-  const coordinates = data.zones.map((zone) => zoneCellCoordinates(zone.zoneKey));
-  const validCoordinates = coordinates.filter((value): value is NonNullable<typeof value> => Boolean(value));
-  const minLat = validCoordinates.length ? Math.min(...validCoordinates.map((value) => value.latitudeCell)) : 0;
-  const maxLat = validCoordinates.length ? Math.max(...validCoordinates.map((value) => value.latitudeCell)) : 1;
-  const minLon = validCoordinates.length ? Math.min(...validCoordinates.map((value) => value.longitudeCell)) : 0;
-  const maxLon = validCoordinates.length ? Math.max(...validCoordinates.map((value) => value.longitudeCell)) : 1;
-  const maxActivity = Math.max(...data.zones.map((zone) => zone.pickupCount + zone.dropoffCount), 1);
-  const maxEarnings = Math.max(...data.zones.map((zone) => zone.eligibleEarnings), 1);
-  const maxFlow = Math.max(...flows.map((flow) => flow.rides), 1);
+  const labelByKey = useMemo(() => new Map(zoneLabels.map((item) => [item.zoneKey, item.label])), [zoneLabels]);
+  const zoneName = (zoneKey: string, index?: number) => labelByKey.get(zoneKey) ?? fallbackZoneName(index ?? data.zones.findIndex((zone) => zone.zoneKey === zoneKey));
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [labelDraft, setLabelDraft] = useState("");
+  const [suggesting, setSuggesting] = useState(false);
+  const [savingLabel, setSavingLabel] = useState(false);
   const pickupCoverage = percentage(data.pickupCaptured, data.completedRides);
+
+  useEffect(() => {
+    if (!selected || labelByKey.has(selected.zoneKey)) { setSuggestion(null); setLabelDraft(selected ? labelByKey.get(selected.zoneKey) ?? "" : ""); return; }
+    let current = true;
+    setSuggestion(null); setLabelDraft(""); setSuggesting(true);
+    void suggestBroadZoneLabel(selected.zoneKey).then((next) => {
+      if (!current) return;
+      setSuggestion(next);
+      setLabelDraft(next ?? "");
+      setSuggesting(false);
+    }).catch(() => { if (current) setSuggesting(false); });
+    return () => { current = false; };
+  }, [labelByKey, selected]);
 
   if (!data.completedRides) {
     return (
@@ -75,28 +86,17 @@ export default function ZoneIntelligencePanel({ data, currencySymbol, mode, sele
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(290px,.7fr)]">
         <div className="rounded-2xl border border-border bg-muted/15 p-3 sm:p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">Private zone activity</h3><p className="text-xs text-muted-foreground">{mode === "earnings" ? "Color shows only verified pickup earnings." : mode === "flow" ? "Select a pickup cell to inspect aggregate destinations." : "Color shows captured pickup and dropoff activity."}</p></div><span className="rounded-full border border-border px-2.5 py-1 text-[11px] font-bold text-muted-foreground">Pickup coverage {pickupCoverage}%</span></div>
-          <div className="relative mt-4 min-h-[360px] overflow-hidden rounded-xl border border-border bg-[radial-gradient(circle_at_35%_20%,rgba(230,206,32,.12),transparent_25%),linear-gradient(145deg,rgba(56,189,248,.08),transparent_42%,transparent)]">
-            <div className="pointer-events-none absolute inset-0 opacity-25 [background-image:linear-gradient(rgba(148,163,184,.22)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,.22)_1px,transparent_1px)] [background-size:38px_38px]" />
-            {data.zones.map((zone, index) => {
-              const coordinate = zoneCellCoordinates(zone.zoneKey);
-              const left = coordinate && maxLon !== minLon ? 8 + ((coordinate.longitudeCell - minLon) / (maxLon - minLon)) * 78 : 12 + (index % 4) * 22;
-              const top = coordinate && maxLat !== minLat ? 8 + ((maxLat - coordinate.latitudeCell) / (maxLat - minLat)) * 70 : 12 + Math.floor(index / 4) * 28;
-              const metric = mode === "earnings" ? zone.eligibleEarnings : mode === "flow" && selected ? (flows.find((flow) => flow.toZoneKey === zone.zoneKey)?.rides ?? (zone.zoneKey === selected.zoneKey ? maxFlow : 0)) : zone.pickupCount + zone.dropoffCount;
-              const maximum = mode === "earnings" ? maxEarnings : mode === "flow" ? maxFlow : maxActivity;
-              const active = selected?.zoneKey === zone.zoneKey;
-              const color = mode === "earnings" ? `rgba(230,206,32,${intensity(metric, maximum)})` : mode === "flow" ? `rgba(56,189,248,${intensity(metric, maximum)})` : `rgba(56,189,248,${intensity(metric, maximum)})`;
-              return <button key={zone.zoneKey} type="button" onClick={() => onSelectZone(zone.zoneKey)} aria-label={`Select ${zoneName(index)}`} className={cn("absolute flex h-16 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[28%] border text-center text-[10px] font-black shadow-lg transition hover:scale-105", active ? "border-white ring-2 ring-[#E6CE20]" : "border-white/20")} style={{ left: `${left}%`, top: `${top}%`, backgroundColor: color }}><span className="px-1 drop-shadow">{active ? zoneName(index) : mode === "earnings" && metric > 0 ? formatCurrency(metric, currencySymbol) : `${zone.pickupCount + zone.dropoffCount} rides`}</span></button>;
-            })}
-          </div>
-          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">Pickup earnings are shown only for single-linked rides with a captured pickup zone and a positive reconciled update. Batch links remain coverage only.</p>
+          <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">Approximate zone map</h3><p className="text-xs text-muted-foreground">{mode === "earnings" ? "Color shows only verified pickup earnings." : mode === "flow" ? "Select a pickup zone to inspect aggregate destinations." : "Color shows captured pickup and dropoff activity."}</p></div><span className="rounded-full border border-border px-2.5 py-1 text-[11px] font-bold text-muted-foreground">Pickup coverage {pickupCoverage}%</span></div>
+          <InteractiveZoneMap zones={data.zones} flows={flows} mode={mode} selectedZoneKey={selected?.zoneKey} labelFor={zoneName} onSelectZone={onSelectZone} />
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">The base map is interactive and shows only approximate cells. It does not show routes, addresses, raw GPS, or background location history.</p>
         </div>
 
         {selected && <aside className="rounded-2xl border border-[#E6CE20]/35 bg-[#E6CE20]/[0.05] p-4">
-          <div className="flex items-start justify-between gap-3"><div><p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#B9A400]">Selected zone</p><h3 className="mt-1 text-xl font-black">{zoneName(selectedIndex)}</h3></div><span className="rounded-full border border-[#E6CE20]/35 px-2.5 py-1 text-[11px] font-bold text-[#B9A400]">Private zone</span></div>
+          <div className="flex items-start justify-between gap-3"><div><p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#B9A400]">Selected zone</p><h3 className="mt-1 text-xl font-black">{zoneName(selected.zoneKey, selectedIndex)}</h3></div><span className="rounded-full border border-[#E6CE20]/35 px-2.5 py-1 text-[11px] font-bold text-[#B9A400]">Approximate</span></div>
+          <div className="mt-3 rounded-xl border border-border bg-background/60 p-3"><p className="text-xs font-semibold text-muted-foreground">Place label</p><p className="mt-1 text-xs text-muted-foreground">{suggesting ? "Finding a broad place suggestion from this approximate cell…" : suggestion ? "Suggested from the approximate cell. Confirm or edit it before saving." : "Name this approximate zone yourself."}</p><div className="mt-2 flex gap-2"><input className="h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm" value={labelDraft} onChange={(event) => setLabelDraft(event.target.value)} placeholder="e.g. Salt Lake City" maxLength={80} /><button type="button" className="rounded-md bg-primary px-3 text-xs font-bold text-primary-foreground disabled:opacity-50" disabled={!labelDraft.trim() || savingLabel} onClick={async () => { setSavingLabel(true); try { await onSaveZoneLabel({ zoneKey: selected.zoneKey, label: labelDraft, source: suggestion === labelDraft ? "suggested" : "user" }); } finally { setSavingLabel(false); } }}>{savingLabel ? "Saving…" : "Save"}</button></div></div>
           <div className="mt-4 rounded-xl border border-border bg-background/60 p-3"><p className="text-xs font-semibold text-muted-foreground">Eligible pickup earnings</p><p className="mt-1 font-mono text-3xl font-black text-[#D8B800]">{formatCurrency(selected.eligibleEarnings, currencySymbol)}</p><div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3 text-sm"><div><p className="font-mono text-lg font-black">{selected.eligibleRideCount}</p><p className="text-[11px] text-muted-foreground">eligible rides</p></div><div><p className="font-mono text-lg font-black">{selected.eligibleRideCount ? formatCurrency(selected.eligibleEarnings / selected.eligibleRideCount, currencySymbol) : "—"}</p><p className="text-[11px] text-muted-foreground">avg / eligible ride</p></div></div></div>
           <div className="mt-3 space-y-2 text-sm"><p className="rounded-lg border border-border bg-background/50 p-2.5"><span className="font-semibold">Coverage</span> · {selected.pickupCount} pickups · {selected.dropoffCount} dropoffs</p><p className="rounded-lg border border-border bg-background/50 p-2.5"><span className="font-semibold">Evidence</span> · {selected.singleLinkedCount} single · {selected.batchLinkedCount} batch · {selected.unlinkedCount} unlinked</p>{selected.lateTips > 0 && <p className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-2.5 text-emerald-600 dark:text-emerald-300"><span className="font-semibold">Late tips</span> +{formatCurrency(selected.lateTips, currencySymbol)}</p>}</div>
-          <div className="mt-4 border-t border-border pt-4"><p className="text-xs font-black uppercase tracking-[0.14em] text-muted-foreground">Top destination zones</p>{flows.length ? <div className="mt-2 space-y-2">{flows.slice(0, 4).map((flow) => { const destination = zoneByKey.get(flow.toZoneKey); return <div className="flex items-center justify-between rounded-lg border border-border bg-background/50 px-3 py-2 text-sm" key={`${flow.fromZoneKey}-${flow.toZoneKey}`}><span>{destination ? zoneName(destination.index) : "Private destination"}</span><span className="font-mono font-bold">{flow.rides} rides</span></div>; })}</div> : <p className="mt-2 text-sm text-muted-foreground">No captured destinations from this zone in the selected period.</p>}</div>
+          <div className="mt-4 border-t border-border pt-4"><p className="text-xs font-black uppercase tracking-[0.14em] text-muted-foreground">Top destination zones</p>{flows.length ? <div className="mt-2 space-y-2">{flows.slice(0, 4).map((flow) => { const destination = zoneByKey.get(flow.toZoneKey); return <div className="flex items-center justify-between rounded-lg border border-border bg-background/50 px-3 py-2 text-sm" key={`${flow.fromZoneKey}-${flow.toZoneKey}`}><span>{destination ? zoneName(destination.zone.zoneKey, destination.index) : "Approximate destination"}</span><span className="font-mono font-bold">{flow.rides} rides</span></div>; })}</div> : <p className="mt-2 text-sm text-muted-foreground">No captured destinations from this zone in the selected period.</p>}</div>
           <p className="mt-4 rounded-lg border border-dashed border-[#E6CE20]/35 p-3 text-xs leading-relaxed text-muted-foreground">{data.sampleReady ? `Sample ready: ${data.eligibleRideCount} eligible rides across ${data.distinctEligibleDays} days.` : `Building evidence: ${data.eligibleRideCount} of 8 eligible rides across ${data.distinctEligibleDays} of 3 days. Rankings stay hidden until the sample is ready.`}</p>
         </aside>}
       </div>

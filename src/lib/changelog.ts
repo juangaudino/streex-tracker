@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.10.1";
+export const CURRENT_VERSION = "0.10.3";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,30 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.10.3",
+    date: "2026-09",
+    title: "Zone Map & Confirmed Labels (Local Candidate)",
+    tags: ["new", "polish"],
+    items: [
+      "Zone Intelligence replaces the private-cell board with an interactive approximate base map and selectable coarse cells",
+      "Selecting an unlabeled cell can suggest one broad place name; the owner confirms or edits it before it becomes a personal label",
+      "Map tiles and optional suggestions use only the existing coarse-cell viewport or centre, never raw GPS, routes, addresses, or background history",
+    ],
+  },
+  {
+    version: "0.10.2",
+    date: "2026-09",
+    title: "Ride Allocation Integrity & Quick Actions Stability (Local Candidate)",
+    tags: ["fix", "feature"],
+    items: [
+      "Quick Actions consumes a dashboard update request once, so data refreshes cannot reopen the sheet or overwrite a live numeric draft",
+      "The normal active-shift interval remains the compact default; alternate timing choices stay available only when intentionally changed",
+      "A confirmed single ride can receive a known portion of an observed update while the remainder stays separately attributable or pending",
+      "Entry adds an editable Ride allocation ledger; changing it never rewrites the original observed snapshot or reported total",
+      "Zone earnings respect confirmed ledger portions and never promote a partial ride amount into a full snapshot value",
+    ],
+  },
   {
     version: "0.10.1",
     date: "2026-09",

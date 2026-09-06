@@ -132,6 +132,38 @@ Boundaries:
 
 Technical design: `docs/ZONE_INTELLIGENCE_TECHNICAL_DESIGN.md`.
 
+### Beta 0.10.2 - Ride Allocation Integrity & Quick Actions Stability
+
+Status: local candidate; migration prepared only. It must not be applied or published until the owner completes local review.
+
+Purpose:
+
+- Prevent a completed-ride data refresh from reopening Quick Actions or overwriting a live numeric draft.
+- Keep the ordinary active-shift interval as the low-friction default and reveal alternate attribution choices only when needed.
+- Let a driver record a known portion for one confirmed ride while preserving the rest of an observed accumulated-total change as a distinct interval or unassigned portion.
+- Provide a reviewable Entry ledger for splitting or moving ride portions without changing the reported total, original observation, or historical daily income.
+
+Boundaries:
+
+- No batch update is automatically divided between rides.
+- The immutable earnings snapshot remains financial truth. Allocation revisions only change the current ride-level interpretation.
+- Pickup-zone earnings use confirmed ledger portions when available; a partial ride amount can never become the whole snapshot in Zone Intelligence.
+
+### Beta 0.10.3 - Zone Map & Confirmed Labels
+
+Status: local candidate; migration prepared only. It must not be applied or published until the owner completes local review.
+
+Purpose:
+
+- Replace the abstract private-cell board with an interactive approximate base map that supports pan, zoom, and cell selection.
+- After the owner selects an unlabeled coarse cell, offer one broad place-name suggestion such as `Bountiful` or `Salt Lake City`; require confirmation or editing before storage.
+- Keep labels owner-scoped and editable, so an airport, downtown, or Park City label reflects the driver's own intended broad name.
+
+Privacy boundary:
+
+- The map tile request exposes only the viewport derived from existing coarse cells. A label suggestion sends only one already-coarsened cell centre after explicit selection.
+- Streex stores no provider payload, raw coordinates, address, route, or background location data. Labels store only the existing private zone key and approved text.
+
 ### Beta 0.9.1 - Reliability & Release Safety
 
 Status: completed.

@@ -1,6 +1,6 @@
 # Zone Intelligence & Evidence — Technical Design
 
-Status: initial implementation is on `main`. It reuses existing Movement tables; no new migration is required. Authenticated owner QA with genuine captured evidence is required before publication.
+Status: initial evidence implementation is on `main`. The local 0.10.2/0.10.3 candidate adds allocation integrity, an interactive approximate map, and owner-confirmed labels; its two migrations are prepared but not applied. Authenticated owner QA with genuine captured evidence is required before publication.
 
 Target: `Beta 0.10.1 - Zone Intelligence & Evidence`.
 
@@ -22,7 +22,7 @@ The release has two purposes:
 ## Non-negotiable privacy and financial rules
 
 - `start_zone_key` and `end_zone_key` are coarse derived cells. Raw latitude, longitude, addresses, routes, route geometry, exact points, device identifiers, IP-derived locations, and background location history are never persisted or displayed.
-- The map is a private approximate cell view. It is not a street map, route replay, navigation tool, or heatmap for another user.
+- The map is an interactive approximate cell view on a base map. It is not a route replay, navigation tool, or heatmap for another user.
 - Pickup zone is the only canonical earnings location. A dropoff zone can report destinations and flow counts, but never receives a second copy of the ride's earnings.
 - A batch update is useful movement coverage, but cannot become per-ride or per-zone income by dividing its delta.
 - A ride with a missing, denied, stale, or imprecise pickup capture is valid operational history but ineligible for pickup-zone earnings.
@@ -89,7 +89,7 @@ Coverage | Pickup earnings | Destination flow
 
 ### Approximate zone map
 
-The primary visual is a coarse cell board derived at render time from `zone-v1:<lat-cell>:<lon-cell>`. It may render simple polygons/rectangles positioned by their decoded coarse cell coordinates. It must not request map tiles, reverse geocode, or send cells to a third party.
+The primary visual is an interactive approximate base map with coarse rectangles derived at render time from `zone-v1:<lat-cell>:<lon-cell>`. It supports pan, zoom, and cell selection. It requests map tiles for the derived coarse viewport; it never receives raw GPS, routes, or address data from Streex.
 
 - **Coverage mode:** intensity means captured pickup or dropoff activity count.
 - **Pickup earnings mode:** intensity means eligible pickup earnings only; cells with only batch/unlinked events remain visible as coverage but do not receive a dollar color scale.
@@ -135,7 +135,7 @@ Forbidden language includes `most profitable area`, `wasted miles`, `route recom
 2. Done: `zoneIntelligence.ts` is a pure tested derivation that applies global filters using local `day_date`, deduplicates financial evidence, and emits coverage/exclusion metadata.
 3. Done: Deep Insights has a third tab with URL-backed zone mode and selected-cell state. It remains desktop-first; smaller screens receive a readable inspector, not a live driving map.
 4. Deferred: add only indexes demonstrated by real query volume. Generate any migration at that time and preserve RLS plus explicit authenticated grants.
-5. Deferred: if persistent labels are approved, add an owner-scoped `user_zone_labels` table keyed by `(user_id, zone_key)`, with manual `label`, timestamps, RLS, and no geographic columns beyond the existing coarse key. Browser-local labels are acceptable for an initial non-portable prototype, but must be visibly labelled as local.
+5. Local candidate: `user_zone_labels` is an owner-scoped label table keyed by `(user_id, zone_key)`, with approved text, timestamps, RLS, and no geographic columns beyond the existing coarse key. It is intentionally unapplied until release review.
 
 ## Validation contract
 
@@ -155,7 +155,7 @@ Owner QA must include allowed, denied, unavailable, and approximate iPhone locat
 
 ## Explicitly deferred
 
-- Background GPS, automatic mileage, odometer or vehicle maintenance, navigation, geofencing, market recommendations, traffic/weather correlation, and external map providers.
+- Background GPS, automatic mileage, odometer or vehicle maintenance, navigation, geofencing, market recommendations, and traffic/weather correlation.
 - Allocation of a multi-ride accumulated update to individual rides.
 - Inference of historical zones or geography from notes, times, IP, or past daily totals.
 - Cross-user or public market comparisons.

@@ -1,6 +1,6 @@
 import { reconcileEarningsSnapshotDeltas } from "./earningsSnapshots";
 import { dateRangeForPreset, type DeepInsightsFilters } from "./deepInsights";
-import type { EarningsSnapshot, RideEvent, RidePayment, RideUpdateBatch, RideUpdateBatchEvent } from "./types";
+import type { EarningsSnapshot, RideEvent, RidePayment, RideSnapshotAllocation, RideUpdateBatch, RideUpdateBatchEvent } from "./types";
 
 export type ZoneIntelligenceMode = "coverage" | "earnings" | "flow";
 
@@ -86,6 +86,7 @@ export function buildZoneIntelligenceData(params: {
   rideUpdateBatches?: RideUpdateBatch[];
   rideUpdateBatchEvents?: RideUpdateBatchEvent[];
   ridePayments?: RidePayment[];
+  rideSnapshotAllocations?: RideSnapshotAllocation[];
   earningsSnapshots?: EarningsSnapshot[];
   filters: DeepInsightsFilters;
   now?: Date;
@@ -100,6 +101,8 @@ export function buildZoneIntelligenceData(params: {
     if (batch && rideById.has(link.rideEventId)) batchForRide.set(link.rideEventId, batch);
   }
   const reconciled = reconcileEarningsSnapshotDeltas(params.earningsSnapshots ?? []).bySnapshotId;
+  const currentAllocations = (params.rideSnapshotAllocations ?? []).filter((allocation) => allocation.isCurrent);
+  const ledgerSnapshotIds = new Set(currentAllocations.map((allocation) => allocation.earningsSnapshotId));
   const zones = new Map<string, ZoneIntelligenceZone>();
   const getZone = (zoneKey: string) => {
     const current = zones.get(zoneKey) ?? emptyZone(zoneKey);
@@ -140,7 +143,7 @@ export function buildZoneIntelligenceData(params: {
       singleLinked += 1;
       if (pickup) getZone(pickup).singleLinkedCount += 1;
       const delta = reconciled.get(batch.earningsSnapshotId)?.effectiveDelta ?? 0;
-      if (pickup && delta > 0 && !accountedSnapshotIds.has(batch.earningsSnapshotId)) {
+      if (pickup && delta > 0 && !ledgerSnapshotIds.has(batch.earningsSnapshotId) && !accountedSnapshotIds.has(batch.earningsSnapshotId)) {
         const zone = getZone(pickup);
         zone.baseEarnings = money(zone.baseEarnings + delta);
         zone.eligibleEarnings = money(zone.eligibleEarnings + delta);
@@ -162,7 +165,7 @@ export function buildZoneIntelligenceData(params: {
     const ride = rideById.get(payment.rideEventId);
     const pickup = ride ? zoneForPickup(ride) : null;
     const delta = reconciled.get(payment.earningsSnapshotId)?.effectiveDelta ?? 0;
-    if (!ride || !pickup || delta <= 0 || accountedSnapshotIds.has(payment.earningsSnapshotId)) continue;
+    if (!ride || !pickup || delta <= 0 || ledgerSnapshotIds.has(payment.earningsSnapshotId) || accountedSnapshotIds.has(payment.earningsSnapshotId)) continue;
     const zone = getZone(pickup);
     if (payment.kind === "late_tip") zone.lateTips = money(zone.lateTips + delta);
     else if (payment.kind === "adjustment") zone.adjustments = money(zone.adjustments + delta);
@@ -174,6 +177,23 @@ export function buildZoneIntelligenceData(params: {
       eligibleDays.add(ride.dayDate);
     }
     accountedSnapshotIds.add(payment.earningsSnapshotId);
+  }
+
+  for (const allocation of currentAllocations) {
+    if (!allocation.rideEventId) continue;
+    const ride = rideById.get(allocation.rideEventId);
+    const pickup = ride ? zoneForPickup(ride) : null;
+    if (!ride || !pickup || allocation.amount <= 0) continue;
+    const zone = getZone(pickup);
+    if (allocation.kind === "late_tip") zone.lateTips = money(zone.lateTips + allocation.amount);
+    else if (allocation.kind === "adjustment") zone.adjustments = money(zone.adjustments + allocation.amount);
+    else zone.baseEarnings = money(zone.baseEarnings + allocation.amount);
+    zone.eligibleEarnings = money(zone.eligibleEarnings + allocation.amount);
+    if (!eligibleRides.has(ride.id)) {
+      zone.eligibleRideCount += 1;
+      eligibleRides.add(ride.id);
+      eligibleDays.add(ride.dayDate);
+    }
   }
 
   const sortedZones = [...zones.values()].sort((a, b) =>
@@ -199,4 +219,18 @@ export function zoneCellCoordinates(zoneKey: string): { latitudeCell: number; lo
   const match = /^zone-v1:(\d+):(\d+)$/.exec(zoneKey);
   if (!match) return null;
   return { latitudeCell: Number(match[1]), longitudeCell: Number(match[2]) };
+}
+
+/** Converts a stored coarse cell to its approximate map bounds. Never use for route or address precision. */
+export function zoneCellBounds(zoneKey: string): [[number, number], [number, number]] | null {
+  const coordinate = zoneCellCoordinates(zoneKey);
+  if (!coordinate) return null;
+  const south = coordinate.latitudeCell * 0.05 - 90;
+  const west = coordinate.longitudeCell * 0.05 - 180;
+  return [[south, west], [south + 0.05, west + 0.05]];
+}
+
+export function zoneCellCenter(zoneKey: string): { latitude: number; longitude: number } | null {
+  const bounds = zoneCellBounds(zoneKey);
+  return bounds ? { latitude: (bounds[0][0] + bounds[1][0]) / 2, longitude: (bounds[0][1] + bounds[1][1]) / 2 } : null;
 }

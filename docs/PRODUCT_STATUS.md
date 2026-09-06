@@ -35,6 +35,8 @@ Next approved product sequence:
 ```text
 Beta 0.10.0 - Movement Capture & Zone Context (implemented on main; active-backend migrations applied; real-work QA continuing)
 Beta 0.10.1 - Zone Intelligence & Evidence (implemented on main; authenticated owner QA required)
+Beta 0.10.2 - Ride Allocation Integrity & Quick Actions Stability (local candidate; migration prepared but not applied)
+Beta 0.10.3 - Zone Map & Confirmed Labels (local candidate; migration prepared but not applied)
 ```
 
 Source of truth:
@@ -598,6 +600,8 @@ High priority:
 
 - Continue real-work QA for Beta 0.10.0 Movement Capture & Zone Context. Both active-backend migrations are applied; Full Focus is its primary surface, Entry reuses its shared control, and Quick Actions remains the sole hub for shifts and accumulated totals. It is foreground-only, captures privacy-minimized start/end zones, keeps Uber/manual mileage authoritative, and does not persist raw coordinates or routes. See `docs/MOVEMENT_CAPTURE_TECHNICAL_DESIGN.md`.
 - Beta 0.10.1 Zone Intelligence & Evidence is implemented on `main` and requires authenticated owner QA with genuine captured evidence. It adds a coverage-first Deep Insights workspace using private coarse cells and pickup-only eligible income; see `docs/ZONE_INTELLIGENCE_TECHNICAL_DESIGN.md`.
+- Beta 0.10.2 is a local stabilization candidate. It consumes a Quick Actions request only once, uses a keyboard-safe mobile sheet, keeps live interval attribution as the compact default, and adds an owner-scoped editable allocation ledger. An observed snapshot and reported total remain immutable; an explicit known ride portion and any residual are stored separately. Migration `20260906212214_ride_snapshot_allocations_0102.sql` is intentionally not applied or published yet.
+- Beta 0.10.3 is a local Zone Intelligence candidate. It replaces the conceptual private-cell board with an interactive approximate base map and owner-confirmed broad labels. Map tiles and optional suggestions use only the existing coarse cell, never raw GPS or routes. Migration `20260906213306_user_zone_labels_0103.sql` is intentionally not applied or published yet.
 - Complete owner QA and publish Beta 0.9.7 only after import safety, totals preservation, no-snapshot behavior, and cross-surface analytics agree.
 - Configure two isolated QA identities in the GitHub `qa` environment for bidirectional RLS certification.
 - Keep monitoring login/session and SMTP confirmation/recovery delivery.

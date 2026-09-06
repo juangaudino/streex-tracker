@@ -35,6 +35,7 @@ import { isRewardApp, operationalWeekTotal } from "@/lib/rewardIncome";
 import { formatRideAttribution, getAppRideCount, replaceShiftTotalRideCount, updateShiftAppRideCount } from "@/lib/rideAttribution";
 import { replaceShiftMileage } from "@/lib/mileageAttribution";
 import RideCaptureControl from "@/components/RideCaptureControl";
+import RideAllocationLedger from "@/components/RideAllocationLedger";
 import { isExactTimeInsideWorkedShift } from "@/lib/earningsAttributions";
 
 function timeInputValue(value?: string): string {
@@ -69,7 +70,7 @@ function localDateValue(): string {
 }
 
 export default function WeeklyEntryPage() {
-  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, startRideEvent, finishRideEvent, recordRidePayment, addWeek, updateWeek } =
+  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, rideSnapshotAllocations, startRideEvent, finishRideEvent, replaceSnapshotAllocations, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -535,7 +536,7 @@ export default function WeeklyEntryPage() {
     setEditWeek(updated);
     const saved = await updateWeek(updated, [], { onSnapshotsRecorded: async (snapshots) => {
       const snapshot = snapshots.find((item) => item.dayDate === day.date && item.app === ride.app && Number(item.previousAmount) === previousAmount && Number(item.newAmount) === nextAmount);
-      if (snapshot) linked = await recordRidePayment({ rideEventId: ride.id, earningsSnapshotId: snapshot.id, kind: "late_tip", observedAt: new Date().toISOString() });
+      if (snapshot) linked = await replaceSnapshotAllocations(snapshot.id, [{ rideEventId: ride.id, kind: "late_tip", amount, observedAt: new Date().toISOString(), attributedDayDate: ride.dayDate, shiftId: ride.shiftId ?? null, effectiveStartAt: ride.startedAt, effectiveEndAt: ride.endedAt ?? null, note: "Late tip linked to the original ride." }]);
     }});
     if (!saved) { setEditWeek(editWeek); return; }
     setLateTipOpen(false); setLateTipAmount("");
@@ -566,7 +567,7 @@ export default function WeeklyEntryPage() {
     setEditWeek(updated);
     const saved = await updateWeek(updated, [{ dayDate: day.date, app: correctionApp, previousAmount, newAmount: nextAmount, status: "resolved", mode: "exact", attributedDayDate: day.date, shiftId: shift.id, effectiveStartAt: occurredAt, effectiveEndAt: occurredAt, source: "user", confidence: "confirmed", note: "Manual known ride entered after shift close." }], { onSnapshotsRecorded: async (snapshots) => {
       const snapshot = snapshots.find((item) => item.dayDate === day.date && item.app === correctionApp && Number(item.previousAmount) === previousAmount && Number(item.newAmount) === nextAmount);
-      if (snapshot) linked = await recordRidePayment({ rideEventId: event.id, earningsSnapshotId: snapshot.id, kind: "manual_base", observedAt: new Date().toISOString() });
+      if (snapshot) linked = await replaceSnapshotAllocations(snapshot.id, [{ rideEventId: event.id, kind: "ride_base", amount, observedAt: new Date().toISOString(), attributedDayDate: day.date, shiftId: shift.id, effectiveStartAt: occurredAt, effectiveEndAt: occurredAt, note: "Manual known ride entered after shift close." }]);
     }});
     if (!saved) { setEditWeek(editWeek); return; }
     setKnownRideShiftId(null); setKnownRideAmount(""); setKnownRideMiles(""); setKnownRideTime("");
@@ -826,6 +827,7 @@ export default function WeeklyEntryPage() {
               )}
             </section>
           )}
+          <RideAllocationLedger allocations={rideSnapshotAllocations} rides={rideEvents} currencySymbol={sym} onReplace={replaceSnapshotAllocations} />
         </>
       )}
 

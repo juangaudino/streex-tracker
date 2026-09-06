@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { WeekRecord, AppSettings, DEFAULT_APPS, DayEntry, EarningsSnapshot, OperationalSnapshot, OperationalSnapshotDraft, EarningsAttribution, EarningsAttributionIntent, RideCaptureResult, RideEvent, RidePayment, RideUpdateBatch, RideUpdateBatchEvent } from "@/lib/types";
+import { WeekRecord, AppSettings, DEFAULT_APPS, DayEntry, EarningsSnapshot, OperationalSnapshot, OperationalSnapshotDraft, EarningsAttribution, EarningsAttributionIntent, RideCaptureResult, RideEvent, RidePayment, RideSnapshotAllocation, RideSnapshotAllocationDraft, RideUpdateBatch, RideUpdateBatchEvent, ZoneLabel } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { getWeeks as getLocalWeeks } from "@/lib/store";
@@ -31,6 +31,8 @@ interface WeekStoreSnapshot {
   rideUpdateBatches?: RideUpdateBatch[];
   rideUpdateBatchEvents?: RideUpdateBatchEvent[];
   ridePayments?: RidePayment[];
+  rideSnapshotAllocations?: RideSnapshotAllocation[];
+  zoneLabels?: ZoneLabel[];
   hasLocalData: boolean;
 }
 
@@ -54,6 +56,20 @@ function dbToRidePayment(row: Database["public"]["Tables"]["ride_payments"]["Row
     id: row.id, userId: row.user_id, rideEventId: row.ride_event_id, earningsSnapshotId: row.earnings_snapshot_id,
     kind: row.kind as RidePayment["kind"], observedAt: row.observed_at, createdAt: row.created_at,
   };
+}
+
+function dbToRideSnapshotAllocation(row: Database["public"]["Tables"]["earnings_snapshot_allocations"]["Row"]): RideSnapshotAllocation {
+  return {
+    id: row.id, userId: row.user_id, earningsSnapshotId: row.earnings_snapshot_id, rideEventId: row.ride_event_id,
+    allocationSetId: row.allocation_set_id, kind: row.kind as RideSnapshotAllocation["kind"], amount: Number(row.amount),
+    observedAt: row.observed_at, attributedDayDate: row.attributed_day_date, shiftId: row.shift_id,
+    effectiveStartAt: row.effective_start_at, effectiveEndAt: row.effective_end_at, note: row.note,
+    isCurrent: row.is_current, replacedAt: row.replaced_at, createdAt: row.created_at,
+  };
+}
+
+function dbToZoneLabel(row: Database["public"]["Tables"]["user_zone_labels"]["Row"]): ZoneLabel {
+  return { id: row.id, userId: row.user_id, zoneKey: row.zone_key, label: row.label, source: row.source as ZoneLabel["source"], createdAt: row.created_at, updatedAt: row.updated_at };
 }
 
 function dbToWeek(row: WeekRow): WeekRecord {
@@ -89,6 +105,8 @@ export function useWeekStore(user: User | null) {
   const [rideUpdateBatches, setRideUpdateBatches] = useState<RideUpdateBatch[]>(() => cachedStore?.rideUpdateBatches ?? []);
   const [rideUpdateBatchEvents, setRideUpdateBatchEvents] = useState<RideUpdateBatchEvent[]>(() => cachedStore?.rideUpdateBatchEvents ?? []);
   const [ridePayments, setRidePayments] = useState<RidePayment[]>(() => cachedStore?.ridePayments ?? []);
+  const [rideSnapshotAllocations, setRideSnapshotAllocations] = useState<RideSnapshotAllocation[]>(() => cachedStore?.rideSnapshotAllocations ?? []);
+  const [zoneLabels, setZoneLabels] = useState<ZoneLabel[]>(() => cachedStore?.zoneLabels ?? []);
   const [loading, setLoading] = useState(() => !cachedStore);
   const [hasLocalData, setHasLocalData] = useState(() => cachedStore?.hasLocalData ?? false);
   const [syncStatus, setSyncStatus] = useState<"saved" | "saving" | "conflict" | "error">("saved");
@@ -101,7 +119,7 @@ export function useWeekStore(user: User | null) {
     const hasCachedStore = storeCache.has(user.id);
     if (!hasCachedStore) setLoading(true);
     try {
-      const [{ data, error }, { data: sData, error: settingsError }, snapshotsResult, operationalResult, attributionResult, rideEventsResult, rideUpdateBatchesResult, rideUpdateBatchEventsResult, ridePaymentsResult] = await Promise.all([
+      const [{ data, error }, { data: sData, error: settingsError }, snapshotsResult, operationalResult, attributionResult, rideEventsResult, rideUpdateBatchesResult, rideUpdateBatchEventsResult, ridePaymentsResult, allocationsResult, zoneLabelsResult] = await Promise.all([
         supabase
           .from("weeks")
           .select("*")
@@ -137,6 +155,14 @@ export function useWeekStore(user: User | null) {
           .from("ride_payments")
           .select("*")
           .order("observed_at", { ascending: true }),
+        supabase
+          .from("earnings_snapshot_allocations")
+          .select("*")
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("user_zone_labels")
+          .select("*")
+          .order("updated_at", { ascending: false }),
       ]);
       if (error) throw error;
       if (settingsError) throw settingsError;
@@ -173,6 +199,12 @@ export function useWeekStore(user: User | null) {
       const nextRidePayments = ridePaymentsResult.error
         ? storeCache.get(user.id)?.ridePayments ?? []
         : ridePaymentsResult.data?.map(dbToRidePayment) ?? [];
+      const nextRideSnapshotAllocations = allocationsResult.error
+        ? storeCache.get(user.id)?.rideSnapshotAllocations ?? []
+        : allocationsResult.data?.map(dbToRideSnapshotAllocation) ?? [];
+      const nextZoneLabels = zoneLabelsResult.error
+        ? storeCache.get(user.id)?.zoneLabels ?? []
+        : zoneLabelsResult.data?.map(dbToZoneLabel) ?? [];
 
       if (snapshotsResult.error) {
         console.warn("[weeks.reload] earnings snapshots unavailable", snapshotsResult.error);
@@ -202,11 +234,13 @@ export function useWeekStore(user: User | null) {
       if (rideEventsResult.error) {
         console.warn("[weeks.reload] ride events unavailable", rideEventsResult.error);
       }
-      if (rideUpdateBatchesResult.error || rideUpdateBatchEventsResult.error || ridePaymentsResult.error) {
+      if (rideUpdateBatchesResult.error || rideUpdateBatchEventsResult.error || ridePaymentsResult.error || allocationsResult.error || zoneLabelsResult.error) {
         console.warn("[weeks.reload] zone evidence unavailable", {
           batches: rideUpdateBatchesResult.error,
           batchEvents: rideUpdateBatchEventsResult.error,
           payments: ridePaymentsResult.error,
+          allocations: allocationsResult.error,
+          zoneLabels: zoneLabelsResult.error,
         });
       }
 
@@ -223,6 +257,8 @@ export function useWeekStore(user: User | null) {
         rideUpdateBatches: nextRideUpdateBatches,
         rideUpdateBatchEvents: nextRideUpdateBatchEvents,
         ridePayments: nextRidePayments,
+        rideSnapshotAllocations: nextRideSnapshotAllocations,
+        zoneLabels: nextZoneLabels,
         hasLocalData: nextHasLocalData,
       });
       setWeeks(nextWeeks);
@@ -234,6 +270,8 @@ export function useWeekStore(user: User | null) {
       setRideUpdateBatches(nextRideUpdateBatches);
       setRideUpdateBatchEvents(nextRideUpdateBatchEvents);
       setRidePayments(nextRidePayments);
+      setRideSnapshotAllocations(nextRideSnapshotAllocations);
+      setZoneLabels(nextZoneLabels);
       setHasLocalData(nextHasLocalData);
       lifecycleDebug("week store hydrated", {
         userId: user.id,
@@ -401,7 +439,7 @@ export function useWeekStore(user: User | null) {
       setWeeks((prev) => {
         const nextWeeks = prev.map((x) => (x.id === normalizedWeek.id ? { ...normalizedWeek, updatedAt: now } : x));
         const nextSnapshots = insertedSnapshots.length ? [...earningsSnapshots, ...insertedSnapshots] : earningsSnapshots;
-        storeCache.set(user.id, { weeks: nextWeeks, settings, earningsSnapshots: nextSnapshots, operationalSnapshots, earningsAttributions: nextAttributions, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, hasLocalData });
+        storeCache.set(user.id, { weeks: nextWeeks, settings, earningsSnapshots: nextSnapshots, operationalSnapshots, earningsAttributions: nextAttributions, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, rideSnapshotAllocations, zoneLabels, hasLocalData });
         return nextWeeks;
       });
       setConflictDraft(null);
@@ -419,7 +457,7 @@ export function useWeekStore(user: User | null) {
       alert("Could not save this week. Your latest edit is kept locally so you can retry.");
       return false;
     }
-  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, reload, rideEvents, ridePayments, rideUpdateBatchEvents, rideUpdateBatches, settings, user, weeks]);
+  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, reload, rideEvents, ridePayments, rideSnapshotAllocations, rideUpdateBatchEvents, rideUpdateBatches, settings, user, weeks, zoneLabels]);
 
   const saveEarningsAttribution = useCallback(async (
     snapshotId: string,
@@ -446,11 +484,11 @@ export function useWeekStore(user: User | null) {
     const saved = dbToEarningsAttribution(data);
     setEarningsAttributions((previous) => {
       const next = [...previous.filter((item) => item.snapshotId !== snapshotId), saved];
-      storeCache.set(user.id, { weeks, settings, earningsSnapshots, operationalSnapshots, earningsAttributions: next, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, hasLocalData });
+      storeCache.set(user.id, { weeks, settings, earningsSnapshots, operationalSnapshots, earningsAttributions: next, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, rideSnapshotAllocations, zoneLabels, hasLocalData });
       return next;
     });
     return true;
-  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, rideEvents, ridePayments, rideUpdateBatchEvents, rideUpdateBatches, settings, user, weeks]);
+  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, rideEvents, ridePayments, rideSnapshotAllocations, rideUpdateBatchEvents, rideUpdateBatches, settings, user, weeks, zoneLabels]);
 
   const recordOperationalSnapshot = useCallback(async (draft: OperationalSnapshotDraft): Promise<boolean> => {
     if (!user) return false;
@@ -478,12 +516,12 @@ export function useWeekStore(user: User | null) {
         const byKey = new Map(previous.map((snapshot) => [snapshot.eventKey, snapshot]));
         data.map(dbToOperationalSnapshot).forEach((snapshot) => byKey.set(snapshot.eventKey, snapshot));
         const next = [...byKey.values()].sort((a, b) => a.recordedAt.localeCompare(b.recordedAt));
-        storeCache.set(user.id, { weeks, settings, earningsSnapshots, operationalSnapshots: next, earningsAttributions, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, hasLocalData });
+        storeCache.set(user.id, { weeks, settings, earningsSnapshots, operationalSnapshots: next, earningsAttributions, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, rideSnapshotAllocations, zoneLabels, hasLocalData });
         return next;
       });
     }
     return true;
-  }, [earningsAttributions, earningsSnapshots, hasLocalData, rideEvents, ridePayments, rideUpdateBatchEvents, rideUpdateBatches, settings, user, weeks]);
+  }, [earningsAttributions, earningsSnapshots, hasLocalData, rideEvents, ridePayments, rideSnapshotAllocations, rideUpdateBatchEvents, rideUpdateBatches, settings, user, weeks, zoneLabels]);
 
   const startRideEvent = useCallback(async (draft: {
     weekId: string; dayDate: string; shiftId?: string | null; app?: string | null; startedAt: string; capture: RideCaptureResult; source?: "foreground_browser" | "manual_after_shift";
@@ -541,6 +579,78 @@ export function useWeekStore(user: User | null) {
     if (data) setRidePayments((previous) => [...previous, dbToRidePayment(data)]);
     return true;
   }, [user]);
+
+  const replaceSnapshotAllocations = useCallback(async (snapshotId: string, allocations: RideSnapshotAllocationDraft[]): Promise<boolean> => {
+    if (!user || allocations.length === 0) return false;
+    const snapshot = earningsSnapshots.find((item) => item.id === snapshotId);
+    let expected = Math.max(0, Number(snapshot?.delta) || 0);
+    if (expected <= 0) {
+      const { data: remoteSnapshot, error: snapshotError } = await supabase
+        .from("earnings_snapshots")
+        .select("delta")
+        .eq("id", snapshotId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (snapshotError || !remoteSnapshot) {
+        console.warn("[rideSnapshotAllocations] snapshot lookup failed", snapshotError);
+        return false;
+      }
+      expected = Math.max(0, Number(remoteSnapshot.delta) || 0);
+    }
+    const allocated = allocations.reduce((sum, allocation) => sum + (Number(allocation.amount) || 0), 0);
+    if (expected <= 0 || Math.abs(allocated - expected) > 0.005 || allocations.some((allocation) => allocation.amount <= 0)) {
+      console.warn("[rideSnapshotAllocations] invalid allocation total", { snapshotId, expected, allocated });
+      return false;
+    }
+    const allocationSetId = crypto.randomUUID();
+    const { data, error } = await supabase.from("earnings_snapshot_allocations").insert(allocations.map((allocation) => ({
+      user_id: user.id,
+      earnings_snapshot_id: snapshotId,
+      ride_event_id: allocation.rideEventId ?? null,
+      allocation_set_id: allocationSetId,
+      kind: allocation.kind,
+      amount: allocation.amount,
+      observed_at: allocation.observedAt,
+      attributed_day_date: allocation.attributedDayDate ?? null,
+      shift_id: allocation.shiftId ?? null,
+      effective_start_at: allocation.effectiveStartAt ?? null,
+      effective_end_at: allocation.effectiveEndAt ?? null,
+      note: allocation.note ?? null,
+    }))).select("*");
+    if (error || !data) { console.warn("[rideSnapshotAllocations] save failed", error); return false; }
+    const retiredAt = new Date().toISOString();
+    const { error: retireError } = await supabase.from("earnings_snapshot_allocations")
+      .update({ is_current: false, replaced_at: retiredAt })
+      .eq("user_id", user.id)
+      .eq("earnings_snapshot_id", snapshotId)
+      .eq("is_current", true)
+      .neq("allocation_set_id", allocationSetId);
+    if (retireError) console.warn("[rideSnapshotAllocations] prior allocation retirement deferred", retireError);
+    const next = [
+      ...rideSnapshotAllocations.map((allocation) => allocation.earningsSnapshotId === snapshotId && allocation.isCurrent && allocation.allocationSetId !== allocationSetId
+        ? { ...allocation, isCurrent: false, replacedAt: retiredAt }
+        : allocation),
+      ...data.map(dbToRideSnapshotAllocation),
+    ];
+    setRideSnapshotAllocations(next);
+    storeCache.set(user.id, { weeks, settings, earningsSnapshots, operationalSnapshots, earningsAttributions, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, rideSnapshotAllocations: next, zoneLabels, hasLocalData });
+    return true;
+  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, rideEvents, ridePayments, rideSnapshotAllocations, rideUpdateBatchEvents, rideUpdateBatches, settings, user, weeks, zoneLabels]);
+
+  const saveZoneLabel = useCallback(async (draft: { zoneKey: string; label: string; source?: "user" | "suggested" }): Promise<boolean> => {
+    if (!user) return false;
+    const label = draft.label.trim().slice(0, 80);
+    if (!label) return false;
+    const { data, error } = await supabase.from("user_zone_labels").upsert({
+      user_id: user.id, zone_key: draft.zoneKey, label, source: draft.source ?? "user", updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id,zone_key" }).select("*").single();
+    if (error || !data) { console.warn("[zoneLabels] save failed", error); return false; }
+    const nextLabel = dbToZoneLabel(data);
+    const next = [...zoneLabels.filter((item) => item.zoneKey !== nextLabel.zoneKey), nextLabel];
+    setZoneLabels(next);
+    storeCache.set(user.id, { weeks, settings, earningsSnapshots, operationalSnapshots, earningsAttributions, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, rideSnapshotAllocations, zoneLabels: next, hasLocalData });
+    return true;
+  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, rideEvents, ridePayments, rideSnapshotAllocations, rideUpdateBatchEvents, rideUpdateBatches, settings, user, weeks, zoneLabels]);
 
   const resolveWeekConflict = useCallback(async (strategy: "keep-remote" | "use-local"): Promise<boolean> => {
     const draft = conflictDraft;
@@ -603,12 +713,12 @@ export function useWeekStore(user: User | null) {
       const nextSnapshots = earningsSnapshots.filter((snapshot) => snapshot.weekId !== id);
       const remainingSnapshotIds = new Set(nextSnapshots.map((snapshot) => snapshot.id));
       const nextAttributions = earningsAttributions.filter((item) => remainingSnapshotIds.has(item.snapshotId));
-      storeCache.set(user.id, { weeks: nextWeeks, settings, earningsSnapshots: nextSnapshots, operationalSnapshots, earningsAttributions: nextAttributions, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, hasLocalData });
+      storeCache.set(user.id, { weeks: nextWeeks, settings, earningsSnapshots: nextSnapshots, operationalSnapshots, earningsAttributions: nextAttributions, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, rideSnapshotAllocations, zoneLabels, hasLocalData });
       setEarningsSnapshots(nextSnapshots);
       setEarningsAttributions(nextAttributions);
       return nextWeeks;
     });
-  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, rideEvents, ridePayments, rideUpdateBatchEvents, rideUpdateBatches, settings, user]);
+  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, rideEvents, ridePayments, rideSnapshotAllocations, rideUpdateBatchEvents, rideUpdateBatches, settings, user, zoneLabels]);
 
   const updateSettings = useCallback(async (s: AppSettings): Promise<boolean> => {
     if (!user) return false;
@@ -627,10 +737,10 @@ export function useWeekStore(user: User | null) {
       alert("Error saving settings: " + error.message);
       return false;
     }
-    storeCache.set(user.id, { weeks, settings: s, earningsSnapshots, operationalSnapshots, earningsAttributions, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, hasLocalData });
+    storeCache.set(user.id, { weeks, settings: s, earningsSnapshots, operationalSnapshots, earningsAttributions, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, rideSnapshotAllocations, zoneLabels, hasLocalData });
     setSettingsState(s);
     return true;
-  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, rideEvents, ridePayments, rideUpdateBatchEvents, rideUpdateBatches, user, weeks]);
+  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, rideEvents, ridePayments, rideSnapshotAllocations, rideUpdateBatchEvents, rideUpdateBatches, user, weeks, zoneLabels]);
 
   const importLocalData = useCallback(async () => {
     if (!user) return;
@@ -678,6 +788,8 @@ export function useWeekStore(user: User | null) {
     rideUpdateBatches,
     rideUpdateBatchEvents,
     ridePayments,
+    rideSnapshotAllocations,
+    zoneLabels,
     loading,
     hasLocalData,
     addWeek,
@@ -687,6 +799,8 @@ export function useWeekStore(user: User | null) {
     finishRideEvent,
     linkRideEvents,
     recordRidePayment,
+    replaceSnapshotAllocations,
+    saveZoneLabel,
     saveEarningsAttribution,
     deleteWeek,
     updateSettings,

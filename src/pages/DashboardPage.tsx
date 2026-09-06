@@ -199,7 +199,7 @@ function getWeekRankWindow(weeks: WeekRecord[], weekId: string, currencySymbol: 
 }
 
 export default function DashboardPage() {
-  const { user, openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, hasLocalData, importLocalData, updateWeek, updateSettings, recordOperationalSnapshot, startRideEvent, finishRideEvent, linkRideEvents } = useOutletContext<StoreContext>();
+  const { user, openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, hasLocalData, importLocalData, updateWeek, updateSettings, recordOperationalSnapshot, startRideEvent, finishRideEvent, linkRideEvents, replaceSnapshotAllocations } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [importing, setImporting] = useState(false);
@@ -471,10 +471,13 @@ export default function DashboardPage() {
   const traffic = driverUtility.data?.traffic;
   const weatherLive = weather?.status === "live";
   const trafficLive = traffic?.status === "live";
-  async function handleQuickUpdateSaved(event: { app: string; rideDelta: number; snapshot: Parameters<typeof recordOperationalSnapshot>[0]; earningsSnapshotId?: string; rideEventIds?: string[] }) {
+  async function handleQuickUpdateSaved(event: { app: string; rideDelta: number; snapshot: Parameters<typeof recordOperationalSnapshot>[0]; earningsSnapshotId?: string; rideEventIds?: string[]; snapshotAllocations?: import("@/lib/types").RideSnapshotAllocationDraft[] }) {
     await recordOperationalSnapshot(event.snapshot);
     if (event.earningsSnapshotId && event.rideEventIds?.length) {
       await linkRideEvents({ app: event.app, earningsSnapshotId: event.earningsSnapshotId, operationalEventKey: event.snapshot.eventKey, rideEventIds: event.rideEventIds });
+    }
+    if (event.earningsSnapshotId && event.snapshotAllocations?.length) {
+      await replaceSnapshotAllocations(event.earningsSnapshotId, event.snapshotAllocations);
     }
     if (event.app.toLowerCase() !== "uber" || event.rideDelta === 0) return;
     await updateSettings({
@@ -802,6 +805,7 @@ export default function DashboardPage() {
           rideEvents={rideEvents}
           onQuickUpdateSaved={handleQuickUpdateSaved}
           quickActionRequest={quickActionRequest}
+          onQuickActionRequestHandled={(id) => setQuickActionRequest((request) => request?.id === id ? null : request)}
           weeks={weeks}
           onEndDay={todayEntry && !isDayClosed ? () => setEndDayOpen(true) : undefined}
         />
@@ -997,6 +1001,7 @@ export default function DashboardPage() {
           rideEvents={rideEvents}
           onQuickUpdateSaved={handleQuickUpdateSaved}
           quickActionRequest={quickActionRequest}
+          onQuickActionRequestHandled={(id) => setQuickActionRequest((request) => request?.id === id ? null : request)}
           weeks={weeks}
           onEndDay={todayEntry && !isDayClosed ? () => setEndDayOpen(true) : undefined}
         />

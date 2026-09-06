@@ -294,6 +294,66 @@ export type Database = {
           },
         ]
       }
+      earnings_snapshot_allocations: {
+        Row: {
+          allocation_set_id: string
+          amount: number
+          attributed_day_date: string | null
+          created_at: string
+          earnings_snapshot_id: string
+          effective_end_at: string | null
+          effective_start_at: string | null
+          id: string
+          is_current: boolean
+          kind: string
+          note: string | null
+          observed_at: string
+          replaced_at: string | null
+          ride_event_id: string | null
+          shift_id: string | null
+          user_id: string
+        }
+        Insert: {
+          allocation_set_id?: string
+          amount: number
+          attributed_day_date?: string | null
+          created_at?: string
+          earnings_snapshot_id: string
+          effective_end_at?: string | null
+          effective_start_at?: string | null
+          id?: string
+          is_current?: boolean
+          kind: string
+          note?: string | null
+          observed_at: string
+          replaced_at?: string | null
+          ride_event_id?: string | null
+          shift_id?: string | null
+          user_id: string
+        }
+        Update: {
+          allocation_set_id?: string
+          amount?: number
+          attributed_day_date?: string | null
+          created_at?: string
+          earnings_snapshot_id?: string
+          effective_end_at?: string | null
+          effective_start_at?: string | null
+          id?: string
+          is_current?: boolean
+          kind?: string
+          note?: string | null
+          observed_at?: string
+          replaced_at?: string | null
+          ride_event_id?: string | null
+          shift_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          { foreignKeyName: "earnings_snapshot_allocations_earnings_snapshot_id_fkey"; columns: ["earnings_snapshot_id"]; isOneToOne: false; referencedRelation: "earnings_snapshots"; referencedColumns: ["id"] },
+          { foreignKeyName: "earnings_snapshot_allocations_ride_event_id_fkey"; columns: ["ride_event_id"]; isOneToOne: false; referencedRelation: "ride_events"; referencedColumns: ["id"] },
+        ]
+      }
       operational_snapshots: {
         Row: {
           app_totals: Json
@@ -443,6 +503,12 @@ export type Database = {
           { foreignKeyName: "ride_payments_earnings_snapshot_id_fkey"; columns: ["earnings_snapshot_id"]; isOneToOne: true; referencedRelation: "earnings_snapshots"; referencedColumns: ["id"] },
           { foreignKeyName: "ride_payments_ride_event_id_fkey"; columns: ["ride_event_id"]; isOneToOne: false; referencedRelation: "ride_events"; referencedColumns: ["id"] },
         ]
+      }
+      user_zone_labels: {
+        Row: { created_at: string; id: string; label: string; source: string; updated_at: string; user_id: string; zone_key: string }
+        Insert: { created_at?: string; id?: string; label: string; source?: string; updated_at?: string; user_id: string; zone_key: string }
+        Update: { created_at?: string; id?: string; label?: string; source?: string; updated_at?: string; user_id?: string; zone_key?: string }
+        Relationships: []
       }
       email_campaign_recipients: {
         Row: {

@@ -1,6 +1,6 @@
 # Zone Intelligence & Evidence — Technical Design
 
-Status: approved product and technical design. No implementation, migration, new query, or UI change is authorized by this document alone.
+Status: initial implementation is on `main`. It reuses existing Movement tables; no new migration is required. Authenticated owner QA with genuine captured evidence is required before publication.
 
 Target: `Beta 0.10.1 - Zone Intelligence & Evidence`.
 
@@ -131,11 +131,11 @@ Forbidden language includes `most profitable area`, `wasted miles`, `route recom
 
 ## Required implementation seams
 
-1. Extend the authenticated store read to load `ride_events`, `ride_update_batches`, batch-event links, and `ride_payments` for the current owner. Loading failures must preserve existing Deep Insights behavior and show a Zone Intelligence-specific retry state.
-2. Add a pure `zoneIntelligence.ts` derivation and test it independently from React. It must apply global filters using the ride's local `day_date` and selected app, deduplicate financial evidence, and emit evidence/exclusion metadata.
-3. Add the third Deep Insights tab and URL-backed zone mode/selected-cell state. Deep Insights remains desktop-first; the mobile view is a readable inspector, not a live driving map.
-4. Add only the indexes demonstrated by the final query shape, likely owner/date plus owner/pickup-zone and owner/dropoff-zone indexes. Generate any migration at implementation time and preserve RLS plus explicit authenticated grants.
-5. If labels are approved for persistence, add an owner-scoped `user_zone_labels` table keyed by `(user_id, zone_key)`, with manual `label`, timestamps, RLS, and no geographic columns beyond the existing coarse key. Browser-local labels are acceptable for an initial non-portable prototype, but must be visibly labelled as local.
+1. Done: the authenticated store reads `ride_events`, `ride_update_batches`, batch-event links, and `ride_payments` for the current owner. Loading failures preserve the existing Deep Insights data; production QA must confirm its visible retry behavior.
+2. Done: `zoneIntelligence.ts` is a pure tested derivation that applies global filters using local `day_date`, deduplicates financial evidence, and emits coverage/exclusion metadata.
+3. Done: Deep Insights has a third tab with URL-backed zone mode and selected-cell state. It remains desktop-first; smaller screens receive a readable inspector, not a live driving map.
+4. Deferred: add only indexes demonstrated by real query volume. Generate any migration at that time and preserve RLS plus explicit authenticated grants.
+5. Deferred: if persistent labels are approved, add an owner-scoped `user_zone_labels` table keyed by `(user_id, zone_key)`, with manual `label`, timestamps, RLS, and no geographic columns beyond the existing coarse key. Browser-local labels are acceptable for an initial non-portable prototype, but must be visibly labelled as local.
 
 ## Validation contract
 

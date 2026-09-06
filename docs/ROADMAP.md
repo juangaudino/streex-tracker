@@ -100,7 +100,7 @@ Boundaries:
 
 #### Approved follow-up — Post-shift correction
 
-Status: approved for technical design; not implemented.
+Status: implemented on `main`; active-backend tables already applied for Movement are reused. Authenticated owner QA is required with real captured evidence before publication.
 
 - Entry will let the owner explicitly correct earnings, accumulated app rides, and shared daily mileage for a selected finished shift.
 - It will preview the exact delta before saving and never select or alter a closed shift automatically.
@@ -112,7 +112,7 @@ Status: approved for technical design; not implemented.
 
 ### Beta 0.10.1 - Zone Intelligence & Evidence
 
-Status: approved for technical design; not implemented.
+Status: implemented on `main`; active-backend Movement tables are reused. Authenticated owner QA is required with genuine captured evidence before publication.
 
 Purpose:
 

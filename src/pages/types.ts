@@ -1,4 +1,4 @@
-import type { WeekRecord, AppSettings, EarningsSnapshot, OperationalSnapshot, OperationalSnapshotDraft, EarningsAttribution, EarningsAttributionIntent, RideCaptureResult, RideEvent } from "@/lib/types";
+import type { WeekRecord, AppSettings, EarningsSnapshot, OperationalSnapshot, OperationalSnapshotDraft, EarningsAttribution, EarningsAttributionIntent, RideCaptureResult, RideEvent, RidePayment, RideUpdateBatch, RideUpdateBatchEvent } from "@/lib/types";
 import type { WeekRevision } from "@/lib/weekRevisions";
 import type { User } from "@supabase/supabase-js";
 
@@ -11,6 +11,9 @@ export interface StoreContext {
   operationalSnapshots: OperationalSnapshot[];
   earningsAttributions: EarningsAttribution[];
   rideEvents: RideEvent[];
+  rideUpdateBatches: RideUpdateBatch[];
+  rideUpdateBatchEvents: RideUpdateBatchEvent[];
+  ridePayments: RidePayment[];
   loading: boolean;
   hasLocalData: boolean;
   addWeek: (w: WeekRecord) => Promise<boolean>;

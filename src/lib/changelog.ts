@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.10.0";
+export const CURRENT_VERSION = "0.10.1";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,18 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.10.1",
+    date: "2026-09",
+    title: "Zone Intelligence & Evidence (Local Candidate)",
+    tags: ["new", "feature"],
+    items: [
+      "Deep Insights adds Zone Intelligence: private approximate zone cells, capture coverage, verified pickup earnings, and aggregate destination context",
+      "Zone analysis honors the selected period, app, and weekday filters, with URL-backed mode and selected-zone state",
+      "Only a single linked captured pickup with a positive reconciled snapshot can contribute base zone earnings; batch and missing-context rides remain coverage only",
+      "Explicit late tips can appear in the original captured pickup zone lifetime ledger while staying on their observed day in financial history",
+    ],
+  },
   {
     version: "0.10.0",
     date: "2026-09",

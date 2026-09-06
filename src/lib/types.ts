@@ -172,6 +172,32 @@ export interface RideEvent {
   endCaptureStatus: RideCaptureStatus;
   startAccuracyClass?: RideAccuracyClass | null;
   endAccuracyClass?: RideAccuracyClass | null;
+  source: "foreground_browser" | "manual_after_shift";
+}
+
+export interface RideUpdateBatch {
+  id: string;
+  userId: string;
+  app: string;
+  kind: "single" | "batch";
+  earningsSnapshotId: string;
+  operationalEventKey?: string | null;
+  createdAt: string;
+}
+
+export interface RideUpdateBatchEvent {
+  batchId: string;
+  rideEventId: string;
+}
+
+export interface RidePayment {
+  id: string;
+  userId: string;
+  rideEventId: string;
+  earningsSnapshotId: string;
+  kind: "manual_base" | "late_tip" | "adjustment";
+  observedAt: string;
+  createdAt: string;
 }
 
 export interface RideCaptureResult {

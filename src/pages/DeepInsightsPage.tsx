@@ -40,9 +40,11 @@ import { formatCurrency } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import type { StoreContext } from "./types";
 import OperationalExplorerPanel from "@/components/insights/OperationalExplorerPanel";
+import ZoneIntelligencePanel from "@/components/insights/ZoneIntelligencePanel";
 import { buildOperationalExplorerData, type OperationalExplorerFilters } from "@/lib/operationalExplorer";
 import { buildOperationalExplorerCsv, downloadOperationalExplorerCsv } from "@/lib/operationalExplorerExport";
 import { addOperationalExplorerPreset, createOperationalExplorerPreset, readOperationalExplorerPresets, writeOperationalExplorerPresets, type OperationalExplorerPreset } from "@/lib/operationalExplorerPresets";
+import { buildZoneIntelligenceData, type ZoneIntelligenceMode } from "@/lib/zoneIntelligence";
 
 const TIME_OPTIONS: Array<{ value: DeepInsightsTimePreset; label: string }> = [
   { value: "all", label: "All time" },
@@ -488,7 +490,7 @@ function Filters({
 }
 
 export default function DeepInsightsPage() {
-  const { weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, settings, user } = useOutletContext<StoreContext>();
+  const { weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, settings, user } = useOutletContext<StoreContext>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isDark } = useTheme();
   const ui = useMemo(() => getVisual(isDark), [isDark]);
@@ -513,6 +515,10 @@ export default function DeepInsightsPage() {
   const operationalData = useMemo(
     () => buildOperationalExplorerData({ weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, globalFilters: filters, operationalFilters }),
     [weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, filters, operationalFilters],
+  );
+  const zoneData = useMemo(
+    () => buildZoneIntelligenceData({ rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, earningsSnapshots, filters }),
+    [earningsSnapshots, filters, rideEvents, ridePayments, rideUpdateBatchEvents, rideUpdateBatches],
   );
   useEffect(() => {
     setOperationalPresets(readOperationalExplorerPresets(user?.id));
@@ -564,18 +570,31 @@ export default function DeepInsightsPage() {
   const filteredNote = data.appFilterActive
     ? "App filter is active. Efficiency metrics hide because Streex does not store app-specific hours yet."
     : null;
-  const activeView = searchParams.get("view") === "compare" ? "compare" : "overview";
+  const activeView = searchParams.get("view") === "compare" ? "compare" : searchParams.get("view") === "zones" ? "zones" : "overview";
+  const zoneMode = (["coverage", "earnings", "flow"] as const).includes(searchParams.get("zoneMode") as ZoneIntelligenceMode)
+    ? searchParams.get("zoneMode") as ZoneIntelligenceMode
+    : "coverage";
+  const selectedZoneKey = searchParams.get("zone") || undefined;
 
-  function setActiveView(view: "overview" | "compare") {
+  function setActiveView(view: "overview" | "compare" | "zones") {
     const next = new URLSearchParams(searchParams);
     if (view === "overview") next.delete("view");
-    else next.set("view", "compare");
+    else next.set("view", view);
+    setSearchParams(next, { replace: true });
+  }
+
+  function setZoneState(nextMode: ZoneIntelligenceMode, nextZoneKey?: string) {
+    const next = new URLSearchParams(searchParams);
+    if (nextMode === "coverage") next.delete("zoneMode");
+    else next.set("zoneMode", nextMode);
+    if (nextZoneKey) next.set("zone", nextZoneKey);
+    else next.delete("zone");
     setSearchParams(next, { replace: true });
   }
 
   const viewTabs = (
-    <div className={cn("inline-grid grid-cols-2 gap-1 rounded-xl border p-1", ui.rowDivider)} role="tablist" aria-label="Deep Insights view">
-      {(["overview", "compare"] as const).map((view) => (
+    <div className={cn("inline-grid grid-cols-3 gap-1 rounded-xl border p-1", ui.rowDivider)} role="tablist" aria-label="Deep Insights view">
+      {(["overview", "compare", "zones"] as const).map((view) => (
         <button
           key={view}
           type="button"
@@ -589,7 +608,7 @@ export default function DeepInsightsPage() {
               : cn(ui.muted, isDark ? "hover:bg-white/[0.05]" : "hover:bg-slate-100"),
           )}
         >
-          {view === "overview" ? "Overview" : "Compare"}
+          {view === "overview" ? "Overview" : view === "compare" ? "Compare" : "Zone Intelligence"}
         </button>
       ))}
     </div>
@@ -608,7 +627,9 @@ export default function DeepInsightsPage() {
                 <p className={cn("mt-2 max-w-2xl text-sm leading-relaxed", ui.muted)}>
                   {activeView === "compare"
                     ? "See what changed, what improved, and what drove the difference across the periods that matter."
-                    : "Your career, visualized. Desktop-first analytics built from your real earnings, shifts, rides, miles, and snapshots."}
+                    : activeView === "zones"
+                      ? "Private, coverage-first zone evidence from rides you intentionally captured. No routes, addresses, or inferred history."
+                      : "Your career, visualized. Desktop-first analytics built from your real earnings, shifts, rides, miles, and snapshots."}
                 </p>
               </div>
             </div>
@@ -655,6 +676,18 @@ export default function DeepInsightsPage() {
           onReset={() => changeFilters({ timePreset: "all", app: "all", weekdays: [] })}
           viewTabs={viewTabs}
         />
+        {activeView === "zones" ? (
+          <ZoneIntelligencePanel
+            data={zoneData}
+            currencySymbol={sym}
+            mode={zoneMode}
+            selectedZoneKey={selectedZoneKey}
+            isDark={isDark}
+            onModeChange={(nextMode) => setZoneState(nextMode, selectedZoneKey)}
+            onSelectZone={(zoneKey) => setZoneState(zoneMode, zoneKey)}
+          />
+        ) : (
+          <>
         <OperationalExplorerPanel
           data={operationalData}
           filters={operationalFilters}
@@ -1070,6 +1103,8 @@ export default function DeepInsightsPage() {
             }))}
           />
         </Panel>
+          </>
+        )}
           </>
         )}
       </div>

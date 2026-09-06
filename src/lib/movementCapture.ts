@@ -12,6 +12,7 @@ export function dbToRideEvent(row: RideEventRow): RideEvent {
     endCaptureStatus: row.end_capture_status as RideEvent["endCaptureStatus"],
     startAccuracyClass: row.start_accuracy_class as RideEvent["startAccuracyClass"],
     endAccuracyClass: row.end_accuracy_class as RideEvent["endAccuracyClass"],
+    source: row.source as RideEvent["source"],
   };
 }
 

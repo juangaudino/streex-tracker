@@ -34,7 +34,7 @@ Next approved product sequence:
 
 ```text
 Beta 0.10.0 - Movement Capture & Zone Context (implemented on main; active-backend migrations applied; real-work QA continuing)
-Beta 0.10.1 - Zone Intelligence & Evidence (technical design approved; not implemented)
+Beta 0.10.1 - Zone Intelligence & Evidence (implemented on main; authenticated owner QA required)
 ```
 
 Source of truth:
@@ -597,7 +597,7 @@ See `CHANGELOG.md` for full details.
 High priority:
 
 - Continue real-work QA for Beta 0.10.0 Movement Capture & Zone Context. Both active-backend migrations are applied; Full Focus is its primary surface, Entry reuses its shared control, and Quick Actions remains the sole hub for shifts and accumulated totals. It is foreground-only, captures privacy-minimized start/end zones, keeps Uber/manual mileage authoritative, and does not persist raw coordinates or routes. See `docs/MOVEMENT_CAPTURE_TECHNICAL_DESIGN.md`.
-- Beta 0.10.1 Zone Intelligence & Evidence is approved for technical design only. It will add a coverage-first Deep Insights workspace using private coarse cells and pickup-only eligible income; see `docs/ZONE_INTELLIGENCE_TECHNICAL_DESIGN.md`. Do not begin its implementation until explicitly scheduled.
+- Beta 0.10.1 Zone Intelligence & Evidence is implemented on `main` and requires authenticated owner QA with genuine captured evidence. It adds a coverage-first Deep Insights workspace using private coarse cells and pickup-only eligible income; see `docs/ZONE_INTELLIGENCE_TECHNICAL_DESIGN.md`.
 - Complete owner QA and publish Beta 0.9.7 only after import safety, totals preservation, no-snapshot behavior, and cross-surface analytics agree.
 - Configure two isolated QA identities in the GitHub `qa` environment for bidirectional RLS certification.
 - Keep monitoring login/session and SMTP confirmation/recovery delivery.

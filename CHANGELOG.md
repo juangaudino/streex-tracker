@@ -2,6 +2,20 @@
 
 ## Beta Releases
 
+### Beta 0.10.1 — Zone Intelligence & Evidence (Local Candidate)
+
+### Added
+
+- Deep Insights now includes a Zone Intelligence workspace with private approximate zone cells, coverage evidence, pickup-zone earnings, and aggregated destination context.
+- Zone results reuse the selected period, app, and weekday filters and keep the selected mode and cell in the URL.
+- Explicit late tips can add to the original captured pickup zone's lifetime evidence while remaining financial income on their observed day.
+
+### Data Integrity
+
+- Only a single linked ride with a captured pickup zone and positive reconciled snapshot delta can contribute base pickup earnings.
+- Batch links, missing pickup captures, unlinked rides, and historical manual rides remain visible as coverage or exclusions; their money is never allocated across zones.
+- No raw coordinates, addresses, routes, map tiles, navigation, or background tracking are introduced.
+
 ### Beta 0.10.0 — Movement Capture & Post-Shift Correction (Local Candidate)
 
 ### Added
@@ -16,7 +30,7 @@
 
 - The pickup zone is the canonical zone for future ride-income analysis. A dropoff remains destination context and never receives a duplicate income allocation.
 - Earnings snapshots remain append-only. Late tips do not rewrite the original ride day.
-- The new owner-scoped payment-link migration is local and pending application to the active backend.
+- The owner-scoped payment-link migration is applied to the active backend.
 
 ### Beta 0.9.13 — Deep Insights Operations Snapshot Comparison (Local Candidate)
 

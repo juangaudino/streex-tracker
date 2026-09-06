@@ -2,6 +2,22 @@
 
 ## Beta Releases
 
+### Beta 0.10.4 — Weekly Ride Allocation Review (Local Candidate)
+
+### Fixed
+
+- Entry no longer hides the allocation review when a positive observed update has not yet been assigned to any ride.
+- The same review is available when opening a closed historical week, not only while the current week is active.
+
+### Added
+
+- Every positive observed app update for the selected week can be split across recorded rides, or left explicitly unassigned until the owner knows the correct amount.
+- The review explains the boundary clearly: Streex verifies the observed total and that portions add up exactly; the owner confirms the provider amount per ride.
+
+### Data Integrity
+
+- Reviewing allocations never rewrites the original observed snapshot, reported daily total, or historical hourly record. It changes only the current ride-level interpretation.
+
 ### Beta 0.10.3 — Zone Map & Confirmed Labels (Local Candidate)
 
 ### Added

@@ -827,9 +827,17 @@ export default function WeeklyEntryPage() {
               )}
             </section>
           )}
-          <RideAllocationLedger allocations={rideSnapshotAllocations} rides={rideEvents} currencySymbol={sym} onReplace={replaceSnapshotAllocations} />
         </>
       )}
+
+      <RideAllocationLedger
+        allocations={rideSnapshotAllocations}
+        rides={rideEvents}
+        snapshots={earningsSnapshots}
+        weekId={editWeek.id}
+        currencySymbol={sym}
+        onReplace={replaceSnapshotAllocations}
+      />
 
       <section className="rounded-xl border border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between gap-3">

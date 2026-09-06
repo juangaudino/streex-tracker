@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.10.3";
+export const CURRENT_VERSION = "0.10.4";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,17 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.10.4",
+    date: "2026-09",
+    title: "Weekly Ride Allocation Review (Local Candidate)",
+    tags: ["fix", "feature"],
+    items: [
+      "Entry shows every positive observed app update for the selected week, including snapshots that have not yet been assigned to rides",
+      "A closed historical week can be reviewed and its observed update split across recorded rides without changing the original total or snapshot",
+      "Streex verifies the observed update and exact allocation sum; the owner confirms the actual provider amount for each ride",
+    ],
+  },
   {
     version: "0.10.3",
     date: "2026-09",

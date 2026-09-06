@@ -132,9 +132,19 @@ Boundaries:
 
 Technical design: `docs/ZONE_INTELLIGENCE_TECHNICAL_DESIGN.md`.
 
+### Beta 0.10.4 - Weekly Ride Allocation Review
+
+Status: local candidate; no new migration required.
+
+Purpose:
+
+- Show every positive observed app update for the selected week, even before it has a ride allocation.
+- Let the owner review a closed week and assign or split its updates across recorded rides without altering the financial snapshot.
+- Make the evidence boundary explicit: Streex checks the observed update and exact sum; the owner confirms the actual provider amount per ride.
+
 ### Beta 0.10.2 - Ride Allocation Integrity & Quick Actions Stability
 
-Status: local candidate; migration prepared only. It must not be applied or published until the owner completes local review.
+Status: implemented on `main`; active-backend migration applied. Continued owner QA is required.
 
 Purpose:
 
@@ -151,7 +161,7 @@ Boundaries:
 
 ### Beta 0.10.3 - Zone Map & Confirmed Labels
 
-Status: local candidate; migration prepared only. It must not be applied or published until the owner completes local review.
+Status: implemented on `main`; active-backend migration applied. Continued owner QA is required.
 
 Purpose:
 

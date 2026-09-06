@@ -78,6 +78,26 @@ Deep Insights 0.7.0 added a separate comparison workspace with:
 
 ## Near-Term Planned Sequence
 
+### Beta 0.10.0 - Movement Capture & Zone Context
+
+Status: in local implementation. Product and interaction architecture approved; technical design is in `docs/MOVEMENT_CAPTURE_TECHNICAL_DESIGN.md`. This takes priority over the pending Historical Data Import publication gate. No migration has been applied to the active backend and no production deployment has occurred.
+
+Purpose:
+
+- Let a driver start and finish an optional ride/delivery event while Streex is open, capturing its time and a privacy-minimized start/end zone.
+- Preserve the existing accumulated Quick Actions workflow for money, rides, and manually supplied Uber mileage; do not claim that two GPS points measure driven route miles.
+- Allow an immediate total update to link one completed event to its existing append-only earnings/operations observations when the evidence is unambiguous.
+- Keep deferred updates useful: several completed events may be grouped as one later update, but their money is never invented or allocated individually without an explicit later decision.
+- Keep Quick Actions as the only shift and accumulated-total hub; Movement is the shared Full Focus-first contextual capture control and opens Quick Actions only for an update.
+- Replace the low-use Conditions/Octopus utility slot in Full Focus with Movement. Conditions and Octopus remain out of the primary Focus surface pending a later rethink; no preference system is included in this release.
+
+Boundaries:
+
+- Browser GPS is foreground-only for this release. No background surveillance, service-worker tracking, route history, address lookup, or promise of lock-screen mileage capture.
+- Store a coarse zone key, capture time, accuracy class, and event state only. Do not persist raw latitude/longitude, full routes, touch coordinates, or reverse-geocoded addresses.
+- Existing `weeks`, manual day mileage, shift mileage allocation, `earnings_snapshots`, `operational_snapshots`, and earnings-attribution evidence remain authoritative and append-only.
+- Zone analytics must report captured-event coverage and wait for a meaningful sample. A zone is not an earnings zone unless a valid later link establishes that context.
+
 ### Beta 0.9.1 - Reliability & Release Safety
 
 Status: completed.
@@ -703,7 +723,7 @@ Guardrails:
 
 Former label: `V5.8.5 Candidate - Deep Movement Intelligence`.
 
-Status: candidate, blocked by data for advanced layers.
+Status: partially absorbed. Beta 0.10.0 supplies the intentionally limited foreground zone-capture foundation; route tracking, automatic mileage, vehicle intelligence, and advanced movement interpretation remain future work.
 
 Tagline:
 

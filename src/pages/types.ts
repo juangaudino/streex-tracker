@@ -1,4 +1,4 @@
-import type { WeekRecord, AppSettings, EarningsSnapshot, OperationalSnapshot, OperationalSnapshotDraft, EarningsAttribution, EarningsAttributionIntent } from "@/lib/types";
+import type { WeekRecord, AppSettings, EarningsSnapshot, OperationalSnapshot, OperationalSnapshotDraft, EarningsAttribution, EarningsAttributionIntent, RideCaptureResult, RideEvent } from "@/lib/types";
 import type { WeekRevision } from "@/lib/weekRevisions";
 import type { User } from "@supabase/supabase-js";
 
@@ -10,11 +10,15 @@ export interface StoreContext {
   earningsSnapshots: EarningsSnapshot[];
   operationalSnapshots: OperationalSnapshot[];
   earningsAttributions: EarningsAttribution[];
+  rideEvents: RideEvent[];
   loading: boolean;
   hasLocalData: boolean;
   addWeek: (w: WeekRecord) => Promise<boolean>;
-  updateWeek: (w: WeekRecord, attributionIntents?: EarningsAttributionIntent[], options?: { recordSnapshots?: boolean }) => Promise<boolean>;
+  updateWeek: (w: WeekRecord, attributionIntents?: EarningsAttributionIntent[], options?: { recordSnapshots?: boolean; onSnapshotsRecorded?: (snapshots: EarningsSnapshot[]) => Promise<void> | void }) => Promise<boolean>;
   recordOperationalSnapshot: (draft: OperationalSnapshotDraft) => Promise<boolean>;
+  startRideEvent: (draft: { weekId: string; dayDate: string; shiftId?: string | null; app?: string | null; startedAt: string; capture: RideCaptureResult }) => Promise<RideEvent | null>;
+  finishRideEvent: (id: string, endedAt: string, capture: RideCaptureResult) => Promise<RideEvent | null>;
+  linkRideEvents: (draft: { app: string; earningsSnapshotId: string; operationalEventKey?: string | null; rideEventIds: string[] }) => Promise<boolean>;
   saveEarningsAttribution: (snapshotId: string, intent: Omit<EarningsAttributionIntent, "dayDate" | "app" | "previousAmount" | "newAmount">) => Promise<boolean>;
   deleteWeek: (id: string) => void;
   updateSettings: (s: AppSettings) => Promise<boolean>;

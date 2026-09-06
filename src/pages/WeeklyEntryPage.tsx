@@ -34,6 +34,7 @@ import { activeShiftDurationHours, createShift, endActiveShift, getDayShiftHours
 import { isRewardApp, operationalWeekTotal } from "@/lib/rewardIncome";
 import { formatRideAttribution, replaceShiftTotalRideCount } from "@/lib/rideAttribution";
 import { replaceShiftMileage } from "@/lib/mileageAttribution";
+import RideCaptureControl from "@/components/RideCaptureControl";
 
 function timeInputValue(value?: string): string {
   if (!value) return "";
@@ -62,7 +63,7 @@ function formatShiftTime(value?: string): string {
 }
 
 export default function WeeklyEntryPage() {
-  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, addWeek, updateWeek } =
+  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, startRideEvent, finishRideEvent, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -683,6 +684,17 @@ export default function WeeklyEntryPage() {
           </label>
         </div>
       </div>
+
+      {!isHistoricalEdit && openWeek && editWeek.id === openWeek.id && (
+        <RideCaptureControl
+          openWeek={openWeek}
+          apps={apps}
+          rideEvents={rideEvents}
+          onStart={startRideEvent}
+          onFinish={finishRideEvent}
+          compact
+        />
+      )}
 
       <section className="rounded-xl border border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between gap-3">

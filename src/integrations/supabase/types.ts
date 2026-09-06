@@ -347,6 +347,94 @@ export type Database = {
           },
         ]
       }
+      ride_events: {
+        Row: {
+          app: string | null
+          created_at: string
+          day_date: string
+          end_accuracy_class: string | null
+          end_capture_status: string
+          end_zone_key: string | null
+          ended_at: string | null
+          id: string
+          shift_id: string | null
+          source: string
+          start_accuracy_class: string | null
+          start_capture_status: string
+          start_zone_key: string | null
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+          week_id: string
+        }
+        Insert: {
+          app?: string | null
+          created_at?: string
+          day_date: string
+          end_accuracy_class?: string | null
+          end_capture_status?: string
+          end_zone_key?: string | null
+          ended_at?: string | null
+          id?: string
+          shift_id?: string | null
+          source?: string
+          start_accuracy_class?: string | null
+          start_capture_status?: string
+          start_zone_key?: string | null
+          started_at: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          week_id: string
+        }
+        Update: {
+          app?: string | null
+          created_at?: string
+          day_date?: string
+          end_accuracy_class?: string | null
+          end_capture_status?: string
+          end_zone_key?: string | null
+          ended_at?: string | null
+          id?: string
+          shift_id?: string | null
+          source?: string
+          start_accuracy_class?: string | null
+          start_capture_status?: string
+          start_zone_key?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_events_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ride_update_batch_events: {
+        Row: { batch_id: string; ride_event_id: string }
+        Insert: { batch_id: string; ride_event_id: string }
+        Update: { batch_id?: string; ride_event_id?: string }
+        Relationships: [
+          { foreignKeyName: "ride_update_batch_events_batch_id_fkey"; columns: ["batch_id"]; isOneToOne: false; referencedRelation: "ride_update_batches"; referencedColumns: ["id"] },
+          { foreignKeyName: "ride_update_batch_events_ride_event_id_fkey"; columns: ["ride_event_id"]; isOneToOne: false; referencedRelation: "ride_events"; referencedColumns: ["id"] },
+        ]
+      }
+      ride_update_batches: {
+        Row: { app: string; created_at: string; earnings_snapshot_id: string; id: string; kind: string; operational_event_key: string | null; user_id: string }
+        Insert: { app: string; created_at?: string; earnings_snapshot_id: string; id?: string; kind: string; operational_event_key?: string | null; user_id: string }
+        Update: { app?: string; created_at?: string; earnings_snapshot_id?: string; id?: string; kind?: string; operational_event_key?: string | null; user_id?: string }
+        Relationships: [
+          { foreignKeyName: "ride_update_batches_earnings_snapshot_id_fkey"; columns: ["earnings_snapshot_id"]; isOneToOne: true; referencedRelation: "earnings_snapshots"; referencedColumns: ["id"] },
+        ]
+      }
       email_campaign_recipients: {
         Row: {
           campaign_id: string

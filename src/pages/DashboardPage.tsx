@@ -46,7 +46,7 @@ import { getWeekRanking, getWeekdayHistoricalRank } from "@/lib/career";
 import { useDriverUtility } from "@/hooks/useDriverUtility";
 import MetricDrillDownSheet, { type MetricDrillDownDetail } from "@/components/MetricDrillDownSheet";
 import type { WeekRecord } from "@/lib/types";
-import FocusUtilitySlot, { type FocusUtilityEvent } from "@/components/FocusUtilitySlot";
+import RideCaptureControl from "@/components/RideCaptureControl";
 import { adjustOctopusPoints } from "@/lib/octopusRewards";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
@@ -199,17 +199,17 @@ function getWeekRankWindow(weeks: WeekRecord[], weekId: string, currencySymbol: 
 }
 
 export default function DashboardPage() {
-  const { user, openWeek, weeks, settings, earningsSnapshots, earningsAttributions, hasLocalData, importLocalData, updateWeek, updateSettings, recordOperationalSnapshot } = useOutletContext<StoreContext>();
+  const { user, openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, hasLocalData, importLocalData, updateWeek, updateSettings, recordOperationalSnapshot, startRideEvent, finishRideEvent, linkRideEvents } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [importing, setImporting] = useState(false);
   const [endDayOpen, setEndDayOpen] = useState(false);
   const [drillDownDetail, setDrillDownDetail] = useState<MetricDrillDownDetail | null>(null);
-  const [focusUtilityEvent, setFocusUtilityEvent] = useState<FocusUtilityEvent | null>(null);
   const { achievements } = useAchievements(user, weeks);
   const { summary: driverIdentity, loading: identityLoading } = useDriverIdentity(user, weeks, openWeek);
   const sym = settings.currencySymbol;
   const { pulseMode } = useTheme();
+  const [quickActionRequest, setQuickActionRequest] = useState<{ id: number; app?: string | null } | null>(null);
   const { isFullFocus } = useDashboardExperience();
   const { profile } = useUserProfile(user?.id);
   const onboarding = useOnboarding(user, weeks);
@@ -471,26 +471,17 @@ export default function DashboardPage() {
   const traffic = driverUtility.data?.traffic;
   const weatherLive = weather?.status === "live";
   const trafficLive = traffic?.status === "live";
-  const triggerOctopusUtility = () => setFocusUtilityEvent({ id: Date.now(), type: "octopus" });
-
-  async function saveOctopusPoints(points: number): Promise<boolean> {
-    const saved = await updateSettings({
+  async function handleQuickUpdateSaved(event: { app: string; rideDelta: number; snapshot: Parameters<typeof recordOperationalSnapshot>[0]; earningsSnapshotId?: string; rideEventIds?: string[] }) {
+    await recordOperationalSnapshot(event.snapshot);
+    if (event.earningsSnapshotId && event.rideEventIds?.length) {
+      await linkRideEvents({ app: event.app, earningsSnapshotId: event.earningsSnapshotId, operationalEventKey: event.snapshot.eventKey, rideEventIds: event.rideEventIds });
+    }
+    if (event.app.toLowerCase() !== "uber" || event.rideDelta === 0) return;
+    await updateSettings({
       ...settings,
-      octopusPoints: Math.max(0, Math.round(points * 2) / 2),
+      octopusPoints: Math.max(0, Math.round(adjustOctopusPoints(settings.octopusPoints, event.rideDelta) * 2) / 2),
       octopusUpdatedAt: new Date().toISOString(),
     });
-    if (saved) triggerOctopusUtility();
-    return saved;
-  }
-
-  async function handleQuickUpdateSaved(event: Parameters<typeof recordOperationalSnapshot>[0] extends never ? never : { app: string; rideDelta: number; snapshot: Parameters<typeof recordOperationalSnapshot>[0] }) {
-    await recordOperationalSnapshot(event.snapshot);
-    if (event.app.toLowerCase() !== "uber") return;
-    if (event.rideDelta !== 0) {
-      await saveOctopusPoints(adjustOctopusPoints(settings.octopusPoints, event.rideDelta));
-      return;
-    }
-    triggerOctopusUtility();
   }
   const goalProgressDetail: MetricDrillDownDetail = {
     eyebrow: "Goal Progress",
@@ -755,15 +746,13 @@ export default function DashboardPage() {
             />
           </div>
 
-          <FocusUtilitySlot
-            weather={weather}
-            traffic={traffic}
-            utilityState={driverUtility.state}
-            octopusPoints={settings.octopusPoints}
-            octopusUpdatedAt={settings.octopusUpdatedAt}
-            event={focusUtilityEvent}
-            onOpenConditions={() => setDrillDownDetail(conditionsDetail)}
-            onSaveOctopusPoints={saveOctopusPoints}
+          <RideCaptureControl
+            openWeek={openWeek}
+            apps={settings.activeApps}
+            rideEvents={rideEvents}
+            onStart={startRideEvent}
+            onFinish={finishRideEvent}
+            onUpdateTotals={(app) => setQuickActionRequest({ id: Date.now(), app })}
           />
 
           <button
@@ -808,9 +797,11 @@ export default function DashboardPage() {
           openWeek={openWeek}
           apps={settings.activeApps}
           currencySymbol={sym}
-          onSave={(updated, attributionIntents) => updateWeek(updated, attributionIntents)}
+          onSave={(updated, attributionIntents, options) => updateWeek(updated, attributionIntents, options)}
           earningsSnapshots={earningsSnapshots}
+          rideEvents={rideEvents}
           onQuickUpdateSaved={handleQuickUpdateSaved}
+          quickActionRequest={quickActionRequest}
           weeks={weeks}
           onEndDay={todayEntry && !isDayClosed ? () => setEndDayOpen(true) : undefined}
         />
@@ -867,6 +858,7 @@ export default function DashboardPage() {
             weeks={weeks}
             todayEntry={todayEntry}
             earningsSnapshots={earningsSnapshots}
+            rideEvents={rideEvents}
             earningsAttributions={earningsAttributions}
             currencySymbol={sym}
             onConfirm={() => {
@@ -1000,9 +992,11 @@ export default function DashboardPage() {
           openWeek={openWeek}
           apps={settings.activeApps}
           currencySymbol={sym}
-          onSave={(updated, attributionIntents) => updateWeek(updated, attributionIntents)}
+          onSave={(updated, attributionIntents, options) => updateWeek(updated, attributionIntents, options)}
           earningsSnapshots={earningsSnapshots}
+          rideEvents={rideEvents}
           onQuickUpdateSaved={handleQuickUpdateSaved}
+          quickActionRequest={quickActionRequest}
           weeks={weeks}
           onEndDay={todayEntry && !isDayClosed ? () => setEndDayOpen(true) : undefined}
         />

@@ -3,7 +3,7 @@ import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, ShieldCheck, Up
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import type { AppSettings, WeekRecord } from "@/lib/types";
+import type { AppSettings, EarningsSnapshot, WeekRecord } from "@/lib/types";
 import {
   historicalImportTemplateUrl,
   issueCounts,
@@ -19,7 +19,7 @@ interface HistoricalImportDialogProps {
   weeks: WeekRecord[];
   settings: AppSettings;
   addWeek: (week: WeekRecord) => Promise<boolean>;
-  updateWeek: (week: WeekRecord, attributionIntents?: never[], options?: { recordSnapshots?: boolean }) => Promise<boolean>;
+  updateWeek: (week: WeekRecord, attributionIntents?: never[], options?: { recordSnapshots?: boolean; onSnapshotsRecorded?: (snapshots: EarningsSnapshot[]) => Promise<void> | void }) => Promise<boolean>;
   reload: () => void;
 }
 

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { WeekRecord, AppSettings, DEFAULT_APPS, DayEntry, EarningsSnapshot, OperationalSnapshot, OperationalSnapshotDraft, EarningsAttribution, EarningsAttributionIntent } from "@/lib/types";
+import { WeekRecord, AppSettings, DEFAULT_APPS, DayEntry, EarningsSnapshot, OperationalSnapshot, OperationalSnapshotDraft, EarningsAttribution, EarningsAttributionIntent, RideCaptureResult, RideEvent } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { getWeeks as getLocalWeeks } from "@/lib/store";
@@ -11,6 +11,7 @@ import { loadWeekRevisions, restoreWeekRevision, saveWeekWithRevision, type Week
 import type { Database, Json } from "@/integrations/supabase/types";
 import { dbToOperationalSnapshot, operationalDraftToRow } from "@/lib/operationalSnapshots";
 import { attributionIntentMatchesSnapshot, attributionToUpdateRow, dbToEarningsAttribution, intentToAttributionRow } from "@/lib/earningsAttributions";
+import { dbToRideEvent } from "@/lib/movementCapture";
 
 const DEFAULT_SETTINGS: AppSettings = {
   defaultWeeklyGoal: 1200,
@@ -26,6 +27,7 @@ interface WeekStoreSnapshot {
   earningsSnapshots: EarningsSnapshot[];
   operationalSnapshots: OperationalSnapshot[];
   earningsAttributions: EarningsAttribution[];
+  rideEvents?: RideEvent[];
   hasLocalData: boolean;
 }
 
@@ -62,6 +64,7 @@ export function useWeekStore(user: User | null) {
   const [earningsSnapshots, setEarningsSnapshots] = useState<EarningsSnapshot[]>(() => cachedStore?.earningsSnapshots ?? []);
   const [operationalSnapshots, setOperationalSnapshots] = useState<OperationalSnapshot[]>(() => cachedStore?.operationalSnapshots ?? []);
   const [earningsAttributions, setEarningsAttributions] = useState<EarningsAttribution[]>(() => cachedStore?.earningsAttributions ?? []);
+  const [rideEvents, setRideEvents] = useState<RideEvent[]>(() => cachedStore?.rideEvents ?? []);
   const [loading, setLoading] = useState(() => !cachedStore);
   const [hasLocalData, setHasLocalData] = useState(() => cachedStore?.hasLocalData ?? false);
   const [syncStatus, setSyncStatus] = useState<"saved" | "saving" | "conflict" | "error">("saved");
@@ -74,7 +77,7 @@ export function useWeekStore(user: User | null) {
     const hasCachedStore = storeCache.has(user.id);
     if (!hasCachedStore) setLoading(true);
     try {
-      const [{ data, error }, { data: sData, error: settingsError }, snapshotsResult, operationalResult, attributionResult] = await Promise.all([
+      const [{ data, error }, { data: sData, error: settingsError }, snapshotsResult, operationalResult, attributionResult, rideEventsResult] = await Promise.all([
         supabase
           .from("weeks")
           .select("*")
@@ -95,6 +98,10 @@ export function useWeekStore(user: User | null) {
           .from("earnings_attributions")
           .select("*")
           .order("created_at", { ascending: true }),
+        supabase
+          .from("ride_events")
+          .select("*")
+          .order("started_at", { ascending: true }),
       ]);
       if (error) throw error;
       if (settingsError) throw settingsError;
@@ -119,6 +126,9 @@ export function useWeekStore(user: User | null) {
       const nextAttributions = attributionResult.error
         ? storeCache.get(user.id)?.earningsAttributions ?? []
         : attributionResult.data?.map(dbToEarningsAttribution) ?? [];
+      const nextRideEvents = rideEventsResult.error
+        ? storeCache.get(user.id)?.rideEvents ?? []
+        : rideEventsResult.data?.map(dbToRideEvent) ?? [];
 
       if (snapshotsResult.error) {
         console.warn("[weeks.reload] earnings snapshots unavailable", snapshotsResult.error);
@@ -145,6 +155,9 @@ export function useWeekStore(user: User | null) {
       if (attributionResult.error) {
         console.warn("[weeks.reload] earnings attributions unavailable", attributionResult.error);
       }
+      if (rideEventsResult.error) {
+        console.warn("[weeks.reload] ride events unavailable", rideEventsResult.error);
+      }
 
       // Check for local data to import
       const local = getLocalWeeks();
@@ -155,6 +168,7 @@ export function useWeekStore(user: User | null) {
         earningsSnapshots: nextSnapshots,
         operationalSnapshots: nextOperationalSnapshots,
         earningsAttributions: nextAttributions,
+        rideEvents: nextRideEvents,
         hasLocalData: nextHasLocalData,
       });
       setWeeks(nextWeeks);
@@ -162,6 +176,7 @@ export function useWeekStore(user: User | null) {
       setEarningsSnapshots(nextSnapshots);
       setOperationalSnapshots(nextOperationalSnapshots);
       setEarningsAttributions(nextAttributions);
+      setRideEvents(nextRideEvents);
       setHasLocalData(nextHasLocalData);
       lifecycleDebug("week store hydrated", {
         userId: user.id,
@@ -213,7 +228,7 @@ export function useWeekStore(user: User | null) {
   const updateWeek = useCallback(async (
     w: WeekRecord,
     attributionIntents: EarningsAttributionIntent[] = [],
-    options: { recordSnapshots?: boolean } = {},
+    options: { recordSnapshots?: boolean; onSnapshotsRecorded?: (snapshots: EarningsSnapshot[]) => Promise<void> | void } = {},
   ): Promise<boolean> => {
     if (!user) {
       console.warn("[weeks.updateWeek] skipped: no authenticated user", { weekId: w.id });
@@ -325,10 +340,11 @@ export function useWeekStore(user: User | null) {
           }
         }
       }
+      if (insertedSnapshots.length) await options.onSnapshotsRecorded?.(insertedSnapshots);
       setWeeks((prev) => {
         const nextWeeks = prev.map((x) => (x.id === normalizedWeek.id ? { ...normalizedWeek, updatedAt: now } : x));
         const nextSnapshots = insertedSnapshots.length ? [...earningsSnapshots, ...insertedSnapshots] : earningsSnapshots;
-        storeCache.set(user.id, { weeks: nextWeeks, settings, earningsSnapshots: nextSnapshots, operationalSnapshots, earningsAttributions: nextAttributions, hasLocalData });
+        storeCache.set(user.id, { weeks: nextWeeks, settings, earningsSnapshots: nextSnapshots, operationalSnapshots, earningsAttributions: nextAttributions, rideEvents, hasLocalData });
         return nextWeeks;
       });
       setConflictDraft(null);
@@ -346,7 +362,7 @@ export function useWeekStore(user: User | null) {
       alert("Could not save this week. Your latest edit is kept locally so you can retry.");
       return false;
     }
-  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, reload, settings, user, weeks]);
+  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, reload, rideEvents, settings, user, weeks]);
 
   const saveEarningsAttribution = useCallback(async (
     snapshotId: string,
@@ -373,11 +389,11 @@ export function useWeekStore(user: User | null) {
     const saved = dbToEarningsAttribution(data);
     setEarningsAttributions((previous) => {
       const next = [...previous.filter((item) => item.snapshotId !== snapshotId), saved];
-      storeCache.set(user.id, { weeks, settings, earningsSnapshots, operationalSnapshots, earningsAttributions: next, hasLocalData });
+      storeCache.set(user.id, { weeks, settings, earningsSnapshots, operationalSnapshots, earningsAttributions: next, rideEvents, hasLocalData });
       return next;
     });
     return true;
-  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, settings, user, weeks]);
+  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, rideEvents, settings, user, weeks]);
 
   const recordOperationalSnapshot = useCallback(async (draft: OperationalSnapshotDraft): Promise<boolean> => {
     if (!user) return false;
@@ -405,12 +421,56 @@ export function useWeekStore(user: User | null) {
         const byKey = new Map(previous.map((snapshot) => [snapshot.eventKey, snapshot]));
         data.map(dbToOperationalSnapshot).forEach((snapshot) => byKey.set(snapshot.eventKey, snapshot));
         const next = [...byKey.values()].sort((a, b) => a.recordedAt.localeCompare(b.recordedAt));
-        storeCache.set(user.id, { weeks, settings, earningsSnapshots, operationalSnapshots: next, earningsAttributions, hasLocalData });
+        storeCache.set(user.id, { weeks, settings, earningsSnapshots, operationalSnapshots: next, earningsAttributions, rideEvents, hasLocalData });
         return next;
       });
     }
     return true;
-  }, [earningsAttributions, earningsSnapshots, hasLocalData, settings, user, weeks]);
+  }, [earningsAttributions, earningsSnapshots, hasLocalData, rideEvents, settings, user, weeks]);
+
+  const startRideEvent = useCallback(async (draft: {
+    weekId: string; dayDate: string; shiftId?: string | null; app?: string | null; startedAt: string; capture: RideCaptureResult;
+  }): Promise<RideEvent | null> => {
+    if (!user) return null;
+    const { data, error } = await supabase.from("ride_events").insert({
+      user_id: user.id, week_id: draft.weekId, day_date: draft.dayDate, shift_id: draft.shiftId ?? null,
+      app: draft.app ?? null, started_at: draft.startedAt, start_zone_key: draft.capture.zoneKey ?? null,
+      start_capture_status: draft.capture.status, start_accuracy_class: draft.capture.accuracyClass ?? null,
+    }).select("*").single();
+    if (error) { console.warn("[rideEvents] start failed", error); return null; }
+    const event = dbToRideEvent(data);
+    setRideEvents((previous) => [...previous.filter((item) => item.id !== event.id), event]);
+    return event;
+  }, [user]);
+
+  const finishRideEvent = useCallback(async (id: string, endedAt: string, capture: RideCaptureResult): Promise<RideEvent | null> => {
+    if (!user) return null;
+    const { data, error } = await supabase.from("ride_events").update({
+      status: "completed", ended_at: endedAt, end_zone_key: capture.zoneKey ?? null,
+      end_capture_status: capture.status, end_accuracy_class: capture.accuracyClass ?? null, updated_at: new Date().toISOString(),
+    }).eq("id", id).eq("user_id", user.id).select("*").single();
+    if (error) { console.warn("[rideEvents] finish failed", error); return null; }
+    const event = dbToRideEvent(data);
+    setRideEvents((previous) => [...previous.filter((item) => item.id !== event.id), event]);
+    return event;
+  }, [user]);
+
+  const linkRideEvents = useCallback(async (draft: { app: string; earningsSnapshotId: string; operationalEventKey?: string | null; rideEventIds: string[] }): Promise<boolean> => {
+    if (!user || draft.rideEventIds.length === 0) return false;
+    const kind = draft.rideEventIds.length === 1 ? "single" : "batch";
+    const { data: batch, error: batchError } = await supabase.from("ride_update_batches").insert({
+      user_id: user.id, app: draft.app, kind, earnings_snapshot_id: draft.earningsSnapshotId,
+      operational_event_key: draft.operationalEventKey ?? null,
+    }).select("id").single();
+    if (batchError || !batch) { console.warn("[rideEvents] batch link failed", batchError); return false; }
+    const { error: linksError } = await supabase.from("ride_update_batch_events").insert(draft.rideEventIds.map((rideEventId) => ({ batch_id: batch.id, ride_event_id: rideEventId })));
+    if (linksError) { console.warn("[rideEvents] batch event link failed", linksError); return false; }
+    const linkedStatus = kind === "single" ? "linked_single" : "linked_batch";
+    const { error: rideError } = await supabase.from("ride_events").update({ status: linkedStatus, updated_at: new Date().toISOString() }).in("id", draft.rideEventIds).eq("user_id", user.id);
+    if (rideError) { console.warn("[rideEvents] status link failed", rideError); return false; }
+    setRideEvents((previous) => previous.map((event) => draft.rideEventIds.includes(event.id) ? { ...event, status: linkedStatus } : event));
+    return true;
+  }, [user]);
 
   const resolveWeekConflict = useCallback(async (strategy: "keep-remote" | "use-local"): Promise<boolean> => {
     const draft = conflictDraft;
@@ -473,12 +533,12 @@ export function useWeekStore(user: User | null) {
       const nextSnapshots = earningsSnapshots.filter((snapshot) => snapshot.weekId !== id);
       const remainingSnapshotIds = new Set(nextSnapshots.map((snapshot) => snapshot.id));
       const nextAttributions = earningsAttributions.filter((item) => remainingSnapshotIds.has(item.snapshotId));
-      storeCache.set(user.id, { weeks: nextWeeks, settings, earningsSnapshots: nextSnapshots, operationalSnapshots, earningsAttributions: nextAttributions, hasLocalData });
+      storeCache.set(user.id, { weeks: nextWeeks, settings, earningsSnapshots: nextSnapshots, operationalSnapshots, earningsAttributions: nextAttributions, rideEvents, hasLocalData });
       setEarningsSnapshots(nextSnapshots);
       setEarningsAttributions(nextAttributions);
       return nextWeeks;
     });
-  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, settings, user]);
+  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, rideEvents, settings, user]);
 
   const updateSettings = useCallback(async (s: AppSettings): Promise<boolean> => {
     if (!user) return false;
@@ -497,10 +557,10 @@ export function useWeekStore(user: User | null) {
       alert("Error saving settings: " + error.message);
       return false;
     }
-    storeCache.set(user.id, { weeks, settings: s, earningsSnapshots, operationalSnapshots, earningsAttributions, hasLocalData });
+    storeCache.set(user.id, { weeks, settings: s, earningsSnapshots, operationalSnapshots, earningsAttributions, rideEvents, hasLocalData });
     setSettingsState(s);
     return true;
-  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, user, weeks]);
+  }, [earningsAttributions, earningsSnapshots, hasLocalData, operationalSnapshots, rideEvents, user, weeks]);
 
   const importLocalData = useCallback(async () => {
     if (!user) return;
@@ -544,11 +604,15 @@ export function useWeekStore(user: User | null) {
     earningsSnapshots,
     operationalSnapshots,
     earningsAttributions,
+    rideEvents,
     loading,
     hasLocalData,
     addWeek,
     updateWeek,
     recordOperationalSnapshot,
+    startRideEvent,
+    finishRideEvent,
+    linkRideEvents,
     saveEarningsAttribution,
     deleteWeek,
     updateSettings,

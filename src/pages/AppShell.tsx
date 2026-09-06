@@ -77,8 +77,11 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
         ? "Retry save"
         : "Saved";
 
-  async function handleGlobalQuickUpdateSaved(event: { app: string; rideDelta: number; snapshot: OperationalSnapshotDraft }) {
+  async function handleGlobalQuickUpdateSaved(event: { app: string; rideDelta: number; snapshot: OperationalSnapshotDraft; earningsSnapshotId?: string; rideEventIds?: string[] }) {
     await store.recordOperationalSnapshot(event.snapshot);
+    if (event.earningsSnapshotId && event.rideEventIds?.length) {
+      await store.linkRideEvents({ app: event.app, earningsSnapshotId: event.earningsSnapshotId, operationalEventKey: event.snapshot.eventKey, rideEventIds: event.rideEventIds });
+    }
     if (event.app.toLowerCase() !== "uber" || event.rideDelta === 0) return;
     await store.updateSettings({
       ...store.settings,
@@ -189,6 +192,7 @@ export default function AppShell({ store, user, onSignOut }: AppShellProps) {
               onSave={store.updateWeek}
               weeks={store.weeks}
               earningsSnapshots={store.earningsSnapshots}
+              rideEvents={store.rideEvents}
               onQuickUpdateSaved={handleGlobalQuickUpdateSaved}
             />
           )}

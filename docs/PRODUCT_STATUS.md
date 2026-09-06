@@ -30,6 +30,12 @@ Current local source candidate:
 Beta 0.9.13 - Deep Insights Operations Snapshot Comparison (pending owner QA)
 ```
 
+Next approved product priority:
+
+```text
+Beta 0.10.0 - Movement Capture & Zone Context (local implementation in progress; not deployed)
+```
+
 Source of truth:
 
 - `src/lib/changelog.ts`
@@ -589,6 +595,7 @@ See `CHANGELOG.md` for full details.
 
 High priority:
 
+- Complete the Beta 0.10.0 Movement Capture & Zone Context migration and owner QA. Full Focus is its primary surface, Entry reuses its shared control, and Quick Actions remains the sole hub for shifts and accumulated totals. It is foreground-only, captures privacy-minimized start/end zones, keeps Uber/manual mileage authoritative, and does not persist raw coordinates or routes. See `docs/MOVEMENT_CAPTURE_TECHNICAL_DESIGN.md`.
 - Complete owner QA and publish Beta 0.9.7 only after import safety, totals preservation, no-snapshot behavior, and cross-surface analytics agree.
 - Configure two isolated QA identities in the GitHub `qa` environment for bidirectional RLS certification.
 - Keep monitoring login/session and SMTP confirmation/recovery delivery.

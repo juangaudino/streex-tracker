@@ -153,6 +153,33 @@ export interface OperationalSnapshotDraft {
   dayMileage: number;
 }
 
+export type RideCaptureStatus = "captured" | "unavailable" | "denied" | "stale" | "imprecise";
+export type RideAccuracyClass = "high" | "usable";
+
+export interface RideEvent {
+  id: string;
+  userId: string;
+  weekId: string;
+  dayDate: string;
+  shiftId?: string | null;
+  app?: string | null;
+  status: "active" | "completed" | "linked_single" | "linked_batch" | "cancelled";
+  startedAt: string;
+  endedAt?: string | null;
+  startZoneKey?: string | null;
+  endZoneKey?: string | null;
+  startCaptureStatus: RideCaptureStatus;
+  endCaptureStatus: RideCaptureStatus;
+  startAccuracyClass?: RideAccuracyClass | null;
+  endAccuracyClass?: RideAccuracyClass | null;
+}
+
+export interface RideCaptureResult {
+  zoneKey?: string | null;
+  status: RideCaptureStatus;
+  accuracyClass?: RideAccuracyClass | null;
+}
+
 export interface AppSettings {
   defaultWeeklyGoal: number;
   defaultWeeklyHoursGoal?: number;

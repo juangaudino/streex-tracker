@@ -10,6 +10,37 @@ Streex will let a driver record an optional **ride/delivery event** with `Start 
 
 It will not attempt to be a background tracker, navigator, telematics product, or automatic odometer. A browser PWA cannot promise continuous GPS when minimized, locked, or terminated. Capturing only the start and end position also cannot measure the road distance driven: it only yields straight-line distance, which must never replace actual Uber/manual miles.
 
+## Approved follow-up: Post-shift correction
+
+The first Movement flow is deliberately real-time. A driver may nevertheless finish a shift before reviewing Uber, then know the correct totals or each individual fare afterwards. The current active-shift-only Quick Actions guard prevents a safe correction of rides and mileage in that state. This approved follow-up closes that gap without fabricating GPS context.
+
+### Entry correction surface
+
+`/entry` will expose **Correct finished shift** only for a closed shift on the selected day. It opens a confirmation-first sheet with:
+
+1. An explicit target shift selector, defaulting to the most recently closed shift that day. The app never chooses or mutates a closed shift silently.
+2. Current accumulated app earnings, app ride count, and shared day mileage values alongside the previously recorded values.
+3. A preview such as `Add 3 Uber rides and 14.2 mi to the 2:00–6:15 PM shift` before the save action is enabled.
+4. A required explanation when a correction decreases known rides or mileage, preserving the existing correction semantics instead of creating duplicate activity.
+
+The save path will reuse the authoritative weekly JSON model and append-only earnings snapshots. It must not create a new active shift, alter another shift, or reinterpret a daily total as GPS evidence.
+
+### Known rides entered after a shift
+
+For a driver who knows individual ride amounts and times, Entry will offer an optional **Add known ride** sequence within the selected closed shift. Each row is an explicit manual observation: app, amount, exact time inside a worked block, and optional provider-reported miles. The UI derives the accumulated earnings transition from those rows so snapshot evidence remains append-only and consistent with Quick Actions.
+
+- A manual known ride can improve exact earnings timing, but it has no start/end zone unless a real-time Movement event already exists.
+- Provider-reported per-ride miles remain manual evidence; they do not become GPS mileage.
+- A later total correction reconciles against the already entered manual rows. It never creates a second copy of the earnings or rides.
+- If the exact time falls in a pause or outside the selected shift, saving is blocked rather than guessed.
+
+### Data and safety contract
+
+- The initial correction path should require no raw-coordinate storage and no route reconstruction.
+- Any schema addition for manual known rides must be owner-scoped, RLS-protected, explicitly granted to `authenticated`, and distinguish `manual_after_shift` from foreground-captured Movement events.
+- Existing completed foreground ride events may be linked only when the driver explicitly confirms the matching earnings update; historical manual rows must not claim those zones.
+- Test data must remain removable by selecting the exact user, week, shift, and ride/event timestamps; no broad delete or earnings rewrite is permitted.
+
 The existing accumulated totals remain the contract:
 
 - `day.mileage` stays the authoritative shared daily mileage value. The driver may enter Uber-reported miles in Quick Actions as today.

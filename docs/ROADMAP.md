@@ -98,6 +98,15 @@ Boundaries:
 - Existing `weeks`, manual day mileage, shift mileage allocation, `earnings_snapshots`, `operational_snapshots`, and earnings-attribution evidence remain authoritative and append-only.
 - Zone analytics must report captured-event coverage and wait for a meaningful sample. A zone is not an earnings zone unless a valid later link establishes that context.
 
+#### Approved follow-up — Post-shift correction
+
+Status: approved for technical design; not implemented.
+
+- Entry will let the owner explicitly correct earnings, accumulated app rides, and shared daily mileage for a selected finished shift.
+- It will preview the exact delta before saving and never select or alter a closed shift automatically.
+- An optional known-ride sequence will support manual amount/time evidence inside an existing worked block, without pretending to recover GPS zones or route mileage.
+- See `docs/MOVEMENT_CAPTURE_TECHNICAL_DESIGN.md` for the data and safety contract.
+
 ### Beta 0.9.1 - Reliability & Release Safety
 
 Status: completed.

@@ -28,6 +28,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Known rides can be added after a shift with a confirmed amount, provider miles, and exact worked time, without inventing GPS zones",
       "Late tips can be recorded on the day observed and linked to their original recorded ride after the supporting migration is applied",
       "Pickup zones are the sole canonical zone for future ride-income analysis; dropoff zones remain destination context",
+      "Batch ride links now prevent a single exact-time attribution, because one timestamp cannot represent multiple rides",
     ],
   },
   {

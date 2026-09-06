@@ -438,6 +438,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
   const completedRidesForQuickApp = quickApp
     ? rideEvents.filter((event) => event.status === "completed" && event.dayDate === today.date && event.app === quickApp)
     : [];
+  const isBatchRideLink = linkClosedRides && completedRidesForQuickApp.length > 1;
 
   return (
     <div className={compactTrigger ? "shrink-0" : "bg-card rounded-xl border border-primary/20 p-4 space-y-3"}>
@@ -657,7 +658,7 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                           <SelectContent>
                             {todayActiveShift && <SelectItem value="automatic">Since last update in this shift</SelectItem>}
                             <SelectItem value="shift">Spread across a selected shift</SelectItem>
-                            <SelectItem value="exact">Assign exact ride time</SelectItem>
+                            {!isBatchRideLink && <SelectItem value="exact">Assign exact ride time</SelectItem>}
                             <SelectItem value="pending">Review later in Data Health</SelectItem>
                           </SelectContent>
                         </Select>
@@ -688,7 +689,13 @@ export default function QuickEntryWidget({ openWeek, apps, currencySymbol, onSav
                     )}
                     {quickPositiveDelta > 0 && completedRidesForQuickApp.length > 0 && (
                       <label className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3 cursor-pointer">
-                        <Checkbox checked={linkClosedRides} onCheckedChange={(checked) => setLinkClosedRides(checked === true)} />
+                        <Checkbox checked={linkClosedRides} onCheckedChange={(checked) => {
+                          const linking = checked === true;
+                          setLinkClosedRides(linking);
+                          if (linking && completedRidesForQuickApp.length > 1 && attributionChoice === "exact") {
+                            setAttributionChoice(todayActiveShift ? "automatic" : "pending");
+                          }
+                        }} />
                         <span className="space-y-0.5">
                           <span className="block text-xs font-semibold">{completedRidesForQuickApp.length === 1 ? "Link this update to the ride just closed" : `Link this update to ${completedRidesForQuickApp.length} closed rides`}</span>
                           <span className="block text-xs text-muted-foreground">This records the confirmed ride interval and zone context. It does not split the money across rides.</span>

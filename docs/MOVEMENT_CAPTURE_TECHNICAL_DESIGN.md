@@ -1,6 +1,6 @@
 # Movement Capture & Zone Context — Technical Design
 
-Status: foreground capture migration is applied; post-shift/manual-payment migration is local and pending application. Code is a local candidate on `main`; deployment and authenticated owner QA remain unverified.
+Status: foreground capture and post-shift/manual-payment migrations are applied to the active backend. Code is a local candidate on `main`; deployment and authenticated owner QA remain unverified.
 
 Target: `Beta 0.10.0 - Movement Capture & Zone Context`.
 
@@ -106,6 +106,8 @@ Quick Actions remains recognizable. It receives at most one compact context row 
 | No compatible ride, another app, zero delta, or downward correction | Shows no suggested ride link; the normal Quick Actions and attribution flow remains unchanged. |
 
 The driver can always dismiss the row and save exactly as before. Quick Actions never increments ride counts or mileage on behalf of Movement; the accumulated values typed by the driver remain authoritative.
+
+When a batch link is selected, Quick Actions must not offer `Assign exact ride time`: one timestamp cannot honestly represent several rides. If the driver had already selected it, the UI resets to the current-shift interval when available, otherwise `Review later`.
 
 ### Entry access
 

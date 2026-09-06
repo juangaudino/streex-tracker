@@ -10,6 +10,7 @@
 - Entry can explicitly correct a finished shift's accumulated app total, app rides, and mileage, with a preview of the change and an explanation required for reductions.
 - A known ride can be entered after a shift with its amount, provider miles, and exact worked time. It remains manual context and never claims a retroactive GPS zone.
 - A late tip can be recorded on the day it is observed and associated with its original recorded ride once the supporting migration is applied.
+- Batch ride links no longer offer a single exact-time attribution, preventing an invalid timestamp from blocking a multi-ride update.
 
 ### Data Integrity
 

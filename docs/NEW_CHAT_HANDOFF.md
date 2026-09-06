@@ -1,6 +1,6 @@
 # Streex New Chat Handoff
 
-Last audited: 2026-08-17
+Last audited: 2026-09-06
 
 This is the operational handoff for a new Codex, Claude, ChatGPT, or Lovable conversation. It describes the current repository state and the product decisions that must survive chat resets. Read it before proposing or implementing work.
 
@@ -285,7 +285,8 @@ Design rules:
 
 ### Highest Priority Operations
 
-- Beta 0.10.0 Movement Capture & Zone Context has its migration applied to the active backend and its implementation pushed to `main`; deployment and authenticated owner QA remain unverified. Its approved interaction architecture is in `docs/MOVEMENT_CAPTURE_TECHNICAL_DESIGN.md`: Full Focus-first start/finish contextual capture, Entry as the same shared secondary control, Quick Actions as the only shift/accumulated-total hub, coarse private zones, no raw coordinate or route storage, and manual/Uber mileage remains authoritative. The next approved design block is Post-shift correction from Entry for explicitly selected finished shifts.
+- Beta 0.10.0 Movement Capture & Zone Context has both migrations applied to the active backend and its implementation pushed to `main`. Authenticated iPhone QA confirmed foreground pickup/dropoff capture, single-ride exact-time linking, and that batch linking suppresses exact-time assignment. Its architecture is in `docs/MOVEMENT_CAPTURE_TECHNICAL_DESIGN.md`: Full Focus-first start/finish contextual capture, Entry as the same shared secondary control, Quick Actions as the only shift/accumulated-total hub, coarse private zones, no raw coordinate or route storage, and manual/Uber mileage remains authoritative. Continue normal real-work QA before publication status.
+- Beta 0.10.1 Zone Intelligence & Evidence is approved for design only. It belongs as a third Deep Insights workspace, `Zone Intelligence`, with coverage-first reporting, private approximate zone cells, pickup-only eligible earnings, destination-flow context, and late-tip attribution. It must never infer zones, split batch money, expose raw location, or create a live navigation surface. Read `docs/ZONE_INTELLIGENCE_TECHNICAL_DESIGN.md` before implementation.
 - Beta 0.9.6 is the current public Earnings Attribution Integrity baseline and is under real-work owner testing. Active-project migrations `20260802181319_earnings_attribution_integrity_096.sql` and `20260802181403_harden_earnings_attribution_privileges_096.sql` are applied and verified; they create owner-only attribution decisions without rewriting weekly JSON or original snapshots.
 - The current local 0.9.6 QA refinement adds live active-shift attribution, worked-block exact-time validation, and separate same-weekday output/efficiency interpretation. Require the normal Quality Gate before publishing it.
 - Configure the GitHub Actions `qa` environment with two isolated QA identities and the active public Supabase URL/publishable key, then run protected routes on desktop/mobile and the bidirectional read-only RLS check. Do not use the owner's personal account.
@@ -300,7 +301,7 @@ Design rules:
 
 - Latest public release: `Beta 0.9.6 - Earnings Attribution Integrity`.
 - Current local source candidate: `Beta 0.9.13 - Deep Insights Operations Snapshot Comparison (pending owner QA)`; it includes the earlier local 0.9.7 through 0.9.12 candidate work.
-- Next approved product priority: `Beta 0.10.0 - Movement Capture & Zone Context` (implemented locally; pending migration, owner QA, and deployment). Preserve current manual mileage and accumulated-total semantics. Location capture is limited to coarse start/end zones while the PWA is foregrounded; it must not become background surveillance or a route tracker.
+- Current real-work verification priority: `Beta 0.10.0 - Movement Capture & Zone Context` (implemented on `main`, active-backend migrations applied, initial authenticated iPhone QA complete). Preserve manual mileage and accumulated-total semantics; location remains foreground-only and never becomes a route tracker. The next approved design-only block is `Beta 0.10.1 - Zone Intelligence & Evidence`; do not implement it until its coverage-first contract is explicitly scheduled.
 - The pending-candidate release gate includes a small-sample import, reload, cross-surface totals check, no-new-snapshots check, gradual backfill review, and owner QA of local saved views, accumulated multi-shift ride totals, and the new Operations Snapshot comparison lens. It is now secondary to the approved 0.10.0 design/implementation sequence.
 - Do not normalize the weekly JSON model merely for scale; first solve silent write conflicts, recovery, and visible sync state for the owner's personal workflow.
 - The version number can move if a patch or urgent fix ships first.

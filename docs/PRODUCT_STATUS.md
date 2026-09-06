@@ -1,6 +1,6 @@
 # Streex App Status Master
 
-Last updated: 2026-08-17
+Last updated: 2026-09-06
 
 This is the living master status file for Streex Gig Earnings. Claude, ChatGPT, Codex, and Lovable should read this file before giving product, UX, architecture, or implementation advice.
 
@@ -30,10 +30,11 @@ Current local source candidate:
 Beta 0.9.13 - Deep Insights Operations Snapshot Comparison (pending owner QA)
 ```
 
-Next approved product priority:
+Next approved product sequence:
 
 ```text
-Beta 0.10.0 - Movement Capture & Zone Context (local implementation in progress; not deployed)
+Beta 0.10.0 - Movement Capture & Zone Context (implemented on main; active-backend migrations applied; real-work QA continuing)
+Beta 0.10.1 - Zone Intelligence & Evidence (technical design approved; not implemented)
 ```
 
 Source of truth:
@@ -595,7 +596,8 @@ See `CHANGELOG.md` for full details.
 
 High priority:
 
-- Complete the Beta 0.10.0 Movement Capture & Zone Context migration and owner QA. Full Focus is its primary surface, Entry reuses its shared control, and Quick Actions remains the sole hub for shifts and accumulated totals. It is foreground-only, captures privacy-minimized start/end zones, keeps Uber/manual mileage authoritative, and does not persist raw coordinates or routes. See `docs/MOVEMENT_CAPTURE_TECHNICAL_DESIGN.md`.
+- Continue real-work QA for Beta 0.10.0 Movement Capture & Zone Context. Both active-backend migrations are applied; Full Focus is its primary surface, Entry reuses its shared control, and Quick Actions remains the sole hub for shifts and accumulated totals. It is foreground-only, captures privacy-minimized start/end zones, keeps Uber/manual mileage authoritative, and does not persist raw coordinates or routes. See `docs/MOVEMENT_CAPTURE_TECHNICAL_DESIGN.md`.
+- Beta 0.10.1 Zone Intelligence & Evidence is approved for technical design only. It will add a coverage-first Deep Insights workspace using private coarse cells and pickup-only eligible income; see `docs/ZONE_INTELLIGENCE_TECHNICAL_DESIGN.md`. Do not begin its implementation until explicitly scheduled.
 - Complete owner QA and publish Beta 0.9.7 only after import safety, totals preservation, no-snapshot behavior, and cross-surface analytics agree.
 - Configure two isolated QA identities in the GitHub `qa` environment for bidirectional RLS certification.
 - Keep monitoring login/session and SMTP confirmation/recovery delivery.

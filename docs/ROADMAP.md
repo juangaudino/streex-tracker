@@ -1,6 +1,6 @@
 # Streex Roadmap
 
-Last updated: 2026-08-17
+Last updated: 2026-09-06
 
 This is the living product roadmap for Streex Gig Earnings.
 
@@ -80,7 +80,7 @@ Deep Insights 0.7.0 added a separate comparison workspace with:
 
 ### Beta 0.10.0 - Movement Capture & Zone Context
 
-Status: in local implementation. Product and interaction architecture approved; technical design is in `docs/MOVEMENT_CAPTURE_TECHNICAL_DESIGN.md`. This takes priority over the pending Historical Data Import publication gate. No migration has been applied to the active backend and no production deployment has occurred.
+Status: implemented on `main`; both active-backend migrations are applied. Initial authenticated iPhone QA confirmed foreground pickup/dropoff capture, single-ride linking, and batch-link safeguards. Continue real-work QA before calling the release published.
 
 Purpose:
 
@@ -109,6 +109,28 @@ Status: approved for technical design; not implemented.
 - A later tip or adjustment will remain income on the day it is observed while an explicit one-to-many payment link can associate it with the original ride and its pickup zone.
 - Movement must visibly distinguish `ride saved` from `start/end zone saved`, unavailable, or denied; a completed ride status alone is not GPS proof.
 - See `docs/MOVEMENT_CAPTURE_TECHNICAL_DESIGN.md` for the data and safety contract.
+
+### Beta 0.10.1 - Zone Intelligence & Evidence
+
+Status: approved for technical design; not implemented.
+
+Purpose:
+
+- Add `Zone Intelligence` as a third desktop-first Deep Insights workspace beside Overview and Compare, rather than creating a redundant live-work module.
+- Start with evidence coverage: captured pickup/dropoff zones, missing-zone reasons, single links, batch links, unlinked rides, and analytically excluded records.
+- Progress to private, coarse zone activity and destination-flow views, then pickup-zone earnings only where a single ride has a valid positive reconciled financial link.
+- Keep pickup zone as the sole canonical earnings location. Dropoff zones are operational destination context and never receive copied income.
+- Support late tips as separately labelled later payments to the original pickup zone while preserving their observed-day financial record.
+
+Boundaries:
+
+- No raw coordinates, addresses, routes, navigation, background tracking, or third-party location analytics.
+- The map is an approximate private zone-cell visualization, not a street map or route replay. Optional user labels are owner-defined; they are never reverse-geocoded place names.
+- Never allocate a batch total across rides or zones. Do not show zone earnings, hourly efficiency, or mileage efficiency when the underlying evidence cannot support it.
+- Historical rides without foreground-captured zone context remain outside zone analysis; no backfill or inferred location is allowed.
+- Show coverage before rankings. Zone comparisons require at least eight eligible single-linked rides across three distinct days, with exclusions always visible.
+
+Technical design: `docs/ZONE_INTELLIGENCE_TECHNICAL_DESIGN.md`.
 
 ### Beta 0.9.1 - Reliability & Release Safety
 

@@ -199,7 +199,7 @@ function getWeekRankWindow(weeks: WeekRecord[], weekId: string, currencySymbol: 
 }
 
 export default function DashboardPage() {
-  const { user, openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, hasLocalData, importLocalData, updateWeek, updateSettings, recordOperationalSnapshot, startRideEvent, finishRideEvent, linkRideEvents, replaceSnapshotAllocations } = useOutletContext<StoreContext>();
+  const { user, openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, hasLocalData, importLocalData, updateWeek, updateSettings, recordOperationalSnapshot, startRideEvent, finishRideEvent, cancelForegroundRideEvent, linkRideEvents, replaceSnapshotAllocations } = useOutletContext<StoreContext>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [importing, setImporting] = useState(false);
@@ -755,6 +755,7 @@ export default function DashboardPage() {
             rideEvents={rideEvents}
             onStart={startRideEvent}
             onFinish={finishRideEvent}
+            onCancel={cancelForegroundRideEvent}
             onUpdateTotals={(app) => setQuickActionRequest({ id: Date.now(), app })}
           />
 

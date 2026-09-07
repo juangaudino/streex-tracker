@@ -56,7 +56,7 @@ Every displayed number must carry an evidence class. A ride can appear in covera
 | `batch_linked` | Multiple events linked to one update | Yes | No |
 | `unlinked` | Completed event has no explicit financial link | Yes | No |
 | `zone_unavailable` | Capture was denied, stale, imprecise, or unavailable | No cell; count in coverage | No |
-| `manual_after_shift` | Manually confirmed historical ride | No geographic claim | Only if it already has real foreground pickup context; normally no |
+| `manual_after_shift` | Legacy reconstructed historical row | Excluded | No |
 
 ### Eligible pickup earnings
 

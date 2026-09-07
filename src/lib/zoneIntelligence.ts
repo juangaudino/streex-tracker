@@ -1,6 +1,6 @@
 import { reconcileEarningsSnapshotDeltas } from "./earningsSnapshots";
 import { dateRangeForPreset, type DeepInsightsFilters } from "./deepInsights";
-import type { EarningsSnapshot, ManualRideAllocation, RideEvent, RidePayment, RideSnapshotAllocation, RideUpdateBatch, RideUpdateBatchEvent } from "./types";
+import type { EarningsSnapshot, RideEvent, RidePayment, RideSnapshotAllocation, RideUpdateBatch, RideUpdateBatchEvent } from "./types";
 
 export type ZoneIntelligenceMode = "coverage" | "earnings" | "flow";
 
@@ -58,7 +58,7 @@ function matchesFilters(ride: RideEvent, filters: DeepInsightsFilters, now: Date
 }
 
 function completed(ride: RideEvent): boolean {
-  return ride.status !== "active" && ride.status !== "cancelled";
+  return ride.source === "foreground_browser" && ride.status !== "active" && ride.status !== "cancelled";
 }
 
 function zoneForPickup(ride: RideEvent): string | null {
@@ -87,7 +87,6 @@ export function buildZoneIntelligenceData(params: {
   rideUpdateBatchEvents?: RideUpdateBatchEvent[];
   ridePayments?: RidePayment[];
   rideSnapshotAllocations?: RideSnapshotAllocation[];
-  manualRideAllocations?: ManualRideAllocation[];
   earningsSnapshots?: EarningsSnapshot[];
   filters: DeepInsightsFilters;
   now?: Date;
@@ -189,21 +188,6 @@ export function buildZoneIntelligenceData(params: {
     if (allocation.kind === "late_tip") zone.lateTips = money(zone.lateTips + allocation.amount);
     else if (allocation.kind === "adjustment") zone.adjustments = money(zone.adjustments + allocation.amount);
     else zone.baseEarnings = money(zone.baseEarnings + allocation.amount);
-    zone.eligibleEarnings = money(zone.eligibleEarnings + allocation.amount);
-    if (!eligibleRides.has(ride.id)) {
-      zone.eligibleRideCount += 1;
-      eligibleRides.add(ride.id);
-      eligibleDays.add(ride.dayDate);
-    }
-  }
-
-  for (const allocation of (params.manualRideAllocations ?? []).filter((item) => item.isCurrent)) {
-    if (!allocation.rideEventId) continue;
-    const ride = rideById.get(allocation.rideEventId);
-    const pickup = ride ? zoneForPickup(ride) : null;
-    if (!ride || !pickup || allocation.amount <= 0) continue;
-    const zone = getZone(pickup);
-    zone.baseEarnings = money(zone.baseEarnings + allocation.amount);
     zone.eligibleEarnings = money(zone.eligibleEarnings + allocation.amount);
     if (!eligibleRides.has(ride.id)) {
       zone.eligibleRideCount += 1;

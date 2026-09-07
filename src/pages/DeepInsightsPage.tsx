@@ -490,7 +490,7 @@ function Filters({
 }
 
 export default function DeepInsightsPage() {
-  const { weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, rideSnapshotAllocations, manualRideAllocations, zoneLabels, saveZoneLabel, settings, user } = useOutletContext<StoreContext>();
+  const { weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, rideSnapshotAllocations, zoneLabels, saveZoneLabel, settings, user } = useOutletContext<StoreContext>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isDark } = useTheme();
   const ui = useMemo(() => getVisual(isDark), [isDark]);
@@ -517,8 +517,8 @@ export default function DeepInsightsPage() {
     [weeks, earningsSnapshots, earningsAttributions, operationalSnapshots, filters, operationalFilters],
   );
   const zoneData = useMemo(
-    () => buildZoneIntelligenceData({ rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, rideSnapshotAllocations, manualRideAllocations, earningsSnapshots, filters }),
-    [earningsSnapshots, filters, manualRideAllocations, rideEvents, ridePayments, rideSnapshotAllocations, rideUpdateBatchEvents, rideUpdateBatches],
+    () => buildZoneIntelligenceData({ rideEvents, rideUpdateBatches, rideUpdateBatchEvents, ridePayments, rideSnapshotAllocations, earningsSnapshots, filters }),
+    [earningsSnapshots, filters, rideEvents, ridePayments, rideSnapshotAllocations, rideUpdateBatchEvents, rideUpdateBatches],
   );
   useEffect(() => {
     setOperationalPresets(readOperationalExplorerPresets(user?.id));

@@ -1,6 +1,6 @@
 # Movement Capture & Zone Context — Technical Design
 
-Status: foreground capture and post-shift/manual-payment migrations are applied to the active backend. Code is a local candidate on `main`; deployment and authenticated owner QA remain unverified.
+Status: foreground capture and payment-link migrations are applied to the active backend. Code is a local candidate on `main`; deployment and authenticated owner QA remain unverified.
 
 Target: `Beta 0.10.0 - Movement Capture & Zone Context`.
 
@@ -25,20 +25,16 @@ The first Movement flow is deliberately real-time. A driver may nevertheless fin
 
 The save path will reuse the authoritative weekly JSON model and append-only earnings snapshots. It must not create a new active shift, alter another shift, or reinterpret a daily total as GPS evidence.
 
-### Known rides entered after a shift
+### Live ride correction boundary
 
-For a driver who knows individual ride amounts and times, Entry will offer an optional **Add known ride** sequence within the selected closed shift. Each row is an explicit manual observation: app, amount, exact time inside a worked block, and optional provider-reported miles. The UI derives the accumulated earnings transition from those rows so snapshot evidence remains append-only and consistent with Quick Actions.
+Rides are live Movement evidence, not a retrospective reconstruction tool. Entry and History never create a ride for a prior shift or date, even when the driver remembers its time, fare, or miles. That keeps zone coverage, ride counts, and ride-level earnings from being mixed with reconstructed history.
 
-- A manual known ride can improve exact earnings timing, but it has no start/end zone unless a real-time Movement event already exists.
-- Provider-reported per-ride miles remain manual evidence; they do not become GPS mileage.
-- A later total correction reconciles against the already entered manual rows. It never creates a second copy of the earnings or rides.
-- If the exact time falls in a pause or outside the selected shift, saving is blocked rather than guessed.
+For a same-day mistake, the Movement control can cancel an active ride or undo the latest completed-but-unlinked ride. Cancellation changes only the live Movement event; it never changes the shift, daily rides, miles, earnings, snapshots, or allocations. Once an update has explicitly linked a completed ride, it stays preserved as evidence and cannot be silently cancelled.
 
 ### Data and safety contract
 
 - The initial correction path should require no raw-coordinate storage and no route reconstruction.
-- Any schema addition for manual known rides must be owner-scoped, RLS-protected, explicitly granted to `authenticated`, and distinguish `manual_after_shift` from foreground-captured Movement events.
-- Existing completed foreground ride events may be linked only when the driver explicitly confirms the matching earnings update; historical manual rows must not claim those zones.
+- Existing completed foreground ride events may be linked only when the driver explicitly confirms the matching earnings update.
 - Test data must remain removable by selecting the exact user, week, shift, and ride/event timestamps; no broad delete or earnings rewrite is permitted.
 
 The existing accumulated totals remain the contract:

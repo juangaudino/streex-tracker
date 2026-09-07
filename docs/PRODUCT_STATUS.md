@@ -27,7 +27,7 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.10.6 - Historical Manual Ride Allocation (local candidate; active-backend migration applied)
+Beta 0.10.7 - Live Ride Evidence Boundary (local candidate; no new migration required)
 ```
 
 Next approved product sequence:
@@ -39,7 +39,7 @@ Beta 0.10.2 - Ride Allocation Integrity & Quick Actions Stability (implemented o
 Beta 0.10.3 - Zone Map & Confirmed Labels (implemented on main; active-backend migration applied)
 Beta 0.10.4 - Weekly Ride Allocation Review (local candidate; no new migration required)
 Beta 0.10.5 - Closed-Week Allocation Access (local candidate; no new migration required)
-Beta 0.10.6 - Historical Manual Ride Allocation (local candidate; active-backend migration applied)
+Beta 0.10.7 - Live Ride Evidence Boundary (local candidate; no new migration required)
 ```
 
 Source of truth:
@@ -607,7 +607,7 @@ High priority:
 - Beta 0.10.3 is implemented on `main` and its active-backend migration `20260906213306_user_zone_labels_0103.sql` is applied. It replaces the conceptual private-cell board with an interactive approximate base map and owner-confirmed broad labels. Map tiles and optional suggestions use only the existing coarse cell, never raw GPS or routes.
 - Beta 0.10.4 is the unpublished Weekly Ride Allocation Review candidate. Entry will show every positive observed update for the week, even before it has a ride-level allocation, and permits a deliberate closed-week review without changing financial history.
 - Beta 0.10.5 is the unpublished access correction: a closed week intentionally opened in Entry stays there, and History offers a direct route into that week’s ride-earnings review.
-- Beta 0.10.6 is the unpublished historical-manual allocation candidate. Its active-backend migration `20260907001459_manual_ride_allocations_0106.sql` is applied. It adds a revisioned owner-confirmed ledger for daily app totals that predate Quick Actions snapshots; it never rewrites those totals and keeps any unknown balance explicitly unassigned.
+- Beta 0.10.7 supersedes the historical-manual allocation surface. Rides are now live foreground evidence only: historical Entry never creates them, and legacy reconstructed rows are excluded from Zone Intelligence. The applied `manual_ride_allocations` migration remains retained for audit compatibility, but the app no longer offers that reconstruction workflow.
 - Complete owner QA and publish Beta 0.9.7 only after import safety, totals preservation, no-snapshot behavior, and cross-surface analytics agree.
 - Configure two isolated QA identities in the GitHub `qa` environment for bidirectional RLS certification.
 - Keep monitoring login/session and SMTP confirmation/recovery delivery.

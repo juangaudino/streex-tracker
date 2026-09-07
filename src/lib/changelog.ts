@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.10.6";
+export const CURRENT_VERSION = "0.10.7";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,17 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.10.7",
+    date: "2026-09",
+    title: "Live Ride Evidence Boundary (Local Candidate)",
+    tags: ["fix", "polish"],
+    items: [
+      "Rides are now created only from the foreground Start ride and Finish ride flow; Entry and History no longer reconstruct rides for past shifts or dates",
+      "A live correction can cancel an active ride or undo the latest completed-but-unlinked ride without changing earnings, miles, ride totals, or snapshots",
+      "Legacy manual historical rows are excluded from Zone Intelligence so they cannot affect zone coverage or pickup earnings",
+    ],
+  },
   {
     version: "0.10.6",
     date: "2026-09",

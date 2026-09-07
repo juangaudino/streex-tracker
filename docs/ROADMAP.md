@@ -132,15 +132,15 @@ Boundaries:
 
 Technical design: `docs/ZONE_INTELLIGENCE_TECHNICAL_DESIGN.md`.
 
-### Beta 0.10.6 - Historical Manual Ride Allocation
+### Beta 0.10.7 - Live Ride Evidence Boundary
 
-Status: local candidate; active-backend migration applied.
+Status: local candidate; no new migration required.
 
 Purpose:
 
-- Reconcile historical daily app totals without a Quick Actions snapshot against rides that the owner has actually recorded.
-- Keep an explicit remaining balance whenever the owner does not know every ride amount.
-- Preserve historical financial and hourly data; manual allocations alter only the ride-level interpretation.
+- Keep rides as foreground-captured evidence from the active day only; historical Entry and History never reconstruct individual rides.
+- Provide a narrow same-day correction: cancel an active ride or undo the latest completed-but-unlinked ride without changing financial totals.
+- Exclude legacy manual historical rows from Zone Intelligence so they cannot affect coverage or pickup earnings.
 
 ### Beta 0.10.5 - Closed-Week Allocation Access
 

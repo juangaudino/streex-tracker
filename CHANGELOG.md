@@ -2,6 +2,18 @@
 
 ## Beta Releases
 
+### Beta 0.10.7 — Live Ride Evidence Boundary (Local Candidate)
+
+### Fixed
+
+- Rides can no longer be reconstructed from Entry or History for a prior shift or date. Movement remains evidence captured while the app is open.
+- The live Movement card can cancel an active ride or undo its latest completed-but-unlinked ride. This never changes earnings, mileage, ride totals, snapshots, or shift data.
+
+### Data Integrity
+
+- Legacy manual historical ride rows and their allocation interpretations are excluded from Zone Intelligence, preventing reconstructed data from affecting zone coverage or pickup earnings.
+- The previously applied manual-allocation database migration remains retained for audit compatibility, but its reconstruction UI is retired.
+
 ### Beta 0.10.6 — Historical Manual Ride Allocation (Local Candidate)
 
 ### Added

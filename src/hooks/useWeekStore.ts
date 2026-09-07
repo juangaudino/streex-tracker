@@ -545,12 +545,12 @@ export function useWeekStore(user: User | null) {
   }, [earningsAttributions, earningsSnapshots, hasLocalData, manualRideAllocations, rideEvents, ridePayments, rideSnapshotAllocations, rideUpdateBatchEvents, rideUpdateBatches, settings, user, weeks, zoneLabels]);
 
   const startRideEvent = useCallback(async (draft: {
-    weekId: string; dayDate: string; shiftId?: string | null; app?: string | null; startedAt: string; capture: RideCaptureResult; source?: "foreground_browser" | "manual_after_shift";
+    weekId: string; dayDate: string; shiftId?: string | null; app?: string | null; startedAt: string; capture: RideCaptureResult;
   }): Promise<RideEvent | null> => {
     if (!user) return null;
     const { data, error } = await supabase.from("ride_events").insert({
       user_id: user.id, week_id: draft.weekId, day_date: draft.dayDate, shift_id: draft.shiftId ?? null,
-      app: draft.app ?? null, started_at: draft.startedAt, source: draft.source ?? "foreground_browser", start_zone_key: draft.capture.zoneKey ?? null,
+      app: draft.app ?? null, started_at: draft.startedAt, source: "foreground_browser", start_zone_key: draft.capture.zoneKey ?? null,
       start_capture_status: draft.capture.status, start_accuracy_class: draft.capture.accuracyClass ?? null,
     }).select("*").single();
     if (error) { console.warn("[rideEvents] start failed", error); return null; }
@@ -570,6 +570,17 @@ export function useWeekStore(user: User | null) {
     setRideEvents((previous) => [...previous.filter((item) => item.id !== event.id), event]);
     return event;
   }, [user]);
+
+  const cancelForegroundRideEvent = useCallback(async (id: string): Promise<boolean> => {
+    if (!user) return false;
+    const current = rideEvents.find((event) => event.id === id);
+    if (!current || current.source !== "foreground_browser" || (current.status !== "active" && current.status !== "completed")) return false;
+    const { data, error } = await supabase.from("ride_events").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", user.id).select("*").single();
+    if (error || !data) { console.warn("[rideEvents] foreground cancellation failed", error); return false; }
+    const event = dbToRideEvent(data);
+    setRideEvents((previous) => previous.map((item) => item.id === id ? event : item));
+    return true;
+  }, [rideEvents, user]);
 
   const linkRideEvents = useCallback(async (draft: { app: string; earningsSnapshotId: string; operationalEventKey?: string | null; rideEventIds: string[] }): Promise<boolean> => {
     if (!user || draft.rideEventIds.length === 0) return false;
@@ -851,6 +862,7 @@ export function useWeekStore(user: User | null) {
     recordOperationalSnapshot,
     startRideEvent,
     finishRideEvent,
+    cancelForegroundRideEvent,
     linkRideEvents,
     recordRidePayment,
     replaceSnapshotAllocations,

@@ -80,7 +80,7 @@ export default function RideAllocationLedger({ allocations, rides, snapshots, we
         const unassigned = Math.max(0, total - assigned);
         const editing = editingSnapshotId === snapshot.id;
         const draftTotal = draftRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
-        const reviewRides = rides.filter((ride) => ride.status !== "active" && ride.app === snapshot.app);
+        const reviewRides = rides.filter((ride) => ride.weekId === weekId && ride.source === "foreground_browser" && ride.status !== "active" && ride.status !== "cancelled" && ride.app === snapshot.app);
         return <div key={snapshot.id} className="rounded-lg border border-border bg-background/55 p-3 space-y-2">
           <div className="flex items-start justify-between gap-3">
             <div>

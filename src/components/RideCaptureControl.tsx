@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Navigation, Play, Square } from "lucide-react";
+import { Navigation, Play, Square, Undo2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -11,8 +11,9 @@ interface RideCaptureControlProps {
   openWeek: WeekRecord;
   apps: string[];
   rideEvents: RideEvent[];
-  onStart: (draft: { weekId: string; dayDate: string; shiftId?: string | null; app?: string | null; startedAt: string; capture: Awaited<ReturnType<typeof captureForegroundZone>>; source?: "foreground_browser" | "manual_after_shift" }) => Promise<RideEvent | null>;
+  onStart: (draft: { weekId: string; dayDate: string; shiftId?: string | null; app?: string | null; startedAt: string; capture: Awaited<ReturnType<typeof captureForegroundZone>> }) => Promise<RideEvent | null>;
   onFinish: (id: string, endedAt: string, capture: Awaited<ReturnType<typeof captureForegroundZone>>) => Promise<RideEvent | null>;
+  onCancel?: (id: string) => Promise<boolean>;
   onUpdateTotals?: (app?: string | null) => void;
   compact?: boolean;
 }
@@ -22,7 +23,7 @@ function localToday() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-export default function RideCaptureControl({ openWeek, apps, rideEvents, onStart, onFinish, onUpdateTotals, compact = false }: RideCaptureControlProps) {
+export default function RideCaptureControl({ openWeek, apps, rideEvents, onStart, onFinish, onCancel, onUpdateTotals, compact = false }: RideCaptureControlProps) {
   const today = openWeek.entries.find((day) => day.date === localToday()) ?? null;
   const activeShift = today ? getActiveShift(today) : undefined;
   const activeRide = useMemo(() => rideEvents.find((event) => event.status === "active") ?? null, [rideEvents]);
@@ -49,6 +50,15 @@ export default function RideCaptureControl({ openWeek, apps, rideEvents, onStart
     const capture = await captureForegroundZone();
     const event = await onFinish(activeRide.id, endedAt, capture);
     setLastCaptureResult(!event ? "Ride was not saved. Try again." : capture.status === "captured" ? "End zone saved · ride completed" : capture.status === "denied" ? "Location denied — ride finished without zone" : "End zone unavailable — ride finished without zone");
+    setCapturing(null);
+  }
+
+  async function cancelRide(ride: RideEvent, label: string) {
+    if (!onCancel || capturing) return;
+    if (!confirm(`${label}? This removes only this live ride context. It does not change your shift, miles, rides, or earnings totals.`)) return;
+    setCapturing("finish");
+    const cancelled = await onCancel(ride.id);
+    setLastCaptureResult(cancelled ? "Ride cancelled · totals unchanged" : "Ride could not be cancelled. Try again.");
     setCapturing(null);
   }
 
@@ -87,8 +97,9 @@ export default function RideCaptureControl({ openWeek, apps, rideEvents, onStart
           </Button>
         </div>
       )}
-      {activeRide && <Button type="button" className="mt-3 h-10 w-full" disabled={Boolean(capturing)} onClick={finishRide}><Square className="mr-1.5 h-4 w-4" />{capturing === "finish" ? "Finishing…" : "Finish ride"}</Button>}
+      {activeRide && <div className="mt-3 grid grid-cols-[1fr_auto] gap-2"><Button type="button" className="h-10" disabled={Boolean(capturing)} onClick={finishRide}><Square className="mr-1.5 h-4 w-4" />{capturing === "finish" ? "Finishing…" : "Finish ride"}</Button>{onCancel && <Button type="button" variant="outline" className="h-10" disabled={Boolean(capturing)} onClick={() => cancelRide(activeRide, "Cancel this active ride")}><XCircle className="mr-1.5 h-4 w-4" />Cancel</Button>}</div>}
       {lastCaptureResult && <p className="mt-2 rounded-lg border border-primary/20 bg-background/70 px-2.5 py-2 text-xs font-medium text-foreground" role="status">{lastCaptureResult}</p>}
+      {!activeRide && latestCompleted && onCancel && <Button type="button" variant="ghost" className="mt-2 h-9 w-full text-xs" disabled={Boolean(capturing)} onClick={() => cancelRide(latestCompleted, "Undo the last unlinked ride")}><Undo2 className="mr-1.5 h-3.5 w-3.5" />Undo last unlinked ride</Button>}
       {!activeRide && completedPending > 0 && onUpdateTotals && <Button type="button" variant="outline" className="mt-2 h-9 w-full" onClick={() => onUpdateTotals(rideEvents.filter((event) => event.status === "completed" && event.dayDate === today?.date).at(-1)?.app)}>
         Update totals in Quick Actions
       </Button>}

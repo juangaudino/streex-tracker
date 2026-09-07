@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildZoneIntelligenceData, zoneCellBounds, zoneCellCenter } from "./zoneIntelligence";
-import type { EarningsSnapshot, ManualRideAllocation, RideEvent, RidePayment, RideSnapshotAllocation, RideUpdateBatch, RideUpdateBatchEvent } from "./types";
+import type { EarningsSnapshot, RideEvent, RidePayment, RideSnapshotAllocation, RideUpdateBatch, RideUpdateBatchEvent } from "./types";
 
 const filters = { timePreset: "all" as const, app: "all", weekdays: [] };
 const snapshot = (id: string, delta: number): EarningsSnapshot => ({ id, userId: "u1", weekId: "w1", dayDate: "2026-09-06", app: "Uber", previousAmount: 0, newAmount: delta, delta, shiftId: "s1", createdAt: "2026-09-06T12:00:00Z" });
@@ -66,13 +66,15 @@ describe("zone intelligence", () => {
     expect(data.zones.find((zone) => zone.zoneKey === "zone-v1:100:200")).toMatchObject({ baseEarnings: 10, eligibleEarnings: 10 });
   });
 
-  it("uses a confirmed historical manual portion without inventing the unassigned remainder", () => {
-    const allocation: ManualRideAllocation = {
-      id: "m1", userId: "u1", weekId: "w1", dayDate: "2026-09-06", app: "Uber", rideEventId: "r1",
-      allocationSetId: "set1", kind: "ride_base", amount: 12, sourceTotal: 30, isCurrent: true, createdAt: "2026-09-07T00:00:00Z",
-    };
-    const pending: ManualRideAllocation = { ...allocation, id: "m2", rideEventId: null, kind: "unassigned", amount: 18 };
-    const data = buildZoneIntelligenceData({ rideEvents: [ride("r1")], manualRideAllocations: [allocation, pending], filters });
-    expect(data.zones.find((zone) => zone.zoneKey === "zone-v1:100:200")).toMatchObject({ baseEarnings: 12, eligibleEarnings: 12 });
+  it("excludes a manually reconstructed historical ride from zone evidence", () => {
+    const data = buildZoneIntelligenceData({
+      rideEvents: [ride("r1", { source: "manual_after_shift" })],
+      rideUpdateBatches: [batch("b1", "single", "s1")],
+      rideUpdateBatchEvents: [link("b1", "r1")],
+      earningsSnapshots: [snapshot("s1", 12)],
+      filters,
+    });
+    expect(data.completedRides).toBe(0);
+    expect(data.eligibleRideCount).toBe(0);
   });
 });

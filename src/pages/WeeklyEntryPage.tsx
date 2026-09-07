@@ -36,8 +36,6 @@ import { formatRideAttribution, getAppRideCount, replaceShiftTotalRideCount, upd
 import { replaceShiftMileage } from "@/lib/mileageAttribution";
 import RideCaptureControl from "@/components/RideCaptureControl";
 import RideAllocationLedger from "@/components/RideAllocationLedger";
-import ManualRideAllocationLedger from "@/components/ManualRideAllocationLedger";
-import { isExactTimeInsideWorkedShift } from "@/lib/earningsAttributions";
 
 function timeInputValue(value?: string): string {
   if (!value) return "";
@@ -71,7 +69,7 @@ function localDateValue(): string {
 }
 
 export default function WeeklyEntryPage() {
-  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, rideSnapshotAllocations, manualRideAllocations, startRideEvent, finishRideEvent, replaceSnapshotAllocations, replaceManualRideAllocations, addWeek, updateWeek } =
+  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, rideSnapshotAllocations, startRideEvent, finishRideEvent, cancelForegroundRideEvent, replaceSnapshotAllocations, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -103,12 +101,6 @@ export default function WeeklyEntryPage() {
   const [lateTipOpen, setLateTipOpen] = useState(false);
   const [lateTipRideId, setLateTipRideId] = useState("");
   const [lateTipAmount, setLateTipAmount] = useState("");
-  const [knownRideShiftId, setKnownRideShiftId] = useState<string | null>(null);
-  const [knownRideAmount, setKnownRideAmount] = useState("");
-  const [knownRideTime, setKnownRideTime] = useState("");
-  const [knownRideMiles, setKnownRideMiles] = useState("");
-  const [recordedRideShiftId, setRecordedRideShiftId] = useState<string | null>(null);
-  const [recordedRideTime, setRecordedRideTime] = useState("");
 
   useEffect(() => {
     const target = requestedWeekId ? requestedWeek : openWeek;
@@ -540,52 +532,6 @@ export default function WeeklyEntryPage() {
     toast({ title: linked ? "Late tip linked" : "Tip saved", description: linked ? "Income is recorded today and linked to the original ride." : "Income was saved, but the ride link needs a retry after the migration is applied." });
   }
 
-  async function saveKnownRide(dayIdx: number, shift: ShiftSession) {
-    if (!editWeek || !shift.endTime || knownRideShiftId !== shift.id || !correctionApp) return;
-    const amount = Math.max(0, Number(knownRideAmount) || 0);
-    const miles = Math.max(0, Number(knownRideMiles) || 0);
-    const occurredAt = applyTimeToShiftDate(editWeek.entries[dayIdx].date, knownRideTime);
-    if (amount <= 0 || !isValidTimeInput(knownRideTime) || !isExactTimeInsideWorkedShift(shift, occurredAt)) {
-      toast({ title: "Enter a valid amount and ride time", description: "The time must be inside worked time, not during a pause.", variant: "destructive" }); return;
-    }
-    const day = editWeek.entries[dayIdx];
-    const event = await startRideEvent({ weekId: editWeek.id, dayDate: day.date, shiftId: shift.id, app: correctionApp, startedAt: occurredAt, source: "manual_after_shift", capture: { status: "unavailable" } });
-    if (!event) { toast({ title: "Could not save the known ride", variant: "destructive" }); return; }
-    await finishRideEvent(event.id, occurredAt, { status: "unavailable" });
-    const previousAmount = Number(day.apps?.[correctionApp]) || 0;
-    const nextAmount = +(previousAmount + amount).toFixed(2);
-    const entries = editWeek.entries.map((entry, index) => {
-      if (index !== dayIdx) return entry;
-      const updatedShift = updateShiftAppRideCount(shift, correctionApp, (getAppRideCount(shift, correctionApp) ?? 0) + 1).shift;
-      return replaceShiftMileage({ ...entry, apps: { ...entry.apps, [correctionApp]: nextAmount }, shifts: (entry.shifts ?? []).map((item) => item.id === shift.id ? updatedShift : item), logged: true }, shift.id, getShiftMiles(day, shift) + miles);
-    });
-    const updated = { ...editWeek, entries };
-    let linked = false;
-    setEditWeek(updated);
-    const saved = await updateWeek(updated, [{ dayDate: day.date, app: correctionApp, previousAmount, newAmount: nextAmount, status: "resolved", mode: "exact", attributedDayDate: day.date, shiftId: shift.id, effectiveStartAt: occurredAt, effectiveEndAt: occurredAt, source: "user", confidence: "confirmed", note: "Manual known ride entered after shift close." }], { onSnapshotsRecorded: async (snapshots) => {
-      const snapshot = snapshots.find((item) => item.dayDate === day.date && item.app === correctionApp && Number(item.previousAmount) === previousAmount && Number(item.newAmount) === nextAmount);
-      if (snapshot) linked = await replaceSnapshotAllocations(snapshot.id, [{ rideEventId: event.id, kind: "ride_base", amount, observedAt: new Date().toISOString(), attributedDayDate: day.date, shiftId: shift.id, effectiveStartAt: occurredAt, effectiveEndAt: occurredAt, note: "Manual known ride entered after shift close." }]);
-    }});
-    if (!saved) { setEditWeek(editWeek); return; }
-    setKnownRideShiftId(null); setKnownRideAmount(""); setKnownRideMiles(""); setKnownRideTime("");
-    toast({ title: linked ? "Known ride recorded" : "Known ride saved", description: linked ? "Its amount and exact time are linked without GPS zones." : "The ride was saved; apply the migration to enable its payment link." });
-  }
-
-  async function saveAlreadyCountedRide(dayIdx: number, shift: ShiftSession) {
-    if (!editWeek || !shift.endTime || recordedRideShiftId !== shift.id || !correctionApp) return;
-    const occurredAt = applyTimeToShiftDate(editWeek.entries[dayIdx].date, recordedRideTime);
-    if (!isValidTimeInput(recordedRideTime) || !isExactTimeInsideWorkedShift(shift, occurredAt)) {
-      toast({ title: "Enter a valid ride time", description: "The time must be inside worked time, not during a pause.", variant: "destructive" }); return;
-    }
-    const day = editWeek.entries[dayIdx];
-    const event = await startRideEvent({ weekId: editWeek.id, dayDate: day.date, shiftId: shift.id, app: correctionApp, startedAt: occurredAt, source: "manual_after_shift", capture: { status: "unavailable" } });
-    if (!event || !(await finishRideEvent(event.id, occurredAt, { status: "unavailable" }))) {
-      toast({ title: "Could not record the ride", variant: "destructive" }); return;
-    }
-    setRecordedRideShiftId(null); setRecordedRideTime("");
-    toast({ title: "Existing ride recorded", description: "It was already included in the daily total; no earnings were added." });
-  }
-
   if (!editWeek) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
@@ -822,16 +768,17 @@ export default function WeeklyEntryPage() {
             rideEvents={rideEvents}
             onStart={startRideEvent}
             onFinish={finishRideEvent}
+            onCancel={cancelForegroundRideEvent}
             compact
           />
-          {rideEvents.some((event) => event.status !== "active" && event.app) && (
+          {rideEvents.some((event) => event.source === "foreground_browser" && event.status !== "active" && event.status !== "cancelled" && event.app) && (
             <section className="rounded-xl border border-border bg-card p-3">
               {!lateTipOpen ? <Button type="button" size="sm" variant="outline" onClick={() => setLateTipOpen(true)}>Add late tip to a recorded ride</Button> : (
                 <div className="space-y-3">
                   <div><p className="text-sm font-semibold">Add late tip</p><p className="text-xs text-muted-foreground">The income is saved today and linked to the original ride. It does not rewrite the original day.</p></div>
                   <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={lateTipRideId} onChange={(event) => setLateTipRideId(event.target.value)}>
                     <option value="">Choose the original ride</option>
-                    {rideEvents.filter((event) => event.status !== "active" && event.app).sort((a, b) => (b.endedAt ?? b.startedAt).localeCompare(a.endedAt ?? a.startedAt)).map((event) => <option value={event.id} key={event.id}>{event.app} · {event.dayDate} · {formatShiftTime(event.endedAt ?? event.startedAt)}</option>)}
+                    {rideEvents.filter((event) => event.source === "foreground_browser" && event.status !== "active" && event.status !== "cancelled" && event.app).sort((a, b) => (b.endedAt ?? b.startedAt).localeCompare(a.endedAt ?? a.startedAt)).map((event) => <option value={event.id} key={event.id}>{event.app} · {event.dayDate} · {formatShiftTime(event.endedAt ?? event.startedAt)}</option>)}
                   </select>
                   <Input type="number" min="0" step="0.01" placeholder="Late tip amount" value={lateTipAmount} onChange={(event) => setLateTipAmount(event.target.value)} />
                   <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setLateTipOpen(false)}>Cancel</Button><Button type="button" size="sm" onClick={saveLateTip}>Save late tip</Button></div>
@@ -850,15 +797,6 @@ export default function WeeklyEntryPage() {
         currencySymbol={sym}
         onReplace={replaceSnapshotAllocations}
       />
-      <ManualRideAllocationLedger
-        week={editWeek}
-        rides={rideEvents}
-        snapshots={earningsSnapshots}
-        allocations={manualRideAllocations}
-        currencySymbol={sym}
-        onReplace={replaceManualRideAllocations}
-      />
-
       <section className="rounded-xl border border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -1102,26 +1040,6 @@ export default function WeeklyEntryPage() {
                         {(Number(correctionTotal) < (Number(day.apps?.[correctionApp]) || 0) || Number(correctionRides) < (getAppRideCount(shift, correctionApp) ?? 0) || Number(correctionMiles) < getShiftMiles(day, shift)) && <label className="block space-y-1"><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Why is this lower?</span><Textarea value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} placeholder="Required for a downward correction" maxLength={180} /></label>}
                         <p className="text-xs text-muted-foreground">Preview: {Number(correctionRides || 0) - (getAppRideCount(shift, correctionApp) ?? 0) >= 0 ? "+" : ""}{Number(correctionRides || 0) - (getAppRideCount(shift, correctionApp) ?? 0)} rides · {(Number(correctionMiles || 0) - getShiftMiles(day, shift)).toFixed(1)} mi · {formatCurrency((Number(correctionTotal || 0) - (Number(day.apps?.[correctionApp]) || 0)), sym)} today.</p>
                         <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setCorrectionShiftId(null)}>Cancel</Button><Button type="button" size="sm" onClick={() => saveClosedShiftCorrection(dayIdx, shift)}>Save correction</Button></div>
-                        <div className="border-t border-primary/15 pt-3">
-                          {knownRideShiftId !== shift.id ? <Button type="button" size="sm" variant="secondary" onClick={() => { setKnownRideShiftId(shift.id); setKnownRideTime(timeInputValue(shift.endTime)); }}>Add known ride</Button> : (
-                            <div className="space-y-2">
-                              <p className="text-xs font-semibold">Add known ride after shift</p>
-                              <p className="text-[11px] text-muted-foreground">Adds one {correctionApp} ride, its amount, optional provider miles, and exact worked time. It has no retroactive GPS zone.</p>
-                              <div className="grid gap-2 sm:grid-cols-3"><Input type="number" min="0" step="0.01" placeholder="Amount" value={knownRideAmount} onChange={(event) => setKnownRideAmount(event.target.value)} /><Input type="text" inputMode="numeric" maxLength={5} placeholder="HH:mm" value={knownRideTime} onChange={(event) => setKnownRideTime(event.target.value)} /><Input type="number" min="0" step="0.1" placeholder="Provider miles (optional)" value={knownRideMiles} onChange={(event) => setKnownRideMiles(event.target.value)} /></div>
-                              <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setKnownRideShiftId(null)}>Cancel</Button><Button type="button" size="sm" onClick={() => saveKnownRide(dayIdx, shift)}>Save known ride</Button></div>
-                            </div>
-                          )}
-                        </div>
-                        <div className="border-t border-primary/15 pt-3">
-                          {recordedRideShiftId !== shift.id ? <Button type="button" size="sm" variant="outline" onClick={() => { setRecordedRideShiftId(shift.id); setRecordedRideTime(timeInputValue(shift.endTime)); }}>Record already-counted ride</Button> : (
-                            <div className="space-y-2">
-                              <p className="text-xs font-semibold">Record an already-counted ride</p>
-                              <p className="text-[11px] text-muted-foreground">Creates a ride record for allocation only. It does not add money, miles, or rides to this closed shift and has no retroactive GPS zone.</p>
-                              <Input type="text" inputMode="numeric" maxLength={5} placeholder="HH:mm" value={recordedRideTime} onChange={(event) => setRecordedRideTime(event.target.value)} />
-                              <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setRecordedRideShiftId(null)}>Cancel</Button><Button type="button" size="sm" onClick={() => saveAlreadyCountedRide(dayIdx, shift)}>Record ride</Button></div>
-                            </div>
-                          )}
-                        </div>
                       </div>
                     )}
                   </div>

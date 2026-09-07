@@ -11,8 +11,8 @@
 
 ### Data Integrity
 
-- Legacy manual historical ride rows and their allocation interpretations are excluded from Zone Intelligence, preventing reconstructed data from affecting zone coverage or pickup earnings.
-- The previously applied manual-allocation database migration remains retained for audit compatibility, but its reconstruction UI is retired.
+- Legacy reconstructed historical ride rows are excluded from Zone Intelligence, preventing them from affecting zone coverage or pickup earnings.
+- A confirmed allocation remains valid when it belongs to a real foreground-captured ride. The allocation review no longer creates retrospective rides.
 
 ### Beta 0.10.6 — Historical Manual Ride Allocation (Local Candidate)
 

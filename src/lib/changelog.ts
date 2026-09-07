@@ -25,7 +25,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     items: [
       "Rides are now created only from the foreground Start ride and Finish ride flow; Entry and History no longer reconstruct rides for past shifts or dates",
       "A live correction can cancel an active ride or undo the latest completed-but-unlinked ride without changing earnings, miles, ride totals, or snapshots",
-      "Legacy manual historical rows are excluded from Zone Intelligence so they cannot affect zone coverage or pickup earnings",
+      "Legacy reconstructed historical rides are excluded from Zone Intelligence, while confirmed allocations for foreground-captured rides remain valid",
     ],
   },
   {

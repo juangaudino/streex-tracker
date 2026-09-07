@@ -36,6 +36,7 @@ import { formatRideAttribution, getAppRideCount, replaceShiftTotalRideCount, upd
 import { replaceShiftMileage } from "@/lib/mileageAttribution";
 import RideCaptureControl from "@/components/RideCaptureControl";
 import RideAllocationLedger from "@/components/RideAllocationLedger";
+import ManualRideAllocationLedger from "@/components/ManualRideAllocationLedger";
 
 function timeInputValue(value?: string): string {
   if (!value) return "";
@@ -69,7 +70,7 @@ function localDateValue(): string {
 }
 
 export default function WeeklyEntryPage() {
-  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, rideSnapshotAllocations, startRideEvent, finishRideEvent, cancelForegroundRideEvent, replaceSnapshotAllocations, addWeek, updateWeek } =
+  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, rideSnapshotAllocations, manualRideAllocations, startRideEvent, finishRideEvent, cancelForegroundRideEvent, replaceSnapshotAllocations, replaceManualRideAllocations, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -796,6 +797,14 @@ export default function WeeklyEntryPage() {
         weekId={editWeek.id}
         currencySymbol={sym}
         onReplace={replaceSnapshotAllocations}
+      />
+      <ManualRideAllocationLedger
+        week={editWeek}
+        rides={rideEvents}
+        snapshots={earningsSnapshots}
+        allocations={manualRideAllocations}
+        currencySymbol={sym}
+        onReplace={replaceManualRideAllocations}
       />
       <section className="rounded-xl border border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between gap-3">

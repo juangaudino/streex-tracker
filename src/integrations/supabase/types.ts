@@ -354,6 +354,59 @@ export type Database = {
           { foreignKeyName: "earnings_snapshot_allocations_ride_event_id_fkey"; columns: ["ride_event_id"]; isOneToOne: false; referencedRelation: "ride_events"; referencedColumns: ["id"] },
         ]
       }
+      manual_ride_allocations: {
+        Row: {
+          allocation_set_id: string
+          amount: number
+          app: string
+          created_at: string
+          day_date: string
+          id: string
+          is_current: boolean
+          kind: string
+          note: string | null
+          replaced_at: string | null
+          ride_event_id: string | null
+          source_total: number
+          user_id: string
+          week_id: string
+        }
+        Insert: {
+          allocation_set_id?: string
+          amount: number
+          app: string
+          created_at?: string
+          day_date: string
+          id?: string
+          is_current?: boolean
+          kind: string
+          note?: string | null
+          replaced_at?: string | null
+          ride_event_id?: string | null
+          source_total: number
+          user_id: string
+          week_id: string
+        }
+        Update: {
+          allocation_set_id?: string
+          amount?: number
+          app?: string
+          created_at?: string
+          day_date?: string
+          id?: string
+          is_current?: boolean
+          kind?: string
+          note?: string | null
+          replaced_at?: string | null
+          ride_event_id?: string | null
+          source_total?: number
+          user_id?: string
+          week_id?: string
+        }
+        Relationships: [
+          { foreignKeyName: "manual_ride_allocations_ride_event_id_fkey"; columns: ["ride_event_id"]; isOneToOne: false; referencedRelation: "ride_events"; referencedColumns: ["id"] },
+        ]
+      }
       operational_snapshots: {
         Row: {
           app_totals: Json

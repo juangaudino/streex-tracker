@@ -132,6 +132,16 @@ Boundaries:
 
 Technical design: `docs/ZONE_INTELLIGENCE_TECHNICAL_DESIGN.md`.
 
+### Beta 0.10.6 - Historical Manual Ride Allocation
+
+Status: local candidate; active-backend migration applied.
+
+Purpose:
+
+- Reconcile historical daily app totals without a Quick Actions snapshot against rides that the owner has actually recorded.
+- Keep an explicit remaining balance whenever the owner does not know every ride amount.
+- Preserve historical financial and hourly data; manual allocations alter only the ride-level interpretation.
+
 ### Beta 0.10.5 - Closed-Week Allocation Access
 
 Status: local candidate; no new migration required.

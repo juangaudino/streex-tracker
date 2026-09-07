@@ -1,4 +1,4 @@
-import type { WeekRecord, AppSettings, EarningsSnapshot, OperationalSnapshot, OperationalSnapshotDraft, EarningsAttribution, EarningsAttributionIntent, RideCaptureResult, RideEvent, RidePayment, RideSnapshotAllocation, RideSnapshotAllocationDraft, RideUpdateBatch, RideUpdateBatchEvent, ZoneLabel } from "@/lib/types";
+import type { WeekRecord, AppSettings, EarningsSnapshot, OperationalSnapshot, OperationalSnapshotDraft, EarningsAttribution, EarningsAttributionIntent, RideCaptureResult, RideEvent, RidePayment, RideSnapshotAllocation, RideSnapshotAllocationDraft, ManualRideAllocation, ManualRideAllocationDraft, RideUpdateBatch, RideUpdateBatchEvent, ZoneLabel } from "@/lib/types";
 import type { WeekRevision } from "@/lib/weekRevisions";
 import type { User } from "@supabase/supabase-js";
 
@@ -15,6 +15,7 @@ export interface StoreContext {
   rideUpdateBatchEvents: RideUpdateBatchEvent[];
   ridePayments: RidePayment[];
   rideSnapshotAllocations: RideSnapshotAllocation[];
+  manualRideAllocations: ManualRideAllocation[];
   zoneLabels: ZoneLabel[];
   loading: boolean;
   hasLocalData: boolean;
@@ -26,6 +27,7 @@ export interface StoreContext {
   linkRideEvents: (draft: { app: string; earningsSnapshotId: string; operationalEventKey?: string | null; rideEventIds: string[] }) => Promise<boolean>;
   recordRidePayment: (draft: { rideEventId: string; earningsSnapshotId: string; kind: "manual_base" | "late_tip" | "adjustment"; observedAt: string }) => Promise<boolean>;
   replaceSnapshotAllocations: (snapshotId: string, allocations: RideSnapshotAllocationDraft[]) => Promise<boolean>;
+  replaceManualRideAllocations: (draft: { weekId: string; dayDate: string; app: string; sourceTotal: number }, allocations: ManualRideAllocationDraft[]) => Promise<boolean>;
   saveZoneLabel: (draft: { zoneKey: string; label: string; source?: "user" | "suggested" }) => Promise<boolean>;
   saveEarningsAttribution: (snapshotId: string, intent: Omit<EarningsAttributionIntent, "dayDate" | "app" | "previousAmount" | "newAmount">) => Promise<boolean>;
   deleteWeek: (id: string) => void;

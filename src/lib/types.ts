@@ -234,6 +234,33 @@ export interface RideSnapshotAllocationDraft {
   note?: string | null;
 }
 
+/** A revisioned, owner-confirmed split of a historical/manual daily app total. */
+export type ManualRideAllocationKind = "ride_base" | "unassigned";
+
+export interface ManualRideAllocation {
+  id: string;
+  userId: string;
+  weekId: string;
+  dayDate: string;
+  app: string;
+  rideEventId?: string | null;
+  allocationSetId: string;
+  kind: ManualRideAllocationKind;
+  amount: number;
+  sourceTotal: number;
+  note?: string | null;
+  isCurrent: boolean;
+  replacedAt?: string | null;
+  createdAt: string;
+}
+
+export interface ManualRideAllocationDraft {
+  rideEventId?: string | null;
+  kind: ManualRideAllocationKind;
+  amount: number;
+  note?: string | null;
+}
+
 export interface ZoneLabel {
   id: string;
   userId: string;

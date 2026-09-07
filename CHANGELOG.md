@@ -2,6 +2,18 @@
 
 ## Beta Releases
 
+### Beta 0.10.6 — Historical Manual Ride Allocation (Local Candidate)
+
+### Added
+
+- Weekly ride allocation review now supports historical daily app totals that have no Quick Actions snapshot.
+- The owner can assign known amounts to recorded rides and leave the balance explicitly unassigned until it is known.
+
+### Data Integrity
+
+- Manual allocations are revisioned separately from snapshots and never rewrite the weekly entry, reported total, or historical hourly record.
+- A manual allocation contributes to pickup-zone earnings only when the selected ride already has a foreground-captured pickup zone.
+
 ### Beta 0.10.5 — Closed-Week Allocation Access (Local Candidate)
 
 ### Fixed

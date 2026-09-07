@@ -36,6 +36,7 @@ import { formatRideAttribution, getAppRideCount, replaceShiftTotalRideCount, upd
 import { replaceShiftMileage } from "@/lib/mileageAttribution";
 import RideCaptureControl from "@/components/RideCaptureControl";
 import RideAllocationLedger from "@/components/RideAllocationLedger";
+import ManualRideAllocationLedger from "@/components/ManualRideAllocationLedger";
 import { isExactTimeInsideWorkedShift } from "@/lib/earningsAttributions";
 
 function timeInputValue(value?: string): string {
@@ -70,7 +71,7 @@ function localDateValue(): string {
 }
 
 export default function WeeklyEntryPage() {
-  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, rideSnapshotAllocations, startRideEvent, finishRideEvent, replaceSnapshotAllocations, addWeek, updateWeek } =
+  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, rideSnapshotAllocations, manualRideAllocations, startRideEvent, finishRideEvent, replaceSnapshotAllocations, replaceManualRideAllocations, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -106,6 +107,8 @@ export default function WeeklyEntryPage() {
   const [knownRideAmount, setKnownRideAmount] = useState("");
   const [knownRideTime, setKnownRideTime] = useState("");
   const [knownRideMiles, setKnownRideMiles] = useState("");
+  const [recordedRideShiftId, setRecordedRideShiftId] = useState<string | null>(null);
+  const [recordedRideTime, setRecordedRideTime] = useState("");
 
   useEffect(() => {
     const target = requestedWeekId ? requestedWeek : openWeek;
@@ -568,6 +571,21 @@ export default function WeeklyEntryPage() {
     toast({ title: linked ? "Known ride recorded" : "Known ride saved", description: linked ? "Its amount and exact time are linked without GPS zones." : "The ride was saved; apply the migration to enable its payment link." });
   }
 
+  async function saveAlreadyCountedRide(dayIdx: number, shift: ShiftSession) {
+    if (!editWeek || !shift.endTime || recordedRideShiftId !== shift.id || !correctionApp) return;
+    const occurredAt = applyTimeToShiftDate(editWeek.entries[dayIdx].date, recordedRideTime);
+    if (!isValidTimeInput(recordedRideTime) || !isExactTimeInsideWorkedShift(shift, occurredAt)) {
+      toast({ title: "Enter a valid ride time", description: "The time must be inside worked time, not during a pause.", variant: "destructive" }); return;
+    }
+    const day = editWeek.entries[dayIdx];
+    const event = await startRideEvent({ weekId: editWeek.id, dayDate: day.date, shiftId: shift.id, app: correctionApp, startedAt: occurredAt, source: "manual_after_shift", capture: { status: "unavailable" } });
+    if (!event || !(await finishRideEvent(event.id, occurredAt, { status: "unavailable" }))) {
+      toast({ title: "Could not record the ride", variant: "destructive" }); return;
+    }
+    setRecordedRideShiftId(null); setRecordedRideTime("");
+    toast({ title: "Existing ride recorded", description: "It was already included in the daily total; no earnings were added." });
+  }
+
   if (!editWeek) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
@@ -832,6 +850,14 @@ export default function WeeklyEntryPage() {
         currencySymbol={sym}
         onReplace={replaceSnapshotAllocations}
       />
+      <ManualRideAllocationLedger
+        week={editWeek}
+        rides={rideEvents}
+        snapshots={earningsSnapshots}
+        allocations={manualRideAllocations}
+        currencySymbol={sym}
+        onReplace={replaceManualRideAllocations}
+      />
 
       <section className="rounded-xl border border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between gap-3">
@@ -1083,6 +1109,16 @@ export default function WeeklyEntryPage() {
                               <p className="text-[11px] text-muted-foreground">Adds one {correctionApp} ride, its amount, optional provider miles, and exact worked time. It has no retroactive GPS zone.</p>
                               <div className="grid gap-2 sm:grid-cols-3"><Input type="number" min="0" step="0.01" placeholder="Amount" value={knownRideAmount} onChange={(event) => setKnownRideAmount(event.target.value)} /><Input type="text" inputMode="numeric" maxLength={5} placeholder="HH:mm" value={knownRideTime} onChange={(event) => setKnownRideTime(event.target.value)} /><Input type="number" min="0" step="0.1" placeholder="Provider miles (optional)" value={knownRideMiles} onChange={(event) => setKnownRideMiles(event.target.value)} /></div>
                               <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setKnownRideShiftId(null)}>Cancel</Button><Button type="button" size="sm" onClick={() => saveKnownRide(dayIdx, shift)}>Save known ride</Button></div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="border-t border-primary/15 pt-3">
+                          {recordedRideShiftId !== shift.id ? <Button type="button" size="sm" variant="outline" onClick={() => { setRecordedRideShiftId(shift.id); setRecordedRideTime(timeInputValue(shift.endTime)); }}>Record already-counted ride</Button> : (
+                            <div className="space-y-2">
+                              <p className="text-xs font-semibold">Record an already-counted ride</p>
+                              <p className="text-[11px] text-muted-foreground">Creates a ride record for allocation only. It does not add money, miles, or rides to this closed shift and has no retroactive GPS zone.</p>
+                              <Input type="text" inputMode="numeric" maxLength={5} placeholder="HH:mm" value={recordedRideTime} onChange={(event) => setRecordedRideTime(event.target.value)} />
+                              <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setRecordedRideShiftId(null)}>Cancel</Button><Button type="button" size="sm" onClick={() => saveAlreadyCountedRide(dayIdx, shift)}>Record ride</Button></div>
                             </div>
                           )}
                         </div>

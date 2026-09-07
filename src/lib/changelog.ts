@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.10.5";
+export const CURRENT_VERSION = "0.10.6";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,17 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.10.6",
+    date: "2026-09",
+    title: "Historical Manual Ride Allocation (Local Candidate)",
+    tags: ["new", "feature"],
+    items: [
+      "Historical daily app totals without Quick Actions snapshots can be reconciled across recorded rides while keeping an explicit unassigned remainder",
+      "Manual ride-level interpretations are owner-scoped and revisioned; they never rewrite historical daily earnings or snapshots",
+      "A confirmed manual portion can contribute to pickup-zone earnings only when that ride already has a foreground-captured pickup zone",
+    ],
+  },
   {
     version: "0.10.5",
     date: "2026-09",

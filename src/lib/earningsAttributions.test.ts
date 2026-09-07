@@ -71,6 +71,16 @@ describe("earnings attribution integrity", () => {
     expect(review[0]).toMatchObject({ reason: "after_shift", suggestedShiftId: shift.id });
   });
 
+  it("never suggests distributing a cross-day or decimal-scale historical snapshot", () => {
+    const crossDay = { ...lateSnapshot, id: "snapshot-cross-day", createdAt: "2026-07-11T09:00:00" };
+    const scaled = { ...lateSnapshot, id: "snapshot-scaled", previousAmount: 120, newAmount: 12000, delta: 11880, createdAt: "2026-07-11T09:00:00" };
+    const review = buildAttributionReviewItems({ weeks: [week], snapshots: [crossDay, scaled] });
+    expect(review).toEqual(expect.arrayContaining([
+      expect.objectContaining({ snapshot: expect.objectContaining({ id: "snapshot-cross-day" }), reason: "different_day", suggestedShiftId: undefined }),
+      expect.objectContaining({ snapshot: expect.objectContaining({ id: "snapshot-scaled" }), reason: "historical_scale_artifact", suggestedShiftId: undefined }),
+    ]));
+  });
+
   it("places a user-confirmed exact tip in its original work hour", () => {
     const exact = attribution({
       mode: "exact",

@@ -26,7 +26,7 @@ export interface AttributedHourAmount {
 export interface AttributionReviewItem {
   snapshot: EarningsSnapshot;
   attribution?: EarningsAttribution;
-  reason: "after_shift" | "different_day" | "outside_shift" | "historical_edit" | "unassigned" | "invalid_exact";
+  reason: "after_shift" | "different_day" | "historical_scale_artifact" | "outside_shift" | "historical_edit" | "unassigned" | "invalid_exact";
   suggestedDayDate?: string;
   suggestedShiftId?: string;
 }
@@ -116,6 +116,13 @@ function findDay(weeks: WeekRecord[], date: string): DayEntry | undefined {
 function findShift(weeks: WeekRecord[], date: string, shiftId?: string | null): ShiftSession | undefined {
   if (!shiftId) return undefined;
   return findDay(weeks, date)?.shifts?.find((shift) => shift.id === shiftId);
+}
+
+function hasSuspiciousHistoricalScale(snapshot: EarningsSnapshot, day: DayEntry | undefined): boolean {
+  const reported = Number(day?.apps?.[snapshot.app]) || 0;
+  if (reported <= 0 || Number(snapshot.newAmount) <= 0) return false;
+  const ratio = Number(snapshot.newAmount) / reported;
+  return [10, 100, 1000].some((factor) => Math.abs(ratio - factor) < 0.03);
 }
 
 function snapshotInsideShift(snapshot: EarningsSnapshot, shift: ShiftSession): boolean {
@@ -346,7 +353,10 @@ export function buildAttributionReviewItems(args: {
     const lastShift = [...completed].sort((a, b) => (b.endTime ?? "").localeCompare(a.endTime ?? ""))[0];
     const sameDay = !Number.isNaN(observed.getTime()) && localDateKey(observed) === snapshot.dayDate;
     const afterShift = sameDay && lastShift?.endTime && Date.parse(snapshot.createdAt) > Date.parse(lastShift.endTime);
-    const reason: AttributionReviewItem["reason"] = !sameDay
+    const suspiciousScale = hasSuspiciousHistoricalScale(snapshot, day);
+    const reason: AttributionReviewItem["reason"] = suspiciousScale
+      ? "historical_scale_artifact"
+      : !sameDay
       ? "different_day"
       : afterShift
         ? "after_shift"
@@ -358,7 +368,7 @@ export function buildAttributionReviewItems(args: {
       attribution,
       reason,
       suggestedDayDate: snapshot.dayDate,
-      suggestedShiftId: completed.length === 1 ? completed[0].id : undefined,
+      suggestedShiftId: sameDay && !suspiciousScale && completed.length === 1 ? completed[0].id : undefined,
     }];
   }).sort((a, b) => b.snapshot.createdAt.localeCompare(a.snapshot.createdAt));
 }

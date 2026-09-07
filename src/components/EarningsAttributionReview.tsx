@@ -18,6 +18,7 @@ interface Props {
 type ShiftOption = { dayDate: string; dayName: string; shift: ShiftSession & { endTime: string } };
 
 function reasonLabel(reason: ReturnType<typeof buildAttributionReviewItems>[number]["reason"]): string {
+  if (reason === "historical_scale_artifact") return "Historical snapshot has an impossible decimal scale";
   if (reason === "invalid_exact") return "Exact time is outside worked time";
   if (reason === "after_shift") return "Observed after the last shift";
   if (reason === "different_day") return "Captured on a different calendar day";
@@ -96,6 +97,26 @@ export default function EarningsAttributionReview({ weeks, snapshots, attributio
 
   const suggestedCount = items.filter((item) => item.suggestedShiftId).length;
   const pendingAmount = items.reduce((sum, item) => sum + Math.max(0, Number(item.snapshot.delta) || 0), 0);
+  const historicalCleanupItems = items.filter((item) => item.reason === "different_day" || item.reason === "historical_scale_artifact");
+
+  async function excludeHistoricalCleanup() {
+    if (!historicalCleanupItems.length) return;
+    if (!window.confirm(`Exclude ${historicalCleanupItems.length} historical snapshot event${historicalCleanupItems.length === 1 ? "" : "s"} from hourly metrics? Weekly totals, rides, miles, zones, and original snapshots will not change.`)) return;
+    setWorking("historical-cleanup");
+    try {
+      for (const item of historicalCleanupItems) {
+        const saved = await onSave(item.snapshot.id, {
+          status: "excluded", mode: "unassigned", source: "user", confidence: "unassigned",
+          note: item.reason === "historical_scale_artifact"
+            ? "Historical snapshot excluded: impossible decimal scale relative to the reported day total."
+            : "Historical snapshot excluded: observed on a different calendar day with no safe operational time.",
+        });
+        if (!saved) return;
+      }
+    } finally {
+      setWorking(null);
+    }
+  }
 
   return (
     <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 space-y-4">
@@ -111,6 +132,11 @@ export default function EarningsAttributionReview({ weeks, snapshots, attributio
           {suggestedCount > 0 && <Button size="sm" variant="outline" disabled={working === "bulk"} onClick={resolveSuggested}>Resolve {suggestedCount} suggested</Button>}
         </div>
       </div>
+
+      {historicalCleanupItems.length > 0 && <div className="rounded-lg border border-amber-500/25 bg-background/70 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div><p className="text-sm font-semibold">Historical snapshot cleanup</p><p className="text-xs text-muted-foreground">{historicalCleanupItems.length} event{historicalCleanupItems.length === 1 ? "" : "s"} were observed on another calendar day or have an impossible decimal scale. Exclusion preserves all reported totals.</p></div>
+        <Button size="sm" variant="outline" disabled={working === "historical-cleanup"} onClick={() => void excludeHistoricalCleanup()}>{working === "historical-cleanup" ? "Excluding…" : `Exclude ${historicalCleanupItems.length} from hourly`}</Button>
+      </div>}
 
       {items.length === 0 ? (
         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-2">

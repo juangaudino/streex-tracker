@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.10.7";
+export const CURRENT_VERSION = "0.10.8";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,16 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.10.8",
+    date: "2026-09",
+    title: "Historical Snapshot Safety (Local Candidate)",
+    tags: ["fix", "feature"],
+    items: [
+      "Cross-day historical snapshots and impossible decimal-scale artifacts are never suggested for shift distribution",
+      "Data Health offers an explicit audited cleanup to exclude historical no-timing snapshots from hourly metrics without changing reported totals, rides, zones, or original snapshots",
+    ],
+  },
   {
     version: "0.10.7",
     date: "2026-09",

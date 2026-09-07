@@ -142,6 +142,16 @@ Purpose:
 - Provide a narrow same-day correction: cancel an active ride or undo the latest completed-but-unlinked ride without changing financial totals.
 - Exclude legacy manual historical rows from Zone Intelligence so they cannot affect coverage or pickup earnings.
 
+### Beta 0.10.8 - Historical Snapshot Safety
+
+Status: local candidate; no new migration required.
+
+Purpose:
+
+- Prevent imported or edited historical snapshots from being suggested for hourly shift attribution when their observed calendar day differs from their earnings day.
+- Detect impossible decimal-scale transitions and retain them only as audit evidence.
+- Offer a reviewed bulk exclusion from hourly metrics that never changes reported earnings, rides, miles, zones, or source snapshots.
+
 ### Beta 0.10.5 - Closed-Week Allocation Access
 
 Status: local candidate; no new migration required.

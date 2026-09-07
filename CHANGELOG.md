@@ -2,6 +2,16 @@
 
 ## Beta Releases
 
+### Beta 0.10.8 — Historical Snapshot Safety (Local Candidate)
+
+### Fixed
+
+- Data Health no longer suggests assigning a cross-day historical snapshot or an impossible decimal-scale artifact to a shift.
+
+### Added
+
+- Historical Snapshot Cleanup can explicitly exclude those events from hourly metrics in one audited action. It never changes reported totals, rides, miles, zones, or original snapshots.
+
 ### Beta 0.10.7 — Live Ride Evidence Boundary (Local Candidate)
 
 ### Fixed

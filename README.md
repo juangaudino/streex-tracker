@@ -16,7 +16,12 @@ The live product is available at [gig.getstreex.com](https://gig.getstreex.com).
   <img src="src/assets/streex-logo.png" alt="STREEX logo" width="420" />
 </p>
 
-> Portfolio screenshots for Dashboard, Quick Actions, and Deep Insights should use sanitized or synthetic data so the visual story stays consistent with Streex's privacy principles.
+<p align="center">
+  <img src="docs/media/streex-dashboard-synthetic-preview.png" alt="STREEX Dashboard synthetic-data preview" width="49%" />
+  <img src="docs/media/streex-deep-insights-synthetic-preview.png" alt="STREEX Deep Insights synthetic-data preview" width="49%" />
+</p>
+
+These portfolio previews use synthetic values and contain no personal, address, route, or live-location data. They highlight the two most important product surfaces: the daily operating cockpit and **Deep Insights**, where earnings, operational time, hourly patterns, best windows, comparisons, and zone intelligence come together.
 
 ## What problem does it solve?
 

@@ -17,11 +17,17 @@ The live product is available at [gig.getstreex.com](https://gig.getstreex.com).
 </p>
 
 <p align="center">
-  <img src="docs/media/streex-dashboard-synthetic-preview.png" alt="STREEX Dashboard synthetic-data preview" width="49%" />
-  <img src="docs/media/streex-deep-insights-synthetic-preview.png" alt="STREEX Deep Insights synthetic-data preview" width="49%" />
+  <img src="docs/media/streex-dashboard.png" alt="STREEX Dashboard — Full Focus operational view" width="31%" />
+  <img src="docs/media/streex-career-shift-intelligence.png" alt="STREEX Career Shift Intelligence" width="31%" />
+  <img src="docs/media/streex-achievements.png" alt="STREEX Achievements and progress" width="31%" />
 </p>
 
-These portfolio previews use synthetic values and contain no personal, address, route, or live-location data. They highlight the two most important product surfaces: the daily operating cockpit and **Deep Insights**, where earnings, operational time, hourly patterns, best windows, comparisons, and zone intelligence come together.
+<p align="center">
+  <img src="docs/media/streex-deep-insights.png" alt="STREEX Deep Insights hourly profile and weekday heatmap" width="49%" />
+  <img src="docs/media/streex-zone-intelligence.png" alt="STREEX Zone Intelligence approximate zone coverage" width="49%" />
+</p>
+
+These are captured views of the product interface, showing the daily operating cockpit, **Deep Insights**, career-level shift intelligence, achievements, and approximate zone intelligence. The zone view intentionally communicates cells and coverage rather than routes, addresses, raw GPS, or background tracking.
 
 ## What problem does it solve?
 

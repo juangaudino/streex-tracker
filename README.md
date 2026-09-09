@@ -2,48 +2,25 @@
 
 > **Gig earnings tracker. Career identity system. Personal performance cockpit.**
 
-Streex is a mobile-first app for gig workers who want more than a spreadsheet.
-It tracks weekly earnings, app performance, mileage, goals, records, achievements,
-XP, career progression, narrative recaps, share cards, and AI-powered personal analytics.
+Streex is a mobile-first earnings and performance system for gig workers. It turns daily app totals, shifts, mileage, and rides into an honest record of how work is going — then turns that record into goals, comparisons, career identity, and evidence-based insights.
 
-It is built for one feeling:
+It is built around one idea:
 
-**"My work has a story. My data belongs to me. My progress is real."**
+> **My work has a story. My data belongs to me. My progress is real.**
 
-## Project Continuity
+## Product preview
 
-New contributors and new Codex chats should begin with:
+The live product is available at [gig.getstreex.com](https://gig.getstreex.com). The production workspace requires an account because the app is designed around private, user-owned data.
 
-- `docs/NEW_CHAT_HANDOFF.md`
-- `AGENTS.md`
-- `docs/PROJECT_CONTEXT.md`
-- `docs/STREEX_AI_WORKFLOW.md`
-- `docs/PRODUCT_STATUS.md`
-- `docs/ROADMAP.md`
-- `docs/QA_RUNBOOK.md`
-- `CHANGELOG.md`
+<p align="center">
+  <img src="src/assets/streex-logo.png" alt="STREEX logo" width="420" />
+</p>
 
-`docs/PRODUCT_STATUS.md` is the master living status document for Claude, ChatGPT, Codex, and Lovable. If an external AI has repo access, ask it to read that file first.
+> Portfolio screenshots for Dashboard, Quick Actions, and Deep Insights should use sanitized or synthetic data so the visual story stays consistent with Streex's privacy principles.
 
-`docs/NEW_CHAT_HANDOFF.md` is the concise operational handoff: current architecture, finished systems, pending work, design rules, known risks, routes, and collaboration workflow. A machine-specific `START_HERE.local.md` may also exist locally and is intentionally ignored by Git.
+## What problem does it solve?
 
-## Current Production Status
-
-- Current public release: **Beta 0.9.6 — Earnings Attribution Integrity**
-- Current local source candidate: **Beta 0.9.7 — Historical Data Import (pending owner QA)**
-- Production app: `https://gig.getstreex.com`
-- Hosting: **Vercel**
-- DNS/domain: **Cloudflare** for `getstreex.com`
-- Active Supabase project ref: `ywbrovislvqkfzsyqpiv`
-- Legacy Lovable Supabase project ref: `mnwymfyvvdhekzvipjmp`
-
-The active production app is no longer dependent on Lovable hosting. Lovable can still be used for visual iteration or assistance, but production code should flow through GitHub/Vercel and the active owner-controlled Supabase project.
-
----
-
-## ✨ What Makes Streex Different
-
-Most earning trackers answer:
+Most earning trackers answer one question:
 
 > How much did I make?
 
@@ -51,294 +28,163 @@ Streex also asks:
 
 > What kind of driver am I becoming?
 
-Streex turns gig work into a living professional identity system:
+Gig work often spreads useful information across several provider apps, notes, spreadsheets, and memory. Streex brings that information into one personal operating system while keeping the analytics honest: the driver's own history is the benchmark, rest is not failure, and unsupported conclusions are not presented as facts.
 
-- 💸 **Earnings tracking** across multiple gig apps
-- 📈 **Weekly goals, records, streaks, and momentum**
-- 🏆 **Achievements and rarity tiers**
-- 🧠 **Ask My Data** AI assistant for personal analytics
-- 🧬 **XP + Driver Identity system**
-- 🛣️ **Career titles, archetypes, rival benchmarks, and ideal week comparisons**
-- 📚 **Weekly letters, monthly recaps, and journey timeline**
-- 🧭 **Deep Insights** desktop analytics cockpit with configurable multi-period comparisons
-- 🧰 **Full Focus Utility Slot** for unified conditions and Octopus reward progress
-- 🎨 **Light, Dark, RPG, and Night Drive themes**
-- 🫀 **Pulse Mode** that lets the UI subtly react to momentum
-- 📤 **JSON and CSV data export**
+## What I built
 
----
+- **Daily operations:** earnings across multiple gig apps, shifts, mileage, rides, Quick Actions, weekly goals, and end-of-day recaps.
+- **Integrity-aware analytics:** explicit earnings attribution, append-only observation snapshots, correction reconciliation, Data Health, and operational metrics that do not invent worked time.
+- **Performance cockpit:** Dashboard, Compare, Deep Insights, Operational Explorer, hourly and weekday patterns, historical rankings, and driver playbooks.
+- **Professional identity:** records, streaks, achievements, rarity tiers, XP, Driver Identity, archetypes, career titles, adaptive pace, and personal benchmarks.
+- **Career narrative:** Journey, Weekly Letters, Monthly Recaps, heatmaps, milestones, and shareable progress moments.
+- **Ownership and portability:** private user-scoped data, restore points, JSON backup, CSV export, historical import tooling, and recovery-oriented workflows.
+- **Mobile-first product system:** responsive workflows, Full Focus modes, visual themes, installable PWA metadata, and calm/no-shame interaction patterns.
 
-## 🧭 Product Philosophy
+## Product philosophy
 
 ### Identity > Money
 
-Income matters, but Streex is not only about totals.
-It helps drivers feel discipline, momentum, recovery, standards, progress, and pride.
+Income matters, but Streex is not only about totals. It helps drivers see discipline, momentum, recovery, standards, progress, and pride.
 
 ### No Shame Analytics
 
-Streex avoids toxic hustle language.
-Days off are treated as part of the gig lifestyle, not as failure.
+Days off are part of the gig lifestyle, not evidence of failure. The product is designed to support a real working life rather than pressure the user into permanent output.
 
-### Your History Is The Benchmark
+### Your history is the benchmark
 
-The app compares the driver against their own past:
+Streex compares the driver against their own past:
 
 - best same weekday
-- best week
-- best month
+- best week and month
 - worked-day pace
 - personal records
 - ideal week built from their own history
 
-The rival is not someone else.
-The rival is your own previous standard.
+The rival is not someone else. The rival is the driver's previous standard.
 
----
+## Technical highlights
 
-## 🧩 Core Features
+- **Domain-specific data integrity:** accumulated app totals are treated as deltas; mileage remains a day-level accumulated value; earnings observations stay separate from the time they were earned.
+- **Honest operational metrics:** shift work blocks, pauses, explicit attribution choices, and correction reconciliation keep `$ / hour`, `$ / mile`, and `$ / ride` from being inflated by incomplete evidence.
+- **Multi-surface analytics:** one canonical intelligence layer feeds Dashboard, Shift Intelligence, Deep Insights, Operational Explorer, Career, History, Daily Reports, and Driver Playbooks.
+- **Privacy-aware movement context:** the current movement foundation uses foreground browser capture and coarse zones. Pickup and drop-off remain distinct, and the product does not claim reliable background GPS, raw routes, or precise location history.
+- **Secure backend boundaries:** authenticated Supabase access, user-scoped RLS, server-side Edge Functions, no arbitrary SQL from the client, and no secrets in frontend code.
+- **Performance-conscious delivery:** route-level lazy loading, on-demand Excel/image-export dependencies, focused production bundles, and a Vercel deployment with SPA route rewrites.
+- **Quality gates:** GitHub Actions runs typecheck, lint, unit tests, production build, and public browser smoke tests. Authenticated route and cross-account RLS certification remain a separate QA gate.
 
-### 📊 Dashboard
+## Implemented, in progress, and experimental
 
-The dashboard is the main cockpit:
+The repository deliberately distinguishes shipped product behavior from work that exists in source but still needs owner validation or publication.
 
-- current week total
-- goal progress
-- remaining amount
-- same-point comparisons
-- record chase
-- best day and best app
-- days logged vs active days
-- smart mood headline
-- momentum chip
-- Driver Identity card
-- active milestones
+| Status | Scope |
+| --- | --- |
+| **Published production baseline** | Dashboard, Entry and Quick Actions, earnings/shifts/mileage, earnings attribution integrity, Deep Insights and Operational Explorer, Compare, Career, Achievements, Journey, Letters, Recaps, exports, authentication, and RLS-scoped persistence. |
+| **Implemented in `main`, pending owner QA or publication** | Movement and coarse zone context, Zone Intelligence, ride allocation review, historical import, snapshot correction safety, multi-shift ride integrity, and newer comparison/performance refinements. |
+| **Experimental / paused** | Ask My Data remains in the repository with its UI, deterministic analytics paths, tests, and Edge Function source, but its generative provider dependency is currently paused. It should not be treated as production-ready AI. |
 
-It is designed to feel smart without being noisy.
+Current public release: **Beta 0.9.6 — Earnings Attribution Integrity**
 
-### ⚡ Quick Entry
+Current local source candidate: **Beta 0.10.8 — Historical Snapshot Safety**
 
-Fast daily input for active apps:
+See [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md), [`docs/ROADMAP.md`](docs/ROADMAP.md), and [`CHANGELOG.md`](CHANGELOG.md) for the detailed release state.
 
-- Uber
-- Lyft
-- Spark
-- DoorDash
-- Amazon Flex
-- Instacart
-- Shipt
-- custom apps
-
-Each day can be saved, closed, and reflected in weekly totals.
-
-### 🏁 End Day
-
-The End Day flow gives the driver a compact daily recap:
-
-- daily total
-- daily rank context
-- record proximity
-- weekly momentum
-- near achievements
-
-It closes the day with forward motion, not judgment.
-
-### 🏆 Achievements
-
-Achievements include rarity tiers and progression:
-
-- common
-- rare
-- epic
-- legendary
-- mythic
-
-They reward goals, records, streaks, growth, app variety, and consistency.
-
-### 🧬 Driver Identity
-
-Streex V5.4 introduced a full identity layer:
-
-- Consistency XP
-- Performance XP
-- cumulative driver levels
-- automatic driver archetypes
-- historical day ranking
-- rival snippets
-- ideal week comparison
-- adaptive pace
-- day off language
-
-Driver levels:
-
-1. Rookie
-2. Road Runner
-3. Steady Grinder
-4. Street Pro
-5. Top Earner
-6. Elite Driver
-7. Streex Legend
-
-### 🪪 Career Titles
-
-V5.4.2 added dynamic career titles, combining real behavior with progression.
-
-Examples:
-
-- `Street Pro - Record Hunter`
-- `Road Runner - Goal Closer`
-- `Steady Grinder - Week Builder`
-- `Rookie - Identity Forming`
-- `Streex Legend - Legendary Spark Specialist`
-
-### 🫀 Pulse Mode
-
-Pulse Mode is an optional visual layer.
-
-When enabled, Streex subtly reacts to the current dashboard state:
-
-- calm
-- steady
-- streak
-- strong
-- record chase
-
-It is visual only, local-only, and can be disabled instantly.
-
-### 🤖 Ask My Data
-
-Ask My Data is an experimental analytics assistant inside Streex.
-
-It can answer questions like:
-
-- What was my best week?
-- What is my average weekly income?
-- Which week had the strongest performance?
-- What achievements have I unlocked recently?
-- What pattern do you see in my recent weeks?
-
-Architecture principles:
-
-- server-side AI only
-- user JWT verification
-- RLS-scoped Supabase queries
-- no arbitrary SQL
-- compact scoped context
-- no full raw database dumps
-- streaming responses
-- usage logging
-- graceful rate-limit and credit errors
-
-### 📚 Journey, Letters, and Recaps
-
-Streex treats work history like a career narrative:
-
-- Journey Feed
-- Weekly Letters
-- Letters Library
-- Monthly Recaps
-- monthly heatmaps
-- strongest week highlights
-- emotional summaries
-- shareable career moments
-
-### 📤 Export My Data
-
-Users can export their data from Settings:
-
-- JSON backup
-- CSV earnings export
-
-Exports support:
-
-- backups
-- personal ownership
-- future AI analytics
-- migration safety
-- trust
-
----
-
-## 🎨 Themes
-
-Streex includes multiple visual modes:
-
-- Classic Light
-- Classic Dark
-- RPG
-- Night
-- Signature
-- Velocity
-
-Theme work is visual only unless a specific task says otherwise. Auth, earnings, shifts, exports, Ask My Data, and backend behavior should not change during theme-only work.
-
----
-
-## 🏗️ Tech Stack
-
-- ⚛️ **React**
-- ⚡ **Vite**
-- 🧭 **React Router**
-- 🎨 **Tailwind CSS**
-- 🧱 **shadcn/ui**
-- 🔐 **Supabase Auth**
-- 🗄️ **Supabase Postgres**
-- 🧠 **Supabase Edge Functions**
-- 🤖 **Lovable AI Gateway**
-- 🚀 **Vercel production + previews**
-- 🌐 **Cloudflare DNS**
-- 🛠️ **Lovable-assisted development**
-
----
-
-## 🔐 Backend Rule
-
-Streex uses **one active production backend only**:
+## Architecture and stack
 
 ```text
-Vercel app at gig.getstreex.com
-→ owner-controlled Supabase backend
-→ all Streex data and persistence
+React + TypeScript + Vite
+              ↓
+Mobile-first product UI
+              ↓
+Supabase Auth + Postgres + Edge Functions
+              ↓
+RLS-scoped user data and analytics
+              ↓
+Vercel production deployment
 ```
 
-Active Supabase project:
+| Layer | Technologies |
+| --- | --- |
+| UI | React, TypeScript, React Router, Tailwind CSS, shadcn/ui, Radix UI |
+| Product analytics | TypeScript domain modules, Recharts, date-fns, local comparison and export tooling |
+| Data and auth | Supabase Auth, Supabase Postgres, row-level security, Supabase Edge Functions |
+| Integrations | OpenWeather and TomTom Traffic through server-side utility functions |
+| Delivery | Vite, Vercel, Cloudflare DNS, installable PWA metadata |
+| Quality | Vitest, Testing Library, Playwright, GitHub Actions |
 
-```text
-ywbrovislvqkfzsyqpiv
+## Main product surfaces
+
+### Dashboard and Quick Actions
+
+The main cockpit combines current-week earnings, goal progress, personal comparisons, records, momentum, Driver Identity, and active milestones. Quick Actions keeps live work practical with earnings updates, shift controls, mileage, rides, and clear save/sync states.
+
+### Deep Insights
+
+Deep Insights is a desktop-first analytics workspace with configurable periods, operational filters, weighted rates, evidence coverage, hourly profiles, weekday patterns, comparisons, rankings, and exportable Driver Playbooks.
+
+### Driver Identity and career narrative
+
+Achievements, XP, archetypes, career titles, Journey, Weekly Letters, Monthly Recaps, milestones, and share cards turn raw work history into a personal career narrative without turning the interface into a leaderboard against other people.
+
+### History, recovery, and export
+
+History supports editing, restore points, conflict-aware saves, historical context, JSON backup, and CSV export. The historical import path is preview-first and designed to preserve existing values rather than silently overwrite them.
+
+### Movement and zone context
+
+The movement foundation captures foreground ride context when available and reports whether start/end zones were captured, unavailable, or denied. Zone Intelligence uses approximate private cells, pickup/drop-off separation, evidence coverage, and confirmed labels rather than pretending that a daily total can reveal a past route.
+
+## Privacy and safety principles
+
+- User data is scoped through authentication and RLS.
+- Raw coordinates, full routes, addresses, identity data, and third-party tracking are not treated as product analytics.
+- Earnings observations are not automatically treated as proof of worked time.
+- Unresolved timing or ride attribution remains visible as unresolved instead of being fabricated.
+- Exports preserve user ownership and support backup or migration.
+- No API keys, service-role keys, auth tokens, or production secrets belong in frontend code or public documentation.
+
+## Live deployment
+
+- **Production app:** [gig.getstreex.com](https://gig.getstreex.com)
+- **Source repository:** [github.com/juangaudino/streex-tracker](https://github.com/juangaudino/streex-tracker)
+- **Frontend hosting:** Vercel
+- **Backend:** owner-controlled Supabase project
+- **DNS:** Cloudflare
+
+The live app is an authenticated workspace rather than a seeded public demo. Screenshots and portfolio walkthroughs should use a sanitized account or synthetic data.
+
+## Local development and preview
+
+This repository is configured for Vercel production and preview deployments.
+
+### Requirements
+
+- Node.js
+- npm
+- A configured Supabase project for local development
+
+### Commands
+
+```bash
+npm install
+npm run dev
 ```
 
-Legacy Lovable-managed Supabase project:
+Validation commands:
 
-```text
-mnwymfyvvdhekzvipjmp
+```bash
+npm run typecheck
+npm run lint
+npm test
+npm run build
 ```
 
-The live source of truth includes:
+The Vercel build uses:
 
-- `weeks`
-- `user_settings`
-- `user_achievements`
-- `xp_events`
-- Ask My Data logs
-- auth
-- future analytics
-- future identity and career systems
+- Framework preset: `Vite`
+- Build command: `npm run build`
+- Output directory: `dist`
 
-No separate Supabase project should be assumed or created unless explicitly requested. Treat the legacy Lovable project as historical context unless the user explicitly asks to inspect or compare it.
-
----
-
-## 🚀 Local / Preview Setup
-
-This repo is configured for Vercel production and preview deployments.
-
-### Vercel Settings
-
-- Framework Preset: `Vite`
-- Build Command: `npm run build`
-- Output Directory: `dist`
-
-### Required Environment Variables
+Required public-shaped environment variables are documented by the app configuration:
 
 ```bash
 VITE_SUPABASE_URL=
@@ -346,38 +192,21 @@ VITE_SUPABASE_PUBLISHABLE_KEY=
 VITE_SUPABASE_PROJECT_ID=
 ```
 
-The `vercel.json` file keeps nested app routes working when opened directly.
+Never place service-role credentials or provider secrets in the frontend environment.
 
----
+## Documentation
 
-## 🧪 Safety Principles
+The public README is the fast product and engineering overview. The detailed operational documentation remains available for contributors and maintainers:
 
-Streex development follows these rules:
+- [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md) — living release and capability status
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — product roadmap and status labels
+- [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md) — durable architecture and product context
+- [`docs/QA_RUNBOOK.md`](docs/QA_RUNBOOK.md) — release and QA procedures
+- [`docs/NEW_CHAT_HANDOFF.md`](docs/NEW_CHAT_HANDOFF.md) — contributor handoff and current risks
+- [`docs/STREEX_AI_WORKFLOW.md`](docs/STREEX_AI_WORKFLOW.md) — AI-assisted development workflow
+- [`CHANGELOG.md`](CHANGELOG.md) — detailed release history
 
-- keep production behavior stable
-- additive-first architecture
-- preserve existing dashboard, auth, earnings, exports, achievements, records, and Ask My Data behavior
-- apply database migrations only to the confirmed active Supabase backend
-- never expose auth tokens, API keys, Supabase secrets, or internal credentials
-- keep user-owned data scoped by RLS
-- avoid full raw data dumps into AI prompts
-- make recovery, rest, and days off feel legitimate
-
----
-
-## 📜 Changelog
-
-Use these files for release history:
-
-- `CHANGELOG.md`
-- `src/lib/changelog.ts`
-- `docs/PRODUCT_STATUS.md`
-
-Older `V3.x` through `V5.x` labels are preserved as Alpha Archive history. Current work uses public beta versioning.
-
----
-
-## 🧠 The Big Idea
+## The big idea
 
 Streex is not just tracking gig earnings.
 

@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.11.0";
+export const CURRENT_VERSION = "0.11.1";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,17 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.11.1",
+    date: "2026-09",
+    title: "Ask My Data: Zone Signals & Shift Planner (Local Candidate)",
+    tags: ["new", "feature"],
+    items: [
+      "Ask My Data can now summarize confirmed pickup-zone earnings and pickup-time evidence without exposing raw GPS, routes, or addresses",
+      "A planning question can evaluate broad acceptance-market zones and local work windows as a historical test, with rides, days, and confidence shown as evidence",
+      "New foreground rides retain the browser time zone for future local-window analysis; older rides without it are never guessed into a clock-based recommendation",
+    ],
+  },
   {
     version: "0.11.0",
     date: "2026-09",

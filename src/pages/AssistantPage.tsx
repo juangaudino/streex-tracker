@@ -32,6 +32,8 @@ const STARTERS = [
   "Which week had the strongest performance?",
   "What achievements have I unlocked recently?",
   "What pattern do you see in my recent weeks?",
+  "Which pickup zones have the strongest confirmed earnings?",
+  "Today Thursday I only want to work 4 hours. What broad zone and time window should I test from my data?",
 ];
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-my-data`;

@@ -15,6 +15,7 @@ export function dbToRideEvent(row: RideEventRow): RideEvent {
     startAccuracyClass: row.start_accuracy_class as RideEvent["startAccuracyClass"],
     endAccuracyClass: row.end_accuracy_class as RideEvent["endAccuracyClass"],
     pickupAccuracyClass: row.pickup_accuracy_class as RideEvent["pickupAccuracyClass"],
+    timeZone: row.time_zone,
     source: row.source as RideEvent["source"],
   };
 }

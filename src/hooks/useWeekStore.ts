@@ -551,6 +551,9 @@ export function useWeekStore(user: User | null) {
     const { data, error } = await supabase.from("ride_events").insert({
       user_id: user.id, week_id: draft.weekId, day_date: draft.dayDate, shift_id: draft.shiftId ?? null,
       app: draft.app ?? null, started_at: draft.startedAt, lifecycle_version: 2, source: "foreground_browser", start_zone_key: draft.capture.zoneKey ?? null,
+      // Never infer a time zone on the server. This is the browser's declared
+      // IANA zone and enables only future aggregate local-window analysis.
+      time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
       start_capture_status: draft.capture.status, start_accuracy_class: draft.capture.accuracyClass ?? null,
     }).select("*").single();
     if (error) { console.warn("[rideEvents] start failed", error); return null; }

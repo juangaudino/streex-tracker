@@ -482,6 +482,7 @@ export type Database = {
           start_zone_key: string | null
           started_at: string
           status: string
+          time_zone: string | null
           updated_at: string
           user_id: string
           week_id: string
@@ -507,6 +508,7 @@ export type Database = {
           start_zone_key?: string | null
           started_at: string
           status?: string
+          time_zone?: string | null
           updated_at?: string
           user_id: string
           week_id: string
@@ -532,6 +534,7 @@ export type Database = {
           start_zone_key?: string | null
           started_at?: string
           status?: string
+          time_zone?: string | null
           updated_at?: string
           user_id?: string
           week_id?: string

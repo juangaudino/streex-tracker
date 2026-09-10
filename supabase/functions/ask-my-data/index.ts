@@ -105,6 +105,63 @@ interface WeekRow {
   entries: DayEntry[] | string;
 }
 
+// These types deliberately exclude raw coordinates, routes, addresses, and
+// browser accuracy. Ask My Data receives only stored coarse zone keys, then
+// immediately replaces them with owner-confirmed labels before model context.
+interface MobilityRideRow {
+  id: string;
+  day_date: string;
+  app: string | null;
+  status: string;
+  started_at: string;
+  pickup_at: string | null;
+  lifecycle_version: number;
+  start_zone_key: string | null;
+  pickup_zone_key: string | null;
+  start_capture_status: string;
+  pickup_capture_status: string;
+  source: string;
+  time_zone: string | null;
+}
+
+interface SnapshotRow {
+  id: string;
+  week_id: string;
+  day_date: string;
+  app: string;
+  delta: number;
+  created_at: string;
+}
+
+interface RideAllocationRow {
+  ride_event_id: string | null;
+  earnings_snapshot_id?: string;
+  kind: string;
+  amount: number;
+  is_current: boolean;
+}
+
+interface RideBatchRow {
+  id: string;
+  earnings_snapshot_id: string;
+  kind: string;
+}
+
+interface RideBatchEventRow {
+  batch_id: string;
+  ride_event_id: string;
+}
+
+interface RidePaymentRow {
+  ride_event_id: string;
+  earnings_snapshot_id: string;
+}
+
+interface ZoneLabelRow {
+  zone_key: string;
+  label: string;
+}
+
 interface NormalizedWeek {
   id: string;
   startDate: string;
@@ -1091,15 +1148,251 @@ async function fetchWeeksForScope(supabase: SupabaseClient, scope: DataScope) {
   };
 }
 
+/** PostgREST commonly caps a single response at 1,000 rows. Mobility evidence
+ * must be complete before it can drive a recommendation, so fetch every
+ * caller-scoped page instead of treating the first page as full history. */
+async function fetchAllPages<T>(fetchPage: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>) {
+  const pageSize = 500;
+  const rows: T[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const result = await fetchPage(from, from + pageSize - 1);
+    if (result.error) return { data: rows, error: result.error };
+    const page = result.data ?? [];
+    rows.push(...page);
+    if (page.length < pageSize) return { data: rows, error: null };
+  }
+}
+
+function isMobilityQuestion(prompt: string): boolean {
+  return /\b(zone|zones|area|areas|pickup|dropoff|destination|where should i|where to work|where do i|hourly|best hour|time window|window|planner|plan my shift|plan a shift|work \d+ hours?|hours? today|zona|zonas|área|area|recogida|destino|horario|ventana|planificador|planifica|trabajar \d+ horas?|dónde trabajar|donde trabajar|mejor hora)\b/i.test(prompt);
+}
+
+function requestedHours(prompt: string): number | null {
+  const match = prompt.match(/\b(?:for|work|trabajar|de|por)?\s*(\d{1,2})\s*(?:hours?|hrs?|horas?)\b/i);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  return Number.isFinite(hours) && hours >= 1 && hours <= 12 ? hours : null;
+}
+
+function localRideTime(timestamp: string, timeZone: string | null): { weekday: string; hour: number } | null {
+  if (!timeZone || !timestamp) return null;
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      weekday: "long",
+      hour: "numeric",
+      hourCycle: "h23",
+    }).formatToParts(new Date(timestamp));
+    const weekday = parts.find((part) => part.type === "weekday")?.value;
+    const hour = Number(parts.find((part) => part.type === "hour")?.value);
+    return weekday && Number.isInteger(hour) && hour >= 0 && hour <= 23 ? { weekday, hour } : null;
+  } catch {
+    // An invalid IANA zone is excluded, never silently converted to UTC.
+    return null;
+  }
+}
+
+function pickupZoneForAnalytics(ride: MobilityRideRow): string | null {
+  if (ride.source !== "foreground_browser" || ride.status === "active" || ride.status === "cancelled") return null;
+  if (ride.lifecycle_version === 2) {
+    return ride.pickup_capture_status === "captured" ? ride.pickup_zone_key : null;
+  }
+  return ride.start_capture_status === "captured" ? ride.start_zone_key : null;
+}
+
+function snapshotEffectiveDeltas(rows: SnapshotRow[]): Map<string, number> {
+  const grouped = new Map<string, SnapshotRow[]>();
+  for (const row of rows) {
+    const key = `${row.week_id}|${row.day_date}|${row.app}`;
+    grouped.set(key, [...(grouped.get(key) ?? []), row]);
+  }
+  const result = new Map<string, number>();
+  for (const group of grouped.values()) {
+    let correctionDebt = 0;
+    for (const row of [...group].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))) {
+      const delta = Number(row.delta) || 0;
+      if (delta <= 0) {
+        correctionDebt += Math.abs(delta);
+        result.set(row.id, 0);
+        continue;
+      }
+      const recovery = Math.min(correctionDebt, delta);
+      correctionDebt = round(correctionDebt - recovery);
+      result.set(row.id, round(delta - recovery));
+    }
+  }
+  return result;
+}
+
+type MobilitySignal = {
+  zone: string;
+  weekday: string;
+  hour: number | null;
+  dayDate: string;
+  rideId: string;
+  earnings: number;
+  acceptanceZone: string | null;
+  acceptanceHour: number | null;
+  acceptanceWeekday: string | null;
+};
+
+/**
+ * Builds evidence-only pickup earnings and future operating-window signals.
+ * - Money stays at confirmed pickup, never acceptance or dropoff.
+ * - A start-market/window signal needs lifecycle v2 + captured acceptance + a
+ *   browser time zone. Legacy rides are useful for pickup earnings but are not
+ *   guessed into a planner window.
+ */
+export function buildMobilityAnalysis(args: {
+  rides: MobilityRideRow[];
+  snapshots: SnapshotRow[];
+  snapshotAllocations: RideAllocationRow[];
+  manualAllocations: RideAllocationRow[];
+  batches: RideBatchRow[];
+  batchEvents: RideBatchEventRow[];
+  payments: RidePaymentRow[];
+  zoneLabels: ZoneLabelRow[];
+  prompt: string;
+}) {
+  const labels = new Map(args.zoneLabels.map((row) => [row.zone_key, row.label.trim().slice(0, 80)]));
+  const labelFor = (zoneKey: string) => labels.get(zoneKey) || "Unlabeled approximate pickup zone";
+  const ridesById = new Map(args.rides.map((ride) => [ride.id, ride]));
+  const effectiveDeltas = snapshotEffectiveDeltas(args.snapshots);
+  const ledgerSnapshots = new Set(args.snapshotAllocations
+    .filter((row) => row.is_current && row.earnings_snapshot_id)
+    .map((row) => row.earnings_snapshot_id!));
+  const earningsByRide = new Map<string, number>();
+  const add = (rideId: string | null, amount: unknown) => {
+    if (!rideId) return;
+    const parsed = Number(amount);
+    if (!Number.isFinite(parsed) || parsed <= 0) return;
+    earningsByRide.set(rideId, round((earningsByRide.get(rideId) ?? 0) + parsed));
+  };
+
+  for (const row of args.snapshotAllocations) {
+    if (row.is_current && row.ride_event_id && ["ride_base", "late_tip", "adjustment"].includes(row.kind)) add(row.ride_event_id, row.amount);
+  }
+  for (const row of args.manualAllocations) {
+    if (row.is_current && row.ride_event_id && row.kind === "ride_base") add(row.ride_event_id, row.amount);
+  }
+  for (const row of args.payments) {
+    if (!ledgerSnapshots.has(row.earnings_snapshot_id)) add(row.ride_event_id, effectiveDeltas.get(row.earnings_snapshot_id) ?? 0);
+  }
+  const batchById = new Map(args.batches.map((batch) => [batch.id, batch]));
+  const rideIdsByBatch = new Map<string, string[]>();
+  for (const link of args.batchEvents) rideIdsByBatch.set(link.batch_id, [...(rideIdsByBatch.get(link.batch_id) ?? []), link.ride_event_id]);
+  for (const [batchId, rideIds] of rideIdsByBatch) {
+    const batch = batchById.get(batchId);
+    if (!batch || batch.kind !== "single" || rideIds.length !== 1 || ledgerSnapshots.has(batch.earnings_snapshot_id)) continue;
+    add(rideIds[0], effectiveDeltas.get(batch.earnings_snapshot_id) ?? 0);
+  }
+
+  const signals: MobilitySignal[] = [];
+  for (const [rideId, earnings] of earningsByRide) {
+    const ride = ridesById.get(rideId);
+    const pickupZone = ride ? pickupZoneForAnalytics(ride) : null;
+    if (!ride || !pickupZone || earnings <= 0) continue;
+    const pickupTime = localRideTime(ride.lifecycle_version === 2 ? (ride.pickup_at ?? ride.started_at) : ride.started_at, ride.time_zone);
+    const acceptanceTime = ride.lifecycle_version === 2 && ride.start_capture_status === "captured" && ride.start_zone_key
+      ? localRideTime(ride.started_at, ride.time_zone)
+      : null;
+    signals.push({
+      zone: labelFor(pickupZone),
+      weekday: pickupTime?.weekday ?? new Date(`${ride.day_date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long" }),
+      hour: pickupTime?.hour ?? null,
+      dayDate: ride.day_date,
+      rideId,
+      earnings,
+      acceptanceZone: ride.lifecycle_version === 2 && ride.start_capture_status === "captured" && ride.start_zone_key ? labelFor(ride.start_zone_key) : null,
+      acceptanceHour: acceptanceTime?.hour ?? null,
+      acceptanceWeekday: acceptanceTime?.weekday ?? null,
+    });
+  }
+
+  const rollup = <T extends { earnings: number; dayDate: string; rideId: string }>(items: T[]) => ({
+    earnings: round(items.reduce((sum, item) => sum + item.earnings, 0)),
+    rides: new Set(items.map((item) => item.rideId)).size,
+    days: new Set(items.map((item) => item.dayDate)).size,
+  });
+  const byZone = new Map<string, MobilitySignal[]>();
+  for (const signal of signals) byZone.set(signal.zone, [...(byZone.get(signal.zone) ?? []), signal]);
+  const pickupZones = [...byZone.entries()].map(([zone, items]) => {
+    const stats = rollup(items);
+    return { zone, ...stats, averagePerRide: stats.rides ? round(stats.earnings / stats.rides) : null };
+  }).sort((a, b) => b.earnings - a.earnings || b.rides - a.rides).slice(0, 12);
+
+  const byPickupHour = new Map<string, MobilitySignal[]>();
+  for (const signal of signals.filter((item) => item.hour !== null)) {
+    const key = `${signal.weekday}|${signal.hour}`;
+    byPickupHour.set(key, [...(byPickupHour.get(key) ?? []), signal]);
+  }
+  const pickupHours = [...byPickupHour.entries()].map(([key, items]) => {
+    const [weekday, hour] = key.split("|");
+    const stats = rollup(items);
+    return { weekday, hour: Number(hour), ...stats, averagePerRide: stats.rides ? round(stats.earnings / stats.rides) : null };
+  }).sort((a, b) => Number(b.averagePerRide ?? 0) - Number(a.averagePerRide ?? 0) || b.rides - a.rides).slice(0, 18);
+
+  const targetWeekday = parseWeekdayMentions(args.prompt)[0] ?? null;
+  const hoursRequested = requestedHours(args.prompt);
+  const acceptanceSignals = signals.filter((signal) => signal.acceptanceZone && signal.acceptanceHour !== null && signal.acceptanceWeekday);
+  const candidates: Array<{ startHour: number; endHourExclusive: number; zone: string; weekday: string; earnings: number; rides: number; days: number; averagePerRide: number; confidence: "low" | "building" | "ready" }> = [];
+  if (targetWeekday && hoursRequested) {
+    for (let startHour = 0; startHour <= 24 - hoursRequested; startHour++) {
+      const inWindow = acceptanceSignals.filter((signal) =>
+        signal.acceptanceWeekday === targetWeekday &&
+        signal.acceptanceHour !== null && signal.acceptanceHour >= startHour && signal.acceptanceHour < startHour + hoursRequested,
+      );
+      const byStartZone = new Map<string, MobilitySignal[]>();
+      for (const signal of inWindow) byStartZone.set(signal.acceptanceZone!, [...(byStartZone.get(signal.acceptanceZone!) ?? []), signal]);
+      for (const [zone, items] of byStartZone) {
+        const stats = rollup(items);
+        if (!stats.rides) continue;
+        const confidence = stats.rides >= 8 && stats.days >= 3 ? "ready" : stats.rides >= 3 ? "building" : "low";
+        candidates.push({
+          startHour, endHourExclusive: startHour + hoursRequested, zone, weekday: targetWeekday,
+          ...stats, averagePerRide: round(stats.earnings / stats.rides), confidence,
+        });
+      }
+    }
+  }
+  const plannerCandidates = candidates
+    .sort((a, b) => b.averagePerRide - a.averagePerRide || b.earnings - a.earnings || b.rides - a.rides)
+    .slice(0, 5);
+
+  const timeZoneRides = args.rides.filter((ride) => Boolean(ride.time_zone)).length;
+  return {
+    privacy: "Aggregate owner data only. No routes, addresses, raw GPS, or background location history.",
+    earningsRule: "Earnings are attributed only to a confirmed pickup zone. Acceptance is an operational starting-market signal; dropoff is destination context and never receives earnings.",
+    coverage: {
+      ridesLoaded: args.rides.length,
+      ridesWithAssignedEarnings: signals.length,
+      labeledPickupZones: pickupZones.filter((zone) => zone.zone !== "Unlabeled approximate pickup zone").length,
+      ridesWithRecordedTimeZone: timeZoneRides,
+      plannerEligibleRides: acceptanceSignals.length,
+      plannerMinimum: { rides: 8, days: 3 },
+    },
+    pickupEarnings: { zones: pickupZones, timeOfPickup: pickupHours },
+    shiftPlanner: targetWeekday && hoursRequested
+      ? {
+        requestedWeekday: targetWeekday,
+        requestedHours: hoursRequested,
+        candidates: plannerCandidates,
+        caveat: "Candidates summarize accepted rides and their confirmed pickup-linked earnings inside the requested clock window. They are a historical test plan, not live demand, traffic, or a guaranteed outcome.",
+      }
+      : null,
+  };
+}
+
 function buildContext(args: {
   scope: DataScope;
   scopeReason: string;
   weeks: WeekRow[];
   settings: { default_weekly_goal: number; currency_symbol: string; active_apps: string[] } | null;
   achievements: { achievement_id: string; unlocked_at: string }[];
+  mobility?: ReturnType<typeof buildMobilityAnalysis> | null;
   prompt?: string;
 }) {
-  const { scope, scopeReason, settings, achievements, prompt = "" } = args;
+  const { scope, scopeReason, settings, achievements, mobility = null, prompt = "" } = args;
   const weeks = args.weeks
     .map(normalizeWeek)
     .sort((a, b) => b.startDate.localeCompare(a.startDate));
@@ -1182,6 +1475,9 @@ function buildContext(args: {
     }
     if (intent === "STREAK") {
       analysis.earningStreak = highestEarningStreakAnalysis(weeks);
+    }
+    if (mobility && isMobilityQuestion(prompt)) {
+      analysis.mobility = mobility;
     }
     if (intent === "GOAL" || intent === "RANKING" || intent === "HOUR") {
       analysis.currentWeek = currentWeekSnapshot(weeks);
@@ -1334,7 +1630,10 @@ export function selectAiModel(
   const explicitComparison = /\b(compare|comparison|versus|vs\.?|against|between|trend|over time|comparar|comparación|comparacion|contra|entre|tendencia|a través del tiempo)\b/.test(q);
   const strategicSynthesis = /\b(strategy|strategic|plan|optimi[sz]e|trade-?off|why|estrategia|planificar|optimizar|compensación|compensacion|por qué|porque)\b/.test(q);
   const analysisIntent = intent === "PATTERN" || intent === "INSIGHT" || intent === "COACHING";
-  const useTerra = explicitComparison || (analysisIntent && strategicSynthesis && scope !== "RECENT");
+  // Mobility and planning synthesis is evidence-bounded but multi-dimensional
+  // (pickup earnings, acceptance context, local windows, sample caveats), so it
+  // always uses the existing Terra-medium path.
+  const useTerra = isMobilityQuestion(prompt) || explicitComparison || (analysisIntent && strategicSynthesis && scope !== "RECENT");
   const config = useTerra ? AI_MODELS.terra : AI_MODELS.luna;
   return {
     model: config.id,
@@ -1994,13 +2293,38 @@ Deno.serve(async (req) => {
     : [];
   const scopeResult = detectScope(safeMessages, knownApps);
   amdDebug("scope", { scope: scopeResult.scope, reason: scopeResult.reason });
+  const needsMobility = isMobilityQuestion(promptPreview);
 
-  const [weeksRes, achRes] = await Promise.all([
+  const [weeksRes, achRes, ridesRes, snapshotsRes, snapshotAllocationsRes, manualAllocationsRes, batchesRes, batchEventsRes, paymentsRes, zoneLabelsRes] = await Promise.all([
     fetchWeeksForScope(supabase, scopeResult.scope),
     supabase.from("user_achievements")
       .select("achievement_id,unlocked_at")
       .order("unlocked_at", { ascending: false })
       .limit(scopeResult.scope === "RECENT" ? 25 : 100),
+    needsMobility
+      ? fetchAllPages((from, to) => supabase.from("ride_events").select("id,day_date,app,status,started_at,pickup_at,lifecycle_version,start_zone_key,pickup_zone_key,start_capture_status,pickup_capture_status,source,time_zone").order("started_at", { ascending: true }).range(from, to))
+      : Promise.resolve({ data: [], error: null }),
+    needsMobility
+      ? fetchAllPages((from, to) => supabase.from("earnings_snapshots").select("id,week_id,day_date,app,delta,created_at").order("created_at", { ascending: true }).range(from, to))
+      : Promise.resolve({ data: [], error: null }),
+    needsMobility
+      ? fetchAllPages((from, to) => supabase.from("earnings_snapshot_allocations").select("ride_event_id,earnings_snapshot_id,kind,amount,is_current").eq("is_current", true).order("created_at", { ascending: true }).range(from, to))
+      : Promise.resolve({ data: [], error: null }),
+    needsMobility
+      ? fetchAllPages((from, to) => supabase.from("manual_ride_allocations").select("ride_event_id,kind,amount,is_current").eq("is_current", true).order("created_at", { ascending: true }).range(from, to))
+      : Promise.resolve({ data: [], error: null }),
+    needsMobility
+      ? fetchAllPages((from, to) => supabase.from("ride_update_batches").select("id,earnings_snapshot_id,kind").order("created_at", { ascending: true }).range(from, to))
+      : Promise.resolve({ data: [], error: null }),
+    needsMobility
+      ? fetchAllPages((from, to) => supabase.from("ride_update_batch_events").select("batch_id,ride_event_id").order("batch_id", { ascending: true }).range(from, to))
+      : Promise.resolve({ data: [], error: null }),
+    needsMobility
+      ? fetchAllPages((from, to) => supabase.from("ride_payments").select("ride_event_id,earnings_snapshot_id").order("observed_at", { ascending: true }).range(from, to))
+      : Promise.resolve({ data: [], error: null }),
+    needsMobility
+      ? fetchAllPages((from, to) => supabase.from("user_zone_labels").select("zone_key,label").order("updated_at", { ascending: true }).range(from, to))
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   if (weeksRes.error) {
@@ -2021,6 +2345,23 @@ Deno.serve(async (req) => {
       },
     });
     return json({ error: "Could not load your data." }, 500);
+  }
+
+  if (needsMobility && (ridesRes.error || snapshotsRes.error || snapshotAllocationsRes.error || manualAllocationsRes.error || batchesRes.error || batchEventsRes.error || paymentsRes.error || zoneLabelsRes.error)) {
+    await logUsage({
+      supabase,
+      userId,
+      scope: scopeResult.scope,
+      promptPreview,
+      status: "error",
+      errorType: "mobility_data_load",
+      estimatedInputTokens: estimateTokens(promptPreview || " "),
+      estimatedOutputTokens: 0,
+      latencyMs: Date.now() - startedAt,
+      usedStreaming: false,
+      metadata: { fetchMode: weeksRes.mode },
+    });
+    return json({ error: "Could not load your zone and ride evidence. Please try again." }, 500);
   }
 
   const weeks = weeksRes.data;
@@ -2047,12 +2388,26 @@ Deno.serve(async (req) => {
     });
   }
 
+  const mobility = needsMobility
+    ? buildMobilityAnalysis({
+      rides: (ridesRes.data ?? []) as MobilityRideRow[],
+      snapshots: (snapshotsRes.data ?? []) as SnapshotRow[],
+      snapshotAllocations: (snapshotAllocationsRes.data ?? []) as RideAllocationRow[],
+      manualAllocations: (manualAllocationsRes.data ?? []) as RideAllocationRow[],
+      batches: (batchesRes.data ?? []) as RideBatchRow[],
+      batchEvents: (batchEventsRes.data ?? []) as RideBatchEventRow[],
+      payments: (paymentsRes.data ?? []) as RidePaymentRow[],
+      zoneLabels: (zoneLabelsRes.data ?? []) as ZoneLabelRow[],
+      prompt: promptPreview,
+    })
+    : null;
   const context = buildContext({
     scope: scopeResult.scope,
     scopeReason: scopeResult.reason,
     weeks,
     settings: settingsRes.data ?? null,
     achievements: achRes.data ?? [],
+    mobility,
     prompt: promptPreview,
   });
   if (AMD_DEBUG) {
@@ -2082,6 +2437,8 @@ Deno.serve(async (req) => {
     weeksFetched: weeks.length,
     rowsFetched: weeksRes.rowsFetched,
     achievementsFetched: achRes.data?.length ?? 0,
+    mobilityLoaded: needsMobility,
+    mobilityRidesLoaded: ridesRes.data?.length ?? 0,
     hasSettings: Boolean(settingsRes.data),
     provider: "openai",
     modelRoute: modelPlan.route,
@@ -2115,7 +2472,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  {
+  if (!needsMobility) {
     const text = directIntentAnswer(context, settingsRes.data?.currency_symbol ?? "$", promptPreview);
     if (text) {
       await logUsage({
@@ -2140,7 +2497,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  {
+  if (!needsMobility) {
     const text = directDayAnalysisAnswer(context, settingsRes.data?.currency_symbol ?? "$", promptPreview);
     if (text) {
       await logUsage({
@@ -2178,7 +2535,10 @@ Deno.serve(async (req) => {
     "8. If a capability is not supported by the context (hourly earnings, trip locations, ride types, health/biometrics), say that cleanly and offer the closest supported Streex analysis.",
     "9. If context.scope is ALL_TIME, treat the answer as full Streex history. Do not mention a hidden 16-week or 112-day limit unless context.coverage.isFullHistoryLoaded is false.",
     "10. For a last-four-weeks versus best-four-week-period question, ONLY use context.analysis.fourWeekComparison. It contains completed calendar-consecutive weeks; if it is null, explain that there are not four consecutive completed weeks available.",
-    "11. Never invent numbers, dates, or apps. Never reveal raw JSON or internal field names. No SQL.",
+    "11. For a zone, pickup-hour, or shift-planner question, ONLY use context.analysis.mobility. Treat pickupEarnings as money confirmed to the pickup zone. Treat shiftPlanner candidates as acceptance/start-market evidence, never as pickup earnings. Do not infer a zone, local hour, or time window when coverage says it is missing.",
+    "12. For a shift plan, make it a bounded historical test plan: state the suggested broad zone and clock window only when a candidate exists; give earnings/rides/days as evidence; name the confidence level; and say it is not live demand, traffic, or a guaranteed result. If confidence is low/building, recommend collecting more rides rather than a strong conclusion.",
+    "13. When making a recommendation, use this compact structure: **Signal**, **Evidence**, **Confidence**, **Next action**. Do not pretend that earnings per ride means earnings per worked hour.",
+    "14. Never invent numbers, dates, or apps. Never reveal raw JSON, private zone keys, or internal field names. No SQL.",
     "Style: concise, friendly, specific. Short paragraphs and small markdown lists. Format currency according to the provided currency code/symbol. Reference dates in a human way (e.g. 'week of Mar 10').",
   ].join(" ");
 

@@ -3,6 +3,7 @@
 
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
+  buildMobilityAnalysis,
   consecutiveDayOffAnalysis,
   detectIntent,
   detectScope,
@@ -73,6 +74,35 @@ Deno.test("selectAiModel: Terra is reserved for explicit cross-period comparison
   assertEquals(selected.model, "gpt-5.6-terra");
   assertEquals(selected.reasoningEffort, "medium");
   assertEquals(selected.route, "terra_complex");
+});
+
+Deno.test("selectAiModel: Terra handles zone and shift-planner synthesis", () => {
+  const selected = selectAiModel("Today Thursday I want to work 4 hours. Which zone should I test?", "ALL_TIME");
+  assertEquals(selected.model, "gpt-5.6-terra");
+  assertEquals(selected.reasoningEffort, "medium");
+  assertEquals(selected.route, "terra_complex");
+});
+
+Deno.test("buildMobilityAnalysis: preserves pickup earnings while planner uses acceptance context", () => {
+  const result = buildMobilityAnalysis({
+    rides: [{
+      id: "ride-1", day_date: "2026-01-08", app: "Uber", status: "completed",
+      started_at: "2026-01-08T16:00:00.000Z", pickup_at: "2026-01-08T16:20:00.000Z",
+      lifecycle_version: 2, start_zone_key: "start-zone", pickup_zone_key: "pickup-zone",
+      start_capture_status: "captured", pickup_capture_status: "captured",
+      source: "foreground_browser", time_zone: "America/Denver",
+    }],
+    snapshots: [],
+    snapshotAllocations: [{ ride_event_id: "ride-1", earnings_snapshot_id: "ledger-1", kind: "ride_base", amount: 20, is_current: true }],
+    manualAllocations: [], batches: [], batchEvents: [], payments: [],
+    zoneLabels: [{ zone_key: "start-zone", label: "North Salt Lake" }, { zone_key: "pickup-zone", label: "Murray" }],
+    prompt: "Today Thursday I want to work 4 hours. Which zone should I test?",
+  });
+  assertEquals(result.pickupEarnings.zones[0]?.zone, "Murray");
+  assertEquals(result.pickupEarnings.zones[0]?.earnings, 20);
+  assertEquals(result.shiftPlanner?.candidates[0]?.zone, "North Salt Lake");
+  assertEquals(result.shiftPlanner?.candidates[0]?.earnings, 20);
+  assertEquals(result.shiftPlanner?.candidates[0]?.confidence, "low");
 });
 
 Deno.test("isBestWeekQuestion: does not steal a comparison that cites the best period", () => {

@@ -178,6 +178,8 @@ export interface RideEvent {
   startAccuracyClass?: RideAccuracyClass | null;
   endAccuracyClass?: RideAccuracyClass | null;
   pickupAccuracyClass?: RideAccuracyClass | null;
+  /** Browser IANA time zone captured for future aggregate operating-window analysis. */
+  timeZone?: string | null;
   source: "foreground_browser" | "manual_after_shift";
 }
 

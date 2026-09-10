@@ -7,6 +7,7 @@ import {
   detectIntent,
   detectScope,
   directDayAnalysisAnswer,
+  fourWeekComparisonAnalysis,
   isBestWeekQuestion,
   restPairMode,
   selectAiModel,
@@ -80,6 +81,52 @@ Deno.test("isBestWeekQuestion: does not steal a comparison that cites the best p
     isBestWeekQuestion("Compare my last four weeks against my best four-week period."),
     false,
   );
+});
+
+Deno.test("fourWeekComparisonAnalysis: compares the latest completed calendar period to the best one", () => {
+  const weeks = [
+    ["2025-01-06", "2025-01-12", 500],
+    ["2025-01-13", "2025-01-19", 500],
+    ["2025-01-20", "2025-01-26", 500],
+    ["2025-01-27", "2025-02-02", 500],
+    ["2025-02-03", "2025-02-09", 100],
+  ].map(([startDate, endDate, total]) => ({
+    startDate: startDate as string,
+    endDate: endDate as string,
+    total: total as number,
+    status: "closed" as const,
+  }));
+
+  const result = fourWeekComparisonAnalysis(weeks)!;
+  assert(result, "four completed consecutive weeks should produce a comparison");
+  assertEquals(result.latest.total, 1600);
+  assertEquals(result.best.total, 2000);
+  assertEquals(result.changeTotal, -400);
+  assertEquals(result.changeAverageWeek, -100);
+  assertEquals(result.eligiblePeriods, 2);
+});
+
+Deno.test("fourWeekComparisonAnalysis: ignores periods with a missing calendar week", () => {
+  const weeks = [
+    ["2025-01-06", "2025-01-12", 100],
+    ["2025-01-13", "2025-01-19", 100],
+    ["2025-01-20", "2025-01-26", 100],
+    ["2025-02-03", "2025-02-09", 100],
+  ].map(([startDate, endDate, total]) => ({
+    startDate: startDate as string,
+    endDate: endDate as string,
+    total: total as number,
+    status: "closed" as const,
+  }));
+
+  assertEquals(fourWeekComparisonAnalysis(weeks), null);
+});
+
+Deno.test("detectScope: best four-week comparisons use full history despite a recent-window phrase", () => {
+  const result = detectScope([
+    { role: "user", content: "Compare my last four weeks against my best four-week period." },
+  ]);
+  assertEquals(result.scope, "ALL_TIME");
 });
 
 Deno.test("restPairMode: English take_off phrasing", () => {

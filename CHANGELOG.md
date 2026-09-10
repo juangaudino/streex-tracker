@@ -8,6 +8,7 @@
 
 - Ask My Data now uses a server-only `OPENAI_API_KEY` with OpenAI Chat Completions streaming instead of the retired Lovable AI gateway.
 - Deterministic answers still avoid a model call. Luna is the normal model path; Terra is reserved for explicit cross-period comparisons and complex strategic synthesis.
+- Four-week comparisons now receive a server-calculated latest-vs-best rolling period block from full history, using only completed calendar-consecutive weeks.
 
 ### Verification Required
 

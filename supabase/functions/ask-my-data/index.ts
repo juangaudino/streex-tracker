@@ -290,6 +290,9 @@ export function detectScope(messages: ChatMessage[], knownApps: string[] = []): 
   if (intent === "MONTH" || seasonalTerms.some((term) => q.includes(term))) {
     return { scope: "SEASONAL", reason: "Question asks for long-range or time-period comparison." };
   }
+  if (asksForFourWeekComparison(latest)) {
+    return { scope: "ALL_TIME", reason: "Best four-week-period comparison requires full history." };
+  }
   if (explicitRecentTimeframe) {
     return { scope: "RECENT", reason: "Question explicitly asks for a recent or bounded timeframe." };
   }
@@ -439,6 +442,58 @@ function trendBuckets(weeks: NormalizedWeek[]) {
     });
   }
   return buckets;
+}
+
+type FourWeekComparable = Pick<NormalizedWeek, "startDate" | "endDate" | "status" | "total">;
+
+function isNextCalendarWeek(previousStart: string, nextStart: string): boolean {
+  const previous = Date.parse(`${previousStart}T00:00:00Z`);
+  const next = Date.parse(`${nextStart}T00:00:00Z`);
+  return Number.isFinite(previous) && Number.isFinite(next) && next - previous === 7 * 24 * 60 * 60 * 1000;
+}
+
+function asksForFourWeekComparison(prompt: string): boolean {
+  const q = prompt.toLowerCase();
+  const refersToFourWeeks = /\b(last|recent|past|best)\s+(four|4)\s*-?\s*weeks?\b|\b(four|4)\s*-?\s*week\s+(period|comparison)\b|\b(últimas?|ultimas?|mejores?)\s+(cuatro|4)\s+semanas?\b|\b(cuatro|4)\s+semanas?\b/.test(q);
+  const asksToCompare = /\b(compare|comparison|versus|vs\.?|against|between|best|comparar|comparación|comparacion|contra|entre|mejor)\b/.test(q);
+  return refersToFourWeeks && asksToCompare;
+}
+
+// Uses only completed, calendar-consecutive weeks. A gap in stored weeks does
+// not become a fictional rolling period.
+export function fourWeekComparisonAnalysis(weeks: FourWeekComparable[]) {
+  const closed = weeks
+    .filter((week) => week.status === "closed")
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const windows: { startDate: string; endDate: string; total: number; averageWeek: number }[] = [];
+
+  for (let index = 0; index <= closed.length - 4; index++) {
+    const group = closed.slice(index, index + 4);
+    if (!group.every((week, offset) => offset === 0 || isNextCalendarWeek(group[offset - 1].startDate, week.startDate))) {
+      continue;
+    }
+    const total = round(group.reduce((sum, week) => sum + week.total, 0));
+    windows.push({
+      startDate: group[0].startDate,
+      endDate: group[3].endDate,
+      total,
+      averageWeek: round(total / 4),
+    });
+  }
+
+  if (!windows.length) return null;
+  const latest = windows[windows.length - 1];
+  const best = windows.reduce((winner, candidate) => candidate.total >= winner.total ? candidate : winner);
+  return {
+    weeksPerPeriod: 4,
+    eligibleClosedWeeks: closed.length,
+    eligiblePeriods: windows.length,
+    latest,
+    best,
+    changeTotal: round(latest.total - best.total),
+    changeAverageWeek: round(latest.averageWeek - best.averageWeek),
+    latestIsBest: latest.startDate === best.startDate && latest.endDate === best.endDate,
+  };
 }
 
 // ---------- Grouped / consecutive-day analytics ----------
@@ -1114,6 +1169,9 @@ function buildContext(args: {
         sizeDays: windowSize,
         top: topConsecutiveWindows(weeks, windowSize, 3),
       };
+    }
+    if (asksForFourWeekComparison(prompt)) {
+      analysis.fourWeekComparison = fourWeekComparisonAnalysis(weeks);
     }
     const pair = parseAppPair(prompt, knownApps);
     if (pair) {
@@ -2119,7 +2177,8 @@ Deno.serve(async (req) => {
     "7. Use context.analysis.intent as the routing hint. Do not answer HOUR questions with day rankings, STREAK questions with top days, or MONTH questions with weekly records.",
     "8. If a capability is not supported by the context (hourly earnings, trip locations, ride types, health/biometrics), say that cleanly and offer the closest supported Streex analysis.",
     "9. If context.scope is ALL_TIME, treat the answer as full Streex history. Do not mention a hidden 16-week or 112-day limit unless context.coverage.isFullHistoryLoaded is false.",
-    "10. Never invent numbers, dates, or apps. Never reveal raw JSON or internal field names. No SQL.",
+    "10. For a last-four-weeks versus best-four-week-period question, ONLY use context.analysis.fourWeekComparison. It contains completed calendar-consecutive weeks; if it is null, explain that there are not four consecutive completed weeks available.",
+    "11. Never invent numbers, dates, or apps. Never reveal raw JSON or internal field names. No SQL.",
     "Style: concise, friendly, specific. Short paragraphs and small markdown lists. Format currency according to the provided currency code/symbol. Reference dates in a human way (e.g. 'week of Mar 10').",
   ].join(" ");
 

@@ -23,6 +23,7 @@ Purpose: manual QA certification prompts for Ask My Data. This file tracks quest
 | What was my strongest month? | MONTH | Calculate month totals from daily entries and return strongest month. | PASS |
 | How much did I earn this month compared to last month? | MONTH | Compare current month vs previous month. | PASS |
 | What was my highest earning streak? | STREAK | Return highest total consecutive active-day streak, not top single days. | PASS |
+| Compare my last four weeks against my best four-week period. | FOUR-WEEK COMPARISON | Use completed calendar-consecutive weeks across full history; report the latest four-week total/average, best eligible four-week total/average, and their difference. | PASS |
 | What is my best earning hour? | HOUR | State hourly earnings are not tracked yet; do not return day rankings. | PASS |
 | Where does today rank in my history? | RANKING | Rank current tracked day against historical earning days when current day is available. | PASS |
 | What record am I closest to breaking? | RANKING | Compare current tracked day to closest daily or same-weekday record. | PASS |
@@ -50,4 +51,5 @@ Purpose: manual QA certification prompts for Ask My Data. This file tracks quest
 - Consecutive weekday-pair analysis covers all 7 real-life pairs, including Sunday→Monday across the week boundary.
 - Tie-breaks are deterministic: larger minimum sample size wins; natural weekday order is the final fallback.
 - Sample-size caveat surfaces when either weekday in the recommended pair has fewer than 4 historical samples; the recommendation is still returned.
+- Four-week comparisons use only completed, calendar-consecutive stored weeks. A missing week is never treated as a zero week or silently bridged into a rolling period.
 - Set `AMD_DEBUG=1` on the edge function to enable metadata-only routing logs (intent, rest pair mode, scope reason, pair count, recommended pair, minimum sample size). Never logs prompts, messages, AI responses, weeks, earnings, emails, tokens, or user IDs.

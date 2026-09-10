@@ -51,7 +51,7 @@ Current Edge Functions:
 - `admin-email`
 - `driver-utility`
 
-Current external services:
+External services when this checklist was created:
 
 - Lovable AI Gateway for Ask My Data
 - OpenWeather
@@ -101,7 +101,7 @@ These items should be cleaned before applying anything to a new Supabase project
 - `02_data_public.sql` and `03_data_ai_usage_logs.sql` use `COPY ... FROM stdin`, so they should be loaded with `psql`, not pasted into the dashboard SQL editor.
 - `app_runtime_config` in the dump still contains older version metadata. It should be reviewed before import so the new environment does not force stale update behavior.
 - `admin-email` has a fallback `APP_PUBLIC_URL` of `https://streex.app`; staging/production should set this explicitly to the correct domain.
-- `ask-my-data` still calls the Lovable AI Gateway and requires `LOVABLE_API_KEY`.
+- Historical note: this checklist originally described a Lovable-backed Ask My Data path. Current source uses OpenAI, pending production secret/deployment verification.
 
 ### Needs Owner Decision
 
@@ -113,7 +113,7 @@ These choices should be decided before staging import.
 - Whether to import `ai_usage_logs` into the new project or archive them outside the live app.
 - Whether to import old feedback/email campaign rows or start those admin tables clean.
 - Whether `app_runtime_config.forced_logout_after` should be preserved, cleared, or reset for the new deployment.
-- Whether Ask My Data should temporarily keep Lovable AI Gateway or be migrated to a new AI provider before backend cutover.
+- Ask My Data source now targets OpenAI; decide only when to configure the isolated production project secret and run QA.
 - Whether the first live cutover should be:
   - Vercel only, still pointing to current Supabase, or
   - full Vercel + new Supabase after staging rehearsal.
@@ -125,7 +125,7 @@ These items can break production or cause data loss if rushed.
 - Importing public data before Auth user IDs exist or before user IDs are remapped.
 - Accidentally running migration SQL against the current production Supabase project.
 - Exposing `SUPABASE_SERVICE_ROLE_KEY` in frontend/Vercel public environment variables.
-- Assuming the migration package removes Lovable dependency while Ask My Data still uses Lovable AI Gateway.
+- Assuming Ask My Data is live before its `OPENAI_API_KEY`, Edge Function deployment, and authenticated QA are verified.
 - Mixing the schema dump with historical migrations in the same fresh project without reconciling duplicates.
 - Changing production frontend variables to a new Supabase project before staging validates login, RLS, weeks, snapshots, admin, Edge Functions, and Ask My Data.
 
@@ -206,16 +206,16 @@ Validate:
 - weather/traffic
 - email admin functions if enabled
 
-### Phase 4: Lovable AI Gateway Replacement
+### Phase 4: OpenAI Provider Replacement
 
-Goal: remove final Lovable backend dependency.
+Goal: keep the provider key server-side and verify the independent Ask My Data deployment.
 
-Ask My Data currently uses Lovable AI Gateway. Before declaring full Lovable independence, replace or intentionally retain this dependency.
+The source migration from Lovable to OpenAI is complete. Before declaring Ask My Data available, configure the OpenAI secret, deploy the Edge Function, and complete authenticated QA.
 
 Options:
 
-- temporarily keep Lovable AI Gateway only for Ask My Data
-- migrate Ask My Data to another AI provider through the new Supabase Edge Function
+- Configure `OPENAI_API_KEY` only in Supabase Edge Function secrets.
+- Deploy and test `ask-my-data`; deterministic routes, Luna, and Terra must all be covered.
 
 ### Phase 5: Production Cutover
 
@@ -246,7 +246,7 @@ Supabase Edge Function secrets:
 - `SUPABASE_URL`
 - `SUPABASE_PUBLISHABLE_KEY` or `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `LOVABLE_API_KEY` or replacement AI provider secret
+- `OPENAI_API_KEY`
 - `OPENWEATHER_API_KEY`
 - `TOMTOM_API_KEY`
 - `RESEND_API_KEY`

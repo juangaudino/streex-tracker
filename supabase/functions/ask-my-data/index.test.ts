@@ -7,7 +7,9 @@ import {
   detectIntent,
   detectScope,
   directDayAnalysisAnswer,
+  isBestWeekQuestion,
   restPairMode,
+  selectAiModel,
 } from "./index.ts";
 
 const WEEKDAYS = [
@@ -57,6 +59,28 @@ function buildHistory(
 }
 
 // ---------- restPairMode routing ----------
+
+Deno.test("selectAiModel: Luna remains the default for normal prompts", () => {
+  const selected = selectAiModel("What pattern do you see in my recent weeks?", "RECENT");
+  assertEquals(selected.model, "gpt-5.6-luna");
+  assertEquals(selected.reasoningEffort, "low");
+  assertEquals(selected.route, "luna_default");
+});
+
+Deno.test("selectAiModel: Terra is reserved for explicit cross-period comparisons", () => {
+  const selected = selectAiModel("Compare my last four weeks against my best four-week period.", "ALL_TIME");
+  assertEquals(selected.model, "gpt-5.6-terra");
+  assertEquals(selected.reasoningEffort, "medium");
+  assertEquals(selected.route, "terra_complex");
+});
+
+Deno.test("isBestWeekQuestion: does not steal a comparison that cites the best period", () => {
+  assertEquals(isBestWeekQuestion("What was my best week?"), true);
+  assertEquals(
+    isBestWeekQuestion("Compare my last four weeks against my best four-week period."),
+    false,
+  );
+});
 
 Deno.test("restPairMode: English take_off phrasing", () => {
   assertEquals(

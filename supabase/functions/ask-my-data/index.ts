@@ -1,7 +1,7 @@
-// Ask My Data — v5.3B.3 Beta
+// Ask My Data — OpenAI Beta
 // Scope-aware edge function: verifies JWT, reads through caller-scoped RLS,
 // builds compact analytics context (including weekend/consecutive-window and
-// app-vs-app head-to-head facts), and streams Lovable AI Gateway responses.
+// app-vs-app head-to-head facts), and streams OpenAI responses.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -15,10 +15,30 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
   Deno.env.get("SUPABASE_ANON_KEY")!;
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-const AI_MODEL = "google/gemini-2.5-flash";
-const ESTIMATED_INPUT_USD_PER_1M = 0.30;
-const ESTIMATED_OUTPUT_USD_PER_1M = 2.50;
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const AI_MODELS = {
+  luna: {
+    id: "gpt-5.6-luna",
+    reasoningEffort: "low",
+    inputUsdPer1M: 0.2,
+    outputUsdPer1M: 1.2,
+  },
+  terra: {
+    id: "gpt-5.6-terra",
+    reasoningEffort: "medium",
+    inputUsdPer1M: 2,
+    outputUsdPer1M: 12,
+  },
+} as const;
+type AiModelId = (typeof AI_MODELS)[keyof typeof AI_MODELS]["id"];
+type ReasoningEffort = (typeof AI_MODELS)[keyof typeof AI_MODELS]["reasoningEffort"];
+type ModelRoute = "luna_default" | "terra_complex";
+type ModelPlan = {
+  model: AiModelId;
+  reasoningEffort: ReasoningEffort;
+  route: ModelRoute;
+};
 
 // Metadata-only debug logging. Toggle via env AMD_DEBUG=1. NEVER logs prompts,
 // messages, AI responses, weeks, earnings, emails, tokens, or user IDs.
@@ -1231,10 +1251,38 @@ function estimateTokens(text: string): number {
   return Math.max(1, Math.ceil(text.length / 4));
 }
 
-function estimateCost(inputTokens: number, outputTokens: number): number {
-  const inputCost = (inputTokens / 1_000_000) * ESTIMATED_INPUT_USD_PER_1M;
-  const outputCost = (outputTokens / 1_000_000) * ESTIMATED_OUTPUT_USD_PER_1M;
+function aiModelConfig(model: string) {
+  return Object.values(AI_MODELS).find((candidate) => candidate.id === model) ?? null;
+}
+
+function estimateCost(inputTokens: number, outputTokens: number, model: string): number {
+  const config = aiModelConfig(model);
+  if (!config) return 0;
+  const inputCost = (inputTokens / 1_000_000) * config.inputUsdPer1M;
+  const outputCost = (outputTokens / 1_000_000) * config.outputUsdPer1M;
   return roundCost(inputCost + outputCost);
+}
+
+// Luna is the normal path. Terra is intentionally reserved for prompts that
+// ask for an explicit cross-period comparison or multi-part strategic synthesis.
+// Deterministic answers return before this plan is used and never call OpenAI.
+export function selectAiModel(
+  prompt: string,
+  scope: DataScope,
+  knownApps: string[] = [],
+): ModelPlan {
+  const q = prompt.toLowerCase();
+  const intent = detectIntent(prompt, knownApps);
+  const explicitComparison = /\b(compare|comparison|versus|vs\.?|against|between|trend|over time|comparar|comparación|comparacion|contra|entre|tendencia|a través del tiempo)\b/.test(q);
+  const strategicSynthesis = /\b(strategy|strategic|plan|optimi[sz]e|trade-?off|why|estrategia|planificar|optimizar|compensación|compensacion|por qué|porque)\b/.test(q);
+  const analysisIntent = intent === "PATTERN" || intent === "INSIGHT" || intent === "COACHING";
+  const useTerra = explicitComparison || (analysisIntent && strategicSynthesis && scope !== "RECENT");
+  const config = useTerra ? AI_MODELS.terra : AI_MODELS.luna;
+  return {
+    model: config.id,
+    reasoningEffort: config.reasoningEffort,
+    route: useTerra ? "terra_complex" : "luna_default",
+  };
 }
 
 function latestUserPrompt(messages: ChatMessage[]): string {
@@ -1283,7 +1331,7 @@ async function logUsage(args: {
 
   const { error } = await args.supabase.from("ai_usage_logs").insert({
     user_id: args.userId,
-    model: args.model ?? AI_MODEL,
+    model: args.model ?? "not_invoked",
     scope: args.scope,
     prompt_preview: args.promptPreview.slice(0, 300),
     status: args.status,
@@ -1294,7 +1342,7 @@ async function logUsage(args: {
     estimated_input_tokens: args.estimatedInputTokens,
     estimated_output_tokens: args.estimatedOutputTokens,
     estimated_total_tokens: estimatedTotalTokens,
-    estimated_cost_usd: args.estimatedCostUsd ?? estimateCost(costInput, costOutput),
+    estimated_cost_usd: args.estimatedCostUsd ?? estimateCost(costInput, costOutput, args.model ?? "not_invoked"),
     latency_ms: args.latencyMs,
     used_streaming: args.usedStreaming,
     metadata: args.metadata ?? {},
@@ -1305,11 +1353,15 @@ async function logUsage(args: {
   }
 }
 
-function isBestWeekQuestion(prompt: string): boolean {
+export function isBestWeekQuestion(prompt: string): boolean {
   const q = prompt.toLowerCase();
-  return /\b(best|highest|biggest|top|record)\b/.test(q) &&
+  const asksBestWeek = /\b(best|highest|biggest|top|record)\b/.test(q) &&
     /\bweek\b/.test(q) &&
     !/\bapp\b/.test(q);
+  // A mention of a best week can be evidence inside a larger comparison.
+  // Do not collapse those prompts into the single-best-week shortcut.
+  const asksComparison = /\b(compare|comparison|versus|vs\.?|against|between|trend|period|last\s+\d+|comparar|comparación|comparacion|contra|entre|tendencia|periodo|últimas?\s+\d+)\b/.test(q);
+  return asksBestWeek && !asksComparison;
 }
 
 function directBestWeekAnswer(context: unknown, currency: string): string | null {
@@ -1747,6 +1799,7 @@ function streamWithUsageLogging(args: {
   body: ReadableStream<Uint8Array>;
   supabase: ReturnType<typeof createClient>;
   userId: string;
+  model: AiModelId;
   scope: DataScope;
   promptPreview: string;
   estimatedInputTokens: number;
@@ -1793,6 +1846,7 @@ function streamWithUsageLogging(args: {
         await logUsage({
           supabase: args.supabase,
           userId: args.userId,
+          model: args.model,
           scope: args.scope,
           promptPreview: args.promptPreview,
           status: "success",
@@ -1818,6 +1872,7 @@ function streamWithUsageLogging(args: {
       await logUsage({
         supabase: args.supabase,
         userId: args.userId,
+        model: args.model,
         scope: args.scope,
         promptPreview: args.promptPreview,
         status: "error",
@@ -1837,8 +1892,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
-  if (!LOVABLE_API_KEY) {
-    return json({ error: "AI is not configured. Missing LOVABLE_API_KEY." }, 500);
+  if (!OPENAI_API_KEY) {
+    return json({ error: "AI is not configured. Missing OPENAI_API_KEY." }, 500);
   }
 
   const authHeader = req.headers.get("Authorization") ?? "";
@@ -1962,15 +2017,20 @@ Deno.serve(async (req) => {
       }
     }
   }
+  const modelPlan = selectAiModel(promptPreview, scopeResult.scope, knownApps);
+  const modelConfig = aiModelConfig(modelPlan.model)!;
   const metadata = {
     fetchMode: weeksRes.mode,
     weeksFetched: weeks.length,
     rowsFetched: weeksRes.rowsFetched,
     achievementsFetched: achRes.data?.length ?? 0,
     hasSettings: Boolean(settingsRes.data),
-    costEstimateBasis: "Gemini Flash token estimate; Lovable credits may differ.",
-    estimatedInputUsdPer1M: ESTIMATED_INPUT_USD_PER_1M,
-    estimatedOutputUsdPer1M: ESTIMATED_OUTPUT_USD_PER_1M,
+    provider: "openai",
+    modelRoute: modelPlan.route,
+    reasoningEffort: modelPlan.reasoningEffort,
+    costEstimateBasis: "OpenAI token estimate; billing is authoritative in the OpenAI project.",
+    estimatedInputUsdPer1M: modelConfig.inputUsdPer1M,
+    estimatedOutputUsdPer1M: modelConfig.outputUsdPer1M,
   };
 
   if (isBestWeekQuestion(promptPreview)) {
@@ -2071,14 +2131,15 @@ Deno.serve(async (req) => {
     contextMessage,
     ...safeMessages.map((m) => `${m.role}: ${m.content}`),
   ].join("\n"));
-  const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const upstream = await fetch(OPENAI_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Lovable-API-Key": LOVABLE_API_KEY,
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: AI_MODEL,
+      model: modelPlan.model,
+      reasoning_effort: modelPlan.reasoningEffort,
       stream: true,
       stream_options: { include_usage: true },
       messages: [
@@ -2093,6 +2154,7 @@ Deno.serve(async (req) => {
     await logUsage({
       supabase,
       userId,
+      model: modelPlan.model,
       scope: scopeResult.scope,
       promptPreview,
       status: "error",
@@ -2108,33 +2170,32 @@ Deno.serve(async (req) => {
       429,
     );
   }
-  if (upstream.status === 402) {
+  if (upstream.status === 401 || upstream.status === 403) {
     await logUsage({
       supabase,
       userId,
+      model: modelPlan.model,
       scope: scopeResult.scope,
       promptPreview,
       status: "error",
-      errorType: "credits",
+      errorType: "provider_auth",
       estimatedInputTokens,
       estimatedOutputTokens: 0,
       latencyMs: Date.now() - startedAt,
       usedStreaming: false,
       metadata,
     });
-    return json(
-      { error: "AI credits exhausted for this workspace. Add credits in Settings → Workspace → Usage." },
-      402,
-    );
+    return json({ error: "The assistant is temporarily unavailable." }, 502);
   }
   if (!upstream.ok) {
     // Drain body to free the connection but do NOT log it — upstream errors can
     // echo the user prompt or other content. Log only metadata.
     const errText = await upstream.text().catch(() => "");
-    console.error("Lovable AI error", { status: upstream.status, bodyLength: errText.length });
+    console.error("OpenAI API error", { status: upstream.status, bodyLength: errText.length });
     await logUsage({
       supabase,
       userId,
+      model: modelPlan.model,
       scope: scopeResult.scope,
       promptPreview,
       status: "error",
@@ -2154,6 +2215,7 @@ Deno.serve(async (req) => {
       body: upstream.body,
       supabase,
       userId,
+      model: modelPlan.model,
       scope: scopeResult.scope,
       promptPreview,
       estimatedInputTokens,
@@ -2173,6 +2235,7 @@ Deno.serve(async (req) => {
   await logUsage({
     supabase,
     userId,
+    model: modelPlan.model,
     scope: scopeResult.scope,
     promptPreview,
     status: "success",

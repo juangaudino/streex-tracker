@@ -109,7 +109,7 @@ Generated client types: `src/integrations/supabase/types.ts`.
 - `driver-utility`: OpenWeather + TomTom traffic, authenticated and server-side.
 - `admin-ops`: protected admin operations and account controls.
 - `admin-email`: re-engagement campaign foundation through Resend when configured.
-- `ask-my-data`: analytics context, intent routing, and streaming AI response path; currently still tied to Lovable AI gateway and not considered independently production-ready.
+- `ask-my-data`: analytics context, intent routing, and OpenAI streaming response path; it remains unverified until its Supabase secret, deployment, and authenticated QA are complete.
 
 Required secrets vary by function and belong only in Supabase secrets:
 
@@ -119,7 +119,7 @@ Required secrets vary by function and belong only in Supabase secrets:
 - `RESEND_FROM_EMAIL`
 - `REPLY_TO_EMAIL`
 - `APP_PUBLIC_URL`
-- `LOVABLE_API_KEY` only for the legacy/current Ask My Data implementation
+- `OPENAI_API_KEY` only for Ask My Data; it belongs exclusively in Supabase Edge Function secrets
 - Supabase-provided URL, anon/publishable key, and service role where required
 
 Never put service-role or provider secrets in Vite variables or frontend source.
@@ -308,11 +308,9 @@ Design rules:
 
 ### Ask My Data
 
-- Provider replacement is deliberately unresolved.
-- Current code still requires Lovable AI gateway credentials.
-- Do not spend effort pretending the current integration is independent.
-- Future solution should reuse deterministic analytics helpers, preserve server-side auth/RLS, and choose a provider only after cost/privacy/capability review.
-- An internal deterministic-only assistant is possible, but the owner has explicitly deferred a full external-AI replacement for now.
+- OpenAI provider migration is implemented locally but is not live until `OPENAI_API_KEY` is configured in the active Supabase project and authenticated QA passes.
+- The current code keeps deterministic analytics helpers and server-side auth/RLS. It uses Luna by default and reserves Terra for explicit cross-period comparisons or complex strategic synthesis.
+- Do not assume the secret or Edge Function deployment exists merely because this source is present.
 
 ### Data and Analytics
 

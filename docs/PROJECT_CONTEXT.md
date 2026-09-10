@@ -90,7 +90,7 @@ Rules:
 Historical/optional tooling:
 
 - Lovable-assisted visual iteration
-- Lovable AI Gateway, if still configured for Ask My Data until replaced
+- OpenAI API for Ask My Data after the production Edge Function secret and deployment are verified
 
 ## Data Rules
 

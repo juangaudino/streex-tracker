@@ -120,7 +120,7 @@ export default function AssistantPage() {
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
         if (res.status === 429) setError("Rate limit reached. Wait a moment and try again.");
-        else if (res.status === 402) setError("AI credits exhausted. Add credits in workspace settings.");
+        else if (res.status === 402) setError("AI billing needs attention. Please try again later.");
         else if (res.status === 401) setError("Authentication issue. Please sign in again.");
         else setError(json?.error || "The assistant is unavailable right now.");
         return;
@@ -256,7 +256,7 @@ export default function AssistantPage() {
               <Sparkles className="h-5 w-5 shrink-0 text-primary" />
               <h1 className="min-w-0 text-xl font-semibold leading-tight">Ask My Data</h1>
               <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                <FlaskConical className="h-3 w-3" /> v5.3B.3 Beta
+                <FlaskConical className="h-3 w-3" /> OpenAI Beta
               </span>
             </div>
             <p className="mt-1 text-sm leading-snug text-muted-foreground">

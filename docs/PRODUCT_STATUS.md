@@ -449,13 +449,13 @@ Latest Deep Insights work:
 
 ### Ask My Data
 
-Ask My Data is an Alpha analytics experiment and is currently paused.
+Ask My Data is an Alpha analytics experiment. Its OpenAI provider migration is implemented locally, but it remains unverified until the production Edge Function has `OPENAI_API_KEY` and passes authenticated QA.
 
 Current state:
 
 - The route, UI, challenge set, intent routing, tests, usage logging, and `ask-my-data` Edge Function source remain in the repository.
-- The current Edge Function still expects `LOVABLE_API_KEY` and calls Lovable's AI gateway.
-- After moving production infrastructure away from Lovable, generative Ask My Data must be treated as unavailable or unverified until a deliberate provider replacement is approved and deployed.
+- The Edge Function uses a server-only `OPENAI_API_KEY` and OpenAI Chat Completions streaming. Deterministic answers continue without an AI provider call.
+- Luna is the default model; Terra is reserved for explicit cross-period comparisons or complex strategic synthesis. This routing is logged with the usage record.
 - Defaults to full historical scope when the user does not specify a timeframe.
 - Has intent routing and challenge-set documentation.
 - Supports deterministic answers for many earnings, weekday, week, shift, rides, and pattern questions when data exists.
@@ -463,7 +463,7 @@ Current state:
 
 Important limitation:
 
-Ask My Data should be treated as Alpha and currently provider-blocked. Do not represent it as production-ready merely because the UI and Edge Function exist. Do not overclaim exact hourly, location, trip-type, or health insights unless the underlying data exists.
+Ask My Data should be treated as Alpha and deployment/QA-blocked until the secret and production verification are complete. Do not represent it as production-ready merely because the UI and Edge Function source exist. Do not overclaim exact hourly, location, trip-type, ride-allocation, zone, or health insights unless the underlying data exists in its supplied context.
 
 ### Admin Ops
 
@@ -618,7 +618,7 @@ High priority:
 
 Medium priority:
 
-- Replace or evolve Ask My Data away from the Lovable AI dependency only after a deliberate provider decision; external AI replacement is intentionally deferred for now.
+- Configure the isolated OpenAI project secret, deploy Ask My Data, and complete its authenticated challenge-set QA before treating it as available.
 - Stabilize the 0.9.6 attribution review workflow with real late-tip observations.
 - Run the 0.9.7 preview-first historical CSV/Excel import with a small known sample, then backfill multi-year data in reversible weekly batches.
 - Review 0.9.11 saved Operational Explorer views and CSV output alongside historical-import readiness; both preserve evidence labels and source data.

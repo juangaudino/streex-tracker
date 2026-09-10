@@ -2,6 +2,17 @@
 
 ## Beta Releases
 
+### Ask My Data — OpenAI Provider Migration (Local Candidate)
+
+### Changed
+
+- Ask My Data now uses a server-only `OPENAI_API_KEY` with OpenAI Chat Completions streaming instead of the retired Lovable AI gateway.
+- Deterministic answers still avoid a model call. Luna is the normal model path; Terra is reserved for explicit cross-period comparisons and complex strategic synthesis.
+
+### Verification Required
+
+- Configure `OPENAI_API_KEY` only in the active Supabase Edge Function secrets, deploy `ask-my-data`, then run the authenticated Ask My Data challenge set. This source change is not proof that production is configured.
+
 ### Beta 0.11.0 — Ride Lifecycle: En route, Pickup & Finish (Local Candidate)
 
 ### Added

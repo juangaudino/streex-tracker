@@ -62,7 +62,13 @@ function completed(ride: RideEvent): boolean {
 }
 
 function zoneForPickup(ride: RideEvent): string | null {
-  return ride.source === "foreground_browser" && ride.startCaptureStatus === "captured" && ride.startZoneKey ? ride.startZoneKey : null;
+  if (ride.source !== "foreground_browser") return null;
+  // Version 1 started at pickup. Version 2 starts on acceptance and must have a
+  // separately confirmed pickup before it can create pickup-zone evidence.
+  if (ride.lifecycleVersion === 2) {
+    return ride.pickupCaptureStatus === "captured" && ride.pickupZoneKey ? ride.pickupZoneKey : null;
+  }
+  return ride.startCaptureStatus === "captured" && ride.startZoneKey ? ride.startZoneKey : null;
 }
 
 function zoneForDropoff(ride: RideEvent): string | null {

@@ -7,11 +7,14 @@ export function dbToRideEvent(row: RideEventRow): RideEvent {
   return {
     id: row.id, userId: row.user_id, weekId: row.week_id, dayDate: row.day_date,
     shiftId: row.shift_id, app: row.app, status: row.status as RideEvent["status"],
-    startedAt: row.started_at, endedAt: row.ended_at, startZoneKey: row.start_zone_key,
+    startedAt: row.started_at, endedAt: row.ended_at, lifecycleVersion: row.lifecycle_version as 1 | 2,
+    startZoneKey: row.start_zone_key, pickupAt: row.pickup_at, pickupZoneKey: row.pickup_zone_key,
     endZoneKey: row.end_zone_key, startCaptureStatus: row.start_capture_status as RideEvent["startCaptureStatus"],
     endCaptureStatus: row.end_capture_status as RideEvent["endCaptureStatus"],
+    pickupCaptureStatus: row.pickup_capture_status as RideEvent["pickupCaptureStatus"],
     startAccuracyClass: row.start_accuracy_class as RideEvent["startAccuracyClass"],
     endAccuracyClass: row.end_accuracy_class as RideEvent["endAccuracyClass"],
+    pickupAccuracyClass: row.pickup_accuracy_class as RideEvent["pickupAccuracyClass"],
     source: row.source as RideEvent["source"],
   };
 }

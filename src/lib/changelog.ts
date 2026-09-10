@@ -6,7 +6,7 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "0.10.8";
+export const CURRENT_VERSION = "0.11.0";
 
 export function formatVersionLabel(version: string): string {
   const normalized = version.trim().replace(/^v/i, "");
@@ -17,6 +17,17 @@ export function formatVersionLabel(version: string): string {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.11.0",
+    date: "2026-09",
+    title: "Ride Lifecycle: En route, Pickup & Finish (Local Candidate)",
+    tags: ["new", "feature"],
+    items: [
+      "Movement now records an optional acceptance context with En route, then a separately confirmed pickup and final destination while Streex is open",
+      "New ride earnings are eligible only at the confirmed pickup zone; acceptance is work-time context and dropoff remains destination context",
+      "Existing rides remain compatible: their recorded start zone continues to mean pickup, and no historical ride, money, mileage, or zone is rewritten",
+    ],
+  },
   {
     version: "0.10.8",
     date: "2026-09",

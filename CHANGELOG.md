@@ -2,6 +2,18 @@
 
 ## Beta Releases
 
+### Beta 0.11.0 — Ride Lifecycle: En route, Pickup & Finish (Local Candidate)
+
+### Added
+
+- Movement now captures three intentional foreground moments: **En route** when a ride is accepted, **Pickup** when the passenger enters, and **Finish ride** at the destination.
+- The approach to pickup is retained as operational work context without claiming that the acceptance zone earned the ride's money.
+
+### Data Integrity
+
+- For new rides, only a successfully confirmed pickup zone can receive eligible zone earnings. The dropoff remains destination context; an unconfirmed pickup leaves the ride as coverage only.
+- Existing ride records remain untouched and retain their original start zone as pickup context. Reported earnings, Uber/manual miles, snapshots, and allocations are unchanged.
+
 ### Beta 0.10.8 — Historical Snapshot Safety (Local Candidate)
 
 ### Fixed

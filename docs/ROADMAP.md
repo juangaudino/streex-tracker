@@ -78,6 +78,22 @@ Deep Insights 0.7.0 added a separate comparison workspace with:
 
 ## Near-Term Planned Sequence
 
+### Beta 0.11.0 - Ride Lifecycle: En route, Pickup & Finish
+
+Status: implemented locally; requires the active-backend migration and authenticated iPhone QA before publication.
+
+Purpose:
+
+- Record three intentional foreground contexts for a new ride: acceptance (**En route**), actual passenger pickup, and dropoff (**Finish ride**).
+- Count acceptance-to-dropoff as the ride's operational work interval while assigning any verified ride earnings only to the confirmed pickup zone.
+- Preserve the existing manual, accumulated Uber mileage total; this lifecycle does not claim GPS route distance or background tracking.
+
+Boundaries:
+
+- New version-2 rides without a confirmed pickup remain valid operational coverage but never create pickup-zone earnings from their acceptance zone.
+- Legacy version-1 rides retain their recorded start zone as pickup context. No historical ride, money, mileage, snapshot, allocation, or zone label is rewritten.
+- All captures remain foreground-only and store only coarse zones, never raw coordinates, routes, addresses, or background history.
+
 ### Beta 0.10.0 - Movement Capture & Zone Context
 
 Status: implemented on `main`; both active-backend migrations are applied. Initial authenticated iPhone QA confirmed foreground pickup/dropoff capture, single-ride linking, and batch-link safeguards. Continue real-work QA before calling the release published.

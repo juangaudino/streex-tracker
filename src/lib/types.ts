@@ -166,12 +166,18 @@ export interface RideEvent {
   status: "active" | "completed" | "linked_single" | "linked_batch" | "cancelled";
   startedAt: string;
   endedAt?: string | null;
+  /** v1 events began at pickup; v2 events begin when the driver accepts and records pickup separately. */
+  lifecycleVersion?: 1 | 2;
   startZoneKey?: string | null;
   endZoneKey?: string | null;
+  pickupAt?: string | null;
+  pickupZoneKey?: string | null;
   startCaptureStatus: RideCaptureStatus;
   endCaptureStatus: RideCaptureStatus;
+  pickupCaptureStatus?: RideCaptureStatus;
   startAccuracyClass?: RideAccuracyClass | null;
   endAccuracyClass?: RideAccuracyClass | null;
+  pickupAccuracyClass?: RideAccuracyClass | null;
   source: "foreground_browser" | "manual_after_shift";
 }
 

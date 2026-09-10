@@ -27,12 +27,13 @@ Beta 0.9.6 - Earnings Attribution Integrity
 Current local source candidate:
 
 ```text
-Beta 0.10.8 - Historical Snapshot Safety (local candidate; no new migration required)
+Beta 0.11.0 - Ride Lifecycle: En route, Pickup & Finish (local candidate; active-backend migration required)
 ```
 
 Next approved product sequence:
 
 ```text
+Beta 0.11.0 - Ride Lifecycle: En route, Pickup & Finish (local candidate; active-backend migration required)
 Beta 0.10.0 - Movement Capture & Zone Context (implemented on main; active-backend migrations applied; real-work QA continuing)
 Beta 0.10.1 - Zone Intelligence & Evidence (implemented on main; authenticated owner QA required)
 Beta 0.10.2 - Ride Allocation Integrity & Quick Actions Stability (implemented on main; active-backend migration applied)
@@ -601,6 +602,7 @@ See `CHANGELOG.md` for full details.
 
 High priority:
 
+- Beta 0.11.0 separates acceptance, pickup, and dropoff for foreground-captured rides. Acceptance records the paid approach context, while only a confirmed pickup can receive zone earnings. Existing rides retain their original pickup semantics; no historical financial or location evidence is rewritten. Apply `20260910064047_ride_pickup_lifecycle_0110.sql` to the active backend and complete real iPhone QA before publication.
 - Continue real-work QA for Beta 0.10.0 Movement Capture & Zone Context. Both active-backend migrations are applied; Full Focus is its primary surface, Entry reuses its shared control, and Quick Actions remains the sole hub for shifts and accumulated totals. It is foreground-only, captures privacy-minimized start/end zones, keeps Uber/manual mileage authoritative, and does not persist raw coordinates or routes. See `docs/MOVEMENT_CAPTURE_TECHNICAL_DESIGN.md`.
 - Beta 0.10.1 Zone Intelligence & Evidence is implemented on `main` and requires authenticated owner QA with genuine captured evidence. It adds a coverage-first Deep Insights workspace using private coarse cells and pickup-only eligible income; see `docs/ZONE_INTELLIGENCE_TECHNICAL_DESIGN.md`.
 - Beta 0.10.2 is implemented on `main` and its active-backend migration `20260906212214_ride_snapshot_allocations_0102.sql` is applied. It consumes a Quick Actions request only once, uses a keyboard-safe mobile sheet, keeps live interval attribution as the compact default, and adds an owner-scoped editable allocation ledger. An observed snapshot and reported total remain immutable; an explicit known ride portion and any residual are stored separately.

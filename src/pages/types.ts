@@ -23,6 +23,7 @@ export interface StoreContext {
   updateWeek: (w: WeekRecord, attributionIntents?: EarningsAttributionIntent[], options?: { recordSnapshots?: boolean; onSnapshotsRecorded?: (snapshots: EarningsSnapshot[]) => Promise<void> | void }) => Promise<boolean>;
   recordOperationalSnapshot: (draft: OperationalSnapshotDraft) => Promise<boolean>;
   startRideEvent: (draft: { weekId: string; dayDate: string; shiftId?: string | null; app?: string | null; startedAt: string; capture: RideCaptureResult }) => Promise<RideEvent | null>;
+  markRidePickup: (id: string, pickedUpAt: string, capture: RideCaptureResult) => Promise<RideEvent | null>;
   finishRideEvent: (id: string, endedAt: string, capture: RideCaptureResult) => Promise<RideEvent | null>;
   cancelForegroundRideEvent: (id: string) => Promise<boolean>;
   linkRideEvents: (draft: { app: string; earningsSnapshotId: string; operationalEventKey?: string | null; rideEventIds: string[] }) => Promise<boolean>;

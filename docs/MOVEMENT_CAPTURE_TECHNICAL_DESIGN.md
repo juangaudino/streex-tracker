@@ -1,8 +1,18 @@
 # Movement Capture & Zone Context — Technical Design
 
-Status: foreground capture and payment-link migrations are applied to the active backend. Code is a local candidate on `main`; deployment and authenticated owner QA remain unverified.
+Status: foreground capture and payment-link migrations are applied to the active backend. The acceptance → pickup → dropoff lifecycle is a local candidate and requires its own additive migration plus authenticated owner QA.
 
-Target: `Beta 0.10.0 - Movement Capture & Zone Context`.
+Target: `Beta 0.10.0 - Movement Capture & Zone Context`, extended by `Beta 0.11.0 - Ride Lifecycle: En route, Pickup & Finish`.
+
+## Beta 0.11.0 lifecycle extension
+
+New rides use three deliberate foreground moments:
+
+1. **En route** records acceptance time and a coarse acceptance zone. This begins the ride's operational interval, including the approach to the passenger.
+2. **Pickup** records the passenger's actual coarse pickup zone. This is the only zone eligible for the ride's verified earnings.
+3. **Finish ride** records a coarse destination zone. It remains flow/destination context only.
+
+If pickup is not confirmed, the event can still finish, but it remains coverage-only and cannot assign money to the acceptance zone. Existing version-1 events preserve their original semantics: `start_*` remains pickup context. No old record is rewritten.
 
 ## Product Decision
 

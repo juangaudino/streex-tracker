@@ -550,10 +550,22 @@ export function useWeekStore(user: User | null) {
     if (!user) return null;
     const { data, error } = await supabase.from("ride_events").insert({
       user_id: user.id, week_id: draft.weekId, day_date: draft.dayDate, shift_id: draft.shiftId ?? null,
-      app: draft.app ?? null, started_at: draft.startedAt, source: "foreground_browser", start_zone_key: draft.capture.zoneKey ?? null,
+      app: draft.app ?? null, started_at: draft.startedAt, lifecycle_version: 2, source: "foreground_browser", start_zone_key: draft.capture.zoneKey ?? null,
       start_capture_status: draft.capture.status, start_accuracy_class: draft.capture.accuracyClass ?? null,
     }).select("*").single();
     if (error) { console.warn("[rideEvents] start failed", error); return null; }
+    const event = dbToRideEvent(data);
+    setRideEvents((previous) => [...previous.filter((item) => item.id !== event.id), event]);
+    return event;
+  }, [user]);
+
+  const markRidePickup = useCallback(async (id: string, pickedUpAt: string, capture: RideCaptureResult): Promise<RideEvent | null> => {
+    if (!user) return null;
+    const { data, error } = await supabase.from("ride_events").update({
+      pickup_at: pickedUpAt, pickup_zone_key: capture.zoneKey ?? null,
+      pickup_capture_status: capture.status, pickup_accuracy_class: capture.accuracyClass ?? null, updated_at: new Date().toISOString(),
+    }).eq("id", id).eq("user_id", user.id).eq("status", "active").select("*").single();
+    if (error) { console.warn("[rideEvents] pickup failed", error); return null; }
     const event = dbToRideEvent(data);
     setRideEvents((previous) => [...previous.filter((item) => item.id !== event.id), event]);
     return event;
@@ -861,6 +873,7 @@ export function useWeekStore(user: User | null) {
     updateWeek,
     recordOperationalSnapshot,
     startRideEvent,
+    markRidePickup,
     finishRideEvent,
     cancelForegroundRideEvent,
     linkRideEvents,

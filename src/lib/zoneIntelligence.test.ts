@@ -28,6 +28,32 @@ describe("zone intelligence", () => {
     expect(data.zones.find((zone) => zone.zoneKey === "zone-v1:101:201")).toMatchObject({ eligibleEarnings: 0, dropoffCount: 1 });
   });
 
+  it("uses the confirmed pickup instead of the acceptance zone for lifecycle version 2", () => {
+    const data = buildZoneIntelligenceData({
+      rideEvents: [ride("r1", {
+        lifecycleVersion: 2,
+        startZoneKey: "zone-v1:100:200",
+        pickupAt: "2026-09-06T10:12:00Z",
+        pickupZoneKey: "zone-v1:102:202",
+        pickupCaptureStatus: "captured",
+      })],
+      rideUpdateBatches: [batch("b1", "single", "s1")],
+      rideUpdateBatchEvents: [link("b1", "r1")],
+      earningsSnapshots: [snapshot("s1", 24.5)], filters,
+    });
+    expect(data.zones.find((zone) => zone.zoneKey === "zone-v1:102:202")).toMatchObject({ baseEarnings: 24.5, eligibleRideCount: 1, pickupCount: 1 });
+    expect(data.zones.find((zone) => zone.zoneKey === "zone-v1:100:200")).toBeUndefined();
+  });
+
+  it("does not promote an unconfirmed lifecycle version 2 acceptance zone into pickup earnings", () => {
+    const data = buildZoneIntelligenceData({
+      rideEvents: [ride("r1", { lifecycleVersion: 2, pickupZoneKey: null, pickupCaptureStatus: "unavailable" })],
+      rideUpdateBatches: [batch("b1", "single", "s1")], rideUpdateBatchEvents: [link("b1", "r1")], earningsSnapshots: [snapshot("s1", 24.5)], filters,
+    });
+    expect(data.eligibleRideCount).toBe(0);
+    expect(data.zones.every((zone) => zone.eligibleEarnings === 0)).toBe(true);
+  });
+
   it("keeps a batch link as coverage and never divides its money", () => {
     const data = buildZoneIntelligenceData({
       rideEvents: [ride("r1"), ride("r2", { startZoneKey: "zone-v1:102:202" })], rideUpdateBatches: [batch("b1", "batch", "s1")], rideUpdateBatchEvents: [link("b1", "r1"), link("b1", "r2")], earningsSnapshots: [snapshot("s1", 50)], filters,

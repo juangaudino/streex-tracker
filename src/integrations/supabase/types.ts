@@ -470,6 +470,11 @@ export type Database = {
           end_zone_key: string | null
           ended_at: string | null
           id: string
+          lifecycle_version: number
+          pickup_accuracy_class: string | null
+          pickup_at: string | null
+          pickup_capture_status: string
+          pickup_zone_key: string | null
           shift_id: string | null
           source: string
           start_accuracy_class: string | null
@@ -490,6 +495,11 @@ export type Database = {
           end_zone_key?: string | null
           ended_at?: string | null
           id?: string
+          lifecycle_version?: number
+          pickup_accuracy_class?: string | null
+          pickup_at?: string | null
+          pickup_capture_status?: string
+          pickup_zone_key?: string | null
           shift_id?: string | null
           source?: string
           start_accuracy_class?: string | null
@@ -510,6 +520,11 @@ export type Database = {
           end_zone_key?: string | null
           ended_at?: string | null
           id?: string
+          lifecycle_version?: number
+          pickup_accuracy_class?: string | null
+          pickup_at?: string | null
+          pickup_capture_status?: string
+          pickup_zone_key?: string | null
           shift_id?: string | null
           source?: string
           start_accuracy_class?: string | null

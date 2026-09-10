@@ -70,7 +70,7 @@ function localDateValue(): string {
 }
 
 export default function WeeklyEntryPage() {
-  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, rideSnapshotAllocations, manualRideAllocations, startRideEvent, finishRideEvent, cancelForegroundRideEvent, replaceSnapshotAllocations, replaceManualRideAllocations, addWeek, updateWeek } =
+  const { openWeek, weeks, settings, earningsSnapshots, earningsAttributions, rideEvents, rideSnapshotAllocations, manualRideAllocations, startRideEvent, markRidePickup, finishRideEvent, cancelForegroundRideEvent, replaceSnapshotAllocations, replaceManualRideAllocations, addWeek, updateWeek } =
     useOutletContext<StoreContext>();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -768,6 +768,7 @@ export default function WeeklyEntryPage() {
             apps={apps}
             rideEvents={rideEvents}
             onStart={startRideEvent}
+            onPickup={markRidePickup}
             onFinish={finishRideEvent}
             onCancel={cancelForegroundRideEvent}
             compact

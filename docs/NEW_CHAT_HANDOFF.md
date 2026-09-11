@@ -20,7 +20,7 @@ Also read:
 - Current public release: `Beta 0.9.6 - Earnings Attribution Integrity`.
 - Current local source candidate: `Beta 0.9.13 - Deep Insights Operations Snapshot Comparison (pending owner QA)`.
 - Production: `https://gig.getstreex.com`.
-- Repository: `https://github.com/juangaudino/streex-tracker`.
+- Repository: `https://github.com/juangaudino/streex-gig`.
 - Default branch: `main`.
 - The owner confirmed 0.9.4 through extended real work and published 0.9.5 after its local release work. Always verify the live HEAD after a later publication.
 - Frontend hosting: Vercel.

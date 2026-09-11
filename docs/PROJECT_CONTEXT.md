@@ -31,7 +31,7 @@ Older `V3.x` through `V5.x` labels are Alpha Archive history. Keep them for cont
 
 Repository name:
 
-`streex-tracker`
+`streex-gig`
 
 The repository root is the folder containing `AGENTS.md`, `README.md`, `src/`, and `supabase/`.
 

@@ -156,7 +156,7 @@ The movement foundation captures foreground ride context when available and repo
 ## Live deployment
 
 - **Production app:** [gig.getstreex.com](https://gig.getstreex.com)
-- **Source repository:** [github.com/juangaudino/streex-tracker](https://github.com/juangaudino/streex-tracker)
+- **Source repository:** [github.com/juangaudino/streex-gig](https://github.com/juangaudino/streex-gig)
 - **Frontend hosting:** Vercel
 - **Backend:** owner-controlled Supabase project
 - **DNS:** Cloudflare

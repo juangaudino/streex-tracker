@@ -87,7 +87,7 @@ Deno.test("buildMobilityAnalysis: preserves pickup earnings while planner uses a
   const result = buildMobilityAnalysis({
     rides: [{
       id: "ride-1", day_date: "2026-01-08", app: "Uber", status: "completed",
-      started_at: "2026-01-08T16:00:00.000Z", pickup_at: "2026-01-08T16:20:00.000Z",
+      started_at: "2026-01-08T16:00:00.000Z", ended_at: "2026-01-08T17:20:00.000Z", pickup_at: "2026-01-08T16:20:00.000Z",
       lifecycle_version: 2, start_zone_key: "start-zone", pickup_zone_key: "pickup-zone",
       start_capture_status: "captured", pickup_capture_status: "captured",
       source: "foreground_browser", time_zone: "America/Denver",
@@ -100,6 +100,10 @@ Deno.test("buildMobilityAnalysis: preserves pickup earnings while planner uses a
   });
   assertEquals(result.pickupEarnings.zones[0]?.zone, "Murray");
   assertEquals(result.pickupEarnings.zones[0]?.earnings, 20);
+  assertEquals(result.pickupEarnings.zones[0]?.rideHours, 1.33);
+  assertEquals(result.pickupEarnings.zones[0]?.earningsPerRideHour, 15.04);
+  assertEquals(result.pickupEarnings.bestTwoHourPickupWindows[0]?.weekday, "Thursday");
+  assertEquals(result.pickupEarnings.bestTwoHourPickupWindows[0]?.averageWindowEarningsPerHour, 10);
   assertEquals(result.shiftPlanner?.candidates[0]?.zone, "North Salt Lake");
   assertEquals(result.shiftPlanner?.candidates[0]?.earnings, 20);
   assertEquals(result.shiftPlanner?.candidates[0]?.confidence, "low");

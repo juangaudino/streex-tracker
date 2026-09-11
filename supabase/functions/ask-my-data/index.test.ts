@@ -9,6 +9,7 @@ import {
   detectScope,
   directDayAnalysisAnswer,
   fourWeekComparisonAnalysis,
+  isMobilityQuestion,
   isBestWeekQuestion,
   restPairMode,
   selectAiModel,
@@ -81,6 +82,11 @@ Deno.test("selectAiModel: Terra handles zone and shift-planner synthesis", () =>
   assertEquals(selected.model, "gpt-5.6-terra");
   assertEquals(selected.reasoningEffort, "medium");
   assertEquals(selected.route, "terra_complex");
+});
+
+Deno.test("isMobilityQuestion: Spanish hourly and two-hour prompts load mobility evidence", () => {
+  assertEquals(isMobilityQuestion("¿Cuál es mi mejor día por ganancias por hora de turno?"), true);
+  assertEquals(isMobilityQuestion("¿Cuáles son mis mejores dos horas de la semana?"), true);
 });
 
 Deno.test("buildMobilityAnalysis: preserves pickup earnings while planner uses acceptance context", () => {

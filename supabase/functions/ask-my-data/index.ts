@@ -1164,8 +1164,8 @@ async function fetchAllPages<T>(fetchPage: (from: number, to: number) => Promise
   }
 }
 
-function isMobilityQuestion(prompt: string): boolean {
-  return /\b(zone|zones|area|areas|pickup|dropoff|destination|where should i|where to work|where do i|hourly|best hour|time window|window|planner|plan my shift|plan a shift|work \d+ hours?|hours? today|zona|zonas|área|area|recogida|destino|horario|ventana|planificador|planifica|trabajar \d+ horas?|dónde trabajar|donde trabajar|mejor hora)\b/i.test(prompt);
+export function isMobilityQuestion(prompt: string): boolean {
+  return /\b(zone|zones|area|areas|pickup|dropoff|destination|where should i|where to work|where do i|hourly|best hour|best two hours?|time window|window|planner|plan my shift|plan a shift|work \d+ hours?|hours? today|zona|zonas|área|area|recogida|destino|horario|ventana|planificador|planifica|trabajar \d+ horas?|dónde trabajar|donde trabajar|mejor hora|mejores? horas?|dos horas|por hora|por horas)\b/i.test(prompt);
 }
 
 function weekdayEfficiencyAnalysis(weeks: NormalizedWeek[], prompt: string, timingEvidenceDates?: string[]) {

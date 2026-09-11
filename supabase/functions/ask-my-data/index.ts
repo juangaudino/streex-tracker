@@ -1375,7 +1375,8 @@ export function buildMobilityAnalysis(args: {
   for (const signal of signals) byZone.set(signal.zone, [...(byZone.get(signal.zone) ?? []), signal]);
   const pickupZones = [...byZone.entries()].map(([zone, items]) => {
     const stats = rideTimeRollup(items);
-    return { zone, ...stats, averagePerRide: stats.rides ? round(stats.earnings / stats.rides) : null };
+    const confidence = stats.rides >= 8 && stats.days >= 3 ? "ready" : stats.rides >= 3 && stats.days >= 2 ? "building" : "low";
+    return { zone, ...stats, averagePerRide: stats.rides ? round(stats.earnings / stats.rides) : null, confidence };
   }).sort((a, b) => b.earnings - a.earnings || b.rides - a.rides).slice(0, 12);
 
   const byPickupHour = new Map<string, MobilitySignal[]>();
@@ -1389,7 +1390,7 @@ export function buildMobilityAnalysis(args: {
     return { weekday, hour: Number(hour), ...stats, averagePerRide: stats.rides ? round(stats.earnings / stats.rides) : null };
   }).sort((a, b) => Number(b.averagePerRide ?? 0) - Number(a.averagePerRide ?? 0) || b.rides - a.rides).slice(0, 18);
 
-  const bestPickupWindows: Array<{ weekday: string; startHour: number; endHourExclusive: number; earnings: number; rides: number; days: number; rideHours: number; averagePerRide: number | null; averageWindowEarningsPerHour: number | null; earningsPerRideHour: number | null }> = [];
+  const bestPickupWindows: Array<{ weekday: string; startHour: number; endHourExclusive: number; earnings: number; rides: number; days: number; rideHours: number; averagePerRide: number | null; averageWindowEarningsPerHour: number | null; earningsPerRideHour: number | null; confidence: string }> = [];
   for (const weekday of WEEKDAY_ORDER) {
     for (let startHour = 0; startHour <= 22; startHour++) {
       const items = signals.filter((signal) => signal.weekday === weekday && signal.hour !== null && signal.hour >= startHour && signal.hour < startHour + 2);
@@ -1402,6 +1403,7 @@ export function buildMobilityAnalysis(args: {
         ...stats,
         averagePerRide: stats.rides ? round(stats.earnings / stats.rides) : null,
         averageWindowEarningsPerHour: stats.days ? round(stats.earnings / stats.days / 2) : null,
+        confidence: stats.rides >= 8 && stats.days >= 3 ? "ready" : stats.rides >= 3 && stats.days >= 2 ? "building" : "low",
       });
     }
   }
@@ -1842,8 +1844,8 @@ function directMobilityAnswer(context: unknown, currency: string, prompt: string
     analysis?: {
       mobility?: {
         pickupEarnings?: {
-          zones?: Array<{ zone: string; earnings: number; rides: number; days: number; rideHours: number; earningsPerRideHour: number | null }>;
-          bestTwoHourPickupWindows?: Array<{ weekday: string; startHour: number; endHourExclusive: number; earnings: number; rides: number; days: number; rideHours: number; averageWindowEarningsPerHour: number | null; earningsPerRideHour: number | null }>;
+          zones?: Array<{ zone: string; earnings: number; rides: number; days: number; rideHours: number; earningsPerRideHour: number | null; confidence?: string }>;
+          bestTwoHourPickupWindows?: Array<{ weekday: string; startHour: number; endHourExclusive: number; earnings: number; rides: number; days: number; rideHours: number; averageWindowEarningsPerHour: number | null; earningsPerRideHour: number | null; confidence?: string }>;
           hourRateDefinition?: string;
         };
       };
@@ -1866,7 +1868,7 @@ function directMobilityAnswer(context: unknown, currency: string, prompt: string
     const top = windows.slice(0, 3);
     const lines = top.map((window, index) => {
       const rate = window.averageWindowEarningsPerHour === null ? "n/a" : `${formatCurrencyForAssistant(window.averageWindowEarningsPerHour, currency)}/clock-hour`;
-      return `${index + 1}. ${window.weekday} ${String(window.startHour).padStart(2, "0")}:00–${String(window.endHourExclusive).padStart(2, "0")}:00 — ${rate}, ${window.rides} ride${window.rides === 1 ? "" : "s"} across ${window.days} day${window.days === 1 ? "" : "s"}`;
+      return `${index + 1}. ${window.weekday} ${String(window.startHour).padStart(2, "0")}:00–${String(window.endHourExclusive).padStart(2, "0")}:00 — ${rate}, ${window.rides} ride${window.rides === 1 ? "" : "s"} across ${window.days} day${window.days === 1 ? "" : "s"} (${window.confidence ?? "low"} confidence)`;
     });
     return spanish
       ? `Tus mejores ventanas de dos horas por ganancia promedio de la ventana son:\n\n${lines.join("\n")}\n\nLa tasa usa las ganancias confirmadas de pickup observadas en esa ventana, promediadas por día y divididas por dos horas. No es el $/hora total del turno.`
@@ -1882,7 +1884,7 @@ function directMobilityAnswer(context: unknown, currency: string, prompt: string
         : "I cannot calculate $/hr by zone yet: I need completed rides with a valid Start-to-Finish duration and pickup-linked earnings. I can still show earnings per ride by zone.";
     }
     const top = [...rows].sort((a, b) => (b.earningsPerRideHour ?? 0) - (a.earningsPerRideHour ?? 0)).slice(0, 6);
-    const lines = top.map((row) => `${row.zone}: ${formatCurrencyForAssistant(row.earningsPerRideHour!, currency)}/ride-hour (${row.rides} ride${row.rides === 1 ? "" : "s"}, ${row.days} day${row.days === 1 ? "" : "s"})`);
+    const lines = top.map((row) => `${row.zone}: ${formatCurrencyForAssistant(row.earningsPerRideHour!, currency)}/ride-hour (${row.rides} ride${row.rides === 1 ? "" : "s"}, ${row.days} day${row.days === 1 ? "" : "s"}; ${row.confidence ?? "low"} confidence)`);
     return spanish
       ? `Eficiencia por zona de pickup (ganancia confirmada ÷ tiempo del ride):\n\n${lines.join("\n")}\n\nNo incluye tiempo idle entre rides, por eso no reemplaza el $/hora del turno.`
       : `Pickup-zone efficiency (confirmed earnings ÷ ride time):\n\n${lines.join("\n")}\n\nIdle time between rides is not included, so this does not replace shift $/hr.`;

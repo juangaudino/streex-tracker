@@ -1192,7 +1192,7 @@ function weekdayEfficiencyAnalysis(weeks: NormalizedWeek[], prompt: string, timi
   return {
     method: "weekday_operational_earnings_divided_by_completed_shift_hours",
     rows,
-    timingEvidence: evidence ? "Only days with ride timing or repeated earnings snapshots are included." : "All completed shift days in the loaded scope are included.",
+    timingEvidence: evidence ? "Only days with ride timing or positive earnings snapshots at least 30 minutes apart are included." : "All completed shift days in the loaded scope are included.",
   };
 }
 
@@ -1288,18 +1288,30 @@ export function buildMobilityAnalysis(args: {
   const labelFor = (zoneKey: string) => labels.get(zoneKey) || "Unlabeled approximate pickup zone";
   const ridesById = new Map(args.rides.map((ride) => [ride.id, ride]));
   const effectiveDeltas = snapshotEffectiveDeltas(args.snapshots);
-  const snapshotObservationCounts = new Map<string, number>();
+  // Two snapshots entered seconds apart are commonly an import/correction
+  // artifact, not evidence that the driver worked across that day. Require a
+  // meaningful spacing before a daily snapshot-only record can qualify for
+  // hourly weekday comparisons.
+  const MIN_SNAPSHOT_SPACING_MS = 30 * 60 * 1000;
+  const snapshotTimesByDate = new Map<string, number[]>();
   for (const snapshot of args.snapshots) {
-    if ((effectiveDeltas.get(snapshot.id) ?? 0) > 0) {
-      snapshotObservationCounts.set(snapshot.day_date, (snapshotObservationCounts.get(snapshot.day_date) ?? 0) + 1);
-    }
+    if ((effectiveDeltas.get(snapshot.id) ?? 0) <= 0) continue;
+    const timestamp = Date.parse(snapshot.created_at);
+    if (!Number.isFinite(timestamp)) continue;
+    snapshotTimesByDate.set(snapshot.day_date, [...(snapshotTimesByDate.get(snapshot.day_date) ?? []), timestamp]);
   }
+  const snapshotTimingEvidenceDates = [...snapshotTimesByDate.entries()]
+    .filter(([, times]) => {
+      const sorted = [...times].sort((a, b) => a - b);
+      return sorted.some((time, index) => index > 0 && time - sorted[index - 1] >= MIN_SNAPSHOT_SPACING_MS);
+    })
+    .map(([date]) => date);
   const rideTimingDates = args.rides
     .filter((ride) => ride.lifecycle_version === 2 && ride.status === "completed" && Number.isFinite(Date.parse(ride.started_at)) && Number.isFinite(Date.parse(ride.ended_at ?? "")) && Date.parse(ride.ended_at ?? "") > Date.parse(ride.started_at))
     .map((ride) => ride.day_date);
   const timingEvidenceDates = [...new Set([
     ...rideTimingDates,
-    ...[...snapshotObservationCounts.entries()].filter(([, count]) => count >= 2).map(([date]) => date),
+    ...snapshotTimingEvidenceDates,
   ])].sort();
   const ledgerSnapshots = new Set(args.snapshotAllocations
     .filter((row) => row.is_current && row.earnings_snapshot_id)
@@ -1456,8 +1468,10 @@ export function buildMobilityAnalysis(args: {
       labeledPickupZones: pickupZones.filter((zone) => zone.zone !== "Unlabeled approximate pickup zone").length,
       ridesWithRecordedTimeZone: timeZoneRides,
       timingEvidenceDays: timingEvidenceDates.length,
+      snapshotTimingEvidenceDays: snapshotTimingEvidenceDates.length,
       plannerEligibleRides: acceptanceSignals.length,
       plannerMinimum: { rides: 8, days: 3 },
+      timingEvidenceRule: "Ride Start-to-Finish duration or positive snapshots at least 30 minutes apart on the same day.",
     },
     pickupEarnings: {
       zones: pickupZones,
@@ -1744,6 +1758,16 @@ function latestUserPrompt(messages: ChatMessage[]): string {
   return [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
 }
 
+export function analysisPromptForMessages(messages: ChatMessage[]): string {
+  const latestIndex = [...messages].map((message, index) => ({ message, index })).reverse().find(({ message }) => message.role === "user")?.index;
+  if (latestIndex === undefined) return "";
+  const latest = messages[latestIndex]?.content ?? "";
+  const isFollowUp = /\b(same criterion|same criteria|same approach|mismo criterio|en orden|in order|top\s+\d+|ranking)\b/i.test(latest);
+  if (!isFollowUp) return latest;
+  const previous = [...messages.slice(0, latestIndex)].reverse().find((message) => message.role === "user")?.content;
+  return previous ? `${previous}\n${latest}` : latest;
+}
+
 function readUsage(value: unknown): TokenUsage {
   const usage = value as {
     prompt_tokens?: number;
@@ -1839,8 +1863,11 @@ function directBestWeekAnswer(context: unknown, currency: string): string | null
   return `Your best week ever was ${range}, when you earned ${amount}.${statusNote}`;
 }
 
-function directMobilityAnswer(context: unknown, currency: string, prompt: string): string | null {
+export function directMobilityAnswer(context: unknown, currency: string, prompt: string): string | null {
   const c = context as {
+    lifetime?: {
+      weekdayStats?: Record<string, { average: number; count: number; best: number; bestDate: string | null }>;
+    };
     analysis?: {
       mobility?: {
         pickupEarnings?: {
@@ -1891,11 +1918,44 @@ function directMobilityAnswer(context: unknown, currency: string, prompt: string
   }
 
   const weekday = c.analysis?.weekdayEfficiency;
+  const asksTopWeekdayRanking = /\b(top|ranking|orden|mejores?)\b/.test(q) && /\b(7|siete)\b/.test(q);
+  if (asksTopWeekdayRanking && weekday && !weekday.rows.length) {
+    return spanish
+      ? "Todavía no hay suficientes días con evidencia horaria confiable para construir un top 7 por $/hora."
+      : "There are not enough days with reliable timing evidence to build a top-seven $/hr ranking yet.";
+  }
+  if (asksTopWeekdayRanking && weekday?.rows?.length) {
+    const lines = weekday.rows.slice(0, 7).map((row, index) => `${index + 1}. ${row.weekday}: ${formatCurrencyForAssistant(row.earningsPerHour!, currency)}/hora (${row.shifts} turnos, ${row.days} días con evidencia)`);
+    return spanish
+      ? `Top ${Math.min(7, weekday.rows.length)} de días por ganancias operativas por hora de turno:\n\n${lines.join("\n")}\n\nSolo se incluyen días con rides medidos o snapshots positivos separados por al menos 30 minutos; los días antiguos sin evidencia quedan fuera.`
+      : `Top ${Math.min(7, weekday.rows.length)} weekdays by operational earnings per shift hour:\n\n${lines.join("\n")}\n\nOnly days with measured rides or positive snapshots at least 30 minutes apart are included; older days without evidence are excluded.`;
+  }
   const asksBestWeekdayHourly = /\b(best|strongest|highest|mejor|más alto|mas alto)\b/.test(q) && /\b(day|weekday|día|dia)\b/.test(q);
+  const asksTotalDay = /\b(total|totales|total earnings|ganancias totales|ganancia total|por día|por dia|per day)\b/.test(q);
+  if (asksBestWeekdayHourly && asksTotalDay) {
+    const totalRows = Object.entries(c.lifetime?.weekdayStats ?? {})
+      .filter(([, row]) => row.count > 0)
+      .sort(([, a], [, b]) => b.average - a.average);
+    const totalBest = totalRows[0];
+    const hourlyBest = weekday?.rows?.[0];
+    const totalText = totalBest
+      ? (spanish
+        ? `Mejor día por ganancias totales promedio: ${totalBest[0]}, ${formatCurrencyForAssistant(totalBest[1].average, currency)}/día.`
+        : `Best weekday by average total earnings: ${totalBest[0]}, ${formatCurrencyForAssistant(totalBest[1].average, currency)}/day.`)
+      : (spanish ? "No hay suficientes datos para el promedio total por día." : "There is not enough data for an average total by day.");
+    const hourlyText = hourlyBest
+      ? (spanish
+        ? `Mejor día por ganancias operativas por hora de turno: ${hourlyBest.weekday}, ${formatCurrencyForAssistant(hourlyBest.earningsPerHour!, currency)}/hora (${hourlyBest.shifts} turnos, ${hourlyBest.days} días con evidencia horaria).`
+        : `Best weekday by operational earnings per shift hour: ${hourlyBest.weekday}, ${formatCurrencyForAssistant(hourlyBest.earningsPerHour!, currency)}/hr (${hourlyBest.shifts} shifts, ${hourlyBest.days} days with timing evidence).`)
+      : (spanish
+        ? "Todavía no hay suficientes días con evidencia horaria confiable para calcular el mejor día por $/hora de turno; los días antiguos sin esa evidencia quedan fuera."
+        : "There are not enough days with reliable timing evidence to calculate the best weekday by shift $/hr; older days without that evidence are excluded.");
+    return `${totalText}\n${hourlyText}`;
+  }
   if (asksBestWeekdayHourly && weekday && !weekday.rows.length) {
     return spanish
-      ? "Todavía no hay suficientes días con evidencia horaria confiable para comparar el mejor día por $/hora. Los días antiguos sin snapshots repetidos ni rides con Start→Finish quedan fuera de esta métrica."
-      : "There are not enough days with reliable timing evidence to compare the best weekday by $/hr. Older days without repeated snapshots or Start-to-Finish rides are excluded from this metric.";
+        ? "Todavía no hay suficientes días con evidencia horaria confiable para comparar el mejor día por $/hora. Los días antiguos sin snapshots separados por al menos 30 minutos ni rides con Start→Finish quedan fuera de esta métrica."
+        : "There are not enough days with reliable timing evidence to compare the best weekday by $/hr. Older days without snapshots at least 30 minutes apart or Start-to-Finish rides are excluded from this metric.";
   }
   if (weekday?.rows?.length && asksBestWeekdayHourly) {
     const top = weekday.rows[0];
@@ -2438,6 +2498,7 @@ Deno.serve(async (req) => {
     content: String(m.content ?? "").slice(0, 4000),
   }));
   const promptPreview = latestUserPrompt(safeMessages);
+  const analysisPrompt = analysisPromptForMessages(safeMessages);
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
@@ -2459,7 +2520,7 @@ Deno.serve(async (req) => {
     : [];
   const scopeResult = detectScope(safeMessages, knownApps);
   amdDebug("scope", { scope: scopeResult.scope, reason: scopeResult.reason });
-  const needsMobility = isMobilityQuestion(promptPreview);
+  const needsMobility = isMobilityQuestion(promptPreview) || isMobilityQuestion(analysisPrompt);
 
   const [weeksRes, achRes, ridesRes, snapshotsRes, snapshotAllocationsRes, manualAllocationsRes, batchesRes, batchEventsRes, paymentsRes, zoneLabelsRes] = await Promise.all([
     fetchWeeksForScope(supabase, scopeResult.scope),
@@ -2564,7 +2625,7 @@ Deno.serve(async (req) => {
       batchEvents: (batchEventsRes.data ?? []) as RideBatchEventRow[],
       payments: (paymentsRes.data ?? []) as RidePaymentRow[],
       zoneLabels: (zoneLabelsRes.data ?? []) as ZoneLabelRow[],
-      prompt: promptPreview,
+      prompt: analysisPrompt,
     })
     : null;
   const context = buildContext({
@@ -2574,7 +2635,7 @@ Deno.serve(async (req) => {
     settings: settingsRes.data ?? null,
     achievements: achRes.data ?? [],
     mobility,
-    prompt: promptPreview,
+    prompt: analysisPrompt,
   });
   if (AMD_DEBUG) {
     const intent = detectIntent(promptPreview, knownApps);
@@ -2639,7 +2700,7 @@ Deno.serve(async (req) => {
   }
 
   if (needsMobility) {
-    const text = directMobilityAnswer(context, settingsRes.data?.currency_symbol ?? "$", promptPreview);
+    const text = directMobilityAnswer(context, settingsRes.data?.currency_symbol ?? "$", analysisPrompt);
     if (text) {
       await logUsage({
         supabase,
@@ -2727,7 +2788,7 @@ Deno.serve(async (req) => {
     "10. For a last-four-weeks versus best-four-week-period question, ONLY use context.analysis.fourWeekComparison. It contains completed calendar-consecutive weeks; if it is null, explain that there are not four consecutive completed weeks available.",
     "11. For a zone, pickup-hour, or shift-planner question, ONLY use context.analysis.mobility. Treat pickupEarnings as money confirmed to the pickup zone. Treat shiftPlanner candidates as acceptance/start-market evidence, never as pickup earnings. Do not infer a zone, local hour, or time window when coverage says it is missing.",
     "12. For pickup-zone hourly questions, use pickupEarnings.zones. earningsPerRideHour is confirmed pickup-linked earnings divided by elapsed Start-to-Finish ride time; call it ride-time efficiency and distinguish it from shift $/hour, which includes all completed shift time. For best two-hour questions, use bestTwoHourPickupWindows.averageWindowEarningsPerHour (average confirmed pickup earnings per observed day divided by the two-hour window) and report its rides/days evidence and low coverage clearly.",
-    "13. For best weekday by $/hour questions, use weekdayEfficiency, which aggregates operational earnings divided by completed shift hours and includes only days with ride timing or repeated earnings-snapshot evidence when mobility context is loaded. Do not substitute total daily earnings or ride-time efficiency; disclose that older days without timing evidence are excluded.",
+    "13. For best weekday by $/hour questions, use weekdayEfficiency, which aggregates operational earnings divided by completed shift hours and includes only days with ride timing or positive earnings snapshots at least 30 minutes apart when mobility context is loaded. Do not substitute total daily earnings or ride-time efficiency; disclose that older days without timing evidence are excluded.",
     "14. For a shift plan, make it a bounded historical test plan: state the suggested broad zone and clock window only when a candidate exists; give earnings/rides/days as evidence; name the confidence level; and say it is not live demand, traffic, or a guaranteed result. If confidence is low/building, recommend collecting more rides rather than a strong conclusion.",
     "15. When making a recommendation, use this compact structure: **Signal**, **Evidence**, **Confidence**, **Next action**. Do not pretend that earnings per ride means earnings per worked hour.",
     "16. Never invent numbers, dates, or apps. Never reveal raw JSON, private zone keys, or internal field names. No SQL.",

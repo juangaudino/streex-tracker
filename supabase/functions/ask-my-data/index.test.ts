@@ -4,6 +4,8 @@
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   buildMobilityAnalysis,
+  analysisPromptForMessages,
+  directMobilityAnswer,
   consecutiveDayOffAnalysis,
   detectIntent,
   detectScope,
@@ -87,6 +89,75 @@ Deno.test("selectAiModel: Terra handles zone and shift-planner synthesis", () =>
 Deno.test("isMobilityQuestion: Spanish hourly and two-hour prompts load mobility evidence", () => {
   assertEquals(isMobilityQuestion("¿Cuál es mi mejor día por ganancias por hora de turno?"), true);
   assertEquals(isMobilityQuestion("¿Cuáles son mis mejores dos horas de la semana?"), true);
+});
+
+Deno.test("analysisPromptForMessages: carries the prior criterion into ranking follow-ups", () => {
+  assertEquals(
+    analysisPromptForMessages([
+      { role: "user", content: "¿Cuál es mi mejor día por ganancias por hora de turno?" },
+      { role: "assistant", content: "Sunday" },
+      { role: "user", content: "Y el top 7 en orden? con ese mismo criterio." },
+    ]),
+    "¿Cuál es mi mejor día por ganancias por hora de turno?\nY el top 7 en orden? con ese mismo criterio.",
+  );
+});
+
+Deno.test("buildMobilityAnalysis: ignores same-second snapshot artifacts as timing evidence", () => {
+  const base = {
+    week_id: "week-1",
+    day_date: "2026-08-22",
+    app: "Uber",
+  };
+  const result = buildMobilityAnalysis({
+    rides: [],
+    snapshots: [
+      { id: "snapshot-1", ...base, delta: 10, created_at: "2026-08-22T12:00:00.000Z" },
+      { id: "snapshot-2", ...base, delta: 5, created_at: "2026-08-22T12:00:05.000Z" },
+    ],
+    snapshotAllocations: [], manualAllocations: [], batches: [], batchEvents: [], payments: [], zoneLabels: [],
+    prompt: "¿Cuál es mi mejor día por ganancias por hora de turno?",
+  });
+  assertEquals(result.coverage.timingEvidenceDays, 0);
+  assertEquals(result.coverage.snapshotTimingEvidenceDays, 0);
+});
+
+Deno.test("buildMobilityAnalysis: accepts snapshots spaced at least 30 minutes apart", () => {
+  const base = {
+    week_id: "week-1",
+    day_date: "2026-08-22",
+    app: "Uber",
+  };
+  const result = buildMobilityAnalysis({
+    rides: [],
+    snapshots: [
+      { id: "snapshot-1", ...base, delta: 10, created_at: "2026-08-22T12:00:00.000Z" },
+      { id: "snapshot-2", ...base, delta: 5, created_at: "2026-08-22T12:30:00.000Z" },
+    ],
+    snapshotAllocations: [], manualAllocations: [], batches: [], batchEvents: [], payments: [], zoneLabels: [],
+    prompt: "¿Cuál es mi mejor día por ganancias por hora de turno?",
+  });
+  assertEquals(result.coverage.timingEvidenceDays, 1);
+  assertEquals(result.coverage.snapshotTimingEvidenceDays, 1);
+});
+
+Deno.test("directMobilityAnswer: combined total and hourly weekday question returns both metrics", () => {
+  const text = directMobilityAnswer({
+    lifetime: {
+      weekdayStats: {
+        Friday: { average: 200, count: 4, best: 250, bestDate: "2026-09-04" },
+        Sunday: { average: 150, count: 4, best: 180, bestDate: "2026-09-06" },
+      },
+    },
+    analysis: {
+      weekdayEfficiency: {
+        rows: [{ weekday: "Sunday", earnings: 600, hours: 20, shifts: 4, days: 4, earningsPerHour: 30 }],
+      },
+    },
+  }, "$", "¿Cuál es mi mejor día por ganancias totales y cuál por ganancias por hora?");
+  assert(text?.includes("ganancias totales promedio"));
+  assert(text?.includes("ganancias operativas por hora"));
+  assert(text?.includes("Friday"));
+  assert(text?.includes("Sunday"));
 });
 
 Deno.test("buildMobilityAnalysis: preserves pickup earnings while planner uses acceptance context", () => {

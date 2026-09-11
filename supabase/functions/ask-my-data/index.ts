@@ -1168,13 +1168,14 @@ function isMobilityQuestion(prompt: string): boolean {
   return /\b(zone|zones|area|areas|pickup|dropoff|destination|where should i|where to work|where do i|hourly|best hour|time window|window|planner|plan my shift|plan a shift|work \d+ hours?|hours? today|zona|zonas|área|area|recogida|destino|horario|ventana|planificador|planifica|trabajar \d+ horas?|dónde trabajar|donde trabajar|mejor hora)\b/i.test(prompt);
 }
 
-function weekdayEfficiencyAnalysis(weeks: NormalizedWeek[], prompt: string) {
+function weekdayEfficiencyAnalysis(weeks: NormalizedWeek[], prompt: string, timingEvidenceDates?: string[]) {
   const q = prompt.toLowerCase();
   const asksDay = /\b(day|weekday|día|dia)\b/.test(q);
   const asksHourly = /\b(per hour|hourly|earning hours?|por horas?|por hora de trabajo|horas?)\b/.test(q);
   if (!asksDay || !asksHourly) return null;
+  const evidence = timingEvidenceDates ? new Set(timingEvidenceDates) : null;
   const rows = WEEKDAY_ORDER.map((weekday) => {
-    const days = weeks.flatMap((week) => week.dayTotals.filter((day) => day.day === weekday));
+    const days = weeks.flatMap((week) => week.dayTotals.filter((day) => day.day === weekday && (!evidence || evidence.has(day.date))));
     const hours = days.reduce((sum, day) => sum + day.hours, 0);
     const earnings = days.reduce((sum, day) => sum + day.operationalTotal, 0);
     const shifts = days.reduce((sum, day) => sum + day.completedShifts, 0);
@@ -1188,7 +1189,11 @@ function weekdayEfficiencyAnalysis(weeks: NormalizedWeek[], prompt: string) {
     };
   }).filter((row) => row.earningsPerHour !== null);
   rows.sort((a, b) => (b.earningsPerHour ?? 0) - (a.earningsPerHour ?? 0) || b.days - a.days);
-  return { method: "weekday_operational_earnings_divided_by_completed_shift_hours", rows };
+  return {
+    method: "weekday_operational_earnings_divided_by_completed_shift_hours",
+    rows,
+    timingEvidence: evidence ? "Only days with ride timing or repeated earnings snapshots are included." : "All completed shift days in the loaded scope are included.",
+  };
 }
 
 function requestedHours(prompt: string): number | null {
@@ -1283,6 +1288,19 @@ export function buildMobilityAnalysis(args: {
   const labelFor = (zoneKey: string) => labels.get(zoneKey) || "Unlabeled approximate pickup zone";
   const ridesById = new Map(args.rides.map((ride) => [ride.id, ride]));
   const effectiveDeltas = snapshotEffectiveDeltas(args.snapshots);
+  const snapshotObservationCounts = new Map<string, number>();
+  for (const snapshot of args.snapshots) {
+    if ((effectiveDeltas.get(snapshot.id) ?? 0) > 0) {
+      snapshotObservationCounts.set(snapshot.day_date, (snapshotObservationCounts.get(snapshot.day_date) ?? 0) + 1);
+    }
+  }
+  const rideTimingDates = args.rides
+    .filter((ride) => ride.lifecycle_version === 2 && ride.status === "completed" && Number.isFinite(Date.parse(ride.started_at)) && Number.isFinite(Date.parse(ride.ended_at ?? "")) && Date.parse(ride.ended_at ?? "") > Date.parse(ride.started_at))
+    .map((ride) => ride.day_date);
+  const timingEvidenceDates = [...new Set([
+    ...rideTimingDates,
+    ...[...snapshotObservationCounts.entries()].filter(([, count]) => count >= 2).map(([date]) => date),
+  ])].sort();
   const ledgerSnapshots = new Set(args.snapshotAllocations
     .filter((row) => row.is_current && row.earnings_snapshot_id)
     .map((row) => row.earnings_snapshot_id!));
@@ -1428,12 +1446,14 @@ export function buildMobilityAnalysis(args: {
   const timeZoneRides = args.rides.filter((ride) => Boolean(ride.time_zone)).length;
   return {
     privacy: "Aggregate owner data only. No routes, addresses, raw GPS, or background location history.",
+    timingEvidenceDates,
     earningsRule: "Earnings are attributed only to a confirmed pickup zone. Acceptance is an operational starting-market signal; dropoff is destination context and never receives earnings.",
     coverage: {
       ridesLoaded: args.rides.length,
       ridesWithAssignedEarnings: signals.length,
       labeledPickupZones: pickupZones.filter((zone) => zone.zone !== "Unlabeled approximate pickup zone").length,
       ridesWithRecordedTimeZone: timeZoneRides,
+      timingEvidenceDays: timingEvidenceDates.length,
       plannerEligibleRides: acceptanceSignals.length,
       plannerMinimum: { rides: 8, days: 3 },
     },
@@ -1548,7 +1568,7 @@ function buildContext(args: {
     if (intent === "STREAK") {
       analysis.earningStreak = highestEarningStreakAnalysis(weeks);
     }
-    const weekdayEfficiency = weekdayEfficiencyAnalysis(weeks, prompt);
+    const weekdayEfficiency = weekdayEfficiencyAnalysis(weeks, prompt, mobility?.timingEvidenceDates);
     if (weekdayEfficiency) {
       analysis.weekdayEfficiency = weekdayEfficiency;
     }
@@ -1827,7 +1847,7 @@ function directMobilityAnswer(context: unknown, currency: string, prompt: string
           hourRateDefinition?: string;
         };
       };
-      weekdayEfficiency?: { rows: Array<{ weekday: string; earnings: number; hours: number; shifts: number; days: number; earningsPerHour: number | null }> };
+      weekdayEfficiency?: { rows: Array<{ weekday: string; earnings: number; hours: number; shifts: number; days: number; earningsPerHour: number | null }>; timingEvidence?: string };
     };
   };
   const q = prompt.toLowerCase();
@@ -1869,11 +1889,17 @@ function directMobilityAnswer(context: unknown, currency: string, prompt: string
   }
 
   const weekday = c.analysis?.weekdayEfficiency;
-  if (weekday?.rows?.length && /\b(best|strongest|highest|mejor|más alto|mas alto)\b/.test(q) && /\b(day|weekday|día|dia)\b/.test(q)) {
+  const asksBestWeekdayHourly = /\b(best|strongest|highest|mejor|más alto|mas alto)\b/.test(q) && /\b(day|weekday|día|dia)\b/.test(q);
+  if (asksBestWeekdayHourly && weekday && !weekday.rows.length) {
+    return spanish
+      ? "Todavía no hay suficientes días con evidencia horaria confiable para comparar el mejor día por $/hora. Los días antiguos sin snapshots repetidos ni rides con Start→Finish quedan fuera de esta métrica."
+      : "There are not enough days with reliable timing evidence to compare the best weekday by $/hr. Older days without repeated snapshots or Start-to-Finish rides are excluded from this metric.";
+  }
+  if (weekday?.rows?.length && asksBestWeekdayHourly) {
     const top = weekday.rows[0];
     return spanish
-      ? `Tu mejor día por ganancia operativa por hora de turno es ${top.weekday}: ${formatCurrencyForAssistant(top.earningsPerHour!, currency)}/hora, basado en ${top.shifts} turnos completados (${top.hours.toFixed(1)} h) en ${top.days} días. Esto sí usa horas del turno, no solo duración de los rides.`
-      : `Your best weekday by operational earnings per shift hour is ${top.weekday}: ${formatCurrencyForAssistant(top.earningsPerHour!, currency)}/hr, based on ${top.shifts} completed shifts (${top.hours.toFixed(1)}h) across ${top.days} days. This uses shift hours, not only ride duration.`;
+      ? `Tu mejor día por ganancia operativa por hora de turno es ${top.weekday}: ${formatCurrencyForAssistant(top.earningsPerHour!, currency)}/hora, basado en ${top.shifts} turnos completados (${top.hours.toFixed(1)} h) en ${top.days} días con evidencia horaria. Los días antiguos sin esa evidencia no entran en la comparación.`
+      : `Your best weekday by operational earnings per shift hour is ${top.weekday}: ${formatCurrencyForAssistant(top.earningsPerHour!, currency)}/hr, based on ${top.shifts} completed shifts (${top.hours.toFixed(1)}h) across ${top.days} days with timing evidence. Older days without that evidence are excluded.`;
   }
 
   return null;
@@ -2699,7 +2725,7 @@ Deno.serve(async (req) => {
     "10. For a last-four-weeks versus best-four-week-period question, ONLY use context.analysis.fourWeekComparison. It contains completed calendar-consecutive weeks; if it is null, explain that there are not four consecutive completed weeks available.",
     "11. For a zone, pickup-hour, or shift-planner question, ONLY use context.analysis.mobility. Treat pickupEarnings as money confirmed to the pickup zone. Treat shiftPlanner candidates as acceptance/start-market evidence, never as pickup earnings. Do not infer a zone, local hour, or time window when coverage says it is missing.",
     "12. For pickup-zone hourly questions, use pickupEarnings.zones. earningsPerRideHour is confirmed pickup-linked earnings divided by elapsed Start-to-Finish ride time; call it ride-time efficiency and distinguish it from shift $/hour, which includes all completed shift time. For best two-hour questions, use bestTwoHourPickupWindows.averageWindowEarningsPerHour (average confirmed pickup earnings per observed day divided by the two-hour window) and report its rides/days evidence and low coverage clearly.",
-    "13. For best weekday by $/hour questions, use weekdayEfficiency, which aggregates operational earnings divided by completed shift hours. Do not substitute total daily earnings or ride-time efficiency.",
+    "13. For best weekday by $/hour questions, use weekdayEfficiency, which aggregates operational earnings divided by completed shift hours and includes only days with ride timing or repeated earnings-snapshot evidence when mobility context is loaded. Do not substitute total daily earnings or ride-time efficiency; disclose that older days without timing evidence are excluded.",
     "14. For a shift plan, make it a bounded historical test plan: state the suggested broad zone and clock window only when a candidate exists; give earnings/rides/days as evidence; name the confidence level; and say it is not live demand, traffic, or a guaranteed result. If confidence is low/building, recommend collecting more rides rather than a strong conclusion.",
     "15. When making a recommendation, use this compact structure: **Signal**, **Evidence**, **Confidence**, **Next action**. Do not pretend that earnings per ride means earnings per worked hour.",
     "16. Never invent numbers, dates, or apps. Never reveal raw JSON, private zone keys, or internal field names. No SQL.",
